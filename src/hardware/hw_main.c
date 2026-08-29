@@ -857,18 +857,18 @@ static void HWR_TogglePaletteRendering(void)
 void HWR_LoadLevel(void)
 {
 	HWR_CreatePlanePolygons((int32_t)numnodes - 1);
-	NetKeepAlive();
+	NetKeepAlive_NoTImeToWait();
 
 	// Build the sky dome
 	HWR_ClearSkyDome();
-	NetKeepAlive();
+	NetKeepAlive_NoTImeToWait();
 	HWR_BuildSkyDome();
-	NetKeepAlive();
+	NetKeepAlive_NoTImeToWait();
 
 	if (HWR_ShouldUsePaletteRendering())
 	{
 		HWR_SetMapPalette();
-		NetKeepAlive();
+		NetKeepAlive_NoTImeToWait();
 	}
 
 	gl_maploaded = true;

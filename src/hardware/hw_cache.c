@@ -996,19 +996,19 @@ void HWR_PrecacheLevel(void)
 	HWR_PrecacheLevelFlats();
 
 	// prevent timeouts
-	NetKeepAlive();
+	NetKeepAlive_NoTImeToWait();
 
 	// Precache textures.
 	HWR_PrecacheLevelTextures();
 
 	// prevent timeouts
-	NetKeepAlive();
+	NetKeepAlive_NoTImeToWait();
 
 	// Precache sprites.
 	//HWR_PrecacheLevelSprites();
 
 	// prevent timeouts
-	//NetKeepAlive();
+	//NetKeepAlive_NoTImeToWait();
 }
 
 void HWR_LoadMapTextures(size_t pnumtextures)
@@ -1649,7 +1649,7 @@ void HWR_SetPalette(RGBA_t *palette)
 				crushed_palette[i].s.alpha = 255;
 			}
 
-			NetKeepAlive();
+			NetKeepAlive_NoTImeToWait();
 
 			GL_SetScreenPalette(crushed_palette);
 		}
@@ -1697,7 +1697,7 @@ static void HWR_SetPaletteLookup(RGBA_t *palette)
 		}
 	}
 #undef STEP_SIZE
-	NetKeepAlive();
+	NetKeepAlive_NoTImeToWait();
 	GL_SetPaletteLookup(lut);
 	Z_Free(lut);
 }
@@ -1737,7 +1737,7 @@ void HWR_SetMapPalette(void)
 			RGBA_converted[i].s.alpha = 255;
 		}
 
-		NetKeepAlive();
+		NetKeepAlive_NoTImeToWait();
 
 		// remap the palette from 2.1 to 2.2 indices in compatmode
 		RGBA_t *palcopy = NULL;
@@ -1755,7 +1755,7 @@ void HWR_SetMapPalette(void)
 				RGBA_converted[i].rgba = palcopy[R_InvPaletteRemap(i)].rgba;
 			}
 
-			NetKeepAlive();
+			NetKeepAlive_NoTImeToWait();
 
 			free(palcopy);
 		}
