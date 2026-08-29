@@ -289,7 +289,7 @@ void Environment::loadModule(ACSVM::Module *module)
 		CONS_Debug(DBG_SETUP, "Loading ACS module directly from lump '%s'...\n", name->s->str);
 
 		// It's a real lump.
-		ACSVM::Byte *lump = static_cast<ACSVM::Byte *>(Z_Calloc(lumpLen, PU_STATIC, nullptr));
+		ACSVM::Byte *lump = static_cast<ACSVM::Byte *>(Z_Calloc(lumpLen, PU_LEVEL, nullptr));
 		auto _ = srb2::finally([lump]() { Z_Free(lump); });
 
 		W_ReadLump(lumpnum, lump);
@@ -396,7 +396,7 @@ ACSVM::Word Environment::callSpecImpl
 	{
 		ACSVM::String *strPtr = map->getString(argV[i]);
 
-		stringargs[i] = static_cast<char *>(Z_Malloc(strPtr->len + 1, PU_STATIC, nullptr));
+		stringargs[i] = static_cast<char *>(Z_Malloc(strPtr->len + 1, PU_LEVEL, nullptr));
 		memcpy(stringargs[i], strPtr->str, strPtr->len + 1);
 	}
 
