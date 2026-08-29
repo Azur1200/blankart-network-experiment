@@ -781,7 +781,7 @@ static void D_WipeTick(dboolean menu)
 		D_ProcessEvents();
 
 	// Update the network so we don't cause timeouts
-	NetKeepAlive();
+	NetKeepAlive_NoTImeToWait();
 
 	HU_Ticker();
 	if (menu)
@@ -906,7 +906,6 @@ void D_WipeLoop(wipelooptype_t type, uint8_t wipetype, dboolean drawMenu)
 
 		nowtime = I_GetTime();
 
-		NetKeepAlive();
 		// wait loop
 		if (nowtime - lastwipetic)
 		{
@@ -917,9 +916,11 @@ void D_WipeLoop(wipelooptype_t type, uint8_t wipetype, dboolean drawMenu)
 				ST_runTitleCard();
 		}
 		else
+		{
+			NetKeepAlive_NoTImeToWait();
 			renderisnewtic = false;
+		}
 
-		NetKeepAlive();
 
 		// draw loop
 		R_SetTimeFrac(g_time.timefrac);
@@ -928,8 +929,6 @@ void D_WipeLoop(wipelooptype_t type, uint8_t wipetype, dboolean drawMenu)
 #ifndef NOWIPE
 		if (type == WIPELOOP_RUNWIPE)
 		{
-			NetKeepAlive();
-
 			if (I_Interrupted())
 			{
 				I_Quit();
@@ -955,8 +954,6 @@ void D_WipeLoop(wipelooptype_t type, uint8_t wipetype, dboolean drawMenu)
 
 		D_WipeDraw(drawMenu);
 		I_UpdateSound();
-
-		NetKeepAlive();
 
 		// Only take screenshots after drawing.
 		if (moviemode)
