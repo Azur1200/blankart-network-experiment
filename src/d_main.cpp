@@ -92,7 +92,7 @@
 #define ASSET_HASH_TEXTURES_KART       0xb4211b2f32b6a291
 #define ASSET_HASH_CHARS_KART          0x1e68a3e01aa5c68b
 #define ASSET_HASH_MAPS_KART           0x38558ed00da41ce9
-#define ASSET_HASH_MAIN_PK3            0x8c4623400a58ec13
+#define ASSET_HASH_MAIN_PK3            0xf934e18e341fbe1d
 #define ASSET_HASH_MAPPATCH_PK3        0xa279dcd392d0cfc9
 #define ASSET_HASH_BONUSCHARS_KART     0x60e6f13d822a7461
 #ifdef USE_PATCH_FILE
@@ -892,7 +892,7 @@ void D_WipeLoop(wipelooptype_t type, uint8_t wipetype, dboolean drawMenu)
 	nowtime = lastwipetic = I_GetTime();
 	endtime = nowtime + endtimes[type];
 
-	if (gamestate != GS_TITLESCREEN && gamestate != GS_INTRO && gamestate != GS_MENU && !dedicated)
+	if (gamestate != GS_TITLESCREEN && gamestate != GS_INTRO && gamestate != GS_MENU)
 		drawMenu = true;
 
 	WipeInAction = 1 + !drawMenu;
@@ -920,7 +920,6 @@ void D_WipeLoop(wipelooptype_t type, uint8_t wipetype, dboolean drawMenu)
 			NetKeepAlive_NoTImeToWait();
 			renderisnewtic = false;
 		}
-
 
 		// draw loop
 		R_SetTimeFrac(g_time.timefrac);
@@ -1383,9 +1382,7 @@ static void IdentifyVersion(void)
 
 #if (defined (__unix__) && !defined (MSDOS)) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	// change to the directory where 'srb2.srb' is found
-	CLEANUP(pfree) const char *allocwaddir = NULL; // here so we dont potentially free stack memory
-	allocwaddir = I_LocateWad();
-	srb2waddir = allocwaddir;
+	srb2waddir = I_LocateWad();
 #endif
 
 	char tempsrb2path[256] = ".";
