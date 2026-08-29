@@ -781,7 +781,7 @@ static void D_WipeTick(dboolean menu)
 		D_ProcessEvents();
 
 	// Update the network so we don't cause timeouts
-	NetKeepAlive_NoTImeToWait();
+	NetKeepAlive();
 
 	HU_Ticker();
 	if (menu)
@@ -917,7 +917,7 @@ void D_WipeLoop(wipelooptype_t type, uint8_t wipetype, dboolean drawMenu)
 		}
 		else
 		{
-			NetKeepAlive_NoTImeToWait();
+			NetKeepAlive();
 			renderisnewtic = false;
 		}
 
