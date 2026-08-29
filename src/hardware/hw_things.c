@@ -1842,6 +1842,16 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		{
 			patch_defaultpivot.x = spr_offset;
 			patch_defaultpivot.y = spr_topoffset;
+
+			if (thing->player)
+			{
+				if (!(wadfiles[((skin_t *)thing->skin)->wadnum]->compatmode))
+				{
+					// RR skins actually pivot themselves 4 pixels above their offset
+					// Ideally, any modifications to that would supply their own SPRTINFO, so...
+					patch_defaultpivot.y -= (4 * FRACUNIT);
+				}
+			}
 		}
 		else
 		{
