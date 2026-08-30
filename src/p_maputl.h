@@ -76,6 +76,7 @@ void P_UnsetPrecipThingPosition(precipmobj_t *thing);
 void P_SetPrecipitationThingPosition(precipmobj_t *thing);
 void P_CreatePrecipSecNodeList(precipmobj_t *thing, fixed_t x,fixed_t y);
 void P_HitSpecialLines(mobj_t *thing, fixed_t x, fixed_t y, fixed_t momx, fixed_t momy);
+dboolean P_ThingHeightClip(mobj_t *thing);
 
 dboolean P_GetMidtextureTopBottom(line_t *linedef, opening_t *open, fixed_t *return_top, fixed_t *return_bottom);
 dboolean P_GetTripwireTopBottom(line_t *linedef, fixed_t x, fixed_t y, fixed_t *return_top, fixed_t *return_bottom);
