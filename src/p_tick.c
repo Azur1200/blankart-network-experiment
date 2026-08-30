@@ -1017,15 +1017,15 @@ void P_Ticker(dboolean run)
 						{
 							if (leveltime == startingtime-(3*TICRATE))
 							{
-								S_StartSound(NULL, sfx_s3ka7); // 3,
+								S_StartSound(NULL, ((cv_usegenericlapsounds.value) ? sfx_s3ka7 : sfx_cntdwn)); // 3,
 							}
 							else if ((leveltime == startingtime-(2*TICRATE)) || (leveltime == starttime-TICRATE))
 							{
-								S_StartSound(NULL, sfx_s3ka7); // 2, 1,
+								S_StartSound(NULL, ((cv_usegenericlapsounds.value) ? sfx_s3ka7 : sfx_cntdwn)); // 2, 1,
 							}
 							else if (leveltime == startingtime)
 							{
-								S_StartSound(NULL, sfx_s3kad); // GO!
+								S_StartSound(NULL, ((cv_usegenericlapsounds.value) ? sfx_s3kad : sfx_cntdwg)); // GO!
 							}
 						}
 

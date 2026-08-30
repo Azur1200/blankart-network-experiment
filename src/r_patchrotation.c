@@ -301,7 +301,7 @@ patch_t *Patch_GetRotated(patch_t *patch, int32_t angle, dboolean flip)
 patch_t *Patch_GetRotatedSprite(
 	spriteframe_t *sprite,
 	size_t frame, size_t spriteangle,
-	dboolean flip, dboolean adjustfeet,
+	dboolean flip, dboolean adjustfeet, dboolean offsetspivot,
 	void *info, int32_t rotationangle)
 {
 	rotsprite_t *rotsprite;
@@ -344,9 +344,14 @@ patch_t *Patch_GetRotatedSprite(
 			xpivot = sprinfo->pivot[SPRINFO_DEFAULT_PIVOT].x;
 			ypivot = sprinfo->pivot[SPRINFO_DEFAULT_PIVOT].y;
 		}
-		else
+		else if (offsetspivot)
 		{
 			xpivot = patch->leftoffset;
+			ypivot = patch->topoffset;
+		}
+		else
+		{
+			xpivot = patch->width / 2;
 			ypivot = patch->height / 2;
 		}
 
@@ -403,11 +408,35 @@ static void RotatedPatch_CalculateDimensions(
 	*newheight = max(height, max(h1, h2));
 }
 
+static void RotatedPatch_AllocImgBuf(uint16_t **buf, size_t size, size_t *capacity)
+{
+	if (!*buf)
+	{
+		*buf = Z_Malloc(*capacity, PU_STATIC, NULL);
+	}
+
+	size_t allocsize = size * sizeof(uint16_t);
+
+	// make sure our buffer always fits with what we need
+	if (allocsize > *capacity)
+	{
+		while (*capacity < allocsize)
+			*capacity *= 2;
+
+		Z_Free(*buf);
+		*buf = Z_Malloc(*capacity, PU_STATIC, NULL);
+	}
+
+	//CONS_Printf("RotatedPatch_AllocBuf: Allocated %.2f KB\n", *capacity / 1024.0);
+}
+
 void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, int32_t angle, int32_t xpivot, int32_t ypivot, dboolean flip)
 {
 	patch_t *rotated;
-	uint16_t *rawdst, *rawconv;
+	static uint16_t *rawdst = NULL, *rawconv = NULL;
+	uint16_t *rawout;
 	size_t size;
+	static size_t dst_capacity = (1024 * 1024), conv_capacity = (1024 * 1024); // 1 MB should be enough for most cases
 	pictureflags_t bflip = (flip) ? PICFLAGS_XFLIP : 0;
 
 	int32_t width = patch->width;
@@ -460,7 +489,11 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, int32_t ang
 	size = (newwidth * newheight);
 	if (!size)
 		size = (width * height);
-	rawdst = Z_Calloc(size * sizeof(uint16_t), PU_STATIC, NULL);
+
+	RotatedPatch_AllocImgBuf(&rawdst, size, &dst_capacity);
+
+	for (size_t i = 0; i < size; i++)
+		rawdst[i] = 0x0000;
 
 	for (dy = 0; dy < newheight; dy++)
 	{
@@ -503,7 +536,9 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, int32_t ang
 		uint16_t *src, *dest;
 
 		size = (width * height);
-		rawconv = Z_Calloc(size * sizeof(uint16_t), PU_STATIC, NULL);
+
+		RotatedPatch_AllocImgBuf(&rawconv, size, &conv_capacity);
+		memset(rawconv, 0, conv_capacity * sizeof(uint16_t));
 
 		src = &rawdst[(miny * newwidth) + minx];
 		dest = rawconv;
@@ -519,21 +554,21 @@ void RotatedPatch_DoRotation(rotsprite_t *rotsprite, patch_t *patch, int32_t ang
 		ox -= minx;
 		oy -= miny;
 
-		Z_Free(rawdst);
+		rawout = rawconv;
 	}
 	else
 	{
-		rawconv = rawdst;
 		width = newwidth;
 		height = newheight;
+
+		rawout = rawdst;
 	}
 
 	// make patch
-	rotated = (patch_t *)Picture_Convert(PICFMT_FLAT16, rawconv, PICFMT_PATCH, 0, NULL, width, height, 0, 0, 0);
+	rotated = (patch_t *)Picture_Convert(PICFMT_FLAT16, rawout, PICFMT_PATCH, 0, NULL, width, height, 0, 0, 0);
 
 	Z_ChangeTag(rotated, PU_PATCH_ROTATED);
 	Z_SetUser(rotated, (void **)(&rotsprite->patches[idx]));
-	Z_Free(rawconv);
 
 	rotated->leftoffset = ox;
 	rotated->topoffset = oy;

@@ -8267,6 +8267,266 @@ static void P_CleanTrapBubble(mobj_t *trapbbl)
 	}
 }
 
+static void P_TrapBubbleThink(mobj_t* mobj)
+{
+	if ((leveltime % 180 == 0) && (!mobj->extravalue3))
+		S_StartSound(mobj, sfx_s3kbfl);
+
+	if (mobj->tracer && !P_MobjWasRemoved(mobj->tracer) && mobj->tracer->player)
+	{
+		player_t* player = mobj->tracer->player;
+		fixed_t destx, desty, curfz, destfz;
+		dboolean blockmove = false;
+
+		// disable new pivots while in bubbles
+		// this basically has to run *after* K_KartPlayerThink to work so watch out
+		mobj->tracer->renderflags2 &= ~RF2_PIVOTATOFFSETS;
+
+		mobj->flags =
+		    MF_NOCLIP | MF_NOCLIPHEIGHT | MF_NOCLIPTHING | MF_NOGRAVITY | MF_DONTENCOREMAP;
+		mobj->extravalue1 = 1;
+
+		mobj->cvmem /= 2;
+		mobj->momz = 0;
+		mobj->destscale = ((5 * mobj->tracer->scale) >> 2) + (mobj->tracer->scale >> 3);
+
+		fixed_t extrarise = 0;
+		extrarise = (fixed_t)(mobj->script_args[1]);
+
+		// Rise really fast!
+		fixed_t risespeed = 16 + extrarise;
+
+		mobj->tracer->momz = (risespeed * max(mapobjectscale, mobj->tracer->scale)) *
+				     P_MobjFlip(mobj->tracer);
+
+		const dboolean slowme = ((mobj->script_args[3] & 1) == 1);
+
+		if (slowme)
+		{
+			const fixed_t min_speed = (mobj->script_args[4] * FRACUNIT);
+			fixed_t my_speed = K_Momentum2D(mobj->tracer);
+
+			if (my_speed != min_speed)
+			{
+				fixed_t slow_delta = R_PointToDist2((31 * mobj->tracer->momx) / 32,
+								    (31 * mobj->tracer->momy) / 32,
+								    mobj->tracer->momx,
+								    mobj->tracer->momy);
+
+				my_speed = ApproachOneWayFixed(my_speed, min_speed, slow_delta);
+
+				P_InstaThrust(mobj->tracer, mobj->angle, my_speed);
+			}
+		}
+
+		destx = mobj->x + mobj->tracer->momx;
+		desty = mobj->y + mobj->tracer->momy;
+
+		if (mobj->tracer->eflags & MFE_VERTICALFLIP)
+		{
+			curfz = P_GetCeilingZ(mobj->tracer,
+					      mobj->tracer->subsector->sector,
+					      mobj->tracer->x,
+					      mobj->tracer->y,
+					      NULL);
+			destfz = P_GetCeilingZ(mobj->tracer,
+					       R_PointInSubsector(destx, desty)->sector,
+					       destx,
+					       desty,
+					       NULL);
+			blockmove = (curfz - destfz >= 24 * mobj->scale);
+		}
+		else
+		{
+			curfz = P_GetFloorZ(mobj->tracer,
+					    mobj->tracer->subsector->sector,
+					    mobj->tracer->x,
+					    mobj->tracer->y,
+					    NULL);
+			destfz = P_GetFloorZ(mobj->tracer,
+					     R_PointInSubsector(destx, desty)->sector,
+					     destx,
+					     desty,
+					     NULL);
+			blockmove = (destfz - curfz >= 24 * mobj->scale);
+		}
+
+		if (blockmove)
+		{
+			mobj->tracer->momx = mobj->tracer->momy = 0;
+		}
+
+		P_MoveOrigin(mobj,
+			     mobj->tracer->x + P_ReturnThrustX(NULL,
+							       mobj->tracer->angle + ANGLE_90,
+							       (mobj->cvmem) << FRACBITS),
+			     mobj->tracer->y + P_ReturnThrustY(NULL,
+							       mobj->tracer->angle + ANGLE_90,
+							       (mobj->cvmem) << FRACBITS),
+			     mobj->tracer->z - (4 * mobj->tracer->scale) +
+				 (P_RandomRange(PR_ITEM_BUBBLE, -abs(mobj->cvmem), abs(mobj->cvmem))
+				  << FRACBITS));
+
+		if (P_PlayerInPain(player))
+		{
+			// If the player is feeling pain, give em a break. tick their spinout timer
+			// regardless
+			player->spinouttype |= KSPIN_AIRTIMER;
+		}
+
+		if (mobj->movecount > 5 * TICRATE)
+		{
+			S_StartSound(mobj->tracer, sfx_s3k77);
+			mobj->tracer->flags &= ~MF_NOGRAVITY;
+			P_KillMobj(mobj, mobj->tracer, mobj->tracer, DMG_NORMAL);
+
+			P_CleanTrapBubble(mobj);
+
+			mobj->flags |= (MF_NOCLIP | MF_NOCLIPTHING);
+			mobj->extravalue3 = 1;
+
+			return;
+		}
+		else
+		{
+			// Check if the player hits Accel; if they have, pop and launch 'em out with
+			// a boost!
+			// FIXME: A "HIT THE GAS!" prompt to tell players what to do in the moment
+			uint16_t buttons = K_GetKartButtons(player);
+			dboolean pressing_accel = ((buttons & BT_ACCELERATE) &&
+						   !(player->oldcmd.buttons & BT_ACCELERATE));
+
+			if (pressing_accel)
+			{
+				// Play the sound of us popping, first
+				S_StartSound(mobj->tracer, sfx_s3k77);
+
+				// Have the player announce their boost!
+				S_StartSoundAtVolume(mobj->tracer, sfx_cdfm57, 170);
+				K_PlayBoostTaunt(mobj->tracer);
+
+				const fixed_t speedscalar = K_GetKartGameSpeedScalar(gamespeed);
+
+				// Unlike the normal Bubble Shield boost, this sould fling you at a
+				// constant midair speed
+				P_InstaThrust(mobj->tracer,
+					      mobj->tracer->angle,
+					      FixedMul(45 * mobj->tracer->scale, speedscalar));
+
+				// Just in case...
+				player->pogospring = 1;
+
+				// Set generic popboost values
+				// EVER SO SLIGHTLY longer, in case you're in the air for a while
+				player->bubbleboost = 3 * BUBBLEBOOSTTIME / 2;
+				player->flashing = 6 * TICRATE / 7;
+
+				// Finally, exit stage left
+				mobj->tracer->flags &= ~MF_NOGRAVITY;
+				P_KillMobj(mobj, mobj->tracer, mobj->tracer, DMG_NORMAL);
+
+				// Clean up after ourselves
+				P_CleanTrapBubble(mobj);
+
+				mobj->flags |= (MF_NOCLIP | MF_NOCLIPTHING);
+				mobj->extravalue3 = 1;
+
+				return;
+			}
+		}
+
+		mobj->movecount++;
+	}
+	else if (mobj->extravalue1)  // lost your player somehow, DIE
+	{
+		P_CleanTrapBubble(mobj);  // ...I'm paranoid, okay?!
+		P_KillMobj(mobj, NULL, NULL, DMG_NORMAL);
+		mobj->flags |= (MF_NOCLIP | MF_NOCLIPTHING);
+		mobj->extravalue3 = 1;
+		return;
+	}
+	else
+	{
+		mobj->destscale = (5 * mapobjectscale) >> 2;
+
+		if (mobj->threshold > 0)
+			mobj->threshold--;
+
+		if (abs(mobj->momx) < 8 * mobj->destscale && abs(mobj->momy) < 8 * mobj->destscale)
+		{
+			// Stop, give light gravity
+			mobj->momx = mobj->momy = 0;
+
+			const dboolean float_down = ((mobj->script_args[2] & 1) == 1);
+			if (float_down)
+				mobj->momz = -(mobj->scale * P_MobjFlip(mobj));
+		}
+		else
+		{
+			uint8_t i;
+			mobj_t* ghost = P_SpawnGhostMobj(mobj);
+
+			if (mobj->target && !P_MobjWasRemoved(mobj->target) && mobj->target->player)
+			{
+				ghost->color = mobj->target->player->skincolor;
+				ghost->colorized = true;
+			}
+
+			mobj->momx = (23 * mobj->momx) / 24;
+			mobj->momy = (23 * mobj->momy) / 24;
+
+			mobj->angle = K_MomentumAngle(mobj);
+
+			if ((mobj->z - mobj->floorz) < (24 * mobj->scale) && (leveltime % 3 != 0))
+			{
+				// Cool wave effects!
+				for (i = 0; i < 2; i++)
+				{
+					angle_t aoff;
+					int8_t sign = 1;
+					mobj_t* wave;
+
+					if (i & 1)
+						sign = -1;
+					else
+						sign = 1;
+
+					aoff = (mobj->angle + ANGLE_180) + (ANGLE_45 * sign);
+
+					wave = P_SpawnMobj(
+					    mobj->x +
+						FixedMul(mobj->radius,
+							 FINECOSINE(aoff >> ANGLETOFINESHIFT)),
+					    mobj->y + FixedMul(mobj->radius,
+							       FINESINE(aoff >> ANGLETOFINESHIFT)),
+					    mobj->z,
+					    MT_THOK);
+
+					wave->colorized = true;
+					wave->color = SKINCOLOR_PERIWINKLE;
+					wave->flags &= ~(MF_NOCLIPHEIGHT | MF_NOGRAVITY);
+					P_SetScale(wave, (wave->destscale = mobj->scale / 2));
+
+					P_SetMobjState(wave, S_SPLISH1);
+					if (leveltime & 1)
+						wave->tics++;
+
+					P_SetTarget(&wave->target, mobj);
+
+					// point completely perpendicular from the bubble
+					wave->angle =
+					    mobj->angle -
+					    (ANGLE_90 * sign);
+
+					K_FlipFromObject(wave, mobj);
+
+					P_Thrust(wave, wave->angle, 4 * mobj->scale);
+				}
+			}
+		}
+	}
+}
+
 static dboolean P_MobjRegularThink(mobj_t *mobj)
 {
 	if ((mobj->flags & MF_ENEMY) && (mobj->state->nextstate == mobj->info->spawnstate && mobj->tics == 1))
@@ -10256,198 +10516,7 @@ static dboolean P_MobjRegularThink(mobj_t *mobj)
 		}
 		break;
 	case MT_TRAPBUBBLE:
-		if ((leveltime % 180 == 0) && (!mobj->extravalue3))
-			S_StartSound(mobj, sfx_s3kbfl);
-
-		if (mobj->tracer && !P_MobjWasRemoved(mobj->tracer) && mobj->tracer->player)
-		{
-			player_t *player = mobj->tracer->player;
-			fixed_t destx, desty, curfz, destfz;
-			dboolean blockmove = false;
-
-			mobj->flags = MF_NOCLIP|MF_NOCLIPHEIGHT|MF_NOCLIPTHING|MF_NOGRAVITY|MF_DONTENCOREMAP;
-			mobj->extravalue1 = 1;
-
-			mobj->cvmem /= 2;
-			mobj->momz = 0;
-			mobj->destscale = ((5*mobj->tracer->scale)>>2) + (mobj->tracer->scale>>3);
-
-			fixed_t extrarise = 0;
-			extrarise = (fixed_t)(mobj->script_args[1]);
-
-			// Rise really fast!
-			fixed_t risespeed = 16 + extrarise;
-
-			mobj->tracer->momz = (risespeed * max(mapobjectscale, mobj->tracer->scale)) * P_MobjFlip(mobj->tracer);
-
-			mobj->tracer->momx = (31*mobj->tracer->momx)/32;
-			mobj->tracer->momy = (31*mobj->tracer->momy)/32;
-
-			destx = mobj->x + mobj->tracer->momx;
-			desty = mobj->y + mobj->tracer->momy;
-
-			if (mobj->tracer->eflags & MFE_VERTICALFLIP)
-			{
-				curfz = P_GetCeilingZ(mobj->tracer, mobj->tracer->subsector->sector, mobj->tracer->x, mobj->tracer->y, NULL);
-				destfz = P_GetCeilingZ(mobj->tracer, R_PointInSubsector(destx, desty)->sector, destx, desty, NULL);
-				blockmove = (curfz - destfz >= 24*mobj->scale);
-			}
-			else
-			{
-				curfz = P_GetFloorZ(mobj->tracer, mobj->tracer->subsector->sector, mobj->tracer->x, mobj->tracer->y, NULL);
-				destfz = P_GetFloorZ(mobj->tracer, R_PointInSubsector(destx, desty)->sector, destx, desty, NULL);
-				blockmove = (destfz - curfz >= 24*mobj->scale);
-			}
-
-			if (blockmove)
-			{
-				mobj->tracer->momx = mobj->tracer->momy = 0;
-			}
-
-			P_MoveOrigin(mobj,
-				mobj->tracer->x + P_ReturnThrustX(NULL, mobj->tracer->angle+ANGLE_90, (mobj->cvmem)<<FRACBITS),
-				mobj->tracer->y + P_ReturnThrustY(NULL, mobj->tracer->angle+ANGLE_90, (mobj->cvmem)<<FRACBITS),
-				mobj->tracer->z - (4*mobj->tracer->scale) + (P_RandomRange(PR_ITEM_BUBBLE, -abs(mobj->cvmem), abs(mobj->cvmem))<<FRACBITS));
-
-			if (P_PlayerInPain(player))
-			{
-				// If the player is feeling pain, give em a break. tick their spinout timer regardless
-				player->spinouttype |= KSPIN_AIRTIMER;
-			}
-
-			if (mobj->movecount > 5*TICRATE)
-			{
-				S_StartSound(mobj->tracer, sfx_s3k77);
-				mobj->tracer->flags &= ~MF_NOGRAVITY;
-				P_KillMobj(mobj, mobj->tracer, mobj->tracer, DMG_NORMAL);
-
-				P_CleanTrapBubble(mobj);
-
-				mobj->flags |= (MF_NOCLIP|MF_NOCLIPTHING);
-				mobj->extravalue3 = 1;
-
-				break;
-			}
-			else
-			{
-				// Check if the player hits Accel; if they have, pop and launch 'em out with a boost!
-				// FIXME: A "HIT THE GAS!" prompt to tell players what to do in the moment
-				uint16_t buttons = K_GetKartButtons(player);
-				dboolean pressing_accel = ((buttons & BT_ACCELERATE) && !(player->oldcmd.buttons & BT_ACCELERATE));
-
-				if (pressing_accel)
-				{
-					// Play the sound of us popping, first
-					S_StartSound(mobj->tracer, sfx_s3k77);
-
-					// Have the player announce their boost!
-					S_StartSoundAtVolume(mobj->tracer, sfx_cdfm57, 170);
-					K_PlayBoostTaunt(mobj->tracer);
-
-					const fixed_t speedscalar = K_GetKartGameSpeedScalar(gamespeed);
-
-					// Unlike the normal Bubble Shield boost, this sould fling you at a constant midair speed
-					P_InstaThrust(mobj->tracer, mobj->tracer->angle, FixedMul(45 * mobj->tracer->scale, speedscalar));
-
-					// Just in case...
-					player->pogospring = 1;
-
-					// Set generic popboost values
-					// EVER SO SLIGHTLY longer, in case you're in the air for a while
-					player->bubbleboost = 3 * BUBBLEBOOSTTIME / 2;
-					player->flashing = 6*TICRATE/7;
-
-					// Finally, exit stage left
-					mobj->tracer->flags &= ~MF_NOGRAVITY;
-					P_KillMobj(mobj, mobj->tracer, mobj->tracer, DMG_NORMAL);
-
-					// Clean up after ourselves
-					P_CleanTrapBubble(mobj);
-
-					mobj->flags |= (MF_NOCLIP|MF_NOCLIPTHING);
-					mobj->extravalue3 = 1;
-
-					break;
-				}
-			}
-
-			mobj->movecount++;
-		}
-		else if (mobj->extravalue1) // lost your player somehow, DIE
-		{
-			P_CleanTrapBubble(mobj); // ...I'm paranoid, okay?!
-			P_KillMobj(mobj, NULL, NULL, DMG_NORMAL);
-			mobj->flags |= (MF_NOCLIP|MF_NOCLIPTHING);
-			mobj->extravalue3 = 1;
-			break;
-		}
-		else
-		{
-			mobj->destscale = (5*mapobjectscale)>>2;
-
-			if (mobj->threshold > 0)
-				mobj->threshold--;
-
-			if (abs(mobj->momx) < 8*mobj->destscale && abs(mobj->momy) < 8*mobj->destscale)
-			{
-				// Stop, give light gravity
-				mobj->momx = mobj->momy = 0;
-				mobj->momz = -(mobj->scale * P_MobjFlip(mobj));
-			}
-			else
-			{
-				uint8_t i;
-				mobj_t *ghost = P_SpawnGhostMobj(mobj);
-
-				if (mobj->target && !P_MobjWasRemoved(mobj->target) && mobj->target->player)
-				{
-					ghost->color = mobj->target->player->skincolor;
-					ghost->colorized = true;
-				}
-
-				mobj->momx = (23*mobj->momx)/24;
-				mobj->momy = (23*mobj->momy)/24;
-
-				mobj->angle = K_MomentumAngle(mobj);
-
-				if ((mobj->z - mobj->floorz) < (24*mobj->scale) && (leveltime % 3 != 0))
-				{
-					// Cool wave effects!
-					for (i = 0; i < 2; i++)
-					{
-						angle_t aoff;
-						int8_t sign = 1;
-						mobj_t *wave;
-
-						if (i & 1)
-							sign = -1;
-						else
-							sign = 1;
-
-						aoff = (mobj->angle + ANGLE_180) + (ANGLE_45 * sign);
-
-						wave = P_SpawnMobj(mobj->x + FixedMul(mobj->radius, FINECOSINE(aoff>>ANGLETOFINESHIFT)),
-							mobj->y + FixedMul(mobj->radius, FINESINE(aoff>>ANGLETOFINESHIFT)),
-							mobj->z, MT_THOK);
-
-						wave->colorized = true;
-						wave->color = SKINCOLOR_PERIWINKLE;
-						wave->flags &= ~(MF_NOCLIPHEIGHT|MF_NOGRAVITY);
-						P_SetScale(wave, (wave->destscale = mobj->scale/2));
-
-						P_SetMobjState(wave, S_SPLISH1);
-						if (leveltime & 1)
-							wave->tics++;
-
-						P_SetTarget(&wave->target, mobj);
-						wave->angle = mobj->angle - (ANGLE_90 * sign); // point completely perpendicular from the bubble
-						K_FlipFromObject(wave, mobj);
-
-						P_Thrust(wave, wave->angle, 4*mobj->scale);
-					}
-				}
-			}
-		}
+		P_TrapBubbleThink(mobj);
 		break;
 	case MT_TUMBLEGEM:
 	case MT_TUMBLECOIN:
@@ -12930,6 +12999,7 @@ fixed_t P_GetMapThingSpawnHeight(const mobjtype_t mobjtype, const mapthing_t* mt
 	case MT_REDHORIZ:
 	case MT_BLUEHORIZ:
 	case MT_GRAYHORIZ:
+	case MT_NEOHORIZ:
 		offset += mthing->args[0] ? 0 : 16*FRACUNIT;
 		break;
 
@@ -13586,6 +13656,30 @@ static dboolean P_MapAlreadyHasStarPost(mobj_t *mobj)
 	return false;
 }
 
+static skincolornum_t P_HandleNewSpringColor(fixed_t speedval)
+{
+	if (speedval >= 70 *FRACUNIT)
+	{
+		return SKINCOLOR_RED;
+	}
+	else if (speedval > 40*FRACUNIT && speedval < 70*FRACUNIT)
+	{
+		return SKINCOLOR_YELLOW;
+	}
+	else if (speedval > 30*FRACUNIT && speedval <= 40*FRACUNIT)
+	{
+		return SKINCOLOR_BLUEBERRY;
+	}
+	else if (speedval > 0 && speedval <= 30 *FRACUNIT)
+	{
+		return SKINCOLOR_GREY;
+	}
+	else
+	{
+		return SKINCOLOR_WHITE;
+	}
+}
+
 static dboolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, dboolean *doangle)
 {
 	dboolean override = LUA_HookMapThingSpawn(mobj, mthing);
@@ -14109,6 +14203,45 @@ static dboolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, dboolea
 	case MT_SNEAKERPANELSPAWNER:
 	{
 		Obj_SneakerPanelSpawnerSetup(mobj, mthing);
+		break;
+	}
+	case MT_NEOSPRING:
+		mobj->extravalue1 = mthing->args[2] > 0 ? mthing->args[2]*FRACUNIT : mobj->info->mass;
+		mobj->extravalue2 = 0;
+
+		if (mthing->args[0] & TMSPR_NOGRAVITY)
+			mobj->flags |= MF_NOGRAVITY;
+
+		mobj->color = P_HandleNewSpringColor(mobj->extravalue1);
+		break;
+	case MT_NEODIAG:
+		mobj->extravalue1 = mthing->args[2]> 0 ? mthing->args[2]*FRACUNIT : mobj->info->mass;
+		mobj->extravalue2 = mthing->args[2] > 0 ? mthing->args[2]*FRACUNIT : mobj->info->damage;
+
+		mobj->angle = FixedAngle(mthing->angle << FRACBITS);
+		if (mthing->args[0] & TMSPR_NOGRAVITY)
+			mobj->flags |= MF_NOGRAVITY;
+		if (mthing->args[0] & TMSPR_ROTATEEXTRA)
+			mobj->angle += ANGLE_22h;
+
+		mobj->color = P_HandleNewSpringColor(max(mobj->extravalue1, mobj->extravalue2));
+
+		*doangle = false;
+		break;
+	case MT_NEOHORIZ:
+	{
+		mobj->extravalue1 = 0;
+		mobj->extravalue2 = mthing->args[2] > 0 ? mthing->args[2]*FRACUNIT : mobj->info->damage;
+
+		// Offset sprite of horizontal springs
+		angle_t a = mobj->angle + ANGLE_180;
+		mobj->sprxoff = FixedMul(mobj->radius, FINECOSINE(a >> ANGLETOFINESHIFT));
+		mobj->spryoff = FixedMul(mobj->radius, FINESINE(a >> ANGLETOFINESHIFT));
+
+		if (mthing->args[0] & TMSPR_NOGRAVITY)
+			mobj->flags |= MF_NOGRAVITY;
+
+		mobj->color = P_HandleNewSpringColor(mobj->extravalue2);
 		break;
 	}
 	default:

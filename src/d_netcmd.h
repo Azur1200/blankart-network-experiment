@@ -265,8 +265,10 @@ extern consvar_t cv_kartattraction_aoeshove;
 extern consvar_t cv_kartaltshrink_arrowbullet;
 extern consvar_t cv_kartaltshrink_arrowbulletthres;
 extern consvar_t cv_kartaltshrink_runneranger;
+extern consvar_t cv_kartaltshrink_rouletteonuse;
 
 extern consvar_t cv_kartstartboost_runnerbonus;
+extern consvar_t cv_kartsoftbump;
 
 extern consvar_t cv_kartairsquish;
 
@@ -308,6 +310,8 @@ extern consvar_t cv_kartoddsdist;
 extern consvar_t cv_kartlegacyoddsdist;
 
 extern consvar_t cv_kartspbrush;
+
+extern consvar_t cv_usegenericlapsounds;
 
 extern consvar_t cv_itemlist;
 extern consvar_t cv_kartraceranks;

@@ -1342,7 +1342,8 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 
 	if (!player->spectator)
 	{
-		dboolean losing;
+		dboolean losing = false;
+		uint8_t should_force_winloss = 0;
 		if ((gametypes[gametype]->rules & GTR_CIRCUIT)) // If in Race Mode, allow
 		{
 			// Handle the player headcount and grading BEFORE positions are finalized
@@ -1429,6 +1430,13 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 
 			losing = K_IsPlayerLosing(player); // HEY!!!! Set it AFTER K_UpdateAllPlayerPositions!!!!
 
+			should_force_winloss = LUA_HookPlayerFinish(player, false, losing);
+
+			if (should_force_winloss)
+			{
+				losing = (should_force_winloss > 1) ? false : true;
+			}
+
 			if (cv_kartvoices.value)
 			{
 				//const int32_t sfx_id = (losing ? sfx_klose : sfx_kwin);
@@ -1465,6 +1473,11 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 		}
 
 		losing = K_IsPlayerLosing(player);
+
+		if (should_force_winloss)
+		{
+			losing = (should_force_winloss > 1) ? false : true;
+		}
 
 		if (grandprixinfo.gp == true)
 		{
@@ -3854,12 +3867,29 @@ void P_DoTimeOver(player_t *player)
 		CON_LogMessage(va(M_GetText("%s ran out of time.\n"), player_names[player-players]));
 	}
 
-	player->pflags |= PF_NOCONTEST;
-	K_UpdatePowerLevelsOnFailure(player);
+	dboolean confirmloss = true;
+	uint8_t should_force_winloss = LUA_HookPlayerFinish(player, true, confirmloss);
 
-	if (G_GametypeUsesLives())
+	player->pflags |= PF_NOCONTEST;
+
+	if (should_force_winloss)
 	{
-		K_PlayerLoseLife(player);
+		confirmloss = (should_force_winloss > 1) ? false : true;
+	}
+
+	if (confirmloss)
+	{
+		K_UpdatePowerLevelsOnFailure(player);
+
+		if (G_GametypeUsesLives())
+		{
+			K_PlayerLoseLife(player);
+		}
+	}
+	else
+	{
+		// At least update the power levels...
+		K_UpdatePowerLevels(player, player->laps, false);
 	}
 
 	if (player->mo)

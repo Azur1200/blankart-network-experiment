@@ -33,6 +33,11 @@ void I_UpdateSound(void)
 
 }
 
+void I_UpdateListener(listener_t *listener)
+{
+	(void)listener;
+}
+
 void *I_GetSfx(sfxinfo_t *sfx)
 {
 	(void)sfx;
@@ -121,6 +126,11 @@ dboolean I_SongPlaying(void)
 }
 
 dboolean I_SongPaused(void)
+{
+	return false;
+}
+
+dboolean I_SongStopped(void)
 {
 	return false;
 }
@@ -278,3 +288,20 @@ void I_InitEFXArray(efx_t *efx)
 {
 	(void)efx;
 }
+
+void I_RegisterSoundStuff(void)
+{
+
+}
+
+dboolean I_3DSound(void)
+{
+	return false;
+}
+
+void I_UpdateSpeedofSoundScale(fixed_t scale)
+{
+
+}
+
+

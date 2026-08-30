@@ -194,10 +194,6 @@ enum
 	wipe_intro_final,
 	wipe_cutscene_final,
 
-	// custom intermissions
-	wipe_specinter_final,
-	wipe_multinter_final,
-
 	NUMWIPEDEFS,
 	WIPEFINALSHIFT = (wipe_level_final-wipe_level_toblack)
 };

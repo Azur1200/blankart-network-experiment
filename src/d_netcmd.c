@@ -755,6 +755,9 @@ consvar_t cv_kartlegacyoddsdist = CVAR_INIT ("kartlegacyoddsdist", "1500", CV_NE
 // SPB Rush toggle; toggles on/off the more aggressive "pressure" odds when an SPB is active
 consvar_t cv_kartspbrush = CVAR_INIT ("kartspbrush", "On", CV_NETVAR, CV_OnOff, NULL);
 
+// Uses the sounds from the general sound library instead of unique sounds for laps and finish
+consvar_t cv_usegenericlapsounds = CVAR_INIT ("usegenericlapsounds", "Off", CV_SAVE, CV_OnOff, NULL);
+
 consvar_t cv_itemlist = CVAR_INIT ("kartitemlist", "On", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartItemList_OnChange);
 
 // Time limit for Alt. Shrink
@@ -876,7 +879,10 @@ consvar_t cv_kartaltshrink_arrowbulletthres = CVAR_INIT ("kart_altshrink_arrowbu
 // If you're in Alt. Shrink state, you'll roll KRF_RUNNERAUGMENT items at earlier distances with this on.
 consvar_t cv_kartaltshrink_runneranger = CVAR_INIT ("kart_altshrink_runneranger", "Off", CV_NETVAR, CV_OnOff, NULL);
 
-consvar_t cv_kartstartboost_runnerbonus = CVAR_INIT ("kart_kartstartboost_runnerbonus", "Off", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartaltshrink_rouletteonuse = CVAR_INIT ("kart_altshrink_rouletteonuse", "On", CV_NETVAR, CV_OnOff, NULL);
+
+consvar_t cv_kartstartboost_runnerbonus = CVAR_INIT ("kart_startboost_runnerbonus", "Off", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartsoftbump = CVAR_INIT ("kart_softbump", "Off", CV_NETVAR, CV_OnOff, NULL);
 
 static CV_PossibleValue_t kartairsquish_cons_t[] = {{1, "Squish"}, {2, "Flip-over"}, {0, "None"}, {0, NULL}};
 consvar_t cv_kartairsquish = CVAR_INIT ("kartairsquish", "None", CV_NETVAR, kartairsquish_cons_t, NULL);
@@ -1685,9 +1691,6 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_closedcaptioning);
 	CV_RegisterVar(&cv_digmusicvolume);
 	CV_RegisterVar(&cv_numChannels);
-
-	// al_sound.c
-	CV_RegisterVar(&cv_soundefx);
 
 	// screen.c
 	CV_RegisterVar(&cv_fullscreen);

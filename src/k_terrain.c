@@ -752,6 +752,9 @@ void K_ProcessTerrainEffect(mobj_t *mo)
 			angle = slope->xydirection;
 		}
 
+		// Kill heavy airdrop too so you don't get softlocked.
+		K_KillAirDrop(player, PAF_AIRDROP_HEAVY);
+
 		P_DoSpringRR(player->mo, mapobjectscale,
 				FixedMul(terrain->springStrength, co),
 				FixedMul(terrain->springStrength, si),

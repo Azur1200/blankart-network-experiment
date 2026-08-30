@@ -878,3 +878,8 @@ _(SNEAKERPANELSPAWNER)
 
 // Horncode
 _(FOLLOWERHORN)
+
+// New Springs
+_(NEOSPRING)
+_(NEODIAG)
+_(NEOHORIZ)

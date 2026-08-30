@@ -55,6 +55,7 @@ extern dboolean nodeneedsauth[MAXNETNODES];
 
 extern dboolean serverrunning;
 
+int32_t Net_GetFreeAcks(dboolean urgent);
 void Net_AckTicker(void);
 
 // If reliable return true if packet sent, 0 else

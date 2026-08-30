@@ -1536,6 +1536,52 @@ dboolean LUA_HookPlayerItemReleaseUse(player_t *player, uint8_t itemType, dboole
 	return hook.status;
 }
 
+dboolean LUA_HookPlayerNextLap(player_t *player, dboolean displayplayer, dboolean localplayer)
+{
+	Hook_State hook = {};
+	if (prepare_hook(&hook, false, HOOK(PlayerNextLap)))
+	{
+		LUA_PushUserdata(gL, player, META_PLAYER);
+		lua_pushdboolean(gL, displayplayer);
+		lua_pushdboolean(gL, localplayer);
+
+		call_hooks(&hook, 1, res_true);
+	}
+
+	return hook.status;
+}
+
+dboolean LUA_HookPlayerFinalLap(player_t *player, dboolean displayplayer, dboolean localplayer)
+{
+	Hook_State hook = {};
+	if (prepare_hook(&hook, false, HOOK(PlayerFinalLap)))
+	{
+		LUA_PushUserdata(gL, player, META_PLAYER);
+		lua_pushdboolean(gL, displayplayer);
+		lua_pushdboolean(gL, localplayer);
+
+		call_hooks(&hook, 1, res_true);
+	}
+
+	return hook.status;
+}
+
+int LUA_HookPlayerFinish(player_t *player, dboolean dnf, dboolean losing)
+{
+	Hook_State hook = {};
+
+	if (prepare_hook(&hook, 0, HOOK(PlayerFinish)))
+	{
+		LUA_PushUserdata(gL, player, META_PLAYER);
+		lua_pushdboolean(gL, losing);
+		lua_pushdboolean(gL, dnf);
+
+		call_hooks(&hook, 1, res_force);
+	}
+
+	return hook.status;
+}
+
 typedef struct {
 	int32_t *target;
 	dboolean force_sink;

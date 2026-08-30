@@ -486,13 +486,16 @@ static void D_Display(void)
 
 	// save the current screen if about to wipe
 	wipe = (gamestate != wipegamestate);
+	if (wipe)
+	{
+		// MUST be set for all later
+		wipedefindex = gamestate; // wipe_xxx_toblack
+		if (gamestate == GS_TITLESCREEN && wipegamestate != GS_INTRO)
+			wipedefindex = wipe_titlescreen_toblack;
+	}
+
 	if (wipe && wipetypepre != INT16_MAX)
 	{
-		// set for all later
-		wipedefindex = gamestate; // wipe_xxx_toblack
-		if (gamestate == GS_MENU && wipegamestate != GS_INTRO)
-			wipedefindex = wipe_menu_toblack;
-
 		if (wipetypepre < 0 || !F_WipeExists(wipetypepre))
 			wipetypepre = wipedefs[wipedefindex];
 
@@ -778,7 +781,7 @@ static void D_WipeTick(dboolean menu)
 		D_ProcessEvents();
 
 	// Update the network so we don't cause timeouts
-	NetKeepAlive();
+	NetKeepAlive_NoTImeToWait();
 
 	HU_Ticker();
 	if (menu)
@@ -913,7 +916,10 @@ void D_WipeLoop(wipelooptype_t type, uint8_t wipetype, dboolean drawMenu)
 				ST_runTitleCard();
 		}
 		else
+		{
+			NetKeepAlive_NoTImeToWait();
 			renderisnewtic = false;
+		}
 
 		// draw loop
 		R_SetTimeFrac(g_time.timefrac);

@@ -18,6 +18,7 @@
 #include "sounds.h"
 #include "command.h"
 #include "m_fixed.h"
+#include "tables.h"
 
 #ifdef HAVE_OPENAL
 #include "AL/al.h"
@@ -366,6 +367,7 @@ void I_ShutdownMusic(void);
 musictype_t I_SongType(void);
 dboolean I_SongPlaying(void);
 dboolean I_SongPaused(void);
+dboolean I_SongStopped(void);
 
 /// ------------------------
 //  MUSIC EFFECTS
@@ -478,7 +480,12 @@ void I_DeleteGlobalEFX(void);
 
 void I_InitEFXArray(efx_t *efx);
 
-extern consvar_t cv_soundefx;
+void I_UpdateListener(listener_t *listener);
+
+void I_RegisterSoundStuff(void);
+
+dboolean I_3DSound(void);
+void I_UpdateSpeedofSoundScale(fixed_t scale);
 
 #ifdef __cplusplus
 } // extern "C"

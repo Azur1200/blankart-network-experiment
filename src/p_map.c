@@ -264,6 +264,7 @@ static dboolean P_ShouldSpringForceAngle(mobj_t *spring, ticcmd_t *cmd)
 		case MT_REDDIAG:
 		case MT_BLUEDIAG:
 		case MT_GRAYDIAG:
+		case MT_NEODIAG:
 			if (spring->args[0] & TMSPR_FORCEANGLE)
 				return true;
 			break;
@@ -271,6 +272,7 @@ static dboolean P_ShouldSpringForceAngle(mobj_t *spring, ticcmd_t *cmd)
 		case MT_REDHORIZ:
 		case MT_BLUEHORIZ:
 		case MT_GRAYHORIZ:
+		case MT_NEOHORIZ:
 			if (spring->args[1] & TMSPR_FORCEANGLE)
 				return true;
 			break;
@@ -288,11 +290,12 @@ static dboolean P_ShouldSpringForceAngle(mobj_t *spring, ticcmd_t *cmd)
 
 void
 P_DoSpringRR
-(		mobj_t * object,
-		fixed_t scaleVal,
-   fixed_t vertispeed,
-   fixed_t horizspeed,
-   angle_t finalAngle)
+(
+	mobj_t * object,
+	fixed_t scaleVal,
+	fixed_t vertispeed,
+	fixed_t horizspeed,
+	angle_t finalAngle)
 {
 	if (object->eflags & MFE_SPRUNG)
 	{
@@ -372,11 +375,17 @@ dboolean P_DoSpring(mobj_t *spring, mobj_t *object)
 		objscale = max(object->scale, mapobjectscale);
 	}
 	
-	const fixed_t hscale = mapobjectscale + (mapobjectscale - objscale);
-	const fixed_t vscale = mapobjectscale + (objscale - mapobjectscale);
-	fixed_t offx, offy;
 	fixed_t vertispeed = spring->info->mass;
 	fixed_t horizspeed = spring->info->damage;
+	fixed_t savemomx = object->momx;
+	fixed_t savemomy = object->momy;
+	dboolean newspring = (spring->info->painchance == INT32_MAX);
+
+	if (newspring)
+	{
+		vertispeed = spring->extravalue1;
+		horizspeed = spring->extravalue2;
+	}
 
 	if (object->eflags & MFE_SPRUNG) // Object was already sprung this tic
 		return false;
@@ -385,13 +394,20 @@ dboolean P_DoSpring(mobj_t *spring, mobj_t *object)
 	if (object->player && object->player->spectator)
 		return false;
 
-	object->standingslope = NULL; // Okay, now we can't return - no launching off at silly angles for you.
+	if (vertispeed == 0 && horizspeed == 0 && newspring)
+		return false;
 
-	object->eflags |= MFE_SPRUNG; // apply this flag asap!
+	object->standingslope = NULL; // Okay, now we can't return - no launching off at silly angles for you.
+	object->terrain = NULL;
+
+	if (!newspring)
+	{
+		object->eflags |= MFE_SPRUNG; // apply this flag asap!
+	}
 
 	spring->flags &= ~(MF_SOLID|MF_SPECIAL); // De-solidify
 
-	if (horizspeed && vertispeed) // Mimic SA
+	if (horizspeed && vertispeed && !newspring) // Mimic SA
 	{
 		object->momx = object->momy = 0;
 		P_TryMove(object, spring->x, spring->y, true, NULL);
@@ -406,7 +422,11 @@ dboolean P_DoSpring(mobj_t *spring, mobj_t *object)
 		object->z = spring->z - object->height - 1;
 	else
 	{
+		fixed_t offx, offy;
+
 		// Horizontal springs teleport you in FRONT of them.
+		savemomx = object->momx;
+		savemomy = object->momy;
 		object->momx = object->momy = 0;
 
 		// Overestimate the distance to position you at
@@ -427,22 +447,36 @@ dboolean P_DoSpring(mobj_t *spring, mobj_t *object)
 		P_TryMove(object, spring->x + offx, spring->y + offy, true, NULL);
 	}
 
-	if (vertispeed)
-		object->momz = FixedMul(vertispeed,FixedSqrt(FixedMul(vscale, spring->scale)));
-
-	if (horizspeed)
+	if (newspring)
 	{
-		if (!object->player)
-			P_InstaThrust(object, spring->angle, FixedMul(horizspeed,FixedSqrt(FixedMul(hscale, spring->scale))));
-		else
+		object->momx = savemomx;
+		object->momy = savemomy;
+
+		P_DoSpringRR(object, mapobjectscale, vertispeed, horizspeed,
+					 spring->angle);
+	}
+	else
+	{
+		const fixed_t hscale = mapobjectscale + (mapobjectscale - objscale);
+		const fixed_t vscale = mapobjectscale + (objscale - mapobjectscale);
+
+		if (vertispeed)
+			object->momz = FixedMul(vertispeed,FixedSqrt(FixedMul(vscale, spring->scale)));
+
+		if (horizspeed)
 		{
-			fixed_t finalSpeed = FixedDiv(horizspeed, hscale);
-			fixed_t pSpeed = object->player->speed;
+			if (!object->player)
+				P_InstaThrust(object, spring->angle, FixedMul(horizspeed,FixedSqrt(FixedMul(hscale, spring->scale))));
+			else
+			{
+				fixed_t finalSpeed = FixedDiv(horizspeed, hscale);
+				fixed_t pSpeed = object->player->speed;
 
-			if (pSpeed > finalSpeed)
-				finalSpeed = pSpeed;
+				if (pSpeed > finalSpeed)
+					finalSpeed = pSpeed;
 
-			P_InstaThrust(object, spring->angle, FixedMul(finalSpeed,FixedSqrt(FixedMul(hscale, spring->scale))));
+				P_InstaThrust(object, spring->angle, FixedMul(finalSpeed,FixedSqrt(FixedMul(hscale, spring->scale))));
+			}
 		}
 	}
 
@@ -478,6 +512,9 @@ dboolean P_DoSpring(mobj_t *spring, mobj_t *object)
 			// clear air thrust target speed too
 			object->player->airdriftspeed = 0;
 		}
+
+		// Kill heavy airdrop too so you don't get softlocked.
+		K_KillAirDrop(object->player, PAF_AIRDROP_HEAVY);
 	}
 	return true;
 }
@@ -4047,35 +4084,36 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	mmomx = mo->player->rmomx;
 	mmomy = mo->player->rmomy;
 
-	impactspeed = R_PointToDist2(0, 0, mmomx, mmomy);
-
-	uint32_t bumpspark = K_GetBumpSpark();
-
-	// The easy solution is to do this :^)
-	uint32_t basecharge = min(mo->player->driftcharge, K_GetKartDriftSparkValue(mo->player));
-
-	if ((bumpspark < BUMPSPARK_ALL) ||
-	    (modeattacking != ATTACKING_NONE && G_CompatLevel(0x000A)))
+	if (!mo->player->walltransfered)
 	{
-		if (!bumpspark)
+		uint32_t bumpspark = K_GetBumpSpark();
+
+		// The easy solution is to do this :^)
+		uint32_t basecharge = min(mo->player->driftcharge, K_GetKartDriftSparkValue(mo->player));
+
+		if ((bumpspark < BUMPSPARK_ALL) ||
+			(modeattacking != ATTACKING_NONE && G_CompatLevel(0x000A)))
 		{
-			// Bumps removing spark would be less frustrating if you didn't get your drift
-			// removed too. Losing sparks is a fair punishment, drifting RIGHT for
-			// daring to scrape a wall for a wide LEFT turn is horrendous and leads to
-			// awful gluewalling.
-			// TL;DR: I hate wrongdrifts and hopefully this is an okay middle ground.
-			mo->player->drift = 0;
+			if (!bumpspark)
+			{
+				// Bumps removing spark would be less frustrating if you didn't get your drift
+				// removed too. Losing sparks is a fair punishment, drifting RIGHT for
+				// daring to scrape a wall for a wide LEFT turn is horrendous and leads to
+				// awful gluewalling.
+				// TL;DR: I hate wrongdrifts and hopefully this is an okay middle ground.
+				mo->player->drift = 0;
+			}
+
+			mo->player->driftcharge = (bumpspark == BUMPSPARK_RESET100) ? basecharge : 0;
 		}
 
-		mo->player->driftcharge = (bumpspark == BUMPSPARK_RESET100) ? basecharge : 0;
-	}
+		// Regardless of bumpspark, tell bots to stop drifting if they bonk a wall.
+		K_BotSetDriftState(mo->player, DRIFTSTATE_AUTO, TICRATE);
 
-	// Regardless of bumpspark, tell bots to stop drifting if they bonk a wall.
-	K_BotSetDriftState(mo->player, DRIFTSTATE_AUTO, TICRATE);
-
-	if (!cv_kartbumpspring.value || (modeattacking != ATTACKING_NONE && G_CompatLevel(0x000A)))
-	{
-		K_ResetPogoSpring(mo->player);
+		if (!cv_kartbumpspring.value || (modeattacking != ATTACKING_NONE && G_CompatLevel(0x000A)))
+		{
+			K_ResetPogoSpring(mo->player);
+		}
 	}
 
 	slidemo = mo;
@@ -4096,18 +4134,18 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 		// Some walls aren't bouncy even if you are
 		// wall transfer only lines always make players slide along em even if they'd be bouncy otherwise
 		// todo: let wall transfer override the tripwire case too?
-		if (result->line != NULL)
-		{
-			tmxmove = mmomx;
-			tmymove = mmomy;
-			P_ClipAABBMoveToLine(result->line); // clip the moves
-		}
 		if (slideline)
 		{
 			// SRB2Kart: Non-bouncy line!
 			P_SlideMove(mo, result);
 			dontpenalize = true;
 			return;
+		}
+		if (result->line != NULL)
+		{
+			tmxmove = mmomx;
+			tmymove = mmomy;
+			P_ClipAABBMoveToLine(result->line); // clip the moves
 		}
 
 		K_SpawnBumpEffect(mo);

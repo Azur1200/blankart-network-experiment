@@ -3070,7 +3070,7 @@ void K_UseItem_Mini(player_t *player, dboolean itemjustdown, dboolean onground, 
 		K_BotResetItemConfirm(player, false);
 
 		// Shrink isn't very strong on its own--give a freebie roll to really bring down the hurt!
-		if (player->itemamount <= 0)
+		if ((player->itemamount <= 0) && (cv_kartaltshrink_rouletteonuse.value))
 		{
 			K_StartRoulette(player, KROULETTETYPE_SHRINK);
 		}

@@ -654,6 +654,7 @@ typedef enum
 
 // Create any new ticcmds and broadcast to other players.
 void NetKeepAlive(void);
+void NetKeepAlive_NoTImeToWait(void);
 void NetUpdate(void);
 
 void SV_StartSinglePlayerServer(int32_t dogametype, dboolean donetgame);

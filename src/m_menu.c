@@ -1508,6 +1508,9 @@ static dboolean M_GamestateCanOpenMenu(void)
 	}
 }
 
+// Prevent go back+systemmenu on the same key from conflicting.
+int8_t pausehack = 0;
+
 //
 // M_Responder
 //
@@ -1542,7 +1545,10 @@ dboolean M_Responder(event_t *ev)
 			return true;
 
 		// dirty hack: for customising controls, I want only buttons/keys/axes, not mouse
-		if (messagebox.callback.handler && !(ev->type == ev_mouse || (ev->type == ev_joystick && messagebox.callback.handler != M_ChangecontrolResponse)))
+		if (ev->type == ev_mouse || ev->type == ev_gyroscope || ev->type == ev_accelerometer)
+			return false;
+
+		if (messagebox.callback.handler && !(ev->type == ev_joystick && messagebox.callback.handler != M_ChangecontrolResponse))
 			messagebox.callback.handler(ev);
 
 		M_SetMenuDelay(0);
@@ -1617,8 +1623,10 @@ dboolean M_Responder(event_t *ev)
 				HU_clearChatChars();
 				chat_on = false;
 			}
-			else
+			else if (pausehack == 0)
+			{
 				M_StartControlPanel();
+			}
 			return true;
 		}
 
@@ -2660,6 +2668,7 @@ static dboolean M_HandleGoBack(int32_t thisMenuKey)
 		}
 		M_ExitMenu();
 
+		pausehack = MENUDELAYTIME;
 		return true;
 	}
 
@@ -3343,6 +3352,11 @@ void M_Ticker(void)
 		{
 			menucmd[i].delay--;
 		}
+	}
+
+	if (pausehack > 0)
+	{
+		pausehack--;
 	}
 
 	if (noFurtherInput <= 0)
@@ -10242,6 +10256,9 @@ static void M_ChangecontrolResponse(event_t *ev)
 	int32_t        ch = ev->data1;
 
 	if (ev->device > 0 && G_GetDevicePlayer(ev->device) != setupcontrolplayer-1)
+		return;
+
+	if (ev->type == ev_gyroscope || ev->type == ev_accelerometer)
 		return;
 
 	if (ev->type == ev_joystick)

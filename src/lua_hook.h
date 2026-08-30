@@ -98,6 +98,9 @@ automatically.
 	X (KartStripItems),/*SRB2KART*/\
 	X (KartStripOther),/*SRB2KART*/\
 	X (CanPickupItem),/*SRB2KART*/\
+	X (PlayerNextLap),/* K_HandleLapIncrement */\
+	X (PlayerFinalLap),/* K_HandleLapIncrement */\
+	X (PlayerFinish), /* P_DoPlayerExit, P_DoTimeOver */\
 
 #define STRING_HOOK_LIST(X) \
 	X (SpecialExecute),\
@@ -201,6 +204,9 @@ dboolean LUA_HookKartStripItems(player_t *player, uint8_t item); // SRB2Kart: Ho
 dboolean LUA_HookKartStripOther(player_t *player); // SRB2Kart: Hook for K_StripOther.
 dboolean LUA_HookCanPickupItem(player_t *player, uint8_t weapon, dboolean *force); // SRB2Kart: Hook for P_CanPickupItem.
 int		LUA_HookDropHnextList(mobj_t *mobj, mobjtype_t droptype, dboolean *orbit, dboolean *dropall); // SRB2Kart: Hook for K_DropHnextList.
+dboolean LUA_HookPlayerNextLap(player_t *player, dboolean displayplayer, dboolean localplayer); // BlanKart: Hook for the lap increment sequence
+dboolean LUA_HookPlayerFinalLap(player_t *player, dboolean displayplayer, dboolean localplayer); // BlanKart: Hook for the final lap sequence
+int LUA_HookPlayerFinish(player_t *player, dboolean dnf, dboolean losing);
 
 #ifdef __cplusplus
 } // extern "C"

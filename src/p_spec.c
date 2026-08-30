@@ -2035,16 +2035,40 @@ static void K_HandleLapIncrement(player_t *player)
 				player->starpostangle = player->starpostx = player->starposty = player->starpostz = player->starpostflip = 0;
 			}
 
-			if (P_IsDisplayPlayer(player))
+			dboolean lastlapsound = true;
+			dboolean nextlapsound = true;
+			const dboolean localplayer = P_IsLocalPlayer(player);
+			const dboolean displayplayer = P_IsDisplayPlayer(player);
+
+			if (player->laps == numlaps) // final lap
+			{
+				lastlapsound = (!LUA_HookPlayerFinalLap(player, displayplayer, localplayer));
+			}
+			else if ((player->laps > 1) && (player->laps < numlaps)) // non-final lap
+			{
+				nextlapsound = (!LUA_HookPlayerNextLap(player, displayplayer, localplayer));
+			}
+
+			if (displayplayer)
 			{
 				if (player->laps == numlaps) // final lap
-					S_StartSound(NULL, sfx_s3k68);
+				{
+					if (lastlapsound)
+					{
+						S_StartSound(NULL, ((cv_usegenericlapsounds.value) ? sfx_s3k68 : sfx_finlap));
+					}
+				}
 				else if ((player->laps > 1) && (player->laps < numlaps)) // non-final lap
-					S_StartSound(NULL, sfx_s221);
+				{
+					if (nextlapsound)
+					{
+						S_StartSound(NULL, ((cv_usegenericlapsounds.value) ? sfx_s221 : sfx_nxtlap));
+					}
+				}
 				else if (player->laps > numlaps)
 				{
 					// finished
-					S_StartSound(NULL, sfx_s3k6a);
+					S_StartSound(NULL, ((cv_usegenericlapsounds.value) ? sfx_s3k6a : sfx_rcefin));
 				}
 			}
 			else
@@ -7181,6 +7205,8 @@ void P_InitSpecials(void)
 
 	// Set the map object scale
 	mapobjectscale = mapheaderinfo[gamemap-1]->mobj_scale;
+
+	I_UpdateSpeedofSoundScale(mapobjectscale);
 
 	// Set the default gravity. Custom gravity overrides this setting.
 	gravity = mapheaderinfo[gamemap-1]->gravity;

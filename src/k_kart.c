@@ -620,8 +620,10 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartaltshrink_arrowbullet);
 	CV_RegisterVar(&cv_kartaltshrink_arrowbulletthres);
 	CV_RegisterVar(&cv_kartaltshrink_runneranger);
+	CV_RegisterVar(&cv_kartaltshrink_rouletteonuse);
 
 	CV_RegisterVar(&cv_kartstartboost_runnerbonus);
+	CV_RegisterVar(&cv_kartsoftbump);
 
 	CV_RegisterVar(&cv_kartairsquish);
 
@@ -631,6 +633,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartlegacyoddsdist);
 
 	CV_RegisterVar(&cv_kartspbrush);
+
+	CV_RegisterVar(&cv_usegenericlapsounds);
 
 	CV_RegisterVar(&cv_kartdriftsounds);
 	CV_RegisterVar(&cv_kartdriftefx);
@@ -1119,6 +1123,9 @@ dboolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, dboolean bounce, dboolean 
 
 	const dboolean mobj1_intercepting = ((mobj1->player) && (K_InterceptArrowBullet(mobj1->player)));
 	const dboolean mobj2_intercepting = ((mobj2->player) && (K_InterceptArrowBullet(mobj2->player)));
+	const dboolean softbump = (cv_kartsoftbump.value 
+		&& mobj1->player && mobj2->player
+		&& !(K_GetShieldFromPlayer(mobj1->player) == KSHIELD_BUBBLE || K_GetShieldFromPlayer(mobj2->player) == KSHIELD_BUBBLE));
 
 	// The other player is an Arrow Bullet, ignore them.
 	if (mobj1->player && K_AltShrinkArrowBulletCondition(mobj1->player) && (!mobj2_intercepting))
@@ -1138,13 +1145,26 @@ dboolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, dboolean bounce, dboolean 
 	if (solid == true && mass1 > 0)
 		mass2 = mass1;
 	else
-		mass2 = K_GetMobjWeight(mobj2, mobj1);
+	{
+		if (softbump)
+		{
+			mass2 = mass1;
+		}
+		else
+		{
+			mass2 = K_GetMobjWeight(mobj2, mobj1);
+		}
+	}
 
 	// Adds the OTHER player's momentum times a bunch, for the best chance of getting the correct direction
 	distx = (mobj1->x + mobj2->momx*3) - (mobj2->x + mobj1->momx*3);
 	disty = (mobj1->y + mobj2->momy*3) - (mobj2->y + mobj1->momy*3);
 
 	force = K_GetBounceForce(mobj1, mobj2, &distx, &disty, true);
+	if (softbump)
+	{
+		force = 3 * force / 8;
+	}
 
 	if (force == 0)
 	{
@@ -1153,7 +1173,14 @@ dboolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, dboolean bounce, dboolean 
 
 	if (bounce == true && mass2 > 0) // Perform a Goomba Bounce.
 	{
-		mobj1->momz = -mobj1->momz;
+		if (softbump)
+		{
+			mobj1->momz = -(mobj1->momz) / 3;
+		}
+		else
+		{
+			mobj1->momz = -mobj1->momz;
+		}
 	}
 	else
 	{
@@ -7948,6 +7975,16 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	player->mo->spritexoffset = 0;
 	player->mo->spriteyoffset = 0;
 
+	// flips and crashes use centred pivots
+	if (skins[player->skin]->flags & SF_OLDPIVOTS || (player->flipovertimer > 0 || player->crash_state != 0))
+	{
+		player->mo->renderflags2 &= ~RF2_PIVOTATOFFSETS;
+	}
+	else
+	{
+		player->mo->renderflags2 |= RF2_PIVOTATOFFSETS;
+	}
+
 	if (player->loop.radius)
 	{
 		// Offset sprite Z position so wheels touch top of
@@ -10510,15 +10547,40 @@ dboolean K_InterceptArrowBullet(player_t *player)
 // 1 + 0.25 (1.25) is the (hardcoded) handleboost of a Sneaker.
 #define HANDLEBOOSTTHRESHOLD (FRACUNIT / 4)
 
+#define SLIPTILT_DELTA (ANGLE_11hh / 4)
+
+static dboolean K_DashAreaSliptideCondition(const player_t* player)
+{
+	if (!player)
+		return false;  // NULL player
+
+	if (player->dashareapower < HANDLEBOOSTTHRESHOLD)
+		return false;  // Dash area can't possibly make us fast enough
+
+	const fixed_t speedPercent = FixedDiv(player->speed, K_GetKartSpeed(player, false, false));
+
+	const dboolean sliptiding =
+	    K_Sliptiding(player) && (abs(player->aizdrifttilt) > SLIPTILT_DELTA);
+
+	const fixed_t slip_percent =
+	    (sliptiding) ? (3 * FRACUNIT / 4) : (FRACUNIT + HANDLEBOOSTTHRESHOLD);
+
+	// Allow sliptides if you're moving above 125% speed. When you're still sliptiding, don't
+	// kill it until you go below 75%
+	return (speedPercent > slip_percent);
+}
+
+#undef SLIPTILT_DELTA
+
 // Generalized sliptide conditions.
 static dboolean K_OtherSliptideCondition(player_t* player)
 {
 	if (!player)
 		return false;
 
-	return (
-	    K_SMonitorSliptideCondition(player) || K_AltShrinkSliptideCondition(player) ||
-	    (cv_handleboostslip.value && (player->handleboost >= HANDLEBOOSTTHRESHOLD)));
+	return (K_SMonitorSliptideCondition(player) || K_AltShrinkSliptideCondition(player) ||
+		K_DashAreaSliptideCondition(player) ||
+		(cv_handleboostslip.value && (player->handleboost >= HANDLEBOOSTTHRESHOLD)));
 }
 
 #undef HANDLEBOOSTTHRESHOLD

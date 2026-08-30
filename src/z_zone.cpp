@@ -73,7 +73,7 @@ typedef struct memblock_s
 #define MEMBLOCK(x) (memblock_t *)((uintptr_t)(x) - ALIGNPAD - sizeof(memblock_t))
 
 // both the head and tail of the zone memory block list
-static memblock_t head;
+static memblock_t headlist[NUM_PURGETAGS];
 
 static constexpr size_t kLevelLargePoolBlockSize = sizeof(mobj_t);
 static constexpr size_t kLevelMedPoolBlockSize = sizeof(precipmobj_t);
@@ -103,10 +103,15 @@ static void Command_Memdump_f(void);
 void Z_Init(void)
 {
 	uint32_t total, memfree;
+	size_t i;
 
-	memset(&head, 0x00, sizeof(head));
+	memset(&headlist, 0x00, sizeof(headlist));
 
-	head.next = head.prev = &head;
+
+	for (i = 0; i < NUM_PURGETAGS; i++)
+	{
+		headlist[i].next = headlist[i].prev = &headlist[i];
+	}
 
 	memfree = I_GetFreeMem(&total)>>20;
 	CONS_Printf("System memory: %uMB - Free: %uMB\n", total>>20, memfree);
@@ -188,7 +193,7 @@ static void *xm(size_t size)
 	if (p == NULL)
 	{
 		// Oh crumbs: we're out of heap. Try purging the cache and reallocating.
-		Z_FreeTags(PU_PURGELEVEL, INT32_MAX);
+		Z_FreeTags(PU_PURGELEVEL, NUM_PURGETAGS-1);
 		p = malloc(padedsize);
 
 		if (p == NULL)
@@ -229,9 +234,9 @@ void *Z_Malloc2(size_t size, int32_t tag, void *user, int32_t alignbits,
 	ptr = MEMORY(block);
 	I_Assert((intptr_t)ptr % alignof (max_align_t) == 0);
 
-	block->next = head.next;
-	block->prev = &head;
-	head.next = block;
+	block->next = headlist[tag].next;
+	block->prev = &headlist[tag];
+	headlist[tag].next = block;
 	block->next->prev = block;
 
 	block->tag = tag;
@@ -359,6 +364,7 @@ void *Z_Realloc2(void *ptr, size_t size, int32_t tag, void *user, int32_t alignb
 void Z_FreeTags(int32_t lowtag, int32_t hightag)
 {
 	memblock_t *block, *next;
+	size_t i;
 	TracyCZone(__zone, true);
 
 	Z_CheckHeap(420);
@@ -374,11 +380,14 @@ void Z_FreeTags(int32_t lowtag, int32_t hightag)
 
 	{
 		TracyCZoneN(__zone, "Z_Free Blocks", true);
-		for (block = head.next; block != &head; block = next)
+		for (i = lowtag; i <= hightag; i++)
 		{
-			next = block->next; // get link before freeing
-			if (block->tag >= lowtag && block->tag <= hightag)
-			Z_Free(MEMORY(block));
+			for (block = headlist[i].next; block != &headlist[i]; block = next)
+			{
+				next = block->next; // get link before freeing
+
+				Z_Free(MEMORY(block));
+			}
 		}
 		TracyCZoneEnd(__zone);
 	}
@@ -395,18 +404,20 @@ void Z_IterateTags(int32_t lowtag, int32_t hightag, dboolean (*iterfunc)(void *)
 {
 	memblock_t *block, *next;
 	TracyCZone(__zone, true);
+	size_t i;
 
 	if (!iterfunc)
 		I_Error("Z_IterateTags: no iterator function was given");
 
-	for (block = head.next; block != &head; block = next)
+	for (i = lowtag; i <= hightag; i++)
 	{
-		next = block->next; // get link before possibly freeing
-
-		if (block->tag >= lowtag && block->tag <= hightag)
+		for (block = headlist[i].next; block != &headlist[i]; block = next)
 		{
+			next = block->next; // get link before possibly freeing
+
 			void *mem = MEMORY(block);
 			dboolean free = iterfunc(mem);
+
 			if (free)
 				Z_Free(mem);
 		}
@@ -438,7 +449,7 @@ void Z_CheckMemCleanup(void)
 	if (nextcleanup-- == 0)
 	{
 		nextcleanup = CLEANUPCOUNT;
-		Z_FreeTags(PU_PURGELEVEL, INT32_MAX);
+		Z_FreeTags(PU_PURGELEVEL, NUM_PURGETAGS-1);
 	}
 }
 
@@ -452,58 +463,71 @@ void Z_CheckHeap(int32_t i)
 {
 	memblock_t *block;
 	uint32_t blocknumon = 0;
+	size_t j;
 	void *given;
 	TracyCZone(__zone, true);
 
-	for (block = head.next; block != &head; block = block->next)
+	for (j = 0; j < NUM_PURGETAGS; j++)
 	{
-		blocknumon++;
-		given = MEMORY(block);
+		for (block = headlist[j].next; block != &headlist[j]; block = block->next)
+		{
+			blocknumon++;
+			given = MEMORY(block);
 #ifdef ZDEBUG
-		CONS_Debug(DBG_MEMORY, "block %u owned by %s:%d\n",
-			blocknumon, block->ownerfile, block->ownerline);
+			CONS_Debug(DBG_MEMORY, "block %u owned by %s:%d\n",
+				blocknumon, block->ownerfile, block->ownerline);
 #endif
 #ifdef HAVE_VALGRIND
-		if (RUNNING_ON_VALGRIND && !VALGRIND_MEMPOOL_EXISTS(block))
-		{
-			I_Error("Z_CheckHeap %d: block %u"
-				"(owned by %s:%d)"
-				" should not exist", i, blocknumon,
-				block->ownerfile, block->ownerline
-			);
-		}
+			if (RUNNING_ON_VALGRIND && !VALGRIND_MEMPOOL_EXISTS(block))
+			{
+				I_Error("Z_CheckHeap %d: block %u"
+					"(owned by %s:%d)"
+					" should not exist", i, blocknumon,
+					block->ownerfile, block->ownerline
+				);
+			}
 #endif
-		if (block->user != NULL && *(block->user) != given)
-		{
-			I_Error("Z_CheckHeap %d: block %u"
-				"(owned by %s:%d)"
-				" doesn't have a proper user", i, blocknumon,
-				block->ownerfile, block->ownerline
-			);
-		}
-		if (block->next->prev != block)
-		{
-			I_Error("Z_CheckHeap %d: block %u"
-				"(owned by %s:%d)"
-				" lacks proper backlink", i, blocknumon,
-				block->ownerfile, block->ownerline
-			);
-		}
-		if (block->prev->next != block)
-		{
-			I_Error("Z_CheckHeap %d: block %u"
-				"(owned by %s:%d)"
-				" lacks proper forward link", i, blocknumon,
-				block->ownerfile, block->ownerline
-			);
-		}
-		if (block->id != ZONEID)
-		{
-			I_Error("Z_CheckHeap %d: block %u"
-				"(owned by %s:%d)"
-				" have the wrong ID", i, blocknumon,
-				block->ownerfile, block->ownerline
-			);
+			if (block->user != NULL && *(block->user) != given)
+			{
+				I_Error("Z_CheckHeap %d: block %u"
+					"(owned by %s:%d)"
+					" doesn't have a proper user", i, blocknumon,
+					block->ownerfile, block->ownerline
+				);
+			}
+			if (block->next->prev != block)
+			{
+				I_Error("Z_CheckHeap %d: block %u"
+					"(owned by %s:%d)"
+					" lacks proper backlink", i, blocknumon,
+					block->ownerfile, block->ownerline
+				);
+			}
+			if (block->prev->next != block)
+			{
+				I_Error("Z_CheckHeap %d: block %u"
+					"(owned by %s:%d)"
+					" lacks proper forward link", i, blocknumon,
+					block->ownerfile, block->ownerline
+				);
+			}
+			if (block->id != ZONEID)
+			{
+				I_Error("Z_CheckHeap %d: block %u"
+					"(owned by %s:%d)"
+					" have the wrong ID", i, blocknumon,
+					block->ownerfile, block->ownerline
+				);
+			}
+
+			if (block->tag != j)
+			{
+				I_Error("Z_CheckHeap %d: block %u"
+					"(owned by %s:%d)"
+					" block is contained in the wrong headlist (got: %d expected: %zu)", i, blocknumon,
+					block->ownerfile, block->ownerline , block->tag, j
+				);
+			}
 		}
 	}
 
@@ -541,6 +565,14 @@ void Z_ChangeTag(void *ptr, int32_t tag)
 	if (tag >= PU_PURGELEVEL && block->user == NULL)
 		I_Error("Internal memory management error: "
 			"tried to make block purgable but it has no owner");
+
+	block->prev->next = block->next;
+	block->next->prev = block->prev;
+
+	block->next = headlist[tag].next;
+	block->prev = &headlist[tag];
+	headlist[tag].next = block;
+	block->next->prev = block;
 
 	block->tag = tag;
 }
@@ -591,13 +623,15 @@ void Z_SetUser(void *ptr, void **newuser)
 size_t Z_TagsUsage(int32_t lowtag, int32_t hightag)
 {
 	size_t cnt = 0;
-	memblock_t *rover;
+	memblock_t *head; // why was this called rover before?????
+	size_t i;
 
-	for (rover = head.next; rover != &head; rover = rover->next)
+	for (i = lowtag; i <= hightag; i++)
 	{
-		if (rover->tag < lowtag || rover->tag > hightag)
-			continue;
-		cnt += rover->size + sizeof *rover;
+		for (head = headlist[i].next; head != &headlist[i]; head = head->next)
+		{
+			cnt += head->size + sizeof *head;
+		}
 	}
 
 	return cnt;
@@ -630,7 +664,7 @@ static void Command_Memfree_f(void)
 	CONS_Printf(M_GetText("Level (pooled)         : %7s KB\n"), sizeu1(Z_LevelPoolUsage()>>10));
 	CONS_Printf(M_GetText("Special thinker        : %7s KB\n"), sizeu1(Z_TagUsage(PU_LEVSPEC)>>10));
 	CONS_Printf(M_GetText("All purgable           : %7s KB\n"),
-		sizeu1(Z_TagsUsage(PU_PURGELEVEL, INT32_MAX)>>10));
+		sizeu1(Z_TagsUsage(PU_PURGELEVEL, NUM_PURGETAGS-1)>>10));
 
 #ifdef HWRENDER
 	if (rendermode == render_opengl)
@@ -657,21 +691,24 @@ static void Command_Memfree_f(void)
 static void Command_Memdump_f(void)
 {
 	memblock_t *block;
-	int32_t mintag = 0, maxtag = INT32_MAX;
+	int32_t mintag = 0, maxtag = NUM_PURGETAGS-1;
+	int32_t check;
 	int32_t i;
 
-	if ((i = COM_CheckParm("-min")))
-		mintag = atoi(COM_Argv(i + 1));
+	if ((check = COM_CheckParm("-min")))
+		mintag = atoi(COM_Argv(check + 1));
 
-	if ((i = COM_CheckParm("-max")))
-		maxtag = atoi(COM_Argv(i + 1));
+	if ((check = COM_CheckParm("-max")))
+		maxtag = atoi(COM_Argv(check + 1));
 
-	for (block = head.next; block != &head; block = block->next)
-		if (block->tag >= mintag && block->tag <= maxtag)
+	for (i = mintag; i <= maxtag; i++)
+	{
+		for (block = headlist[i].next; block != &headlist[i]; block = block->next)
 		{
 			const char *filename = strrchr(block->ownerfile, PATHSEP[0]);
-			CONS_Printf("[%3d] %s (%s) bytes @ %s:%d\n", block->tag, sizeu1(block->size), sizeu2(block->realsize), filename ? filename + 1 : block->ownerfile, block->ownerline);
+			CONS_Printf("[%3d] %s (%s) bytes @ %s:%d tag: %d (%d)\n", block->tag, sizeu1(block->size), sizeu2(block->realsize), filename ? filename + 1 : block->ownerfile, block->ownerline, block->tag, i);
 		}
+	}
 }
 
 /** Creates a copy of a string.
