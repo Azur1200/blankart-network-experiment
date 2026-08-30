@@ -6826,9 +6826,6 @@ static void K_MoveHeldObjects(player_t *player)
 
 					cur->flags &= ~MF_NOCLIPTHING;
 
-					if ((player->mo->eflags & MFE_VERTICALFLIP) != (cur->eflags & MFE_VERTICALFLIP))
-						K_FlipFromObject(cur, player->mo);
-
 					if (!cur->health)
 					{
 						cur = curnext;
@@ -6854,17 +6851,45 @@ static void K_MoveHeldObjects(player_t *player)
 						continue;
 					}
 
+					if ((player->mo->eflags & MFE_VERTICALFLIP) != (cur->eflags & MFE_VERTICALFLIP))
+					{
+						cur->eflags = (cur->eflags & ~MFE_VERTICALFLIP)|(player->mo->eflags & MFE_VERTICALFLIP);
+						cur->flags2 = (cur->flags2 & ~MF2_OBJECTFLIP)|(player->mo->flags2 & MF2_OBJECTFLIP);
+						
+						if ((cur->eflags & MFE_VERTICALFLIP))
+						{
+							cur->z += player->mo->height - cur->height;
+						}
+
+						P_ThingHeightClip(cur);
+						if (P_MobjWasRemoved(cur))
+						{
+							cur = curnext;
+							continue;
+						}
+					}
+
 					// Shrink your items if the player shrunk too.
 					P_SetScale(cur, (cur->destscale = FixedMul(FixedDiv(cur->extravalue1, radius), player->mo->scale)));
+
+					targz = targ->z;
+					if (P_IsObjectOnGround(targ))
+					{
+						if (P_MobjFlip(cur) > 0)
+						{
+							targz = cur->floorz;
+						}
+						else
+						{
+							targz = cur->ceilingz - cur->height;
+						}
+					}
 
 					ang = targ->angle;
 					targx = targ->x + P_ReturnThrustX(cur, ang + ANGLE_180, dist);
 					targy = targ->y + P_ReturnThrustY(cur, ang + ANGLE_180, dist);
-					targz = targ->z;
 
 					speed = FixedMul(R_PointToDist2(cur->x, cur->y, targx, targy), 3*FRACUNIT/4);
-					if (P_IsObjectOnGround(targ))
-						targz = cur->floorz;
 
 					cur->angle = R_PointToAngle2(cur->x, cur->y, targx, targy);
 
@@ -6880,13 +6905,19 @@ static void K_MoveHeldObjects(player_t *player)
 					*/
 
 					if (speed > dist)
+					{
 						P_InstaThrust(cur, cur->angle, speed-dist);
+					}
 
-					P_SetObjectMomZ(cur, FixedMul(targz - cur->z, 7*FRACUNIT/8) - gravity, false);
+					// P_SetObjectMomZ(cur, FixedMul(targz - cur->z, 7*FRACUNIT/8) - gravity, false);
+					cur->momz = FixedMul(targz - cur->z, 7*FRACUNIT/8) + P_GetMobjGravity(cur);
+					// cur->z = targz;
 
 					if (R_PointToDist2(cur->x, cur->y, targx, targy) > 768*FRACUNIT)
 					{
 						P_MoveOrigin(cur, targx, targy, cur->z);
+						cur->momx = 0;
+						cur->momy = 0;
 						if (P_MobjWasRemoved(cur))
 						{
 							cur = curnext;

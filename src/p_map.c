@@ -3453,7 +3453,7 @@ void P_HitSpecialLines(mobj_t *thing, fixed_t x, fixed_t y, fixed_t momx, fixed_
 // the z will be set to the lowest value
 // and false will be returned.
 //
-static dboolean P_ThingHeightClip(mobj_t *thing)
+dboolean P_ThingHeightClip(mobj_t *thing)
 {
 	dboolean floormoved;
 	fixed_t oldfloorz = thing->floorz, oldz = thing->z;
