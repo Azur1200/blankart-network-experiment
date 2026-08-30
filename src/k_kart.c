@@ -7781,7 +7781,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	player->mo->spriteyoffset = 0;
 
 	// flips and crashes use centred pivots
-	if (skins[player->skin].flags & SF_OLDPIVOTS || (player->flipovertimer > 0 || player->crash_state != 0))
+	if (skins[player->skin]->flags & SF_OLDPIVOTS || (player->flipovertimer > 0 || player->crash_state != 0))
 	{
 		player->mo->renderflags2 &= ~RF2_PIVOTATOFFSETS;
 	}
