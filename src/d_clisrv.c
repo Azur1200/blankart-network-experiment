@@ -7646,21 +7646,6 @@ static void HandleNodeTimeouts(void)
 	}
 }
 
-// Non-Interpolated time for netcode
-static tic_t I_GetNetTime(void)
-{
-	static precise_t basetime = 0;
-	precise_t ticks = I_GetPreciseTime();
-
-	if (!basetime)
-		basetime = ticks;
-
-	ticks -= basetime;
-	ticks = (ticks * TICRATE) / I_GetPrecisePrecision();
-
-	return (tic_t)ticks;
-}
-
 // Keep the network alive use with care!
 void NetKeepAlive_NoTImeToWait(void)
 {
@@ -7701,7 +7686,7 @@ void NetKeepAlive(void)
 	tic_t nowtime;
 	int32_t realtics;
 
-	nowtime = I_GetNetTime();
+	nowtime = I_GetTime();
 	realtics = nowtime - gametime;
 
 	// return if there's no time passed since the last call
@@ -7721,7 +7706,7 @@ void NetUpdate(void)
 	int32_t i;
 	int32_t realtics;
 
-	nowtime = I_GetNetTime();
+	nowtime = I_GetTime();
 	realtics = nowtime - gametime;
 
 	if (realtics <= 0) // nothing new to update
