@@ -13619,9 +13619,6 @@ void K_CalculateLapGrading(player_t *player)
 	player->ranklog.gaining += intsign(lapgrade_addend);
 }
 
-#define BEST_SCORE_BEFORE_P_RANK (FixedMul(HIGHESTRANKSCORE, 63569) + LOWESTRANKSCORE_ABS)
-#define RANKSCORE_DIVISOR (BEST_SCORE_BEFORE_P_RANK / NUMSTDRANKTIERS)
-
 // Gets a tier value based on the provided ranking score.
 ranktier_e K_GetRankTier(int32_t rank_score, int8_t prankoverride)
 {
@@ -13645,8 +13642,6 @@ ranktier_e K_GetRankTier(int32_t rank_score, int8_t prankoverride)
 	// All other ranks are decided by dividing the score by a multipler
 	return (ranktier_e)(max(0, min(NUMSTDRANKTIERS - 1, _rank_score / RANKSCORE_DIVISOR)));
 }
-
-#undef RANKSCORE_DIVISOR
 
 // Updates the rank score of an individual player, based on a series of factors within their ranklog
 // struct.
@@ -13680,6 +13675,12 @@ void K_UpdateIndividualPlayerRank(player_t* player)
 	if (player->exiting || (player->pflags & PF_NOCONTEST))
 	{
 		// We finished, doofus!
+		return;
+	}
+
+	if (LUA_HookPlayerPreRank(player))
+	{
+		// If this returns true, the scripter PROBABLY wanted to skip the whole mess below
 		return;
 	}
 
@@ -13787,10 +13788,18 @@ void K_UpdateIndividualPlayerRank(player_t* player)
 	    (player->rankscorefactor.offroadpenalty + player->rankscorefactor.wallpenalty +
 	     player->rankscorefactor.hazardpenalty + player->rankscorefactor.respawnpenalty);
 
+	// ...and let Lua scripters mess with this a bit...
+	int32_t luascore = LUA_HookPlayerRank(player, raceStarRankScore);
+
+	if (luascore)
+	{
+		raceStarRankScore += luascore;
+	}
+
 	// ...and make that our total
 	player->realrankscore = raceStarRankScore;
 
-	// Clamp the start rank score for this race between [-200, 1000]
+	// Clamp the star rank score for this race between [LOWESTRANKSCORE, HIGHESTRANKSCORE]
 	if (raceStarRankScore < LOWESTRANKSCORE)
 	{
 		raceStarRankScore = LOWESTRANKSCORE;
@@ -13837,8 +13846,6 @@ void K_UpdateIndividualPlayerRank(player_t* player)
 	// Finally: set their tier
 	player->ranktier = newtier;
 }
-
-#undef BEST_SCORE_BEFORE_P_RANK
 
 // Updates rank data for all players, based on factors within their ranklog structs.
 void K_UpdateRankScore(void)

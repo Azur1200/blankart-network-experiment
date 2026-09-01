@@ -675,6 +675,16 @@ static void res_force(Hook_State *hook)
 	}
 }
 
+static void res_integer(Hook_State *hook)
+{
+	if (lua_isnoneornil(gL, -1))
+	{
+		hook->status = 0;
+	}
+
+	hook->status = luaL_checkinteger(gL, -1);
+}
+
 /* =========================================================================
                                GENERALISED HOOKS
    ========================================================================= */
@@ -1577,6 +1587,34 @@ int LUA_HookPlayerFinish(player_t *player, dboolean dnf, dboolean losing)
 		lua_pushdboolean(gL, dnf);
 
 		call_hooks(&hook, 1, res_force);
+	}
+
+	return hook.status;
+}
+
+dboolean LUA_HookPlayerPreRank(player_t *player)
+{
+	Hook_State hook = {};
+	if (prepare_hook(&hook, false, HOOK(PlayerPreRank)))
+	{
+		LUA_PushUserdata(gL, player, META_PLAYER);
+
+		call_hooks(&hook, 1, res_true);
+	}
+
+	return hook.status;
+}
+
+int LUA_HookPlayerRank(player_t *player, int32_t pendingrankscore)
+{
+	Hook_State hook = {};
+
+	if (prepare_hook(&hook, 0, HOOK(PlayerRank)))
+	{
+		LUA_PushUserdata(gL, player, META_PLAYER);
+		lua_pushinteger(gL, pendingrankscore);
+
+		call_hooks(&hook, 1, res_integer);
 	}
 
 	return hook.status;

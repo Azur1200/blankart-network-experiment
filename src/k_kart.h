@@ -134,6 +134,10 @@ extern vector3_t clusterpoint, clusterdtf;
 
 #define LOWESTRANKSCORE_ABS ((LOWESTRANKSCORE < 0) ? (-LOWESTRANKSCORE) : LOWESTRANKSCORE)
 
+// Ranks: P-Rank threshold and score divisor
+#define BEST_SCORE_BEFORE_P_RANK (FixedMul(HIGHESTRANKSCORE, 63569) + LOWESTRANKSCORE_ABS)
+#define RANKSCORE_DIVISOR (BEST_SCORE_BEFORE_P_RANK / NUMSTDRANKTIERS)
+
 // Generic par-time for ranked races in non-waypointed maps.
 // On waypointed maps, the game attempts to create a par-time automatically based on the given path.
 #define GENERICPARTIME CV_Get(&cv_kartrank_genericpartime)
