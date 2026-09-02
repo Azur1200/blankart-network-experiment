@@ -5059,6 +5059,69 @@ static int lib_kShoveObject(lua_State *L)
 	return 0;
 }
 
+static int lib_kGetRankTier(lua_State *L)
+{
+	int32_t rank_score = luaL_checkinteger(L, 1);
+	int8_t p_rank_override = -1;
+
+	//HUDSAFE
+
+	if (!lua_isnoneornil(L, 2))
+	{
+		p_rank_override = (int8_t)(luaL_checkdboolean(L, 2));
+	}
+
+	lua_pushinteger(L, K_GetRankTier(rank_score, p_rank_override));
+	return 1;
+}
+
+// A static value in k_kart...
+static int lib_kGetDriftBoostRankScore(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+
+	//HUDSAFE
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+
+	const int32_t bluepoints = (player->ranklog.driftboostcount[0] / 2); // 0.5
+	const int32_t redpoints = (player->ranklog.driftboostcount[1]); // 1.0
+	const int32_t purplepoints = (3 * player->ranklog.driftboostcount[2] / 2); // 1.5
+	const int32_t rainbowpoints = (2 * player->ranklog.driftboostcount[3]); // 2.0
+	const int32_t total = bluepoints + redpoints + purplepoints + rainbowpoints;
+
+	lua_pushinteger(L, total);
+	return 1;
+}
+
+static int lib_kCalculateLapGrading(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+
+	NOHUD
+	INLEVEL
+
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+
+	K_CalculateLapGrading(player);
+	return 0;
+}
+
+static int lib_kUpdateIndividualPlayerRank(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+
+	NOHUD
+	INLEVEL
+
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+
+	K_UpdateIndividualPlayerRank(player);
+	return 0;
+}
+
 static int lib_kMissileOrKartItem(lua_State *L)
 {
 	mobj_t *mo = *((mobj_t **)luaL_checkudata(L, 1, META_MOBJ));
@@ -6398,6 +6461,11 @@ static luaL_Reg lib[] = {
 	{"K_AddTiltMomentum", lib_kAddTiltMomentum},
 
 	{"K_ShoveObject", lib_kShoveObject},
+
+	{"K_GetRankTier", lib_kGetRankTier},
+	{"K_GetDriftBoostRankScore", lib_kGetDriftBoostRankScore},
+	{"K_CalculateLapGrading", lib_kCalculateLapGrading},
+	{"K_UpdateIndividualPlayerRank", lib_kUpdateIndividualPlayerRank},
 
 	// kart stuff that's in other places for some reason
 	{"K_IsMissileOrKartItem", lib_kMissileOrKartItem},
