@@ -268,6 +268,9 @@ static const struct {
 	{META_KARTRESULT,   "kartresult_t"},
 	{META_KARTITEMGRAPHICS, "kartitemgraphics_t"},
 	{META_BOOSTINFO,	"boostinfo_t"},
+	{META_RANKLOG,      "ranklog_t"},
+	{META_RANKLOG_DRIFTCOUNT,    "ranklog_t.driftboostcount[4]"},
+	{META_RANKSCOREFAC, "rankscorefactor_t"},
 
 	{NULL,              NULL}
 };

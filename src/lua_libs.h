@@ -135,6 +135,9 @@ extern lua_State *gL;
 #define META_KARTRESULT "KARTRESULT_T*"
 #define META_KARTITEMGRAPHICS "KARTITEMGRAPHICS_T*"
 #define META_BOOSTINFO "BOOSTINFO_T*"
+#define META_RANKLOG "RANKLOG_T*"
+#define META_RANKLOG_DRIFTCOUNT "RANKLOG_T*[4]"
+#define META_RANKSCOREFAC "RANKSCOREFACTOR_T*"
 
 dboolean luaL_checkdboolean(lua_State *L, int narg);
 
