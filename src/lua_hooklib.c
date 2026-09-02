@@ -677,12 +677,16 @@ static void res_force(Hook_State *hook)
 
 static void res_integer(Hook_State *hook)
 {
-	if (lua_isnoneornil(gL, -1))
+	hook->status = 0;
+
+	int32_t result = 0;
+
+	if ((!lua_isnil(gL, -1)) && (lua_isnumber(gL, -1)))
 	{
-		hook->status = 0;
+		result = lua_tointeger(gL, -1);
 	}
 
-	hook->status = luaL_checkinteger(gL, -1);
+	hook->status = result;
 }
 
 /* =========================================================================
