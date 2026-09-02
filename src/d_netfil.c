@@ -1767,11 +1767,7 @@ void nameonly(char *s)
 		{
 			ns = &(s[j+1]);
 			len = strlen(ns);
-#if 0
-			memcpy(s, ns, len+1);
-#else
 			memmove(s, ns, len+1);
-#endif
 			return;
 		}
 }
