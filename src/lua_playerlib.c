@@ -3750,6 +3750,9 @@ int LUA_PlayerLib(lua_State *L)
 
 	boostinfo_fields_ref = Lua_CreateFieldTable(L, boostinfo_opt);
 
+	ranklog_fields_ref = Lua_CreateFieldTable(L, ranklog_opt);
+	rankscorefac_fields_ref = Lua_CreateFieldTable(L, rankscorefac_opt);
+
 	luaL_newmetatable(L, META_PLAYER);
 		lua_pushcfunction(L, player_get);
 		lua_setfield(L, -2, "__index");
