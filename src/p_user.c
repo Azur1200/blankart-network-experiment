@@ -1375,7 +1375,8 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 					{
 						// This player was struggling all race, and got a good finish!
 						// Give them a bonus for a chance at a comeback!
-						player->rankscorefactor.finishgrading = FixedMul(RANKPOINTS_FINISHBONUS, winlosefac) >> FRACBITS;
+						player->rankscorefactor.finishgrading = FixedMul(FixedMul(player->rankscorefactor.potential, RANKPOINTS_FINISHBONUS), winlosefac) >> FRACBITS;
+						CONS_Printf("potential = %.2f, potential score = %.2f\n", FixedToFloat(player->rankscorefactor.potential), FixedToFloat(FixedMul(player->rankscorefactor.potential, RANKPOINTS_FINISHBONUS)));
 					}
 					else if (losingbypos && (!losingbyrank))
 					{

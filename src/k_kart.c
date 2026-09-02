@@ -12436,7 +12436,27 @@ void K_UpdateAllPlayerPositions(void)
 
 							// Progress updated; update leaderscore
 							const fixed_t leadermul = (K_GetPositionMultiplier(player->position) >> BIGTOSTDBITS);
-							player->ranklog.leaderscore += (player->progressdelta * FixedMul(32, leadermul));
+							int32_t difference = (player->progressdelta * FixedMul(32, leadermul));
+							player->ranklog.leaderscore += difference;
+
+							// Calculate average rate of change of position grade for Potential
+							// Weighed more heavily towards the old value if we aren't ganing as many points as our peak
+							if (leveltime > starttime && (checklap <= 1))
+							{
+								if (difference > player->rankscorefactor.potential)
+								{
+									player->rankscorefactor.potential = (player->rankscorefactor.potential + difference) / 2;
+								}
+								else
+								{
+									player->rankscorefactor.potential = (9 * player->rankscorefactor.potential + difference) / 10;
+								}
+								
+								if (P_IsDisplayPlayer(player))
+								{
+									CONS_Printf("potential = %.2f\n", FixedToFloat(player->rankscorefactor.potential));
+								}
+							}
 						}
 					}
 				}

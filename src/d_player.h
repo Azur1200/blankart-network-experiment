@@ -620,6 +620,8 @@ struct rankscorefactor_t
 	int32_t posgradescore; // Points earned/lost dependent on the player's position over time
 	int32_t finishgrading;
 
+	int32_t potential; // Max. average rate of change for the first portion of the race, used for rank bonus at the end
+
 	//
 	// BONUSES
 	//
