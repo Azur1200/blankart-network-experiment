@@ -26,6 +26,7 @@
 #include "p_local.h"
 #include "p_slopes.h" // for P_SlopeById and slopelist
 #include "p_polyobj.h" // polyobj_t, PolyObjects
+#include "k_kart.h" // Rankscore macros
 #include "k_battle.h"
 #include "k_items.h"
 #include "k_waypoint.h"
@@ -281,6 +282,10 @@ int LUA_Call(lua_State *L, int nargs, int nresults, int errorhandlerindex, dbool
 	X(initial_seed) \
 	X(initialseed) \
 	X(greasetics) \
+	X(bestbeforeprank) \
+	X(rankdivisor) \
+	X(lowestrankscore) \
+	X(highestrankscore) \
 	X(wipeoutslowtime) \
 	X(wantedreduce) \
 	X(wantedfrequency) \
@@ -680,6 +685,20 @@ int LUA_PushGlobals(lua_State *L)
 			return 1;
 		case global_greasetics:
 			lua_pushinteger(L, greasetics);
+			return 1;
+		case global_bestbeforeprank:
+			lua_pushinteger(L, BEST_SCORE_BEFORE_P_RANK);
+			return 1;
+		case global_lowestrankscore:
+			// "Couldn't you just get the cvar?"
+			// You could, but convenience also matters :^)
+			lua_pushinteger(L, LOWESTRANKSCORE);
+			return 1;
+		case global_highestrankscore:
+			lua_pushinteger(L, HIGHESTRANKSCORE);
+			return 1;
+		case global_rankdivisor:
+			lua_pushinteger(L, RANKSCORE_DIVISOR);
 			return 1;
 		case global_wipeoutslowtime:
 			lua_pushinteger(L, wipeoutslowtime);
