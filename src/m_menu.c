@@ -6608,9 +6608,11 @@ static void M_LoadAddonsResponse(int32_t ch)
 		return;
 
 	M_RestoreMenuStack(true);
-		COM_BufAddText(va("playdemo \"%s\" %s",
-		demolist[dir_on[menudepthleft]].filepath + strlen(srb2home) + 1, // dumb hack
-		M_IsItemOn(&curpanels[panelOn], "LOADWATCH") ? "-addfiles" : "-force"));
+
+	COM_BufAddText(va("playdemo \"%s\" %s",
+	demolist[dir_on[menudepthleft]].filepath + strlen(srb2home) + 1, // dumb hack
+	M_IsItemOn(&curpanels[panelOn], "LOADWATCH") ? "-addfiles" : "-force"));
+	M_ClearMenusEx(true, true);
 }
 
 int32_t MR_HutStartReplay(int32_t choice)
@@ -8255,6 +8257,7 @@ int32_t MR_ReplayStaff(int32_t choice)
 		return false;
 
 	M_RestoreMenuStack(true);
+	M_ClearMenusEx(true, true);
 	COM_BufAddText(va("playdemo %sS%02u -force", G_BuildMapName(cv_nextmap.value), cv_dummystaff.value));
 	return true;
 }
@@ -8282,6 +8285,7 @@ int32_t MR_ReplayTimeAttack(int32_t arg)
 	CLEANUP(pfree) char *demopath = G_GetRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, arg);
 
 	M_RestoreMenuStack(true);
+	M_ClearMenusEx(true, true);
 	COM_BufAddText(va("playdemo \"%s\" -force", demopath));
 	return true;
 }
