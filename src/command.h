@@ -60,12 +60,12 @@ const char *COM_CompleteCommand(const char *partial, int32_t skips);
 const char *COM_CompleteAlias(const char *partial, int32_t skips);
 
 // insert at queu (at end of other command)
-#define COM_BufAddText(s) COM_BufAddTextEx(s, 0)
-void COM_BufAddTextEx(const char *btext, int flags);
+#define COM_BufAddText(s) COM_BufAddTextEx(s, 0, 0)
+void COM_BufAddTextEx(const char *ptext, size_t plen, int flags);
 
 // insert in head (before other command)
-#define COM_BufInsertText(s) COM_BufInsertTextEx(s, 0)
-void COM_BufInsertTextEx(const char *btext, int flags);
+#define COM_BufInsertText(s) COM_BufInsertTextEx(s, 0, 0)
+void COM_BufInsertTextEx(const char *ptext,  size_t plen, int flags);
 
 // don't bother inserting, just do immediately
 void COM_ImmedExecute(const char *ptext);
