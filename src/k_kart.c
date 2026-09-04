@@ -7283,6 +7283,27 @@ void K_KartPlayerHUDUpdate(player_t *player)
 
 	if (player->karthud[khud_afterimagetime])
 		player->karthud[khud_afterimagetime]--;
+
+	if (player->karthud[khud_prevrankscore] < player->rankscore)
+	{
+		if (player->karthud[khud_prevrankscoredelay] == 0)
+		{
+			player->karthud[khud_prevrankscoredelay] = 2;
+		}
+		else if (player->karthud[khud_prevrankscoredelay] == 1)
+		{
+			player->karthud[khud_prevrankscore] += 1;
+		}
+	}
+	else if (player->karthud[khud_prevrankscore] > player->rankscore)
+	{
+		player->karthud[khud_prevrankscore] = player->rankscore;
+	}
+	
+	if (player->karthud[khud_prevrankscoredelay])
+		player->karthud[khud_prevrankscoredelay]--;
+
+	player->karthud[khud_prevranktier] = player->ranktier;
 }
 
 #undef RINGANIM_DELAYMAX
@@ -13928,7 +13949,8 @@ void K_UpdateRankScore(void)
 
     for (i = 0; i < MAXPLAYERS; i++)
     {
-        K_UpdateIndividualPlayerRank(&players[i]);
+		player_t *p = &players[i];
+        K_UpdateIndividualPlayerRank(p);
     }
 }
 

@@ -2018,6 +2018,7 @@ static void k_drawKartRaceRank(player_t* p, int32_t x, int32_t y, uint32_t flags
 
 	const dboolean is_negative = (p->rankscore < 0);
 	int32_t num = abs(p->rankscore);
+	int32_t prevnum = abs(p->karthud[khud_prevrankscore]);
 	int32_t xx = 0;
 
 	if (drawcompact)
@@ -2073,7 +2074,7 @@ static void k_drawKartRaceRank(player_t* p, int32_t x, int32_t y, uint32_t flags
 		num /= 10;
 	} while (num);
 
-	V_DrawMappedPatch(x + 7, y, flags, rankpic, colormap);
+	V_DrawMappedPatch(x + 7, y - (p->karthud[khud_prevranktier] < p->ranktier ? 1 : 0), flags, rankpic, colormap);
 
 	// Add the minus if we're drawing a negative number
 	if (is_negative)
@@ -2084,16 +2085,18 @@ static void k_drawKartRaceRank(player_t* p, int32_t x, int32_t y, uint32_t flags
 	// If this is a negative number, draw the minus right before the actual numbers
 	if (is_negative)
 		V_DrawScaledPatch(
-		    x + 15 - ((rnkstringwidth / 2) + 5), y + 16, flags, kp_ringdebtminus);
+		    x + 15 - ((rnkstringwidth / 2) + 5), y + 16 - (p->karthud[khud_prevrankscore] < p->rankscore ? 1 : 0), flags, kp_ringdebtminus);
 
 	num = abs(p->rankscore);
+	prevnum = abs(p->karthud[khud_prevrankscore]);
 
 	// Second loop: actually fucking draw the numbers
 	do
 	{
-		V_DrawScaledPatch(x + centering - xx, y + 16, flags, kp_facenum[num % 10]);
+		V_DrawScaledPatch(x + centering - xx, y + 16 - ((prevnum < num && (p->karthud[khud_prevrankscoredelay] == 1)) ? 1 : 0), flags, kp_facenum[prevnum % 10]);
 		xx += (rnknumwidth - 1);
 		num /= 10;
+		prevnum /= 10;
 	} while (num);
 }
 

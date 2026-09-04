@@ -251,8 +251,14 @@ typedef enum
 	khud_afterimagetime, // tics left for displaying afterimage
 	khud_afterimagevalue, // what value the drift ended at
 
+	// Item Timers
 	khud_itemtimer_xoff, // used to move itemtimers, useful for mods that want stuff in the middle.
 	khud_itemtimer_yoff, // ^
+
+	// Race Ranks
+	khud_prevrankscore, // previously displayed race rank score
+	khud_prevrankscoredelay, // delay until we increment displayed value
+	khud_prevranktier, // previously displayed race rank
 
 	NUMKARTHUD
 } karthudtype_t;
