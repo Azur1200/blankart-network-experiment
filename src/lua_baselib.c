@@ -5075,6 +5075,22 @@ static int lib_kGetRankTier(lua_State *L)
 	return 1;
 }
 
+static int lib_kGetScoreForRankTier(lua_State *L)
+{
+	ranktier_e rank_tier = luaL_checkinteger(L, 1);
+
+	//HUDSAFE
+
+	if (rank_tier < RTIER_E || rank_tier >= NUMRANKTIERS)
+		return luaL_error(L, "ranktier index %d out of range (%d - %d)", rank_tier, RTIER_E, NUMRANKTIERS-1);
+
+	// Likely impossible after that safety check, but better safe than sorry...
+	rank_tier = (ranktier_e)(CLAMP(rank_tier, RTIER_E, NUMRANKTIERS - 1));
+
+	lua_pushinteger(L, K_GetScoreForRankTier(rank_tier));
+	return 1;
+}
+
 // A static value in k_kart...
 static int lib_kGetDriftBoostRankScore(lua_State *L)
 {
@@ -6463,6 +6479,7 @@ static luaL_Reg lib[] = {
 	{"K_ShoveObject", lib_kShoveObject},
 
 	{"K_GetRankTier", lib_kGetRankTier},
+	{"K_GetScoreForRankTier", lib_kGetScoreForRankTier},
 	{"K_GetDriftBoostRankScore", lib_kGetDriftBoostRankScore},
 	{"K_CalculateLapGrading", lib_kCalculateLapGrading},
 	{"K_UpdateIndividualPlayerRank", lib_kUpdateIndividualPlayerRank},

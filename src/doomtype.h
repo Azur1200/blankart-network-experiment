@@ -256,6 +256,7 @@ typedef uint32_t lumpnum_t; // 16 : 16 unsigned long (wad num: lump num)
 #define LUMPERROR UINT32_MAX
 
 typedef uint32_t tic_t;
+typedef int64_t signedtic_t;
 #define INFTICS UINT32_MAX
 
 typedef uint64_t longtic_t;

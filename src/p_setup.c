@@ -8896,6 +8896,9 @@ static void P_InitGametype(void)
 	// Set autopartime here
 	autopartime = P_GenerateAutoParTime();
 
+	leaderfinishtime = 0;
+	comebackscorecap = 0;
+
 	wantedcalcdelay = wantedfrequency*2;
 
 	K_SetupItemOdds();

@@ -246,7 +246,7 @@ extern consvar_t cv_kartrank_progressionpoints, cv_kartrank_spbtimepoints,
     cv_kartrank_lawnmowerthreshold, cv_kartrank_wallbonkpenalty, cv_kartrank_hazardpenalty,
     cv_kartrank_respawnpenalty, cv_kartrank_hazardmercy, cv_kartrank_respawnmercy,
     cv_kartrank_leadertimepoints, cv_kartrank_finishbonus, cv_kartrank_finishpenalty,
-    cv_kartrank_genericpartime;
+    cv_kartrank_genericpartime, cv_kartrank_maxpotentialprogress, cv_kartrank_minprogress;
 
 extern consvar_t cv_kartrank_partimehelper;
 

@@ -772,6 +772,8 @@ static CV_PossibleValue_t kartrankpts_f_cons_t[] = {{0, "MIN"},  {(INT32_MAX / 2
 static CV_PossibleValue_t kartrankpts_cons_t[] = {{0, "MIN"},  {0x3fff, "MAX"}, {0, NULL}};
 static CV_PossibleValue_t kartrankpts_signed_cons_t[] = {{-16383, "MIN"}, {16383, "MAX"}, {0, NULL}};
 
+static CV_PossibleValue_t kartrankpts_bigf_cons_t[] = {{FRACUNIT / 1000, "MIN"},  {(90 * FRACUNIT), "MAX"}, {0, NULL}};
+
 consvar_t cv_kartraceranks = CVAR_INIT ("raceranks", "Off", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartRaceRanks_OnChange);
 consvar_t cv_kartrankpenalties = CVAR_INIT ("racerankpenalties", "Off", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartRankPenalties_OnChange);
 consvar_t cv_kartrank_driftbonus = CVAR_INIT ("rank_driftbonus", "Off", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartRankDriftBonus_OnChange);
@@ -785,14 +787,14 @@ consvar_t cv_kartrank_highestscore = CVAR_INIT ("rank_highestscore", "150", CV_N
 
 // Ranks: the point value players earn based on their "leader score", which is calculated via a
 // multiplier applied to their map progression.
-consvar_t cv_kartrank_progressionpoints = CVAR_INIT ("rank_progressionpoints", "160.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
+consvar_t cv_kartrank_progressionpoints = CVAR_INIT ("rank_progressionpoints", "153.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
 
 // Ranks: The generic par-time for non-waypointed maps.
 // Default is 3 minutes 55 seconds; an average Kart race on Hard is about 3 minutes 15 seconds.
 // Since the average time can vary HEAVILY based on the server, let hosts customize this.
 consvar_t cv_kartrank_genericpartime = CVAR_INIT ("rank_genericpartime", "235.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_FloatingTicrate, NULL);
 
-consvar_t cv_kartrank_finishbonus = CVAR_INIT ("rank_finishbonus", "1.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
+consvar_t cv_kartrank_finishbonus = CVAR_INIT ("rank_finishbonus", "2.2", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
 consvar_t cv_kartrank_finishpenalty = CVAR_INIT ("rank_finishpenalty", "25.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
 
 // Ranks: the point bonus given dependent on position (1st place gets the raw value), meant to offset the par-time deficit
@@ -825,6 +827,9 @@ consvar_t cv_kartrank_hazardpenalty = CVAR_INIT ("rank_hazardpenalty", "5", CV_N
 
 consvar_t cv_kartrank_respawnmercy = CVAR_INIT ("rank_respawnmercy", "5", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrank_mercy_cons_t, NULL);
 consvar_t cv_kartrank_respawnpenalty = CVAR_INIT ("rank_respawnpenalty", "40", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
+
+consvar_t cv_kartrank_maxpotentialprogress = CVAR_INIT ("rank_maxpotentialprogress", "43.33", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_bigf_cons_t, NULL);
+consvar_t cv_kartrank_minprogress = CVAR_INIT ("rank_minprogress", "20.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_bigf_cons_t, NULL);
 
 static CV_PossibleValue_t kartinvindmg_cons_t[] = {{0, "None"}, {DMG_WIPEOUT, "Wipe-out"}, {DMG_FLIPOVER, "Flip-over"}, {0, NULL}};
 

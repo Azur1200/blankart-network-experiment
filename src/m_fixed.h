@@ -372,6 +372,53 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedRound(fixed_t x)
 	return INT32_MAX;
 }
 
+/**	\brief	The BigFixedMul function
+
+	\param	a	fixed_t 8.24 number
+	\param	b	fixed_t 8.24 number
+
+	\return	a*b>>BIGFRACBITS
+
+*/
+FUNCMATH FUNCINLINE static ATTRINLINE fixed_t BigFixedMul(fixed_t a, fixed_t b)
+{
+	// Need to cast to unsigned before shifting to avoid undefined behaviour
+	// for negative integers
+	return (fixed_t)(((uint64_t)((int64_t)a * (int64_t)b)) >> BIGFRACBITS);
+}
+
+/**	\brief	The BigFixedDiv2 function
+
+	\param	a	fixed_t 8.24 number
+	\param	b	fixed_t 8.24 number
+
+	\return	a/b * BIGFRACUNIT
+
+*/
+FUNCMATH FUNCINLINE static ATTRINLINE fixed_t BigFixedDiv2(fixed_t a, fixed_t b)
+{
+	// This does not check for division overflow or division by 0!
+	// That is the caller's responsibility.
+	return (fixed_t)(((int64_t)a * BIGFRACUNIT) / b);
+}
+
+/**	\brief	The BigFixedDiv function
+
+	\param	a	fixed_t 8.24 number
+	\param	b	fixed_t 8.24 number
+
+	\return	a/b
+
+
+*/
+FUNCMATH FUNCINLINE static ATTRINLINE fixed_t BigFixedDiv(fixed_t a, fixed_t b)
+{
+	if ((abs(a / (BIGFRACUNIT/4))) >= abs(b))
+		return (a^b) < 0 ? INT32_MIN : INT32_MAX;
+
+	return BigFixedDiv2(a, b);
+}
+
 struct vector2_t
 {
 	fixed_t x;

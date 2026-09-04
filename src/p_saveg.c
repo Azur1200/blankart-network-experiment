@@ -589,6 +589,8 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].ranklog.driftboostcount[2]);
 		SYNC(players[i].ranklog.driftboostcount[3]);
 		SYNC(players[i].ranklog.leaderscore);
+		SYNC(players[i].ranklog.potentialbestscore);
+		SYNC(players[i].ranklog.realvspotential);
 		SYNC(players[i].ranklog.spbattack);
 		SYNC(players[i].ranklog.startboostgrading);
 		SYNC(players[i].ranklog.posgrading);
@@ -612,6 +614,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].rankscorefactor.wallpenalty);
 		SYNC(players[i].rankscorefactor.hazardpenalty);
 		SYNC(players[i].rankscorefactor.respawnpenalty);
+		SYNC(players[i].rankscorefactor.potential);
 		// Rankscores and Final Rank
 		SYNC(players[i].rankscore);
 		SYNC(players[i].realrankscore);
@@ -4621,6 +4624,8 @@ static dboolean P_NetSyncMisc(savebuffer_t *save, dboolean resending)
 	SYNC(gamespeed);
 	SYNC(numlaps);
 	SYNC(autopartime);
+	SYNC(leaderfinishtime);
+	SYNC(comebackscorecap);
 	SYNCBOOLEAN(franticitems);
 	SYNCBOOLEAN(comeback);
 

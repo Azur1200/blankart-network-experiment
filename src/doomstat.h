@@ -634,9 +634,12 @@ extern uint16_t nightslinktics;
 extern tic_t introtime;
 extern tic_t starttime;
 extern tic_t autopartime;
+extern tic_t leaderfinishtime;
 
 extern tic_t raceexittime;
 extern tic_t battleexittime;
+
+extern int32_t comebackscorecap;
 
 extern int32_t hyudorotime;
 extern int32_t stealtime;

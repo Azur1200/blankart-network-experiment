@@ -590,6 +590,8 @@ struct ranklog_t
 	uint16_t numhitconfirms; // How many times did you hit other players with items?
 	int32_t driftboostcount[4]; // Number of driftboosts performed, separated by tier.
 	int32_t leaderscore; // Points earned based on position. Per the name, the leader (1st place) gets the most!
+	int32_t potentialbestscore; // If you performed at your potential, you'd have earned this many points.
+	int32_t realvspotential; // If your actual leaderscore falls below your estimated potential, this is the amount lost overall.
 	int32_t spbattack; // Time spent being tailed by a Self-Propelled Bomb. The closer it is, the faster this increases.
 	fixed_t startboostgrading; // (Currently unused) How well did this player perform the startboost?
 

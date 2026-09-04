@@ -3383,6 +3383,8 @@ enum plranklog
 	ranklog_wallbonks,
 	ranklog_hitdamagingsector,
 	ranklog_numrespawns,
+	ranklog_potentialbestscore,
+	ranklog_realvspotential
 };
 
 static const char *const ranklog_opt[] = {
@@ -3406,6 +3408,8 @@ static const char *const ranklog_opt[] = {
 	"wallbonks",
 	"hitdamagingsector",
 	"numrespawns",
+	"potentialbestscore",
+	"realvspotential",
 	NULL,
 };
 
@@ -3468,6 +3472,12 @@ static int ranklog_get(lua_State *L)
 			break;
 		case ranklog_numrespawns:
 			lua_pushinteger(L, rank_log->numrespawns);
+			break;
+		case ranklog_potentialbestscore:
+			lua_pushinteger(L, rank_log->potentialbestscore);
+			break;
+		case ranklog_realvspotential:
+			lua_pushinteger(L, rank_log->realvspotential);
 			break;
 		default:
 			lua_getfield(L, LUA_REGISTRYINDEX, LREG_EXTVARS);
@@ -3553,6 +3563,12 @@ static int ranklog_set(lua_State *L)
 		case ranklog_numrespawns:
 			rank_log->numrespawns = (uint16_t)luaL_checkinteger(L, 3);
 			break;
+		case ranklog_potentialbestscore:
+			rank_log->potentialbestscore = luaL_checkinteger(L, 3);
+			break;
+		case ranklog_realvspotential:
+			rank_log->realvspotential = luaL_checkinteger(L, 3);
+			break;
 		default:
 			// Modders are going to want to log damn near anything; let's let them do it!
 			lua_getfield(L, LUA_REGISTRYINDEX, LREG_EXTVARS);
@@ -3595,6 +3611,7 @@ enum rankscorefac
 	rankscorefactor_wallpenalty,
 	rankscorefactor_hazardpenalty,
 	rankscorefactor_respawnpenalty,
+	rankscorefactor_potential,
 };
 
 static const char *const rankscorefac_opt[] = {
@@ -3607,6 +3624,7 @@ static const char *const rankscorefac_opt[] = {
 	"wallpenalty",
 	"hazardpenalty",
 	"respawnpenalty",
+	"potential",
 	NULL,
 };
 
@@ -3648,6 +3666,9 @@ static int rankscorefac_get(lua_State *L)
 			break;
 		case rankscorefactor_respawnpenalty:
 			lua_pushinteger(L, scorefac->respawnpenalty);
+			break;
+		case rankscorefactor_potential:
+			lua_pushinteger(L, scorefac->potential);
 			break;
 		default:
 			lua_getfield(L, LUA_REGISTRYINDEX, LREG_EXTVARS);
@@ -3711,6 +3732,9 @@ static int rankscorefac_set(lua_State *L)
 			break;
 		case rankscorefactor_respawnpenalty:
 			scorefac->respawnpenalty = luaL_checkinteger(L, 3);
+			break;
+		case rankscorefactor_potential:
+			scorefac->potential = luaL_checkinteger(L, 3);
 			break;
 		default:
 			// Just as they'll want to log anything, they'll want to SCORE anything...

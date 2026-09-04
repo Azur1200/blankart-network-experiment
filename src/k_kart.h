@@ -171,6 +171,9 @@ extern vector3_t clusterpoint, clusterdtf;
 #define RANKPOINTS_HZRDMERCY CV_Get(&cv_kartrank_hazardmercy)
 #define RANKPOINTS_RSPWMERCY CV_Get(&cv_kartrank_respawnmercy)
 
+#define RANK_MAXPOTENTIALPROGRESS CV_Get(&cv_kartrank_maxpotentialprogress)
+#define RANK_MINPROGRESS CV_Get(&cv_kartrank_minprogress)
+
 // Invincibility damage value
 #define INVINDAMAGE CV_Get(&cv_kartinvindamage)
 
@@ -523,10 +526,12 @@ dboolean K_UsingPatchedMap(void);
 int32_t K_CheckpointThreshold(dboolean roundup);
 
 ranktier_e K_GetRankTier(int32_t rank_score, int8_t prankoverride);
+int32_t K_GetScoreForRankTier(ranktier_e rank_tier);
 void K_UpdateIndividualPlayerRank(player_t *player);
 void K_UpdateRankScore(void);
 void K_UpdatePositionFactorAndPlayerRanks(void);
 void K_CalculateLapGrading(player_t *player);
+void K_UpdatePlayerPotential(player_t *player, int32_t posfactor, int32_t addend, uint32_t maximum_progress);
 
 fixed_t K_BoostRescale(fixed_t value,fixed_t oldmin,fixed_t oldmax,fixed_t newmin,fixed_t newmax);
 void K_DoBoost(player_t *player, fixed_t speedboost, fixed_t accelboost, fixed_t handleboost, dboolean stack, dboolean visible);

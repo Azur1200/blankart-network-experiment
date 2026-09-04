@@ -217,6 +217,12 @@ void K_GetRankBasedPositions(void)
 			position++;
 		}
 
+		// Around 4th place in an 8-player lobby
+		if ((position == max(1, min(4, players_racing / 2))) && (!leaderfinishtime))
+		{
+			comebackscorecap = players[sorted_pids[i]].rankscore;
+		}
+
 		ranksort_positions[&players[sorted_pids[i]] - players] = position;
 	}
 }
@@ -601,6 +607,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartrank_respawnpenalty);
 	CV_RegisterVar(&cv_kartrank_hazardmercy);
 	CV_RegisterVar(&cv_kartrank_respawnmercy);
+	CV_RegisterVar(&cv_kartrank_maxpotentialprogress);
+	CV_RegisterVar(&cv_kartrank_minprogress);
 
 	// Ranks: Helper cvar for par times
 	CV_RegisterVar(&cv_kartrank_partimehelper);
@@ -12400,6 +12408,46 @@ void K_UpdateClusterPoints(void)
 	K_FindPlayerCluster(&clusterpoint);
 }
 
+/** \brief Calculates the average rate of change of position grade for Potential.
+ *
+ * Weighed more heavily towards the old value if the given player isn't ganing as many points as
+ their peak.
+
+	\param player   (player_t) player to check
+
+	\param addend	(int32_t) value to add
+
+	\param maximum_progress	(uint32_t) potential stops updating past this
+*/
+void K_UpdatePlayerPotential(player_t* player, int32_t posfactor, int32_t addend, uint32_t maximum_progress)
+{
+	if (!player)
+		return;
+
+	if (leveltime > starttime)
+	{
+		if (player->progressthrumap <= maximum_progress)
+		{
+			if (posfactor > player->rankscorefactor.potential)
+			{
+				player->rankscorefactor.potential =
+					(player->rankscorefactor.potential + posfactor) / 2;
+			}
+			else
+			{
+				player->rankscorefactor.potential =
+					(9 * player->rankscorefactor.potential + posfactor) / 10;
+			}
+		}
+
+		// Use the best between these two
+		int32_t usemul = min(32, max(player->rankscorefactor.potential, posfactor));
+
+		player->ranklog.potentialbestscore += (player->progressdelta * usemul);
+		player->ranklog.realvspotential = max(0, (int64_t)(player->ranklog.potentialbestscore) - (int64_t)(player->ranklog.leaderscore));
+	}
+}
+
 void K_UpdateAllPlayerPositions(void)
 {
 	int32_t i;
@@ -12434,28 +12482,14 @@ void K_UpdateAllPlayerPositions(void)
 						{
 							player->currentwaypoint->playergradelap[i] = checklap;
 
-							// Progress updated; update leaderscore
-							const fixed_t leadermul = (K_GetPositionMultiplier(player->position) >> BIGTOSTDBITS);
-							int32_t difference = (player->progressdelta * FixedMul(32, leadermul));
-							player->ranklog.leaderscore += difference;
-
-							// Calculate average rate of change of position grade for Potential
-							// Weighed more heavily towards the old value if we aren't ganing as many points as our peak
-							if (leveltime > starttime && (checklap <= 1))
+							if (player->progressthrumap >= ((RANK_MINPROGRESS << BIGTOSTDBITS) / 100))
 							{
-								if (difference > player->rankscorefactor.potential)
-								{
-									player->rankscorefactor.potential = (player->rankscorefactor.potential + difference) / 2;
-								}
-								else
-								{
-									player->rankscorefactor.potential = (9 * player->rankscorefactor.potential + difference) / 10;
-								}
-								
-								if (P_IsDisplayPlayer(player))
-								{
-									CONS_Printf("potential = %.2f\n", FixedToFloat(player->rankscorefactor.potential));
-								}
+								// Progress updated; update leaderscore
+								const fixed_t leadermul = (K_GetPositionMultiplier(player->position) >> BIGTOSTDBITS);
+								int32_t difference = (player->progressdelta * FixedMul(32, leadermul));
+								player->ranklog.leaderscore += difference;
+
+								K_UpdatePlayerPotential(player, FixedMul(32, leadermul), difference, ((RANK_MAXPOTENTIALPROGRESS << BIGTOSTDBITS) / 100));
 							}
 						}
 					}
@@ -12486,9 +12520,15 @@ void K_UpdateAllPlayerPositions(void)
 						{
 							legacygradelap[idx] = player->laps;
 
-							// Progress updated; update leaderscore
-							const fixed_t leadermul = (K_GetPositionMultiplier(player->position) >> BIGTOSTDBITS);
-							player->ranklog.leaderscore += (player->progressdelta * FixedMul(32, leadermul));
+							if (player->progressthrumap >= ((RANK_MINPROGRESS << BIGTOSTDBITS) / 100))
+							{
+								// Progress updated; update leaderscore
+								const fixed_t leadermul = (K_GetPositionMultiplier(player->position) >> BIGTOSTDBITS);
+								const int32_t difflegacy = (player->progressdelta * FixedMul(32, leadermul));
+								player->ranklog.leaderscore += difflegacy;
+
+								K_UpdatePlayerPotential(player, FixedMul(32, leadermul), difflegacy, ((RANK_MAXPOTENTIALPROGRESS << BIGTOSTDBITS) / 100));
+							}
 						}
 					}
 				}
@@ -13643,6 +13683,20 @@ ranktier_e K_GetRankTier(int32_t rank_score, int8_t prankoverride)
 	return (ranktier_e)(max(0, min(NUMSTDRANKTIERS - 1, _rank_score / RANKSCORE_DIVISOR)));
 }
 
+int32_t K_GetScoreForRankTier(ranktier_e rank_tier)
+{
+	// Rank scores can go as low as the host wants
+	int32_t _rank_score = LOWESTRANKSCORE;
+
+	if (rank_tier == RTIER_P)
+		return BEST_SCORE_BEFORE_P_RANK;
+
+	// If we're not looking for a P-rank, get the score via basic math
+	_rank_score += (RANKSCORE_DIVISOR * rank_tier);
+
+	return _rank_score;
+}
+
 // Updates the rank score of an individual player, based on a series of factors within their ranklog
 // struct.
 void K_UpdateIndividualPlayerRank(player_t* player)
@@ -13705,11 +13759,20 @@ void K_UpdateIndividualPlayerRank(player_t* player)
 		}
 	}
 
-	const double progpoints = FixedToDouble(RANKPOINTS_PROGRESS);
+	const double progpoints = FixedToDouble(max(0, RANKPOINTS_PROGRESS));
 
 	// Calculate position bonus; the more you lead, the higher the gain
 	// Frontrun the whole race for the full bonus :)
-	player->rankscorefactor.posgradescore = LOWESTRANKSCORE + (FixedToDouble((player->ranklog.leaderscore / 32) >> BIGTOSTDBITS) * progpoints);
+
+	const fixed_t racepercentage = BIGFRACUNIT - ((RANK_MINPROGRESS << BIGTOSTDBITS) / 100);
+
+	//I_OutputMsg("percentage for race: %f (%d)\n", BigFixedToDouble(racepercentage) * 100.0, racepercentage);
+	const fixed_t scoring_mult = BigFixedDiv(BIGFRACUNIT, racepercentage);
+
+	//I_OutputMsg("scoring multiplier: %f (%d)\n", BigFixedToDouble(scoring_mult) * 100.0, scoring_mult);
+	const fixed_t real_leaderscore = BigFixedMul(player->ranklog.leaderscore, scoring_mult);
+	//const double real_leaderscore = FixedToDouble(((player->ranklog.leaderscore / 32) >> BIGTOSTDBITS));
+	player->rankscorefactor.posgradescore = LOWESTRANKSCORE + (FixedToDouble((real_leaderscore / 32) >> BIGTOSTDBITS) * progpoints);
 
 	if (leveltime > (starttime + TIMECHECKOFFSET))
 	{
