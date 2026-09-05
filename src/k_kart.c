@@ -12451,11 +12451,13 @@ void K_UpdatePlayerPotential(player_t* player, int32_t posfactor, int32_t addend
 		{
 			if (posfactor > player->rankscorefactor.potential)
 			{
+				// exact average rate of change
 				player->rankscorefactor.potential =
 					(player->rankscorefactor.potential + posfactor) / 2;
 			}
 			else
 			{
+				// gradual easing from the previous best rate of change
 				player->rankscorefactor.potential =
 					(9 * player->rankscorefactor.potential + posfactor) / 10;
 			}

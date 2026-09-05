@@ -128,6 +128,8 @@ consvar_t cv_showstats = CVAR_INIT ("showstats", "On", CV_SAVE, CV_OnOff, NULL);
 // make char potraits use their high-res version instead
 consvar_t cv_highresportrait = CVAR_INIT ("highresportrait", "Off", CV_SAVE, CV_OnOff, NULL);
 
+consvar_t cv_racerankperfecttext = CVAR_INIT ("racerankperfecttext", "On", CV_SAVE, CV_OnOff, NULL);
+
 typedef enum
 {
 	NT_OFF = 0,
@@ -320,6 +322,7 @@ void K_RegisterKartHUDStuff(void)
 	CV_RegisterVar(&cv_draftindicator);
 	CV_RegisterVar(&cv_showstats);
 	CV_RegisterVar(&cv_highresportrait);
+	CV_RegisterVar(&cv_racerankperfecttext);
 
 	// h_timers.cpp
 	CV_RegisterVar(&cv_itemtimers);
@@ -2072,14 +2075,28 @@ static void k_drawKartRaceRank(player_t* p, int32_t x, int32_t y, uint32_t flags
 	const int16_t rnknumwidth = basewidth - 1;
 	int16_t rnkstringwidth = 0;
 
+	V_DrawMappedPatch(x + 7, y - (p->karthud[khud_prevranktier] < p->ranktier ? 1 : 0), flags, rankpic, colormap);
+	if (p->exiting)
+	{
+		// broken / successful perfect
+	}
+	else if (cv_racerankperfecttext.value)
+	{
+		// Go for Perfect!
+		//todo: make the non-prank check also take into account the slope of the rank score
+		if (p->ranktier == RTIER_P || (p->ranktier >= RTIER_THREESTAR && (ranksort_positions[p - players] < 2)))
+		{
+			if (!((leveltime/24) % 2))
+				V_DrawSmallString(x + 25, y, flags|V_ALLOWLOWERCASE, "Go for Perfect!");
+		}
+	}
+
 	// First loop: get the "width" of the numbers
 	do
 	{
 		rnkstringwidth += (rnknumwidth - 1);
 		num /= 10;
 	} while (num);
-
-	V_DrawMappedPatch(x + 7, y - (p->karthud[khud_prevranktier] < p->ranktier ? 1 : 0), flags, rankpic, colormap);
 
 	// Add the minus if we're drawing a negative number
 	if (is_negative)

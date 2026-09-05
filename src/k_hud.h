@@ -77,6 +77,7 @@ extern consvar_t cv_newtabranking;
 extern consvar_t cv_kartdebughudtracker;
 
 extern consvar_t cv_highresportrait;
+extern consvar_t cv_racerankperfecttext;
 
 extern patch_t *kp_facenum[MAXPLAYERS+1];
 extern patch_t *kp_itemboxminimap;
