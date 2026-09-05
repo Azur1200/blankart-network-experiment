@@ -3039,8 +3039,13 @@ void G_PlayerReborn(int32_t player, dboolean betweenmaps)
 	int32_t nextcheck; // Distace to Next Legacy Checkpoint
 
 	int32_t exiting;
+
 	int32_t khudfinish;
 	int32_t khudcardanimation;
+	int32_t khudprevrankscore;
+	int32_t khudprevrankscoredelay;
+	int32_t khudprevranktier;
+
 	int16_t totalring;
 	uint8_t laps;
 	uint8_t latestlap;
@@ -3216,6 +3221,9 @@ void G_PlayerReborn(int32_t player, dboolean betweenmaps)
 		exiting = 0;
 		khudfinish = 0;
 		khudcardanimation = 0;
+		khudprevrankscore = 0;
+		khudprevrankscoredelay = 0;
+		khudprevranktier = 0;
 		starpostx = 0;
 		starposty = 0;
 		starpostz = 0;
@@ -3369,6 +3377,9 @@ void G_PlayerReborn(int32_t player, dboolean betweenmaps)
 			khudfinish = 0;
 			khudcardanimation = 0;
 		}
+		khudprevrankscore = players[player].karthud[khud_prevrankscore];
+		khudprevrankscoredelay = players[player].karthud[khud_prevrankscoredelay];
+		khudprevranktier = players[player].karthud[khud_prevranktier];
 
 		starpostx = players[player].starpostx;
 		starposty = players[player].starposty;
@@ -3460,6 +3471,9 @@ void G_PlayerReborn(int32_t player, dboolean betweenmaps)
 	p->exiting = exiting;
 	p->karthud[khud_finish] = khudfinish;
 	p->karthud[khud_cardanimation] = khudcardanimation;
+	p->karthud[khud_prevrankscore] = khudprevrankscore;
+	p->karthud[khud_prevrankscoredelay] = khudprevrankscoredelay;
+	p->karthud[khud_prevranktier] = khudprevranktier;
 
 	p->laps = laps;
 	p->latestlap = latestlap;
