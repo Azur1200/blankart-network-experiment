@@ -259,6 +259,7 @@ static patch_t *kp_dialbase[4] = {NULL};
 static patch_t *kp_speedpatchesdial[8] = {NULL};
 static patch_t *kp_dialnum[20] = {NULL};
 
+patch_t *kp_rankmedals[2] = {NULL};
 patch_t *kp_ranktier[NUMRANKTIERS] = {NULL};
 patch_t *kp_ranktier4p[NUMRANKTIERS] = {NULL};
 
@@ -844,6 +845,10 @@ void K_LoadKartHUDGraphics(void)
 		buffer[6] = '0'+((i+1)%10);
 		HU_UpdatePatch(&kp_ranktier4p[i], "%s", buffer);
 	}
+
+	// Rank medals
+	HU_UpdatePatch(&kp_rankmedals[0], "RNKMDL");
+	HU_UpdatePatch(&kp_rankmedals[1], "RNKMDP");
 }
 
 //}

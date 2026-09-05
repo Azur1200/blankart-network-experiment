@@ -775,7 +775,7 @@ static dboolean RankScreenVis_ShowGrade(void)
 
 FUNCINLINE static ATTRINLINE double Y_GenerateChartBounds(void);
 
-#define CHARTLINEWIDTH_INT (3)
+#define CHARTLINEWIDTH_INT (2)
 #define CHARTLINEWIDTH (FRACUNIT * CHARTLINEWIDTH_INT)
 #define CHART_HEIGHT (128)
 #define CHART_HEIGHT_LINECLAMP (CHART_HEIGHT - CHARTLINEWIDTH_INT)
@@ -798,7 +798,8 @@ static void Y_DrawChartForPlayer(uint16_t pid,
 				 int32_t screen_x,
 				 uint8_t linecolor,
 				 uint32_t drawflags,
-				 uint8_t* colormap)
+				 uint8_t* colormap,
+				 dboolean winner)
 {
 	uint32_t scorelog_len = cvector_size(rankscore_tracker[pid]);
 
@@ -883,6 +884,20 @@ static void Y_DrawChartForPlayer(uint16_t pid,
 				 drawflags,
 				 facegraph,
 				 colormap);
+		
+		if (winner && (filltic >= ((int32_t)((filltimeperlog * (double)(scorelog_len))))))
+		{
+			patch_t* medal = kp_rankmedals[players[pid].ranktier == RTIER_P];
+
+			colormap = R_GetTranslationColormap(TC_DEFAULT, SKINCOLOR_GOLD, GTC_CACHE);
+			
+			V_DrawFixedPatch(vis_x + (3 * FRACUNIT),
+							vis_y - (5 * FRACUNIT),
+							FRACUNIT,
+							drawflags,
+							medal,
+							colormap);
+		}
 	}
 }
 
@@ -895,6 +910,7 @@ static void Y_DrawChartForPlayer(uint16_t pid,
 
 #define LINECOLORINDEX (4)
 #define LINEDIM (FRACHALF)
+#define LINEDIMLOCAL (3*FRACUNIT/4)
 
 static ATTRUSED dboolean RankScreenVis_Graph(void)
 {
@@ -939,15 +955,39 @@ static ATTRUSED dboolean RankScreenVis_Graph(void)
 
 	uint16_t bg_players[MAXPLAYERS] = {0};
 	uint16_t num_bgplayers = 0;
+	
+	uint16_t winnerplayers[MAXPLAYERS] = {0};
+	uint16_t num_winners = 0;
+	uint16_t bestposition = UINT16_MAX;
 
 	int32_t i = 0;
 	int32_t j = 0;
 
 	dboolean islocal = false;
 
-	// First loop: Find the local players we want to display in front of the rest
+	// First loop: Find the winner by rank score
 	for (i = 0; i < data.numplayers; i++)
 	{
+		if (data.pos[i] < bestposition)
+		{
+			bestposition = data.pos[i];
+			num_winners = 1;
+			winnerplayers[0] = data.num[i];
+		}
+		else if (data.pos[i] == bestposition)
+		{
+			winnerplayers[num_winners] = data.num[i];
+			num_winners++;
+		}
+	}
+
+	i = 0;
+	// Second loop: Find the local players we want to display in front of the rest
+	for (i = 0; i < data.numplayers; i++)
+	{
+		if (data.pos[i] == bestposition)
+			continue;
+
 		islocal = false;
 
 		if (num_displayplayers < (r_splitscreen + 1))
@@ -973,7 +1013,7 @@ static ATTRUSED dboolean RankScreenVis_Graph(void)
 
 	uint8_t* cmap = NULL;
 
-	// Second loop: Draw the miscellaneous players
+	// Third loop: Draw the miscellaneous players
 	i = 0;
 	for (i = 0; i < num_bgplayers; i++)
 	{
@@ -986,10 +1026,10 @@ static ATTRUSED dboolean RankScreenVis_Graph(void)
 		cmap = R_GetTranslationColormap(
 		    TC_DEFAULT, players[bg_players[i]].skincolor, GTC_CACHE);
 
-		Y_DrawChartForPlayer(bg_players[i], screen_x, my_pal_index, V_40TRANS, cmap);
+		Y_DrawChartForPlayer(bg_players[i], screen_x, my_pal_index, V_TRANSLUCENT, cmap, false);
 	}
 
-	// Third loop: Draw the local players
+	// Fourth loop: Draw the local players if they haven't won
 	i = 0;
 	for (i = 0; i < num_displayplayers; i++)
 	{
@@ -997,12 +1037,29 @@ static ATTRUSED dboolean RankScreenVis_Graph(void)
 			continue;  // Spectating
 
 		my_pal_index =
-		    V_GetColorFromSkinColorEx(players[disp_players[i]].skincolor, LINECOLORINDEX);
+		    V_GetColorFromSkinColorWithBrightness(
+				players[disp_players[i]].skincolor, LINECOLORINDEX, LINEDIMLOCAL);
 
 		cmap = R_GetTranslationColormap(
 		    TC_DEFAULT, players[disp_players[i]].skincolor, GTC_CACHE);
 
-		Y_DrawChartForPlayer(disp_players[i], screen_x, my_pal_index, 0, cmap);
+		Y_DrawChartForPlayer(disp_players[i], screen_x, my_pal_index, V_10TRANS, cmap, false);
+	}
+
+	// Fifth loop: Draw the winners
+	i = 0;
+	for (i = 0; i < num_winners; i++)
+	{
+		if (players[winnerplayers[i]].spectator)
+			continue;  // Spectating
+
+		my_pal_index =
+		    V_GetColorFromSkinColorEx(players[winnerplayers[i]].skincolor, LINECOLORINDEX);
+
+		cmap = R_GetTranslationColormap(
+		    TC_DEFAULT, players[winnerplayers[i]].skincolor, GTC_CACHE);
+
+		Y_DrawChartForPlayer(winnerplayers[i], screen_x, my_pal_index, 0, cmap, true);
 	}
 
 	// Successful screen draw :)
