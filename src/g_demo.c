@@ -3653,6 +3653,7 @@ static void PrintDemoError(const char (*msg)[1024])
 		return;
 
 	CONS_Alert(CONS_ERROR, "%s", *msg);
+	gameaction = ga_nothing;
 	demo.playback = false;
 	demo.single_seed = false;
 	demo.title = false;
@@ -3681,9 +3682,6 @@ void G_DoPlayDemo(char *defdemoname)
 #endif
 
 	msg[0] = '\0';
-	M_ClearMenusEx(true, true);
-	G_InitDemoRewind();
-	gameaction = ga_nothing;
 
 	// No demo name means we're restarting the current demo
 	if (defdemoname == NULL)
@@ -3772,6 +3770,8 @@ void G_DoPlayDemo(char *defdemoname)
 	}
 
 	// read demo header
+	G_InitDemoRewind();
+	gameaction = ga_nothing;
 	demo.playback = true;
 	demo.buffer = freebuffer = &demobuf;
 
@@ -4121,6 +4121,7 @@ void G_DoPlayDemo(char *defdemoname)
 	}
 
 	demo.deferstart = true;
+	M_ClearMenusEx(true, true);
 }
 
 void G_SetupDemoPlayer(int32_t i)

@@ -92,8 +92,8 @@
 #define ASSET_HASH_TEXTURES_KART       0xb4211b2f32b6a291
 #define ASSET_HASH_CHARS_KART          0x1e68a3e01aa5c68b
 #define ASSET_HASH_MAPS_KART           0x38558ed00da41ce9
-#define ASSET_HASH_MAIN_PK3            0x8c4623400a58ec13
-#define ASSET_HASH_MAPPATCH_PK3        0xa279dcd392d0cfc9
+#define ASSET_HASH_MAIN_PK3            0x666b60b003655600
+#define ASSET_HASH_MAPPATCH_PK3        0x0d2ebf812a5bf60d
 #define ASSET_HASH_BONUSCHARS_KART     0x60e6f13d822a7461
 #ifdef USE_PATCH_FILE
 #define ASSET_HASH_PATCH_PK3           0x0000000000000000
@@ -781,7 +781,7 @@ static void D_WipeTick(dboolean menu)
 		D_ProcessEvents();
 
 	// Update the network so we don't cause timeouts
-	NetKeepAlive();
+	NetKeepAlive_NoTImeToWait();
 
 	HU_Ticker();
 	if (menu)
@@ -892,7 +892,7 @@ void D_WipeLoop(wipelooptype_t type, uint8_t wipetype, dboolean drawMenu)
 	nowtime = lastwipetic = I_GetTime();
 	endtime = nowtime + endtimes[type];
 
-	if (gamestate != GS_TITLESCREEN && gamestate != GS_INTRO && gamestate != GS_MENU && !dedicated)
+	if (gamestate != GS_TITLESCREEN && gamestate != GS_INTRO && gamestate != GS_MENU)
 		drawMenu = true;
 
 	WipeInAction = 1 + !drawMenu;
@@ -906,7 +906,6 @@ void D_WipeLoop(wipelooptype_t type, uint8_t wipetype, dboolean drawMenu)
 
 		nowtime = I_GetTime();
 
-		NetKeepAlive();
 		// wait loop
 		if (nowtime - lastwipetic)
 		{
@@ -917,9 +916,10 @@ void D_WipeLoop(wipelooptype_t type, uint8_t wipetype, dboolean drawMenu)
 				ST_runTitleCard();
 		}
 		else
+		{
+			NetKeepAlive_NoTImeToWait();
 			renderisnewtic = false;
-
-		NetKeepAlive();
+		}
 
 		// draw loop
 		R_SetTimeFrac(g_time.timefrac);
@@ -928,8 +928,6 @@ void D_WipeLoop(wipelooptype_t type, uint8_t wipetype, dboolean drawMenu)
 #ifndef NOWIPE
 		if (type == WIPELOOP_RUNWIPE)
 		{
-			NetKeepAlive();
-
 			if (I_Interrupted())
 			{
 				I_Quit();
@@ -955,8 +953,6 @@ void D_WipeLoop(wipelooptype_t type, uint8_t wipetype, dboolean drawMenu)
 
 		D_WipeDraw(drawMenu);
 		I_UpdateSound();
-
-		NetKeepAlive();
 
 		// Only take screenshots after drawing.
 		if (moviemode)
@@ -1386,9 +1382,7 @@ static void IdentifyVersion(void)
 
 #if (defined (__unix__) && !defined (MSDOS)) || defined (UNIXCOMMON) || defined (HAVE_SDL)
 	// change to the directory where 'srb2.srb' is found
-	CLEANUP(pfree) const char *allocwaddir = NULL; // here so we dont potentially free stack memory
-	allocwaddir = I_LocateWad();
-	srb2waddir = allocwaddir;
+	srb2waddir = I_LocateWad();
 #endif
 
 	char tempsrb2path[256] = ".";

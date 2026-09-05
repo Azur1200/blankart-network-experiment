@@ -893,10 +893,11 @@ static int setglobals(lua_State *L)
 		return 0;
 	}
 
+	Z_Free(name);
+
 	if (LUA_WriteGlobals(L))
 		return 0;
 
-	Z_Free(name);
 	return luaL_error(L, "Implicit global " LUA_QS " prevented. Create a local variable instead.", csname);
 }
 
@@ -1339,6 +1340,10 @@ void LUA_InvalidateLevel(void)
 	{
 		LUA_InvalidateUserdata(K_GetWaypointFromIndex(i));
 	}
+
+	// We invalidated a lot of userdata objects, a lot of them probably ended up unreachable so they can be
+	// GC'd right away
+	lua_gc(gL, LUA_GCCOLLECT, 0);
 }
 
 void LUA_InvalidateMapthings(void)

@@ -170,12 +170,19 @@ COM_Purge (char *s, int *np)
   * \param ptext The text to add.
   * \sa COM_BufInsertTextEx
   */
-void COM_BufAddTextEx(const char *ptext, int flags)
+void COM_BufAddTextEx(const char *ptext, size_t plen, int flags)
 {
 	int l;
 	char *text;
 
-	text = COM_Purge(Z_StrDup(ptext), &l);
+	if (plen == 0)
+		plen = strlen(ptext);
+
+	text = Z_Malloc(sizeof(char) * (plen+1), PU_STATIC, NULL);
+	memcpy(text, ptext, plen);
+	text[plen] = '\0';
+
+	text = COM_Purge(text, &l);
 
 	if (com_text.cursize + 2 + l >= com_text.maxsize)
 	{
@@ -193,7 +200,7 @@ void COM_BufAddTextEx(const char *ptext, int flags)
   * \param ptext The text to execute. A newline is automatically added.
   * \sa COM_BufAddTextEx
   */
-void COM_BufInsertTextEx(const char *ptext, int flags)
+void COM_BufInsertTextEx(const char *ptext,  size_t plen, int flags)
 {
 	const int32_t old_wait = com_wait;
 
@@ -211,7 +218,7 @@ void COM_BufInsertTextEx(const char *ptext, int flags)
 	com_wait = 0;
 
 	// add the entire text of the file (or alias)
-	COM_BufAddTextEx(ptext, flags);
+	COM_BufAddTextEx(ptext, plen, flags);
 	COM_BufExecute(); // do it right away
 
 	com_wait += old_wait;
@@ -895,8 +902,8 @@ static void COM_Exec_f(void)
 	{
 		// insert text file into the command buffer
 		// delays execution if interpreting wait cmd
-		COM_BufAddTextEx((char *)buf, com_flags);
-		COM_BufAddTextEx("\n", com_flags);
+		COM_BufAddTextEx((char *)buf, 0, com_flags);
+		COM_BufAddTextEx("\n", 0, -com_flags);
 	}
 
 	// free buffer

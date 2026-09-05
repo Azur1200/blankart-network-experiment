@@ -6149,6 +6149,7 @@ static void HandlePacketFromAwayNode(int8_t node)
 	}
 }
 
+/*
 static char NodeToSplitPlayer(int node, int split)
 {
 	if (split == 0)
@@ -6291,7 +6292,7 @@ static void PT_ResultsAll(int8_t node)
 	}
 	csprng(lastChallengeAll, sizeof(lastChallengeAll));
 	expectChallenge = false;
-}
+}*/
 
 /** Handles a packet received from a node that is in game
   *
@@ -6398,9 +6399,9 @@ static void HandlePacketFromPlayer(int8_t node)
 		case PT_SENDINGLUAFILE     : PT_SendingLuaFile     (node            ); break;
 		case PT_SERVERCFG          :                                           break;
 		// CHALLENGE
-		case PT_CHALLENGEALL       : PT_ChallengeAll       (node            ); break;
-		case PT_RESPONSEALL        : PT_ResponseAll        (node            ); break;
-		case PT_RESULTSALL         : PT_ResultsAll         (node            ); break;
+		//case PT_CHALLENGEALL       : PT_ChallengeAll       (node            ); break;
+		//case PT_RESPONSEALL        : PT_ResponseAll        (node            ); break;
+		//case PT_RESULTSALL         : PT_ResultsAll         (node            ); break;
 		default:
 			DEBFILE(va("UNKNOWN PACKET TYPE RECEIVED %d from host %d\n",
 				netbuffer->packettype, node));
@@ -7646,19 +7647,9 @@ static void HandleNodeTimeouts(void)
 	}
 }
 
-// Keep the network alive while not advancing tics!
-void NetKeepAlive(void)
+// Keep the network alive use with care!
+void NetKeepAlive_NoTImeToWait(void)
 {
-	tic_t nowtime;
-	int32_t realtics;
-
-	nowtime = I_GetTime();
-	realtics = nowtime - gametime;
-
-	// return if there's no time passed since the last call
-	if (realtics <= 0) // nothing new to update
-		return;
-
 	UpdatePingTable();
 
 	GetPackets();
@@ -7688,6 +7679,22 @@ void NetKeepAlive(void)
 	Net_AckTicker();
 	HandleNodeTimeouts();
 	FileSendTicker();
+}
+
+// Keep the network alive while not advancing tics!
+void NetKeepAlive(void)
+{
+	tic_t nowtime;
+	int32_t realtics;
+
+	nowtime = I_GetTime();
+	realtics = nowtime - gametime;
+
+	// return if there's no time passed since the last call
+	if (realtics <= 0) // nothing new to update
+		return;
+
+	NetKeepAlive_NoTImeToWait();
 }
 
 // If a tree falls in the forest but nobody is around to hear it, does it make a tic?

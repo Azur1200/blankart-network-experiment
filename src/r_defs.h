@@ -1036,13 +1036,10 @@ typedef enum
 	RF_GHOSTLYMASK		= (RF_TRANSMASK | RF_FULLBRIGHT),
 } renderflags_t;
 
-#if 0
 typedef enum
 {
-	RF2_NOAFFINE          = 0x00000001,  // Disables affine drawing for this sprite
-	RF2_AFFINEPRESCALE    = 0x00000002,  // Makes affines scale before rotating, instead of rotating before scaling
+	RF2_PIVOTATOFFSETS	= 0x00000001,  // Use sprite offsets as the rotation pivot instead of the centre
 } renderflags2_t;
-#endif
 
 typedef enum
 {

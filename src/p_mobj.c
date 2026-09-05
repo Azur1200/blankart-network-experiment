@@ -8278,6 +8278,10 @@ static void P_TrapBubbleThink(mobj_t* mobj)
 		fixed_t destx, desty, curfz, destfz;
 		dboolean blockmove = false;
 
+		// disable new pivots while in bubbles
+		// this basically has to run *after* K_KartPlayerThink to work so watch out
+		mobj->tracer->renderflags2 &= ~RF2_PIVOTATOFFSETS;
+
 		mobj->flags =
 		    MF_NOCLIP | MF_NOCLIPHEIGHT | MF_NOCLIPTHING | MF_NOGRAVITY | MF_DONTENCOREMAP;
 		mobj->extravalue1 = 1;

@@ -1796,7 +1796,7 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	{
 		rollangle = R_GetRollAngle(papersprite == vflip
 				? spriterotangle : InvAngle(spriterotangle));
-		rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, false, sprinfo, rollangle);
+		rotsprite = Patch_GetRotatedSprite(sprframe, (thing->frame & FF_FRAMEMASK), rot, flip, false, (thing->renderflags2 & RF2_PIVOTATOFFSETS), sprinfo, rollangle);
 
 		if (rotsprite != NULL)
 		{
@@ -1837,7 +1837,27 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	{
 		vector2_t affine_pivot = {0};
 
-		vector2_t patch_defaultpivot = {.x = spr_offset, .y = (spr_height / 2)};
+		vector2_t patch_defaultpivot = {0};
+		if (thing->renderflags2 & RF2_PIVOTATOFFSETS)
+		{
+			patch_defaultpivot.x = spr_offset;
+			patch_defaultpivot.y = spr_topoffset;
+
+			if (thing->player)
+			{
+				if (!(wadfiles[((skin_t *)thing->skin)->wadnum]->compatmode))
+				{
+					// RR skins actually pivot themselves 4 pixels above their offset
+					// Ideally, any modifications to that would supply their own SPRTINFO, so...
+					patch_defaultpivot.y -= (4 * FRACUNIT);
+				}
+			}
+		}
+		else
+		{
+			patch_defaultpivot.x = (spr_width / 2);
+			patch_defaultpivot.y = (spr_height / 2);
+		}
 
 		R_GetPivotVectorFromSpriteInfo(&affine_pivot,
 									   &patch_defaultpivot,

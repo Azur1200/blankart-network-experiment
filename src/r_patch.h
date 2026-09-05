@@ -42,7 +42,7 @@ patch_t *Patch_GetRotated(patch_t *patch, int32_t angle, dboolean flip);
 patch_t *Patch_GetRotatedSprite(
 	spriteframe_t *sprite,
 	size_t frame, size_t spriteangle,
-	dboolean flip, dboolean adjustfeet,
+	dboolean flip, dboolean adjustfeet, dboolean offsetspivot,
 	void *info, int32_t rotationangle);
 
 int32_t R_GetRollAngle(angle_t rollangle);

@@ -305,7 +305,7 @@ static int lib_comBufAddText(lua_State *L)
 		plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
 	if (plr && plr != &players[consoleplayer])
 		return 0;
-	COM_BufAddTextEx(va("%s\n", luaL_checkstring(L, 2)), COM_SAFE);
+	COM_BufAddTextEx(va("%s\n", luaL_checkstring(L, 2)), 0, COM_SAFE);
 	return 0;
 }
 
@@ -321,7 +321,7 @@ static int lib_comBufInsertText(lua_State *L)
 		plr = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
 	if (plr && plr != &players[consoleplayer])
 		return 0;
-	COM_BufInsertTextEx(va("%s\n", luaL_checkstring(L, 2)), COM_SAFE);
+	COM_BufInsertTextEx(va("%s\n", luaL_checkstring(L, 2)), 0, COM_SAFE);
 	return 0;
 }
 

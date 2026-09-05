@@ -1516,9 +1516,6 @@ int8_t pausehack = 0;
 //
 dboolean M_Responder(event_t *ev)
 {
-	if (ev->type == ev_gyroscope || ev->type == ev_accelerometer)
-		return false;
-
 	if (dedicated
 		|| (demo.playback && demo.title)
 		|| M_GamestateCanOpenMenu() == false)
@@ -1548,7 +1545,10 @@ dboolean M_Responder(event_t *ev)
 			return true;
 
 		// dirty hack: for customising controls, I want only buttons/keys/axes, not mouse
-		if (messagebox.callback.handler && !(ev->type == ev_mouse || (ev->type == ev_joystick && messagebox.callback.handler != M_ChangecontrolResponse)))
+		if (ev->type == ev_mouse || ev->type == ev_gyroscope || ev->type == ev_accelerometer)
+			return false;
+
+		if (messagebox.callback.handler && !(ev->type == ev_joystick && messagebox.callback.handler != M_ChangecontrolResponse))
 			messagebox.callback.handler(ev);
 
 		M_SetMenuDelay(0);
@@ -6608,9 +6608,11 @@ static void M_LoadAddonsResponse(int32_t ch)
 		return;
 
 	M_RestoreMenuStack(true);
-		COM_BufAddText(va("playdemo \"%s\" %s",
-		demolist[dir_on[menudepthleft]].filepath + strlen(srb2home) + 1, // dumb hack
-		M_IsItemOn(&curpanels[panelOn], "LOADWATCH") ? "-addfiles" : "-force"));
+
+	COM_BufAddText(va("playdemo \"%s\" %s",
+	demolist[dir_on[menudepthleft]].filepath + strlen(srb2home) + 1, // dumb hack
+	M_IsItemOn(&curpanels[panelOn], "LOADWATCH") ? "-addfiles" : "-force"));
+	M_ClearMenusEx(true, true);
 }
 
 int32_t MR_HutStartReplay(int32_t choice)
@@ -8255,6 +8257,7 @@ int32_t MR_ReplayStaff(int32_t choice)
 		return false;
 
 	M_RestoreMenuStack(true);
+	M_ClearMenusEx(true, true);
 	COM_BufAddText(va("playdemo %sS%02u -force", G_BuildMapName(cv_nextmap.value), cv_dummystaff.value));
 	return true;
 }
@@ -8282,6 +8285,7 @@ int32_t MR_ReplayTimeAttack(int32_t arg)
 	CLEANUP(pfree) char *demopath = G_GetRecordReplay(gpath, cv_nextmap.value, cv_chooseskin.value, arg);
 
 	M_RestoreMenuStack(true);
+	M_ClearMenusEx(true, true);
 	COM_BufAddText(va("playdemo \"%s\" -force", demopath));
 	return true;
 }
@@ -10255,6 +10259,9 @@ static void M_ChangecontrolResponse(event_t *ev)
 	int32_t        ch = ev->data1;
 
 	if (ev->device > 0 && G_GetDevicePlayer(ev->device) != setupcontrolplayer-1)
+		return;
+
+	if (ev->type == ev_gyroscope || ev->type == ev_accelerometer)
 		return;
 
 	if (ev->type == ev_joystick)
