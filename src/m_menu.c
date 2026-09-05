@@ -7863,6 +7863,7 @@ void MP_StatsExtra(menupanelinst_t *pi)
 	AMOUNTSTAT("SINKS", sinks);
 	AMOUNTSTAT("SINKED", sinked);
 	AMOUNTSTAT("RESPAWNS", respawns);
+	AMOUNTSTAT("PERFECTMEDALS", perfectmedals);
 }
 
 void MD_DrawLevelStats(menupanelinst_t *pi)
