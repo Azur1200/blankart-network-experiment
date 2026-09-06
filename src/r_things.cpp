@@ -290,7 +290,7 @@ void R_AddKartItemSprites(kartitem_t *item, dboolean alt)
 	memset(sprtemp, 0xff, sizeof(sprtemp));
 	spritename = "ITEM";
 	maxframe = spritedef->numframes - 1;
-	int32_t patch_idx = alt ? 2 : 0;
+	int32_t patch_idx = alt && item->graphics[2].patches[0] ? 2 : 0;
 
 	const kartitemgraphics_t *graphics = &item->graphics[patch_idx];
 	for (uint8_t i = 0; i < graphics->numpatches; i++)
