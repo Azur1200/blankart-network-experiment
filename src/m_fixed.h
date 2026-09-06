@@ -52,6 +52,9 @@ extern "C" {
 
 typedef int32_t fixed_t;
 
+// Unsigned fixed_t
+typedef uint32_t ufixed_t;
+
 #define BIGFRACBITS 24
 
 /*!
@@ -387,6 +390,21 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t BigFixedMul(fixed_t a, fixed_t b)
 	return (fixed_t)(((uint64_t)((int64_t)a * (int64_t)b)) >> BIGFRACBITS);
 }
 
+/**	\brief	The BigFixedMul64 function; identical to BigFixedMul, but returns a 64-bit value
+
+	\param	a	fixed_t 8.24 number
+	\param	b	fixed_t 8.24 number
+
+	\return	a*b>>BIGFRACBITS
+
+*/
+FUNCMATH FUNCINLINE static ATTRINLINE int64_t BigFixedMul64(int64_t a, int64_t b)
+{
+	// Need to cast to unsigned before shifting to avoid undefined behaviour
+	// for negative integers
+	return (int64_t)(((uint64_t)((int64_t)a * (int64_t)b)) >> BIGFRACBITS);
+}
+
 /**	\brief	The BigFixedDiv2 function
 
 	\param	a	fixed_t 8.24 number
@@ -417,6 +435,38 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t BigFixedDiv(fixed_t a, fixed_t b)
 		return (a^b) < 0 ? INT32_MIN : INT32_MAX;
 
 	return BigFixedDiv2(a, b);
+}
+
+/**	\brief	The BigFixedDivUnsigned2 function
+
+	\param	a	fixed_t 8.24 number
+	\param	b	fixed_t 8.24 number
+
+	\return	a/b * BIGFRACUNIT
+
+*/
+FUNCMATH FUNCINLINE static ATTRINLINE ufixed_t BigFixedDivUnsigned2(fixed_t a, fixed_t b)
+{
+	// This does not check for division overflow or division by 0!
+	// That is the caller's responsibility.
+	return (ufixed_t)(((int64_t)a * BIGFRACUNIT) / b);
+}
+
+/**	\brief	The BigFixedDivUnsigned function
+
+	\param	a	fixed_t 8.24 number
+	\param	b	fixed_t 8.24 number
+
+	\return	a/b
+
+
+*/
+FUNCMATH FUNCINLINE static ATTRINLINE ufixed_t BigFixedDivUnsigned(fixed_t a, fixed_t b)
+{
+	if ((abs(a / (BIGFRACUNIT/4))) >= abs(b))
+		return (a^b) < 0 ? INT32_MIN : INT32_MAX;
+
+	return BigFixedDivUnsigned2(a, b);
 }
 
 struct vector2_t

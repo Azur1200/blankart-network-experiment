@@ -1391,12 +1391,12 @@ static void P_DoRankedRaceFinish(player_t* player, dboolean losing)
 
 			const int32_t minscore = K_GetScoreForRankTier(RTIER_C);
 			const int32_t maxscore = K_GetScoreForRankTier(RTIER_THREESTAR);
-			int32_t player_rankrange = CLAMP(player->rankscore, minscore, maxscore);
+			int64_t player_rankrange = CLAMP(player->rankscore, minscore, maxscore) * BIGFRACUNIT;
 			int32_t factor_rankrange = max(1, maxscore - minscore);
 
 			player_rankrange -= minscore;
 
-			fixed_t diminish_mul = (fixed_t)(((double)(player_rankrange) / (double)(factor_rankrange)) * FRACFLOAT);
+			fixed_t diminish_mul = (fixed_t)((player_rankrange / factor_rankrange) >> BIGTOSTDBITS);
 
 			calculated_potential = FixedMul(calculated_potential, Easing_InCubic(diminish_mul, FRACUNIT, 0));
 

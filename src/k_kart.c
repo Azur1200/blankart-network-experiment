@@ -9033,22 +9033,21 @@ static void K_UpdateProgressThroughCourseClassic(player_t *player)
 	}
 
 	// Using floating points for this, because trying fixed-point bullshit will make me age at mach speed
-	double nextlap_mul = max(0, player->laps - 1);
-	double checkpts_d = numstarposts;
-	double playerprog_d = (double)(player->starpostnum) + (checkpts_d * nextlap_mul);
-	double lap_mul = (double)(numlaps);
+	int32_t nextlap_mul = max(0, player->laps - 1);
+	int32_t checkpts = numstarposts;
+	int64_t playerprog_temp = (player->starpostnum + (numstarposts * nextlap_mul)) * BIGFRACUNIT;
 
 	// Multiply the checkpoint number by the lap count to get the length of the entire race
-	checkpts_d = (checkpts_d) * lap_mul;
+	checkpts = (checkpts) * numlaps;
 
 	// Divide our distance by the overall course distance
-	double factor = playerprog_d / checkpts_d;
+	fixed_t factor = (fixed_t)(CLAMP((playerprog_temp / checkpts), 0, INT32_MAX));
 
 	// On EXCRUCIATINGLY long maps, this will throw off the delta calculation system
 	// But we have to keep things 32-bit for Lua's sake...
 
 	// BIGFRACUNIT * factor
-	uint32_t current_progress = (uint32_t)(min(BIGFRACFLOAT, max(0, BIGFRACFLOAT * factor)));
+	uint32_t current_progress = (uint32_t)(min(BIGFRACUNIT, max(0, BigFixedMul64(BIGFRACUNIT, factor))));
 
 	// Only ever count progress increments
 	if (current_progress > player->progressthrumap)
@@ -9109,29 +9108,28 @@ void K_UpdateProgressThroughCourse(player_t *player)
 
 	if (pathfindsuccess)
 	{
-		// Using floating points for this, because trying fixed-point bullshit will make me age at mach speed
-		double nextlap_mul = (sectionrace) ? 0.0 : max(0, player->laps - 1);
-		double coursedist_d = K_GetCircuitLength();
-		double pathdist_d = (double)(pathtofinish.totaldist) + (coursedist_d * nextlap_mul);
-		double lap_mul = (double)(numlaps);
+		int32_t nextlap_mul = (sectionrace) ? 0.0 : max(0, player->laps - 1);
+		int64_t coursedist = K_GetCircuitLength();
+		int64_t pathdist = ((int64_t)(pathtofinish.totaldist) + (coursedist * nextlap_mul)) * BIGFRACUNIT;
+		int32_t lap_mul = numlaps;
 
 		if (sectionrace)
 		{
 			// The course length IS how long the sectioned course is, AKA: DON'T multiply the damn distances!
-			lap_mul = 1.0;
+			lap_mul = 1;
 		}
 
 		// Multiply the course distance by the lap count to get the length of the entire race
-		coursedist_d = (coursedist_d) * lap_mul;
+		coursedist *= lap_mul;
 
 		// Divide our distance by the overall course distance
-		double factor = pathdist_d / coursedist_d;
+		fixed_t factor = (fixed_t)(CLAMP(pathdist / coursedist, 0, BIGFRACUNIT));
 
 		// On EXCRUCIATINGLY long maps, this will throw off the delta calculation system
 		// But we have to keep things 32-bit for Lua's sake...
 
 		// BIGFRACUNIT * factor
-		uint32_t current_progress = (uint32_t)(min(BIGFRACFLOAT, max(0, BIGFRACFLOAT * factor)));
+		uint32_t current_progress = (uint32_t)(min(BIGFRACUNIT, max(0, BigFixedMul64(BIGFRACUNIT, factor))));
 
 		// Only ever count progress increments
 		if (current_progress > player->progressthrumap)
