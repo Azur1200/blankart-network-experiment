@@ -441,10 +441,11 @@ void Obj_HandleVertNeoSpringParts(mobj_t *spring, dboolean diag)
 
 				if (diag)
 				{
-					offsetx = -20 * FRACUNIT;
+					cur->rollangle = ANGLE_180;
+					offsetx = 10 * FRACUNIT;
 					offsety = 0;
 					UPDATEANGLE(a, offsetx, offsety);
-					UPDATEOFFSET(cur, spring, offsetx, offsety, ((spring->eflags & MFE_VERTICALFLIP) ? 64 * FRACUNIT : 56 * FRACUNIT));
+					UPDATEOFFSET(cur, spring, offsetx, offsety, ((spring->eflags & MFE_VERTICALFLIP) ? 5 * FRACUNIT : 0 * FRACUNIT));
 					UPDATEPLANEANGLE(cur->floorspriteslope, spring->angle, ANGLE_120, cur->x, cur->y, cur->z);
 					// Thanks Wumbo for your Cuboids mod.
 					// The closer the sprite is to being perfectly upright, the more it needs to be squished vertically
@@ -473,10 +474,11 @@ void Obj_HandleVertNeoSpringParts(mobj_t *spring, dboolean diag)
 
 				if (diag)
 				{
-					offsetx = -10 * FRACUNIT;
+					cur->rollangle = ANGLE_180;
+					offsetx = 20 * FRACUNIT;
 					offsety = 0;
 					UPDATEANGLE(a, offsetx, offsety);
-					UPDATEOFFSET(cur, spring, offsetx, offsety, (spring->eflags & MFE_VERTICALFLIP) ? 56 * FRACUNIT : 64 * FRACUNIT);
+					UPDATEOFFSET(cur, spring, offsetx, offsety, (spring->eflags & MFE_VERTICALFLIP) ? 0 * FRACUNIT : 5 * FRACUNIT);
 					UPDATEPLANEANGLE(cur->floorspriteslope, spring->angle, ANGLE_120, cur->x, cur->y, cur->z);
 					// Thanks Wumbo for your Cuboids mod.
 					// The closer the sprite is to being perfectly upright, the more it needs to be squished vertically
