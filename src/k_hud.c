@@ -652,7 +652,12 @@ void K_LoadKartHUDGraphics(void)
 				graphics->patches[k] = lump == LUMPERROR ? missingpat : W_CachePatchNum(lump, PU_HUDGFX);
 			}
 		}
-		R_AddKartItemSprites(item);
+		R_AddKartItemSprites(item, false);
+
+		if (item->altcvar)
+		{
+			R_AddKartItemSprites(item, true);
+		}
 	}
 
 	// CHECK indicators

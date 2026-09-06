@@ -1697,7 +1697,10 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	}
 	else if (thing->sprite == SPR_ITEM)
 	{
-		sprdef = &kartitems[thing->threshold > 0 && thing->threshold < numkartitems ? thing->threshold : 0].spritedef;
+		int32_t item = thing->threshold > 0 && thing->threshold < numkartitems ? thing->threshold : 0;
+		dboolean alt = item > 0 && K_IsKartItemAlternate(item);
+
+		sprdef = alt ? &kartitems[item].altspritedef : &kartitems[item].spritedef;
 #ifdef ROTSPRITE
 		sprinfo = &spriteinfo[SPR_ITEM];
 #endif
