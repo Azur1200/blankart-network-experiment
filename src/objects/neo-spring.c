@@ -23,7 +23,7 @@
 #define neospring_part_side(part) part->threshold
 
 // Shamelessly taken from slope setup code
-static void ReconfigureViaConstants (pslope_t *slope, const fixed_t a, const fixed_t b, const fixed_t c, const fixed_t d)
+static void ReconfigureViaConstants(pslope_t *slope, const fixed_t a, const fixed_t b, const fixed_t c, const fixed_t d)
 {
 	fixed_t m;
 	fixed_t o = 0;
@@ -57,25 +57,25 @@ static void ReconfigureViaConstants (pslope_t *slope, const fixed_t a, const fix
 	slope->zdelta = FixedDiv(m, normal->z);
 
 	// Get angles
-	slope->xydirection = R_PointToAngle2(0, 0, slope->d.x, slope->d.y)+ANGLE_180;
+	slope->xydirection = R_PointToAngle2(0, 0, slope->d.x, slope->d.y) + ANGLE_180;
 	slope->zangle = R_PointToAngle2(0, 0, FRACUNIT, -slope->zdelta);
 }
 
 skincolornum_t Obj_HandleNeoSpringColor(fixed_t speedval)
 {
-	if (speedval >= 70 *FRACUNIT)
+	if (speedval >= 70 * FRACUNIT)
 	{
 		return SKINCOLOR_RED;
 	}
-	else if (speedval > 40*FRACUNIT && speedval < 70*FRACUNIT)
+	else if (speedval > 40 * FRACUNIT && speedval < 70 * FRACUNIT)
 	{
 		return SKINCOLOR_YELLOW;
 	}
-	else if (speedval > 30*FRACUNIT && speedval <= 40*FRACUNIT)
+	else if (speedval > 30 * FRACUNIT && speedval <= 40 * FRACUNIT)
 	{
 		return SKINCOLOR_SAPPHIRE;
 	}
-	else if (speedval > 0 && speedval <= 30 *FRACUNIT)
+	else if (speedval > 0 && speedval <= 30 * FRACUNIT)
 	{
 		return SKINCOLOR_GREY;
 	}
@@ -85,7 +85,10 @@ skincolornum_t Obj_HandleNeoSpringColor(fixed_t speedval)
 	}
 }
 
-#define SETUPNEXTPART prev = cur; cur = cur->hnext; cur->hprev = prev;
+#define SETUPNEXTPART \
+	prev = cur;       \
+	cur = cur->hnext; \
+	cur->hprev = prev;
 
 #define BACK 1
 #define FRONT 2
@@ -135,26 +138,25 @@ void Obj_InitNeoSpringParts(mobj_t *spring)
 	neospring_setup(spring) = true;
 }
 
-#define UPDATEOFFSET(cur, spring, ofsx, ofsy, ofsz)  \
-P_MoveOrigin( \
-	cur, \
-	spring->x+spring->sprxoff+FixedMul(ofsx, spring->scale), \
-	spring->y+spring->spryoff+FixedMul(ofsy, spring->scale), \
-	spring->z+spring->sprzoff+FixedMul(ofsz, spring->scale))
+#define UPDATEOFFSET(cur, spring, ofsx, ofsy, ofsz)                  \
+	P_MoveOrigin(                                                    \
+		cur,                                                         \
+		spring->x + spring->sprxoff + FixedMul(ofsx, spring->scale), \
+		spring->y + spring->spryoff + FixedMul(ofsy, spring->scale), \
+		spring->z + spring->sprzoff + FixedMul(ofsz, spring->scale))
 
-#define UPDATEANGLE(angle, ofsx, ofsy) \
-	fixed_t ofsxbak = ofsx; \
-	fixed_t ofsybak = ofsy; \
+#define UPDATEANGLE(angle, ofsx, ofsy)                                                                                        \
+	fixed_t ofsxbak = ofsx;                                                                                                   \
+	fixed_t ofsybak = ofsy;                                                                                                   \
 	ofsx = FixedMul(ofsxbak, FINECOSINE(angle >> ANGLETOFINESHIFT)) - FixedMul(ofsybak, FINESINE(angle >> ANGLETOFINESHIFT)); \
-	ofsy = FixedMul(ofsxbak, FINESINE(angle >> ANGLETOFINESHIFT)) + FixedMul(ofsybak, FINECOSINE(angle >> ANGLETOFINESHIFT)); \
+	ofsy = FixedMul(ofsxbak, FINESINE(angle >> ANGLETOFINESHIFT)) + FixedMul(ofsybak, FINECOSINE(angle >> ANGLETOFINESHIFT));
 
-#define UPDATEPLANEANGLE(floorspriteslope, facingangle, angle, x, y, z) \
+#define UPDATEPLANEANGLE(floorspriteslope, facingangle, angle, x, y, z)                                            \
 	fixed_t slope_a = FixedMul(-FINESINE(angle >> ANGLETOFINESHIFT), FINECOSINE(facingangle >> ANGLETOFINESHIFT)); \
-	fixed_t slope_b = FixedMul(-FINESINE(angle >> ANGLETOFINESHIFT), FINESINE(facingangle >> ANGLETOFINESHIFT)); \
-	fixed_t slope_c = FINECOSINE(angle >> ANGLETOFINESHIFT); \
-	fixed_t slope_d = -(FixedMul(slope_a, x) + FixedMul(slope_b, y) + FixedMul(slope_c, z)); \
+	fixed_t slope_b = FixedMul(-FINESINE(angle >> ANGLETOFINESHIFT), FINESINE(facingangle >> ANGLETOFINESHIFT));   \
+	fixed_t slope_c = FINECOSINE(angle >> ANGLETOFINESHIFT);                                                       \
+	fixed_t slope_d = -(FixedMul(slope_a, x) + FixedMul(slope_b, y) + FixedMul(slope_c, z));                       \
 	ReconfigureViaConstants(floorspriteslope, slope_a, slope_b, slope_c, slope_d)
-
 
 void Obj_HandleHorizNeoSpringParts(mobj_t *spring)
 {
@@ -171,10 +173,10 @@ void Obj_HandleHorizNeoSpringParts(mobj_t *spring)
 			case BACK:
 			{
 				a = spring->angle;
-				offsetx = -10*FRACUNIT;
+				offsetx = -10 * FRACUNIT;
 				offsety = 0;
 				UPDATEANGLE(a, offsetx, offsety);
-				UPDATEOFFSET(cur, spring, offsetx,offsety, 0);
+				UPDATEOFFSET(cur, spring, offsetx, offsety, 0);
 				P_SetMobjState(cur, S_NEOSPRING_BACK);
 				cur->renderflags |= RF_PAPERSPRITE;
 				cur->angle = spring->angle - ANGLE_90;
@@ -199,8 +201,8 @@ void Obj_HandleHorizNeoSpringParts(mobj_t *spring)
 			case SIDEL:
 			{
 				a = spring->angle - ANGLE_90;
-				offsetx = 30*FRACUNIT;
-				offsety = -6*FRACUNIT;
+				offsetx = 30 * FRACUNIT;
+				offsety = -6 * FRACUNIT;
 				UPDATEANGLE(a, offsetx, offsety);
 				UPDATEOFFSET(cur, spring, offsetx, offsety, 0);
 				P_SetMobjState(cur, S_NEOSPRING_SIDE);
@@ -215,8 +217,8 @@ void Obj_HandleHorizNeoSpringParts(mobj_t *spring)
 			case SIDER:
 			{
 				a = spring->angle - ANGLE_90;
-				offsetx = -32*FRACUNIT;
-				offsety = -4*FRACUNIT;
+				offsetx = -32 * FRACUNIT;
+				offsety = -4 * FRACUNIT;
 				UPDATEANGLE(a, offsetx, offsety);
 				UPDATEOFFSET(cur, spring, offsetx, offsety, 0);
 				P_SetMobjState(cur, S_NEOSPRING_SIDE);
@@ -231,12 +233,12 @@ void Obj_HandleHorizNeoSpringParts(mobj_t *spring)
 			case BOTTOM:
 			{
 				a = spring->angle - ANGLE_90;
-				offsetx = 32*FRACUNIT;
-				offsety = -6*FRACUNIT;
+				offsetx = 32 * FRACUNIT;
+				offsety = -6 * FRACUNIT;
 				UPDATEANGLE(a, offsetx, offsety);
 				UPDATEOFFSET(cur, spring, offsetx, offsety, 0);
 				P_SetMobjState(cur, S_NEOSPRING_SIDE);
-				cur->renderflags |= RF_FLOORSPRITE|RF_NOSPLATBILLBOARD;
+				cur->renderflags |= RF_FLOORSPRITE | RF_NOSPLATBILLBOARD;
 				cur->angle = spring->angle + ANGLE_90;
 				cur->scale = spring->scale;
 				cur->color = spring->color;
@@ -247,12 +249,12 @@ void Obj_HandleHorizNeoSpringParts(mobj_t *spring)
 			case TOP:
 			{
 				a = spring->angle - ANGLE_90;
-				offsetx = 32*FRACUNIT;
-				offsety = -6*FRACUNIT;
+				offsetx = 32 * FRACUNIT;
+				offsety = -6 * FRACUNIT;
 				UPDATEANGLE(a, offsetx, offsety);
-				UPDATEOFFSET(cur, spring, offsetx, offsety, 63*FRACUNIT);
+				UPDATEOFFSET(cur, spring, offsetx, offsety, 63 * FRACUNIT);
 				P_SetMobjState(cur, S_NEOSPRING_SIDE);
-				cur->renderflags |= RF_FLOORSPRITE|RF_NOSPLATBILLBOARD;
+				cur->renderflags |= RF_FLOORSPRITE | RF_NOSPLATBILLBOARD;
 				cur->angle = spring->angle + ANGLE_90;
 				cur->scale = spring->scale;
 				cur->color = spring->color;
@@ -273,21 +275,24 @@ void Obj_InitDiagNeoSpringSlopes(mobj_t *spring)
 	{
 		switch (neospring_part_side(cur))
 		{
-			case TOP:
-			case BOTTOM:
-			{
-				cur->floorspriteslope = (pslope_t *)P_CreateFloorSpriteSlope(cur);
-				break;
-			}
+		case TOP:
+		case BOTTOM:
+		case FRONT:
+		case BACK:
+		{
+			cur->floorspriteslope = (pslope_t *)P_CreateFloorSpriteSlope(cur);
+			break;
+		}
 
-			default:
-				break;
+		default:
+			break;
 		}
 	}
 
 	neospring_slopesetup(spring) = true;
 }
 
+// I'd much rather calculate offsets from rotation properly but this works for now
 void Obj_HandleVertNeoSpringParts(mobj_t *spring, dboolean diag)
 {
 	mobj_t *cur = spring;
@@ -304,10 +309,10 @@ void Obj_HandleVertNeoSpringParts(mobj_t *spring, dboolean diag)
 			case BACK:
 			{
 				a = spring->angle;
-				offsetx =30*FRACUNIT;
+				offsetx = 30 * FRACUNIT;
 				offsety = 0;
 				UPDATEANGLE(a, offsetx, offsety);
-				UPDATEOFFSET(cur, spring, offsetx,offsety, (-26*FRACUNIT)*P_MobjFlip(spring));
+				UPDATEOFFSET(cur, spring, offsetx, offsety, (-26 * FRACUNIT) * P_MobjFlip(spring));
 				P_SetMobjState(cur, S_NEOSPRING_SIDE);
 				cur->renderflags |= RF_PAPERSPRITE;
 				cur->rollangle = ANGLE_90;
@@ -316,16 +321,32 @@ void Obj_HandleVertNeoSpringParts(mobj_t *spring, dboolean diag)
 				cur->scale = spring->scale;
 				cur->color = spring->color;
 				cur->dispoffset = 1;
+
+				if (diag)
+				{
+					cur->rollangle = 0;
+					cur->renderflags |= RF_FLOORSPRITE | RF_NOSPLATBILLBOARD | RF_SLOPESPLAT;
+					offsetx = (-15 * FRACUNIT) * P_MobjFlip(spring);
+					offsety = (-28 * FRACUNIT);
+					UPDATEANGLE(a, offsetx, offsety);
+					UPDATEOFFSET(cur, spring, offsetx, offsety, (spring->eflags & MFE_VERTICALFLIP) ? 5 * FRACUNIT : 58 * FRACUNIT);
+					UPDATEPLANEANGLE(cur->floorspriteslope, spring->angle, ANG30, cur->x, cur->y, cur->z);
+					// Thanks Wumbo for your Cuboids mod.
+					// The closer the sprite is to being perfectly upright, the more it needs to be squished vertically
+					// Otherwise it will stretch to infinity and beyond
+					// (also try to prevent seams when upright by applying a very tiny stretch)
+					cur->spriteyscale = FixedMul(FINECOSINE(cur->floorspriteslope->zangle >> ANGLETOFINESHIFT), cur->scale + (cur->floorspriteslope->zangle == ANGLE_90 - 1 ? 1024 : 0));
+				}
 				break;
 			}
 
 			case FRONT:
 			{
 				a = spring->angle;
-				offsetx =-30*FRACUNIT;
+				offsetx = -30 * FRACUNIT;
 				offsety = 0;
 				UPDATEANGLE(a, offsetx, offsety);
-				UPDATEOFFSET(cur, spring, offsetx,offsety, (-26*FRACUNIT)*P_MobjFlip(spring));
+				UPDATEOFFSET(cur, spring, offsetx, offsety, (-26 * FRACUNIT) * P_MobjFlip(spring));
 				P_SetMobjState(cur, S_NEOSPRING_SIDE);
 				cur->renderflags |= RF_PAPERSPRITE;
 				cur->rollangle = ANGLE_90;
@@ -334,16 +355,39 @@ void Obj_HandleVertNeoSpringParts(mobj_t *spring, dboolean diag)
 				cur->scale = spring->scale;
 				cur->color = spring->color;
 				cur->dispoffset = 1;
+
+				if (diag)
+				{
+					cur->rollangle = 0;
+					cur->renderflags |= RF_FLOORSPRITE | RF_NOSPLATBILLBOARD | RF_SLOPESPLAT;
+					offsetx = (15 * FRACUNIT) * P_MobjFlip(spring);
+					offsety = (-28 * FRACUNIT);
+					UPDATEANGLE(a, offsetx, offsety);
+					UPDATEOFFSET(cur, spring, offsetx, offsety, (spring->eflags & MFE_VERTICALFLIP) ? 58 * FRACUNIT : 5 * FRACUNIT);
+					UPDATEPLANEANGLE(cur->floorspriteslope, spring->angle, ANG30, cur->x, cur->y, cur->z);
+					// Thanks Wumbo for your Cuboids mod.
+					// The closer the sprite is to being perfectly upright, the more it needs to be squished vertically
+					// Otherwise it will stretch to infinity and beyond
+					// (also try to prevent seams when upright by applying a very tiny stretch)
+					cur->spriteyscale = FixedMul(FINECOSINE(cur->floorspriteslope->zangle >> ANGLETOFINESHIFT), cur->scale + (cur->floorspriteslope->zangle == ANGLE_90 - 1 ? 1024 : 0));
+				}
 				break;
 			}
 
 			case SIDEL:
 			{
 				a = spring->angle - ANGLE_90;
-				offsetx = 30*FRACUNIT;
+				offsetx = 30 * FRACUNIT;
 				offsety = 0;
 				UPDATEANGLE(a, offsetx, offsety);
-				UPDATEOFFSET(cur, spring, offsetx, offsety, (-26*FRACUNIT)*P_MobjFlip(spring));
+				if (diag)
+				{
+					UPDATEOFFSET(cur, spring, offsetx, offsety, 0);
+				}
+				else
+				{
+					UPDATEOFFSET(cur, spring, offsetx, offsety, (-26 * FRACUNIT) * P_MobjFlip(spring));
+				}
 				P_SetMobjState(cur, S_NEOSPRING_SIDE);
 				cur->renderflags |= RF_PAPERSPRITE;
 				cur->rollangle = ANGLE_90;
@@ -358,10 +402,17 @@ void Obj_HandleVertNeoSpringParts(mobj_t *spring, dboolean diag)
 			case SIDER:
 			{
 				a = spring->angle - ANGLE_90;
-				offsetx = -30*FRACUNIT;
+				offsetx = -30 * FRACUNIT;
 				offsety = 0;
 				UPDATEANGLE(a, offsetx, offsety);
-				UPDATEOFFSET(cur, spring, offsetx, offsety,  (-26*FRACUNIT)*P_MobjFlip(spring));
+				if (diag)
+				{
+					UPDATEOFFSET(cur, spring, offsetx, offsety, 0);
+				}
+				else
+				{
+					UPDATEOFFSET(cur, spring, offsetx, offsety, (-26 * FRACUNIT) * P_MobjFlip(spring));
+				}
 				P_SetMobjState(cur, S_NEOSPRING_SIDE);
 				cur->renderflags |= RF_PAPERSPRITE;
 				cur->rollangle = ANGLE_90;
@@ -376,12 +427,12 @@ void Obj_HandleVertNeoSpringParts(mobj_t *spring, dboolean diag)
 			case BOTTOM:
 			{
 				a = spring->angle;
-				offsetx = -30*FRACUNIT;
+				offsetx = -30 * FRACUNIT;
 				offsety = 0;
 				UPDATEANGLE(a, offsetx, offsety);
-				UPDATEOFFSET(cur, spring, offsetx, offsety, (spring->eflags & MFE_VERTICALFLIP) ? 10*FRACUNIT : 0);
+				UPDATEOFFSET(cur, spring, offsetx, offsety, (spring->eflags & MFE_VERTICALFLIP) ? 10 * FRACUNIT : 0);
 				P_SetMobjState(cur, S_NEOSPRING_BACK);
-				cur->renderflags |= RF_FLOORSPRITE|RF_NOSPLATBILLBOARD|RF_SLOPESPLAT;
+				cur->renderflags |= RF_FLOORSPRITE | RF_NOSPLATBILLBOARD | RF_SLOPESPLAT;
 				cur->pitch = pitch;
 				cur->angle = spring->angle;
 				cur->scale = spring->scale;
@@ -390,6 +441,10 @@ void Obj_HandleVertNeoSpringParts(mobj_t *spring, dboolean diag)
 
 				if (diag)
 				{
+					offsetx = -20 * FRACUNIT;
+					offsety = 0;
+					UPDATEANGLE(a, offsetx, offsety);
+					UPDATEOFFSET(cur, spring, offsetx, offsety, ((spring->eflags & MFE_VERTICALFLIP) ? 64 * FRACUNIT : 56 * FRACUNIT));
 					UPDATEPLANEANGLE(cur->floorspriteslope, spring->angle, ANGLE_120, cur->x, cur->y, cur->z);
 					// Thanks Wumbo for your Cuboids mod.
 					// The closer the sprite is to being perfectly upright, the more it needs to be squished vertically
@@ -404,12 +459,12 @@ void Obj_HandleVertNeoSpringParts(mobj_t *spring, dboolean diag)
 			case TOP:
 			{
 				a = spring->angle;
-				offsetx = -30*FRACUNIT;
+				offsetx = -30 * FRACUNIT;
 				offsety = 0;
 				UPDATEANGLE(a, offsetx, offsety);
-				UPDATEOFFSET(cur, spring, offsetx, offsety, (spring->eflags & MFE_VERTICALFLIP) ? 0 : 10*FRACUNIT);
+				UPDATEOFFSET(cur, spring, offsetx, offsety, (spring->eflags & MFE_VERTICALFLIP) ? 0 : 10 * FRACUNIT);
 				P_SetMobjState(cur, S_NEOSPRING_FRONT);
-				cur->renderflags |= RF_FLOORSPRITE|RF_NOSPLATBILLBOARD|RF_SLOPESPLAT;
+				cur->renderflags |= RF_FLOORSPRITE | RF_NOSPLATBILLBOARD | RF_SLOPESPLAT;
 				cur->pitch = pitch;
 				cur->angle = spring->angle;
 				cur->scale = spring->scale;
@@ -418,6 +473,10 @@ void Obj_HandleVertNeoSpringParts(mobj_t *spring, dboolean diag)
 
 				if (diag)
 				{
+					offsetx = -10 * FRACUNIT;
+					offsety = 0;
+					UPDATEANGLE(a, offsetx, offsety);
+					UPDATEOFFSET(cur, spring, offsetx, offsety, (spring->eflags & MFE_VERTICALFLIP) ? 56 * FRACUNIT : 64 * FRACUNIT);
 					UPDATEPLANEANGLE(cur->floorspriteslope, spring->angle, ANGLE_120, cur->x, cur->y, cur->z);
 					// Thanks Wumbo for your Cuboids mod.
 					// The closer the sprite is to being perfectly upright, the more it needs to be squished vertically
@@ -435,14 +494,13 @@ void Obj_HandleVertNeoSpringParts(mobj_t *spring, dboolean diag)
 	}
 }
 
-void Obj_ThinkNeoSpring(mobj_t * spring)
+void Obj_ThinkNeoSpring(mobj_t *spring)
 {
 	if (neospring_setup(spring) == false)
 		Obj_InitNeoSpringParts(spring);
 
 	switch (spring->type)
 	{
-
 		case MT_NEOSPRING:
 			Obj_HandleVertNeoSpringParts(spring, false);
 			break;
