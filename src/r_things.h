@@ -32,7 +32,7 @@ extern "C" {
 #define FEETADJUST (4<<FRACBITS) // R_AddSingleSpriteDef
 
 void R_AddKartFaces(skin_t *skin);
-void R_AddKartItemSprites(kartitem_t *item);
+void R_AddKartItemSprites(kartitem_t *item, dboolean alt);
 dboolean R_AddSingleSpriteDef(const char *sprname, spritedef_t *spritedef, uint16_t wadnum, uint16_t startlump, uint16_t endlump);
 
 //faB: find sprites in wadfile, replace existing, add new ones

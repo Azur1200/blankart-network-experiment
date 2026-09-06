@@ -284,14 +284,15 @@ void R_AddKartFaces(skin_t *skin)
 #undef NUMFACES
 
 // dear god... what a mess...
-void R_AddKartItemSprites(kartitem_t *item)
+void R_AddKartItemSprites(kartitem_t *item, dboolean alt)
 {
-	spritedef_t *spritedef = &item->spritedef;
+	spritedef_t *spritedef = alt ? &item->altspritedef : &item->spritedef;
 	memset(sprtemp, 0xff, sizeof(sprtemp));
 	spritename = "ITEM";
 	maxframe = spritedef->numframes - 1;
+	int32_t patch_idx = alt && item->graphics[2].patches[0] ? 2 : 0;
 
-	const kartitemgraphics_t *graphics = &item->graphics[0];
+	const kartitemgraphics_t *graphics = &item->graphics[patch_idx];
 	for (uint8_t i = 0; i < graphics->numpatches; i++)
 	{
 		lumpnum_t lumpnum = W_CheckNumForName(graphics->patchnames[i]);
@@ -2212,7 +2213,10 @@ static void R_ProjectSprite(mobj_t *thing)
 	}
 	else if (thing->sprite == SPR_ITEM)
 	{
-		sprdef = &kartitems[thing->threshold > 0 && thing->threshold < numkartitems ? thing->threshold : 0].spritedef;
+		int32_t item = thing->threshold > 0 && thing->threshold < numkartitems ? thing->threshold : 0;
+		dboolean alt = item > 0 && K_IsKartItemAlternate((kartitemtype_e)item);
+
+		sprdef = alt ? &kartitems[item].altspritedef : &kartitems[item].spritedef;
 		sprinfo = &spriteinfo[SPR_ITEM];
 
 		if (frame >= sprdef->numframes) {

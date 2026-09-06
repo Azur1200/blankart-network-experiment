@@ -123,6 +123,7 @@ struct kartitem_t
 	kartitemflags_e flags[2];
 	kartitemgraphics_t graphics[4];
 	spritedef_t spritedef;
+	spritedef_t altspritedef;
 
 	consvar_t *altcvar; // if not NULL, an altitem exists
 	dboolean altenabled;
