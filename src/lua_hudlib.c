@@ -785,9 +785,6 @@ static int libd_drawOnMinimap(lua_State *L)
 	int32_t mx, my;
 	int32_t splitflags, minimaptrans;
 
-	// base position of the minimap which also takes splits into account:
-	int32_t MM_X, MM_Y;
-
 	// variables used for actually drawing the icon:
 	fixed_t amnumxpos, amnumypos;
 	int32_t amxpos, amypos;
@@ -805,58 +802,13 @@ static int libd_drawOnMinimap(lua_State *L)
 
 	// replicate exactly what source does for its minimap drawer; AKA hardcoded garbo.
 
-	// first, check what position the mmap is supposed to be in (pasted from k_kart.c):
-	MM_X = BASEVIDWIDTH - 50;		// 270
-	MM_Y = (BASEVIDHEIGHT/2)-16; //  84
-	if (r_splitscreen)
-	{
-		MM_Y = (BASEVIDHEIGHT/2);
-		if (r_splitscreen > 1)	// 3P : bottom right
-		{
-			MM_X = (3*BASEVIDWIDTH/4);
-			MM_Y = (3*BASEVIDHEIGHT/4);
-
-			if (r_splitscreen > 2) // 4P: centered
-			{
-				MM_X = (BASEVIDWIDTH/2);
-				MM_Y = (BASEVIDHEIGHT/2);
-			}
-		}
-	}
-
-	// splitscreen flags
-	splitflags = (r_splitscreen == 3 ? 0 : V_SNAPTORIGHT);	// flags should only be 0 when it's centered (4p split)
-
-	{
-		const tic_t length = TICRATE/2;
-
-		if (!lt_exitticker)
-			return 0;
-		minimaptrans = cv_kartminimap.value;
-		if (lt_exitticker < length)
-			minimaptrans = (((int32_t)lt_exitticker)*minimaptrans)/((int32_t)length);
-		if (!minimaptrans)
-			return 0;
-	}
-
-
-	minimaptrans = ((10-minimaptrans)<<FF_TRANSSHIFT);
-	splitflags |= minimaptrans;
-
-	if (!(r_splitscreen == 2))
-	{
-		splitflags &= ~minimaptrans;
-		splitflags |= V_HUDTRANSHALF;
-	}
-
-	splitflags &= ~V_HUDTRANSHALF;
-	splitflags |= V_HUDTRANS;
-
 	// Draw the HUD only when playing in a level.
 	// hu_stuff needs this, unlike st_stuff.
 	if (gamestate != GS_LEVEL)
 		return 0;
 
+	// Only draw for the first player
+	// Maybe move this somewhere else where this won't be a concern?
 	if (stplyrnum != 0)
 		return 0;
 
@@ -865,8 +817,37 @@ static int libd_drawOnMinimap(lua_State *L)
 		return 0; // no pic, just get outta here
 	}
 
-	mx = MM_X - (minimapinfo.minimap_pic->width/2);
-	my = MM_Y - (minimapinfo.minimap_pic->height/2);
+	drawinfo_t info;
+	K_getMinimapDrawinfo(&info);
+	mx = info.x;
+	my = info.y;
+	splitflags = info.flags;
+
+	if (r_splitscreen < 2) // 1/2P right aligned
+	{
+		const tic_t length = TICRATE/2;
+
+		if (!lt_exitticker)
+			return 0;
+		if (lt_exitticker < length)
+			minimaptrans = (((int32_t)lt_exitticker)*minimaptrans)/((int32_t)length);
+
+	}
+	else if (r_splitscreen == 3) // 4P centered
+	{
+		const tic_t length = TICRATE/2;
+
+		if (!lt_exitticker)
+			return 0;
+		if (lt_exitticker < length)
+			minimaptrans = (((int32_t)lt_exitticker)*minimaptrans)/((int32_t)length);
+	}
+	// 3P lives in the middle of the bottom right player and shouldn't fade in OR slide
+
+	if (!minimaptrans)
+		return 0;
+
+	minimaptrans = ((10-minimaptrans)<<FF_TRANSSHIFT);
 
 	// let offsets transfer to the heads, too!
 	if (encoremode)
@@ -884,8 +865,8 @@ static int libd_drawOnMinimap(lua_State *L)
 		amnumxpos = -amnumxpos;
 
 	// scale patch coords
-	patchw = patch->width*scale /2;
-	patchh = patch->height*scale /2;
+	patchw = patch->width*scale/2;
+	patchh = patch->height*scale/2;
 
 	if (centered)
 		patchw = patchh = 0;	// patch is supposedly already centered, don't butt in.
