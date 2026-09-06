@@ -2619,12 +2619,12 @@ void M_UpdateMenuCMD(uint8_t i, dboolean bailrequired)
 		if (G_PlayerInputDown(i, gc_turnright, false, DEADZONE_X)) { menucmd[i].dpad_lr++; }
 		else if (menustack[0] && menucmd[i].ev_dpad_lr > 0) { menucmd[i].dpad_lr++; }
 
-		if (G_PlayerInputDown(i, gc_accelerate, true, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_CONFIRM; }
-		if (G_PlayerInputDown(i, gc_brake, true, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_CANCEL; }
-		if (G_PlayerInputDown(i, gc_fire, true, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_INFO1; }
-		if (G_PlayerInputDown(i, gc_drift, true, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_INFO2; }
-		if (G_PlayerInputDown(i, gc_pause, true, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_INFO3; }
-		if (G_PlayerInputDown(i, gc_systemmenu, true, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_HOME; }
+		if (G_PlayerInputDown(i, gc_accelerate, false, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_CONFIRM; }
+		if (G_PlayerInputDown(i, gc_brake, false, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_CANCEL; }
+		if (G_PlayerInputDown(i, gc_fire, false, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_INFO1; }
+		if (G_PlayerInputDown(i, gc_drift, false, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_INFO2; }
+		if (G_PlayerInputDown(i, gc_pause, false, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_INFO3; }
+		if (G_PlayerInputDown(i, gc_systemmenu, false, DEADZONE_BUTTON)) { menucmd[i].buttons |= MBT_HOME; }
 	}
 
 	if (menucmd[i].dpad_ud == 0 && menucmd[i].dpad_lr == 0 && menucmd[i].buttons == 0)
