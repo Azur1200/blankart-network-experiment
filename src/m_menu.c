@@ -1672,7 +1672,7 @@ static int SortPanels(const void *a, const void *b)
 	return c != 0 ? c : p1 - p2;
 }
 
-#define TYPEFADETIME 6
+#define TYPEFADETIME 4
 #define TYPEFADETIMEHALF TYPEFADETIME/2
 
 // Draws the typing submenu
@@ -1686,7 +1686,7 @@ static void M_DrawMenuTyping(void)
 
 	char buf[8];	// We write there to use drawstring for convenience.
 
-	V_DrawFadeScreen(31, (menutyping.menutypingfade+9)/2);
+	V_DrawFadeScreen(31, (menutyping.menutypingfade+11)/2);
 
 	// Draw the string we're editing at the top.
 
