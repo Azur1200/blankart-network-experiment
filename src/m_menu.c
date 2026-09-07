@@ -1672,6 +1672,9 @@ static int SortPanels(const void *a, const void *b)
 	return c != 0 ? c : p1 - p2;
 }
 
+#define TYPEFADETIME 6
+#define TYPEFADETIMEHALF TYPEFADETIME/2
+
 // Draws the typing submenu
 static void M_DrawMenuTyping(void)
 {
@@ -1683,17 +1686,17 @@ static void M_DrawMenuTyping(void)
 
 	char buf[8];	// We write there to use drawstring for convenience.
 
-	V_DrawFadeScreen(31, (menutyping.menutypingfade+1)/2);
+	V_DrawFadeScreen(31, (menutyping.menutypingfade+9)/2);
 
 	// Draw the string we're editing at the top.
 
 	const int32_t boxwidth = (8*(MAXSTRINGLENGTH + 1)) + 7;
 	x = (BASEVIDWIDTH - boxwidth)/2;
 	y = 80;
-	if (menutyping.menutypingfade < 9)
-		y += floor(pow(2, (double)(9 - menutyping.menutypingfade)));
+	if (menutyping.menutypingfade < TYPEFADETIMEHALF)
+		y += floor(pow(2, (double)(TYPEFADETIMEHALF - menutyping.menutypingfade)));
 	else
-		y += (9-menutyping.menutypingfade);
+		y += (TYPEFADETIMEHALF-menutyping.menutypingfade);
 
 	menuitem_t *item = menutyping.item;
 
@@ -1727,13 +1730,13 @@ static void M_DrawMenuTyping(void)
 	x += 5;
 	int32_t returnx = x;
 
-	if (menutyping.menutypingfade > 9)
+	if (menutyping.menutypingfade > TYPEFADETIMEHALF)
 	{
 		y += 26;
 
-		if (menutyping.menutypingfade < 18)
+		if (menutyping.menutypingfade < TYPEFADETIME)
 		{
-			y += floor(pow(2, (double)(18 - menutyping.menutypingfade))); // double yoffs for animation
+			y += floor(pow(2, (double)(TYPEFADETIME - menutyping.menutypingfade))); // double yoffs for animation
 		}
 
 		int32_t tempkeyboardx = menutyping.keyboardx;
@@ -1770,7 +1773,7 @@ static void M_DrawMenuTyping(void)
 					col = 25;
 				}
 
-				dboolean canmodifycol = (menutyping.menutypingfade == 18);
+				dboolean canmodifycol = (menutyping.menutypingfade == TYPEFADETIME);
 
 				if (c == KEY_BACKSPACE)
 				{
@@ -1879,9 +1882,9 @@ static void M_DrawMenuTyping(void)
 
 	y = 187;
 
-	if (menutyping.menutypingfade < 9)
+	if (menutyping.menutypingfade < TYPEFADETIMEHALF)
 	{
-		y += 3 * (9 - menutyping.menutypingfade);
+		y += 3 * (TYPEFADETIMEHALF - menutyping.menutypingfade);
 	}
 
 	// Some contextual stuff
@@ -2794,7 +2797,7 @@ void M_MenuTypingInput(int32_t key)
 	else
 	{
 		// Opening
-		const uint8_t destination = (menutyping.keyboardtyping ? 9 : 18);
+		const uint8_t destination = (menutyping.keyboardtyping ? TYPEFADETIMEHALF : TYPEFADETIME);
 
 		if (menutyping.menutypingfade > destination)
 		{
@@ -2805,7 +2808,7 @@ void M_MenuTypingInput(int32_t key)
 			menutyping.menutypingfade++;
 		}
 
-		if (menutyping.menutypingfade >= 9) // either is visible
+		if (menutyping.menutypingfade >= TYPEFADETIMEHALF) // either is visible
 		{
 			if (key == KEY_ENTER || key == KEY_ESCAPE)
 			{
