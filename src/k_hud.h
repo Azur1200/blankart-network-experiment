@@ -78,6 +78,7 @@ extern consvar_t cv_highresportrait;
 extern patch_t *kp_facenum[MAXPLAYERS+1];
 extern patch_t *kp_itemboxminimap;
 extern patch_t *kp_minimapdot;
+extern patch_t *kp_minimaplight;
 
 struct trackingResult_t
 {

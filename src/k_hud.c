@@ -211,6 +211,7 @@ static patch_t *kp_wanted;
 static patch_t *kp_wantedsplit;
 static patch_t *kp_wantedreticle;
 patch_t *kp_minimapdot;
+patch_t *kp_minimaplight;
 
 static patch_t *kp_itembg[8];
 static patch_t *kp_itemalt[4];
@@ -612,8 +613,17 @@ void K_LoadKartHUDGraphics(void)
 	HU_UpdatePatch(&kp_battleinfo, "K_BINFO");
 	HU_UpdatePatch(&kp_wanted, "K_WANTED");
 	HU_UpdatePatch(&kp_wantedsplit, "4PWANTED");
+
+	// Minimap Patches
 	HU_UpdatePatch(&kp_wantedreticle, "MMAPWANT");
 	HU_UpdatePatch(&kp_minimapdot, "MMAPDOT");
+	HU_UpdatePatch(&kp_minimaplight, "MMAPHDLT");
+	kp_minimaplight->pivot.x = 
+		(kp_minimaplight->width / 2) + kp_minimaplight->leftoffset;
+	kp_minimaplight->pivot.y = 
+		(kp_minimaplight->height / 2) + kp_minimaplight->topoffset;
+	kp_minimaplight->alignflags |=
+		(PATCHALIGN_AUTOCENTER | PATCHALIGN_USEPIVOTS);
 
 	// Kart Item Windows
 	HU_UpdatePatch(&kp_itembg[0], "K_ITBG");
@@ -4481,7 +4491,6 @@ static void K_drawKartMinimapHeadlight(fixed_t objx, fixed_t objy, int32_t hudx,
 	fixed_t amnumxpos, amnumypos;
 	int32_t amxpos, amypos;
 	fixed_t scale = FRACUNIT;
-	patch_t *icon = W_CachePatchNameRotated("MMAPHDLT", R_GetRollAngle(ang), PU_PATCH);
 
 	amnumxpos = (FixedMul(objx, minimapinfo.zoom) - minimapinfo.offs_x);
 	amnumypos = -(FixedMul(objy, minimapinfo.zoom) - minimapinfo.offs_y);
@@ -4492,7 +4501,7 @@ static void K_drawKartMinimapHeadlight(fixed_t objx, fixed_t objy, int32_t hudx,
 	amxpos = amnumxpos + ((hudx + (minimapinfo.minimap_pic->width-48)/2)<<FRACBITS);
 	amypos = amnumypos + ((hudy + (minimapinfo.minimap_pic->height-24)/2)<<FRACBITS);
 
-	V_DrawFixedPatch(amxpos, amypos, scale, flags|V_ADD, icon, colormap);
+	V_DrawRotatedPatch(amxpos, amypos, ang, scale, scale, flags|V_ADD, kp_minimaplight, colormap);
 }
 
 static void K_drawKartMinimapNametag(fixed_t objx, fixed_t objy, int32_t hudx, int32_t hudy, int32_t flags, player_t *player)
