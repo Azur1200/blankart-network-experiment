@@ -864,6 +864,9 @@ static int libd_drawOnMinimap(lua_State *L)
 	if (encoremode)
 		amnumxpos = -amnumxpos;
 
+	if (cv_minihead.value)
+		scale /= 2;
+
 	// scale patch coords
 	patchw = patch->width*scale/2;
 	patchh = patch->height*scale/2;
@@ -878,9 +881,6 @@ static int libd_drawOnMinimap(lua_State *L)
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
 	list = (huddrawlist_h)lua_touserdata(L, -1);
 	lua_pop(L, 1);
-
-	if (cv_minihead.value)
-		scale /= 2;
 
 	if (LUA_HUD_IsDrawListValid(list))
 		LUA_HUD_AddDrawScaled(list, amxpos, amypos, scale, patch, splitflags, colormap);
