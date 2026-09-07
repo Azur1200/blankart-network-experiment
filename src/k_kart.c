@@ -9083,9 +9083,9 @@ void K_UpdateProgressThroughCourse(player_t *player)
 
 	const dboolean sectionrace = ((mapheaderinfo[gamemap-1]->levelflags & LF_SECTIONRACE) == LF_SECTIONRACE);
 
-	waypoint_t *tracestart = (sectionrace) ? K_GetStartingWaypoint() : K_GetFinishLineWaypoint();
+	waypoint_t *finishline   = K_GetFinishLineWaypoint();
 
-	if ((player->currentwaypoint == NULL) || (tracestart == NULL) || (player->laps < 1))
+	if ((player->currentwaypoint == NULL) || (finishline == NULL) || (player->laps < 1))
 	{
 		return;
 	}
@@ -9096,29 +9096,40 @@ void K_UpdateProgressThroughCourse(player_t *player)
 	path_t pathtofinish = {0};
 
 	pathfindsuccess =
-		K_PathfindToWaypoint(tracestart, player->currentwaypoint, &pathtofinish, useshortcuts, huntbackwards);
+		K_PathfindToWaypoint(player->currentwaypoint, finishline, &pathtofinish, useshortcuts, huntbackwards);
 
 	if (!pathfindsuccess)
 	{
 		// We failed...
 		// Lets try shortcut waypoints if that happens to be the only path.
 		pathfindsuccess =
-		K_PathfindToWaypoint(tracestart, player->currentwaypoint, &pathtofinish, true, huntbackwards);
+		K_PathfindToWaypoint(player->currentwaypoint, finishline, &pathtofinish, true, huntbackwards);
 	}
 
 	if (pathfindsuccess)
 	{
 		int32_t nextlap_mul = (sectionrace) ? 0.0 : max(0, player->laps - 1);
 		int64_t coursedist = K_GetCircuitLength();
-		int64_t pathdist = ((int64_t)(pathtofinish.totaldist) + (coursedist * nextlap_mul)) * BIGFRACUNIT;
+		uint32_t path_thru_course = (uint32_t)(max(0, coursedist - (int64_t)(pathtofinish.totaldist)));
+		int64_t pathdist = ((int64_t)(path_thru_course) + (coursedist * nextlap_mul)) * BIGFRACUNIT;
 		int32_t lap_mul = numlaps;
+
+		if (path_thru_course > coursedist)
+		{
+			// In theory: a looping circuit should never exceed the actual course length, and the lap change should account for
+			// exact-length measurements, so it should never precisely match either
+			// It is theoretically impossible for a sectioned race to reach this value, as well
+			// If it does, we probably looped around to get to a waypoint behind us; DO NOT count this!
+			/*I_OutputMsg("K_UpdateProgressThroughCourse: wraparound; measured a distance of %d when the course is only %d units long\n", pathtofinish.totaldist, coursedist);*/
+			Z_Free(pathtofinish.array);
+			return;
+		}
 
 		if (sectionrace)
 		{
 			// The course length IS how long the sectioned course is, AKA: DON'T multiply the damn distances!
 			lap_mul = 1;
 		}
-
 		// Multiply the course distance by the lap count to get the length of the entire race
 		coursedist *= lap_mul;
 
@@ -12585,7 +12596,7 @@ void K_UpdatePositionFactorAndPlayerRanks(void)
 {
 	cannotrank = false;
 
-	if (!rankingactive || (!(gametypes[gametype]->rules & GTR_CIRCUIT)) || (players_racing <= 1) || (modeattacking))
+	if (!rankingactive || (!(gametypes[gametype]->rules & GTR_CIRCUIT)) || (players_racing <= 1) || (modeattacking) || (K_GetCircuitLength() == 0))
 	{
 		// Can't do nuthin'
 		positionfactor = 0;
