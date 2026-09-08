@@ -704,6 +704,8 @@ consvar_t cv_debugvirtualkeyboard = CVAR_INIT ("debugvirtualkeyboard", "Off", 0,
 
 static void AddonSearch(void);
 
+consvar_t cv_addons_oldinput = CVAR_INIT ("addons_oldinput", "Off", CV_SAVE, CV_OnOff, NULL);
+
 consvar_t cv_dummyaddonsearch = CVAR_INIT ("dummymenusearch", "", CV_HIDEN|CV_CALL|CV_NOINIT, NULL, AddonSearch);
 
 
@@ -3479,6 +3481,8 @@ void M_Init(void)
 
 	CV_RegisterVar(&cv_showallmaps);
 
+	CV_RegisterVar(&cv_addons_oldinput);
+
 	// Menu hacks
 	CV_RegisterVar(&cv_dummymenuplayer);
 	CV_RegisterVar(&cv_dummyteam);
@@ -5870,19 +5874,35 @@ void MP_TickAddonsURL(menupanelinst_t *pi)
 void MP_TickAddonsBackground(menupanelinst_t *pi)
 {
 	M_SetItemText(pi, "HEADERPATH", M_AddonsHeaderPath());
-	M_SetItemDisabled(pi, "SEARCHICON", *cv_dummyaddonsearch.string == 0);
 	M_SetItemDisabled(pi, "DISKICON", majormods);
 	M_SetItemVisible(pi, "ADDONSLOADED", modifiedgame);
 
-	M_SetItemDisabled(pi, "SEARCHTEXT", *cv_dummyaddonsearch.string == 0);
-	if (*cv_dummyaddonsearch.string == 0)
+	if (cv_addons_oldinput.value)
 	{
-		const char *button = M_ButtonName(0, gc_drift, "DRIFT", false);
-		M_SetItemText(pi, "SEARCHTEXT", va("Press %s to Search", button));
+		M_SetItemDisabled(pi, "SEARCHICON", menusearch.length == 0);
+		M_SetItemDisabled(pi, "SEARCHTEXT", menusearch.length == 0);
+		if (menusearch.length == 0)
+		{
+			M_SetItemText(pi, "SEARCHTEXT", "Type to search...");
+		}
+		else
+		{
+			M_SetItemText(pi, "SEARCHTEXT", menusearch.buffer);
+		}
 	}
 	else
 	{
-		M_SetItemText(pi, "SEARCHTEXT", cv_dummyaddonsearch.string);
+		M_SetItemDisabled(pi, "SEARCHICON", *cv_dummyaddonsearch.string == 0);
+		M_SetItemDisabled(pi, "SEARCHTEXT", *cv_dummyaddonsearch.string == 0);
+		if (*cv_dummyaddonsearch.string == 0)
+		{
+			const char *button = M_ButtonName(0, gc_drift, "DRIFT", false);
+			M_SetItemText(pi, "SEARCHTEXT", va("Press %s to Search", button));
+		}
+		else
+		{
+			M_SetItemText(pi, "SEARCHTEXT", cv_dummyaddonsearch.string);
+		}
 	}
 }
 
@@ -5990,6 +6010,24 @@ static menuitem_t addonsearch = {.text = searchtext, .cvar = &cv_dummyaddonsearc
 int32_t MR_HandleAddons(int32_t choice)
 {
 	const char *filename = curpanels[panelOn].items[curpanels[panelOn].itemon].extra;
+
+	if (cv_addons_oldinput.value && M_TextInputHandle(&menusearch, choice))
+	{
+		S_StartSound(NULL,sfx_menu1);
+
+		char *tempname = Z_StrDup(filename);
+#if 0 // much slower
+		if (!preparefilemenu(true, false))
+		{
+			UNEXIST;
+			return true;
+		}
+#else // streamlined
+		searchfilemenu(tempname);
+#endif
+		Reinitialize();
+		return true;
+	}
 
 	if (menucmd[0].dpad_ud > 0)
 	{
