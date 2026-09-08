@@ -2400,14 +2400,14 @@ static void R_ProjectSprite(mobj_t *thing)
 		vector2_t affine_pivot = {0};
 
 		vector2_t patch_defaultpivot = {0};
-		if (thing->renderflags2 & RF2_PIVOTATOFFSETS)
+		if (interptarg->renderflags2 & RF2_PIVOTATOFFSETS)
 		{
 			patch_defaultpivot.x = spr_offset;
 			patch_defaultpivot.y = spr_topoffset;
 
-			if (thing->player)
+			if (interptarg->player)
 			{
-				if (!(wadfiles[((skin_t *)thing->skin)->wadnum]->compatmode))
+				if (!(wadfiles[((skin_t *)interptarg->skin)->wadnum]->compatmode))
 				{
 					// RR skins actually pivot themselves 4 pixels above their offset
 					// Ideally, any modifications to that would supply their own SPRTINFO, so...
@@ -2424,7 +2424,7 @@ static void R_ProjectSprite(mobj_t *thing)
 		R_GetPivotVectorFromSpriteInfo(&affine_pivot,
 									   &patch_defaultpivot,
 									   sprinfo,
-									   (thing->frame & FF_FRAMEMASK));
+									   (interptarg->frame & FF_FRAMEMASK));
 
 		fixed_t use_xoffset = spr_offset;
 
@@ -2440,7 +2440,7 @@ static void R_ProjectSprite(mobj_t *thing)
 		else
 		{
 			int8_t flipoffset = 1;
-			if ((thing->renderflags & RF_FLIPOFFSETS) && flip)
+			if (((interptarg->renderflags & RF_FLIPOFFSETS) || (interptarg->player)) && flip)
 				flipoffset = -1;
 			use_xoffset += (FixedDiv(interp.spritexoffset,highresscale) * flipoffset);
 		}
@@ -2547,7 +2547,7 @@ static void R_ProjectSprite(mobj_t *thing)
 	}
 	else
 	{
-		if (((thing->renderflags & RF_FLIPOFFSETS) || (thing->player)) && flip)
+		if (((interptarg->renderflags & RF_FLIPOFFSETS) || (interptarg->player)) && flip)
 			offset = spr_offset - spr_width;
 		else
 			offset = -spr_offset;
