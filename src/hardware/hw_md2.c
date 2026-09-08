@@ -508,6 +508,7 @@ void HWR_InitModels(void)
 	// PLAYERMODELPREFIX is 6 characters long
 	float scale, offset;
 	size_t prefixlen;
+	dboolean models_loaded = false;
 
 	CONS_Printf("HWR_InitModels()...\n");
 	for (s = 0; s < MAXSKINS; s++)
@@ -551,7 +552,10 @@ loadmodelfile:
 				goto loadmodelfile;
 			}
 			CONS_Printf("Error while loading %s: %s\n", modelfile, strerror(errno));
-			nomd2s = true;
+
+			if (!models_loaded)
+				nomd2s = true;
+
 			return;
 		}
 	}
@@ -582,6 +586,7 @@ loadmodelfile:
 					md2_models[i].offset = offset;
 					md2_models[i].notfound = false;
 					strcpy(md2_models[i].filename, filename);
+					models_loaded = true;
 					goto modelfound;
 				}
 			}
@@ -600,6 +605,7 @@ addskinmodel:
 				md2_playermodels[s].notfound = false;
 				strcpy(md2_playermodels[s].filename, filename);
 				CONS_Printf("Added 3D model for skin '%s' %s\n", skins[s]->name, iscompatskin ? "in compatibility mode" : "");
+				models_loaded = true;
 				goto modelfound;
 			}
 		}
