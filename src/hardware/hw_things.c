@@ -1841,14 +1841,14 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		vector2_t affine_pivot = {0};
 
 		vector2_t patch_defaultpivot = {0};
-		if (thing->renderflags2 & RF2_PIVOTATOFFSETS)
+		if (interptarg->renderflags2 & RF2_PIVOTATOFFSETS)
 		{
 			patch_defaultpivot.x = spr_offset;
 			patch_defaultpivot.y = spr_topoffset;
 
-			if (thing->player)
+			if (interptarg->player)
 			{
-				if (!(wadfiles[((skin_t *)thing->skin)->wadnum]->compatmode))
+				if (!(wadfiles[((skin_t *)interptarg->skin)->wadnum]->compatmode))
 				{
 					// RR skins actually pivot themselves 4 pixels above their offset
 					// Ideally, any modifications to that would supply their own SPRTINFO, so...
