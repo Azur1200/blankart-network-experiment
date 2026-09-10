@@ -101,6 +101,8 @@ automatically.
 	X (PlayerNextLap),/* K_HandleLapIncrement */\
 	X (PlayerFinalLap),/* K_HandleLapIncrement */\
 	X (PlayerFinish), /* P_DoPlayerExit, P_DoTimeOver */\
+	X (ShouldBounceWall), /* P_BouncePlayerMove */\
+	X (PlayerBounceWall), /* P_BouncePlayerMove */\
 
 #define STRING_HOOK_LIST(X) \
 	X (SpecialExecute),\
@@ -207,6 +209,9 @@ int		LUA_HookDropHnextList(mobj_t *mobj, mobjtype_t droptype, dboolean *orbit, d
 dboolean LUA_HookPlayerNextLap(player_t *player, dboolean displayplayer, dboolean localplayer); // BlanKart: Hook for the lap increment sequence
 dboolean LUA_HookPlayerFinalLap(player_t *player, dboolean displayplayer, dboolean localplayer); // BlanKart: Hook for the final lap sequence
 int LUA_HookPlayerFinish(player_t *player, dboolean dnf, dboolean losing);
+
+int LUA_HookShouldBounceWall(player_t *player, line_t *line, dboolean slideline, dboolean tripwire); // Neptune: Should the player bounce off a wall?
+int LUA_HookPlayerBounceWall(player_t *player, line_t *line, dboolean slideline, dboolean tripwire); // Neptune: Hook for P_BouncePlayerMove. Allows Lua to execute code and/or overwrite its behavior.
 
 #ifdef __cplusplus
 } // extern "C"
