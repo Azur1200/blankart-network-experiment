@@ -2531,6 +2531,12 @@ static dboolean CV_FilterVarByVersion(consvar_t *v, const char *valstr)
 			return false;
 	}
 
+	if (GETMAJOREXECVERSION(cv_execversion.value) == 12 && GETMINOREXECVERSION(cv_execversion.value) < 3) // 12.3 = BK Indev 09-09-26
+	{
+		if (fasticmp(v->name, "al_speedofsound")) // The new speed of sound value is more accurate.
+			return false;
+	}
+
 	return true;
 }
 

@@ -159,7 +159,7 @@ static void SoundEFX_OnChange(void)
 consvar_t cv_soundefx = CVAR_INIT ("soundefx", "On", CV_SAVE|CV_CALL|CV_NOINIT, CV_OnOff, SoundEFX_OnChange);
 consvar_t cv_3dsound = CVAR_INIT ("3dsound", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_al_doppler = CVAR_INIT ("al_doppler", "0", CV_SAVE|CV_FLOAT|CV_CALL|CV_NOINIT, CV_Unsigned, al_doppler_OnChange);
-consvar_t cv_al_speedofsound = CVAR_INIT ("al_speedofsound", "343", CV_SAVE|CV_FLOAT|CV_CALL|CV_NOINIT, CV_Natural, al_speedofsound_OnChange);
+consvar_t cv_al_speedofsound = CVAR_INIT ("al_speedofsound", "548.8", CV_SAVE|CV_FLOAT|CV_CALL|CV_NOINIT, CV_Natural, al_speedofsound_OnChange);
 consvar_t cv_al_mindistance = CVAR_INIT ("al_mindistance", "160", 0, CV_Unsigned, NULL);
 consvar_t cv_al_maxdistance = CVAR_INIT ("al_maxdistance", "1536", 0, CV_Unsigned, NULL);
 
