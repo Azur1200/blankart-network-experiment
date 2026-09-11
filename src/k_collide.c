@@ -815,7 +815,7 @@ static inline BlockItReturn_t PIT_AttractionShieldAttack(mobj_t *thing)
 		if (ATTRACTIONAOEEMP && attractionhipower && thing != lightningSource)
 		{
 			//todo: filter out teammates
-			K_SetPlayerItemCooldown(thing->player, TICRATE * ATTRACTIONAOEEMP, false);
+			K_SetPlayerItemCooldown(thing->player, ATTRACTIONAOEEMP, false);
 		}
 		if (ATTRACTIONAOESHOVE)
 		{
