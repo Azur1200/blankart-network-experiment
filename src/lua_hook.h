@@ -103,6 +103,8 @@ automatically.
 	X (PlayerFinish), /* P_DoPlayerExit, P_DoTimeOver */\
 	X (PlayerPreRank), \
 	X (PlayerRank), \
+	X (ShouldBounceWall), /* P_BouncePlayerMove */\
+	X (PlayerBounceWall), /* P_BouncePlayerMove */\
 
 #define STRING_HOOK_LIST(X) \
 	X (SpecialExecute),\
@@ -213,6 +215,9 @@ int LUA_HookPlayerFinish(player_t *player, dboolean dnf, dboolean losing);
 // Rank stuff
 dboolean LUA_HookPlayerPreRank(player_t *player);
 int LUA_HookPlayerRank(player_t *player, int32_t pendingrankscore); // BlanKart: Hook during player rankings; can return a volatile factor value
+
+int LUA_HookShouldBounceWall(player_t *player, line_t *line, dboolean slideline, dboolean tripwire); // Neptune: Should the player bounce off a wall?
+int LUA_HookPlayerBounceWall(player_t *player, line_t *line, dboolean slideline, dboolean tripwire); // Neptune: Hook for P_BouncePlayerMove. Allows Lua to execute code and/or overwrite its behavior.
 
 #ifdef __cplusplus
 } // extern "C"

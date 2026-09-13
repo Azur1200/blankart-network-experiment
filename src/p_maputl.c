@@ -1462,23 +1462,21 @@ dboolean P_BlockThingsIterator(int32_t x, int32_t y, BlockItReturn_t (*func)(mob
 		return true;
 
 	// Check interaction with the objects in the blockmap.
-	for (mobj = blocklinks[y*bmapwidth + x]; mobj; mobj = bnext)
+	for (mobj = blocklinks[y*bmapwidth + x]; mobj != NULL; mobj = bnext)
 	{
 		BlockItReturn_t ret = BMIT_CONTINUE;
 
-		P_SetTarget(&bnext, mobj->bnext); // We want to note our reference to bnext here incase it is MF_NOTHINK and gets removed!
+		bnext = mobj->bnext; // We want to note our reference to bnext here!
 		ret = func(mobj);
 
 		if (ret == BMIT_ABORT)
 		{
-			P_SetTarget(&bnext, NULL);
 			return false; // failure
 		}
 
 		if ((ret == BMIT_STOP)
 			|| (bnext && P_MobjWasRemoved(bnext))) // func just broke blockmap chain, cannot continue.
 		{
-			P_SetTarget(&bnext, NULL);
 			return true; // success
 		}
 	}

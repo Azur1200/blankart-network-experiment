@@ -133,7 +133,7 @@ extern char logfilename[1024];
 // to an increment in MODVERSION. This might never happen in practice.
 // If MODVERSION increases, set MINOREXECVERSION to 0.
 #define MAJOREXECVERSION MODVERSION
-#define MINOREXECVERSION 2
+#define MINOREXECVERSION 3
 // (It would have been nice to use VERSION and SUBVERSION but those are zero'd out for DEVELOP builds)
 
 // Macros

@@ -3102,8 +3102,9 @@ void K_UseItem_ThunderShield(player_t *player, dboolean itemjustdown, dboolean o
 
 void K_UseItem_AttractionShield(player_t *player, dboolean itemjustdown, dboolean onground, dboolean force, dboolean nohyudoro)
 {	
-	if (nohyudoro)
+	if (nohyudoro && itemjustdown)
 	{
+		player->attractioncharge++;
 		S_StartSound(player->mo, sfx_vwre);
 		K_HoldUseItem_AttractionShield(player, itemjustdown, onground, force, nohyudoro);
 	}
@@ -3117,6 +3118,8 @@ void K_HoldUseItem_AttractionShield(player_t *player, dboolean itemjustdown, dbo
 	(void)nohyudoro;
 	
 	fixed_t effectscale = 75*player->mo->scale/100;
+
+	if (player->attractioncharge <= 0) return;
 
 	if (player->attractioncharge >= ATTRACTIONCHARGETIME)
 	{

@@ -4081,6 +4081,11 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	if (result->normal.x == 0 && result->normal.y == 0)
 		return; // nope, nothing we can do
 
+	// If Lua says we can't bump this wall, DON'T bump it
+	// ShouldBounceWall, like Neptune, assumes the scripter knows exactly what they're doing...
+	if (!LUA_HookShouldBounceWall(mo->player, result->line, slideline, tripwire))
+		return;
+
 	mmomx = mo->player->rmomx;
 	mmomy = mo->player->rmomy;
 
@@ -4120,6 +4125,14 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 
 	int32_t bump_penalty = 1;
 	dboolean dontpenalize = false;
+	// Let Lua do its thing or overwrite if it wants to.
+	if (LUA_HookPlayerBounceWall(mo->player, result->line, slideline, tripwire))
+	{
+		// If Lua says "no", this is an unconditional slide
+		// Yes, even for tripwires! (I'm sorry, Toaster...)
+		P_SlideMove(mo, result);
+		return;
+	}
 
 	if (tripwire)
 	{

@@ -1785,3 +1785,31 @@ int LUA_HookDropHnextList(mobj_t *mobj, mobjtype_t droptype, dboolean *orbit, db
 	}
 	return state.droptype;
 }
+
+int LUA_HookShouldBounceWall(player_t *player, line_t *line, dboolean slideline, dboolean tripwire)
+{
+	Hook_State hook = {};
+	if (prepare_hook(&hook, true, HOOK(ShouldBounceWall)))
+	{
+		LUA_PushUserdata(gL, player, META_PLAYER);
+		LUA_PushUserdata(gL, line, META_LINE);
+		lua_pushdboolean(gL, slideline);
+		lua_pushdboolean(gL, tripwire);
+		call_hooks(&hook, 1, res_false);
+	}
+	return hook.status;
+}
+
+int LUA_HookPlayerBounceWall(player_t *player, line_t *line, dboolean slideline, dboolean tripwire)
+{
+	Hook_State hook = {};
+	if (prepare_hook(&hook, false, HOOK(PlayerBounceWall)))
+	{
+		LUA_PushUserdata(gL, player, META_PLAYER);
+		LUA_PushUserdata(gL, line, META_LINE);
+		lua_pushdboolean(gL, slideline);
+		lua_pushdboolean(gL, tripwire);
+		call_hooks(&hook, 1, res_true);
+	}
+	return hook.status;
+}
