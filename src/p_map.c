@@ -1471,7 +1471,8 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			if (SMONITORINTANGIBLE)
 			{
 				// Mage suggestion: ALWAYS ignore bumps if you have an S-Monitor active
-				cannotbump = ((thing->player->smonitortimer) || (g_tm.thing->player->smonitortimer));
+				const dboolean cannotbump_prev = cannotbump;
+				cannotbump = ((thing->player->smonitortimer) || (g_tm.thing->player->smonitortimer) || cannotbump_prev);
 			}
 
 			// see if it went over / under
