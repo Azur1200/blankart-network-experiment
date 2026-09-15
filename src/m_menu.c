@@ -4280,10 +4280,10 @@ static void M_DrawMenuPanel(menupanelinst_t *pi, dboolean selected)
 	// Draw scrollbar
 	if (pd->scrollbar == true)
 	{
-		int32_t bh = (vid.scaledheight - 80)*FRACUNIT;
+		int64_t bh = (vid.scaledheight - 80)*FRACUNIT;
 		x = (BASEVIDWIDTH - 4)*FRACUNIT;
 		yfx = 75*FRACUNIT;
-		int32_t barheight = max(FRACUNIT,FixedDiv(FixedMul(bh, bh) - 1, boty) - FRACUNIT);
+		int64_t barheight = max(FRACUNIT,FixedDiv(FixedMul(bh, bh) - 1, boty) - FRACUNIT);
 		if (boty > bh)
 		{
 			boty += scrollheight + 10*FRACUNIT;
@@ -4304,12 +4304,12 @@ static void M_DrawMenuPanel(menupanelinst_t *pi, dboolean selected)
 		// i hate custom scrollbars
 		if (pd->drawroutine == MD_DrawAddons)
 		{
-			fixed_t m = BASEVIDHEIGHT*FRACUNIT - (pi->y - FRACUNIT)*2;
+			int64_t m = BASEVIDHEIGHT*FRACUNIT - (pi->y - FRACUNIT)*2;
 			if (pi->numitems <= (2*numaddonsshown + 1))
 				i = 0;
 			else
 			{
-				fixed_t q = m;
+				int64_t q = m;
 				m = ((2*numaddonsshown + 1) * m)/pi->numitems;
 				if (pi->itemon <= numaddonsshown) // all the way up
 					i = 0;
