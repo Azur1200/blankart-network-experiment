@@ -1471,7 +1471,8 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 			if (SMONITORINTANGIBLE)
 			{
 				// Mage suggestion: ALWAYS ignore bumps if you have an S-Monitor active
-				cannotbump = ((thing->player->smonitortimer) || (g_tm.thing->player->smonitortimer));
+				const dboolean cannotbump_prev = cannotbump;
+				cannotbump = ((thing->player->smonitortimer) || (g_tm.thing->player->smonitortimer) || cannotbump_prev);
 			}
 
 			// see if it went over / under
@@ -4078,6 +4079,11 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	if (result->normal.x == 0 && result->normal.y == 0)
 		return; // nope, nothing we can do
 
+	// If Lua says we can't bump this wall, DON'T bump it
+	// ShouldBounceWall, like Neptune, assumes the scripter knows exactly what they're doing...
+	if (!LUA_HookShouldBounceWall(mo->player, result->line, slideline, tripwire))
+		return;
+
 	mmomx = mo->player->rmomx;
 	mmomy = mo->player->rmomy;
 
@@ -4114,6 +4120,15 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	}
 
 	slidemo = mo;
+
+	// Let Lua do its thing or overwrite if it wants to.
+	if (LUA_HookPlayerBounceWall(mo->player, result->line, slideline, tripwire))
+	{
+		// If Lua says "no", this is an unconditional slide
+		// Yes, even for tripwires! (I'm sorry, Toaster...)
+		P_SlideMove(mo, result);
+		return;
+	}
 
 	if (tripwire)
 	{
