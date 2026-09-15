@@ -443,6 +443,8 @@ static uint32_t M_StringCvarLength(consvar_t *cv)
 		return MAXPLAYERNAME + 1;
 	else if (cv == &cv_dummyreplaysave)
 		return 65;
+	else if (cv == &cv_dummyreplaysearch)
+		return MAXREPLAYQUERY;
 	else
 		return MAXSTRINGLENGTH;
 }
@@ -709,8 +711,11 @@ static void AddonSearch(void);
 
 consvar_t cv_addons_oldinput = CVAR_INIT ("addons_oldinput", "Off", CV_SAVE, CV_OnOff, NULL);
 
-consvar_t cv_dummyaddonsearch = CVAR_INIT ("dummymenusearch", "", CV_HIDEN|CV_CALL|CV_NOINIT, NULL, AddonSearch);
+consvar_t cv_dummyaddonsearch = CVAR_INIT ("dummyaddonsearch", "", CV_HIDEN|CV_CALL|CV_NOINIT, NULL, AddonSearch);
 
+static void ReplaySearch(void);
+
+consvar_t cv_dummyreplaysearch = CVAR_INIT ("dummyreplaysearch", "", CV_HIDEN|CV_CALL|CV_NOINIT, NULL, ReplaySearch);
 
 // ==========================================================================
 // ALL MENU DEFINITIONS GO HERE
@@ -3506,6 +3511,7 @@ void M_Init(void)
 	CV_RegisterVar(&cv_dummycolor);
 	CV_RegisterVar(&cv_dummyserverpage);
 	CV_RegisterVar(&cv_dummyaddonsearch);
+	CV_RegisterVar(&cv_dummyreplaysearch);
 	CV_RegisterVar(&cv_dummyreplaysave);
 
 	quitmsg[QUITMSG] = M_GetText("Eggman's tied explosives\nto your girlfriend, and\nwill activate them if\nyou press the 'Y' key!\nPress 'N' to save her!\n");
@@ -6052,8 +6058,8 @@ static void AddonSearch(void)
 }
 
 // lolololol
-static char searchtext[] = "Search for files and folders";
-static menuitem_t addonsearch = {.text = searchtext, .cvar = &cv_dummyaddonsearch};
+static char addonssearchtext[] = "Search for files and folders";
+static menuitem_t addonsearch = {.text = addonssearchtext, .cvar = &cv_dummyaddonsearch};
 
 int32_t MR_HandleAddons(int32_t choice)
 {
@@ -6222,15 +6228,44 @@ I_mutex replayquerymutex;
 #  define Unlock_search_state()
 #endif/*HAVE_THREADS*/
 
-
-#define MAXREPLAYQUERY 37
 static char replayqueryinput_buffer[MAXREPLAYQUERY+1]; // The input typed
 static textinput_t replayqueryinput;
 
 static size_t replayqueryfound = 0; // Number of checked replay entries
 static size_t replayquerycheck = 0; // Index of next replay entry to check in demolist_all
+static dboolean replaylistgenerated = false; // if the list is ready to use?
 
 #define DF_ENCORE       0x40
+
+static void CreateReplayItems(menupanelinst_t *pi)
+{
+	if (replaylistgenerated)
+		return;
+
+	M_ClearPanelItems(pi);
+
+	size_t i;
+	for (i = 0; i < replayqueryfound; i++)
+	{
+		menuitem_t *item = M_AppendMenuItem(pi, 0, 0, IT_INTERACT);
+		M_SetItemTextRaw(item, demolist[i].title);
+		M_SetItemExtraRaw(item, dirmenu[i] + DIR_STRING);
+		item->argument = dirmenu[i][DIR_TYPE];
+		if (item->argument != EXT_FOLDER && item->argument != EXT_UP)
+		{
+			item->submenu = MN_MISC_REPLAYSTART;
+		}
+
+		if (demolist[i].type == MD_SUBDIR)
+		{
+			item->style = DEH_FindMenuItemStyle("REPLAYSUBDIR");
+			M_SetItemPatchRaw(item, item->argument == EXT_UP ? "M_RBACK" : "M_RFLDR");
+		}
+	}
+
+	replaylistgenerated = true;
+	M_RawSetItemOn(pi, dir_on[menudepthleft]);
+}
 
 static void ReplayNamesLoadThread(void* userdata)
 {
@@ -6290,6 +6325,7 @@ static void LoadReplayNames(void)
 static void ResetReplayQuery(void)
 {
 	memset(replayqueryinput_buffer, 0, MAXREPLAYQUERY);
+	CV_StealthSet(&cv_dummyreplaysearch, "");
 	M_TextInputInit(&replayqueryinput, replayqueryinput_buffer, MAXREPLAYQUERY);
 
 	replayqueryfound = 0;
@@ -6312,6 +6348,8 @@ static void M_HutCheckReplays(size_t maxnum)
 	// Already checked everything
 	if (replayquerycheck == sizedirmenu)
 		return;
+
+	replaylistgenerated = false;
 
 	// If we don't have any query, just copy all demos and consider them checked
 	if (replayqueryinput.length == 0)
@@ -6416,21 +6454,6 @@ static void PrepReplayList(dboolean reset, menupanelinst_t *pi)
 			snprintf(demolist_all[i].filepath, MAXFILEPATH, "%s%s", menupath, dirmenu[i] + DIR_STRING);
 			snprintf(demolist_all[i].title, sizeof(demolist_all[i].title), ".....");
 		}
-
-		menuitem_t *item = M_AppendMenuItem(pi, 0, 0, IT_INTERACT);
-		M_SetItemTextRaw(item, demolist_all[i].title);
-		M_SetItemExtraRaw(item, dirmenu[i] + DIR_STRING);
-		item->argument = dirmenu[i][DIR_TYPE];
-		if (item->argument != EXT_FOLDER && item->argument != EXT_UP)
-		{
-			item->submenu = MN_MISC_REPLAYSTART;
-		}
-
-		if (demolist_all[i].type == MD_SUBDIR)
-		{
-			item->style = DEH_FindMenuItemStyle("REPLAYSUBDIR");
-			M_SetItemPatchRaw(item, item->argument == EXT_UP ? "M_RBACK" : "M_RFLDR");
-		}
 	}
 
 	qs22j(demolist_all, sizedirmenu, sizeof(menudemo_t), ReplayListSortComparator);
@@ -6444,11 +6467,7 @@ void MP_PrepReplayList(menupanelinst_t *pi)
 {
 	size_t i;
 
-	M_ClearPanelItems(pi);
-
 	PrepReplayList(true, pi);
-
-	M_RawSetItemOn(pi, dir_on[menudepthleft]);
 }
 
 int32_t MR_ReplayHut(int32_t choice)
@@ -6539,9 +6558,29 @@ static dboolean M_HandleReplayHutQuery(int32_t choice)
 	return false;
 }
 
+static void ReplaySearch(void)
+{
+	preparefilemenu(false, true);
+	dir_on[menudepthleft] = 0;
+
+	menupanelinst_t *pi = &curpanels[panelOn];
+	MP_PrepReplayList(pi);
+}
+
+// lolololol 2
+static char replayssearchtext[] = "Search for replays";
+static menuitem_t replaysearch = {.text = replayssearchtext, .cvar = &cv_dummyreplaysearch};
+
 int32_t MR_HandleReplayHutList(int32_t choice)
 {
-	if (M_HandleReplayHutQuery(choice))
+	if (cv_addons_oldinput.value && M_HandleReplayHutQuery(choice))
+		return false;
+	else if (M_MenuButtonPressed(0, MBT_INFO2))
+	{
+		M_OpenVirtualKeyboard(&replayqueryinput, replayqueryinput_buffer, &replaysearch);
+	}
+
+	if (!replaylistgenerated)
 		return false;
 
 	if (menucmd[0].delay > 0)
@@ -6581,6 +6620,7 @@ int32_t MR_HandleReplayHutList(int32_t choice)
 				{
 					menupathindex[--menudepthleft] = strlen(menupath);
 					menupath[menupathindex[menudepthleft]] = 0;
+					ResetReplayQuery();
 
 					if (!preparefilemenu(false, true))
 					{
@@ -6606,11 +6646,13 @@ int32_t MR_HandleReplayHutList(int32_t choice)
 					S_StartSound(NULL, sfx_s26d);
 					M_StartMessage2("Replay Hut", va("%c%s\x80\nThis folder is too deep to navigate to!\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), M_AddonsHeaderPath()),MB_NONE,MM_NOTHING, "Press any key", NULL);
 					menupath[menupathindex[menudepthleft]] = 0;
+					ResetReplayQuery();
 				}
 				break;
 			case EXT_UP:
 				S_StartSound(NULL, sfx_menu1);
 				menupath[menupathindex[++menudepthleft]] = 0;
+				ResetReplayQuery();
 				if (!preparefilemenu(false, true))
 				{
 					M_ExitMenu();
@@ -6622,10 +6664,6 @@ int32_t MR_HandleReplayHutList(int32_t choice)
 				return false;
 		}
 	}
-	/*else if (M_MenuButtonPressed(0, MBT_INFO2))
-	{
-		M_OpenVirtualKeyboard(&menusearch, menusearchbuf, &addonsearch);
-	}*/
 	else
 	{
 		switch (choice)
@@ -6815,18 +6853,12 @@ void MP_TickReplayHutDemoList(menupanelinst_t *pi)
 	size_t i;
 	pi->scrollheight = (vid.scaledheight - 90)*FRACUNIT;
 
-	for (i = 0; i < 50; i++)
-	{
-		size_t demoi = pi->itemon + (i/2 * (i & 1 ? -1 : 1));
-		if (demoi < sizedirmenu && demolist_all[demoi].type == MD_NOTLOADED)
-		{
-			G_LoadDemoInfo(&demolist[demoi]);
-			M_SetItemTextRaw(&pi->items[demoi], demolist[demoi].title);
-			break;
-		}
-	}
-
 	M_HutCheckReplays(cv_replaysearchrate.value);
+
+	if (replayquerycheck != sizedirmenu)
+		return;
+
+	CreateReplayItems(pi);
 
 	menuitemstyle_t *style = DEH_FindMenuItemStyle("REPLAYSELECT");
 	if (style == NULL)
