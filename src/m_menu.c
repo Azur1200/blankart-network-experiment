@@ -6009,6 +6009,9 @@ static menuitem_t addonsearch = {.text = searchtext, .cvar = &cv_dummyaddonsearc
 
 int32_t MR_HandleAddons(int32_t choice)
 {
+	if (menucmd[0].delay > 0)
+		return false;
+
 	const char *filename = curpanels[panelOn].items[curpanels[panelOn].itemon].extra;
 
 	if (cv_addons_oldinput.value && M_TextInputHandle(&menusearch, choice))
@@ -6195,7 +6198,6 @@ void MP_PrepReplayList(menupanelinst_t *pi)
 		if (item->argument != EXT_FOLDER && item->argument != EXT_UP)
 		{
 			item->submenu = MN_MISC_REPLAYSTART;
-			item->status |= IT_HIDDEN;
 		}
 
 		if (demolist[i].type == MD_SUBDIR)
@@ -6273,6 +6275,9 @@ int32_t MR_HandleReplayHutList(int32_t choice)
 {
 	(void)choice;
 
+	if (menucmd[0].delay > 0)
+		return false;
+
 	menupanelinst_t *pi = &curpanels[panelOn];
 	menuitem_t *item = &pi->items[pi->itemon];
 	panelfunc_f *initializer = M_GetDefFromInst(pi)->initializer;
@@ -6323,7 +6328,7 @@ int32_t MR_HandleReplayHutList(int32_t choice)
 					else
 					{
 						S_StartSound(NULL, sfx_menu1);
-						dir_on[menudepthleft] = 0;
+						dir_on[menudepthleft] = 1;
 						initializer(pi);
 					}
 				}
@@ -6348,8 +6353,18 @@ int32_t MR_HandleReplayHutList(int32_t choice)
 				return false;
 		}
 	}
+	/*else if (M_MenuButtonPressed(0, MBT_INFO2))
+	{
+		M_OpenVirtualKeyboard(&menusearch, menusearchbuf, &addonsearch);
+	}*/
 	else
-		return false;
+	{
+		switch (choice)
+		{
+			default:
+				return false;
+		}
+	}
 
 	return true;
 }
@@ -6538,7 +6553,6 @@ void MP_TickReplayHutDemoList(menupanelinst_t *pi)
 		{
 			G_LoadDemoInfo(&demolist[demoi]);
 			M_SetItemTextRaw(&pi->items[demoi], demolist[demoi].title);
-			pi->items[demoi].status &= ~IT_HIDDEN;
 			break;
 		}
 	}
