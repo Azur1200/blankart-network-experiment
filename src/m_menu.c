@@ -709,7 +709,7 @@ consvar_t cv_debugvirtualkeyboard = CVAR_INIT ("debugvirtualkeyboard", "Off", 0,
 
 static void AddonSearch(void);
 
-consvar_t cv_addons_oldinput = CVAR_INIT ("addons_oldinput", "Off", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_search_oldinput = CVAR_INIT ("search_oldinput", "Off", CV_SAVE, CV_OnOff, NULL);
 
 consvar_t cv_dummyaddonsearch = CVAR_INIT ("dummyaddonsearch", "", CV_HIDEN|CV_CALL|CV_NOINIT, NULL, AddonSearch);
 
@@ -3492,7 +3492,7 @@ void M_Init(void)
 
 	CV_RegisterVar(&cv_showallmaps);
 
-	CV_RegisterVar(&cv_addons_oldinput);
+	CV_RegisterVar(&cv_search_oldinput);
 
 	// Menu hacks
 	CV_RegisterVar(&cv_dummymenuplayer);
@@ -5931,7 +5931,7 @@ void MP_TickAddonsBackground(menupanelinst_t *pi)
 	M_SetItemDisabled(pi, "DISKICON", majormods);
 	M_SetItemVisible(pi, "ADDONSLOADED", modifiedgame);
 
-	if (cv_addons_oldinput.value)
+	if (cv_search_oldinput.value)
 	{
 		M_SetItemDisabled(pi, "SEARCHICON", menusearch.length == 0);
 		M_SetItemDisabled(pi, "SEARCHTEXT", menusearch.length == 0);
@@ -6068,7 +6068,7 @@ int32_t MR_HandleAddons(int32_t choice)
 
 	const char *filename = curpanels[panelOn].items[curpanels[panelOn].itemon].extra;
 
-	if (cv_addons_oldinput.value && M_TextInputHandle(&menusearch, choice))
+	if (cv_search_oldinput.value && M_TextInputHandle(&menusearch, choice))
 	{
 		S_StartSound(NULL,sfx_menu1);
 
@@ -6416,7 +6416,7 @@ static int ReplayListSortComparator(const void *entry1, const void *entry2)
 	return strncmp(filepath2, filepath1, sizeof(filepath1));
 }
 
-static void PrepReplayList(dboolean reset, menupanelinst_t *pi)
+static void PrepReplayList(dboolean reset)
 {
 	size_t i;
 
@@ -6465,9 +6465,8 @@ static void PrepReplayList(dboolean reset, menupanelinst_t *pi)
 
 void MP_PrepReplayList(menupanelinst_t *pi)
 {
-	size_t i;
-
-	PrepReplayList(true, pi);
+	(void)pi;
+	PrepReplayList(true);
 }
 
 int32_t MR_ReplayHut(int32_t choice)
@@ -6573,7 +6572,7 @@ static menuitem_t replaysearch = {.text = replayssearchtext, .cvar = &cv_dummyre
 
 int32_t MR_HandleReplayHutList(int32_t choice)
 {
-	if (cv_addons_oldinput.value && M_HandleReplayHutQuery(choice))
+	if (cv_search_oldinput.value && M_HandleReplayHutQuery(choice))
 		return false;
 	else if (M_MenuButtonPressed(0, MBT_INFO2))
 	{
@@ -6789,7 +6788,7 @@ void MP_TickReplayHutInfoBackground(menupanelinst_t *pi)
 		M_SetItemVisible(pi, "SEARCHICON", true);
 		M_SetItemVisible(pi, "SEARCHTEXT", true);
 		M_SetItemVisible(pi, "SEARCHBOX", true);
-		if (cv_addons_oldinput.value)
+		if (cv_search_oldinput.value)
 		{
 			M_SetItemDisabled(pi, "SEARCHICON", replayqueryinput.length == 0);
 			M_SetItemDisabled(pi, "SEARCHTEXT", replayqueryinput.length == 0);
