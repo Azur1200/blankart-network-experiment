@@ -749,7 +749,7 @@ static uint8_t *G_ReadRawExtraData(extradata_t *extra, uint8_t *dp, uint16_t ver
 
 // parses a demo header from the given byte pointer
 // remember to call G_FreeDemoHeader!
-static headerstatus_e G_ReadDemoHeader(uint8_t *dp, demoheader_t *header)
+static headerstatus_e G_ReadDemoHeader(uint8_t *dp, demoheader_t *header, dboolean nameonly)
 {
 	uint8_t *startdp = dp;
 	uint8_t attack;
@@ -850,6 +850,9 @@ static headerstatus_e G_ReadDemoHeader(uint8_t *dp, demoheader_t *header)
 		header->demotitle[0] = '\0';
 	else
 		READMEM(dp, &header->demotitle, 64);
+
+	if (nameonly)
+		return HEADER_OK;
 
 	header->demochecksum = READUINT64(dp);
 	if (kart) (void)READUINT64(dp); // truncate the md5, this is only used for avoiding duped ghosts
@@ -3413,7 +3416,7 @@ uint8_t G_CmpDemoTime(char *oldname, char *newname)
 
 	// read demo header
 	CLEANUP(G_FreeDemoHeader) demoheader_t header;
-	headerstatus_e status = G_ReadDemoHeader(buffer, &header);
+	headerstatus_e status = G_ReadDemoHeader(buffer, &header, false);
 	(void)status;
 	I_Assert(status == HEADER_OK && header.version == VERSION
 	      && header.subversion == SUBVERSION && header.demoversion == DEMOVERSION);
@@ -3442,7 +3445,7 @@ uint8_t G_CmpDemoTime(char *oldname, char *newname)
 
 	// read demo header
 	CLEANUP(G_FreeDemoHeader) demoheader_t oldheader;
-	if (G_ReadDemoHeader(buffer, &oldheader) != HEADER_OK)
+	if (G_ReadDemoHeader(buffer, &oldheader, false) != HEADER_OK)
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("File '%s' invalid format. It will be overwritten.\n"), oldname);
 		Z_Free(buffer);
@@ -3501,7 +3504,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo, dboolean nameonly)
 		pdemo->type = MD_LOADED;
 
 	CLEANUP(G_FreeDemoHeader) demoheader_t header;
-	switch (G_ReadDemoHeader(infobuffer, &header))
+	switch (G_ReadDemoHeader(infobuffer, &header, nameonly))
 	{
 	case HEADER_OK:
 		break;
@@ -3784,7 +3787,7 @@ void G_DoPlayDemo(char *defdemoname)
 	demo.buffer = freebuffer = &demobuf;
 
 	CLEANUP(G_FreeDemoHeader) demoheader_t header;
-	switch (G_ReadDemoHeader(demobuf.p, &header))
+	switch (G_ReadDemoHeader(demobuf.p, &header, false))
 	{
 	case HEADER_OK:
 		demobuf.p += header.endofs;
@@ -4181,7 +4184,7 @@ void G_AddGhost(char *defdemoname)
 		buffer = W_CacheLumpNum(l, PU_LEVEL);
 
 	CLEANUP(G_FreeDemoHeader) demoheader_t header;
-	switch (G_ReadDemoHeader(buffer, &header))
+	switch (G_ReadDemoHeader(buffer, &header, false))
 	{
 	case HEADER_OK:
 		break;
@@ -4350,7 +4353,7 @@ void G_UpdateStaffGhostName(lumpnum_t l)
 	CLEANUP(Z_Pfree) uint8_t *buffer = W_CacheLumpNum(l, PU_CACHE);
 
 	CLEANUP(G_FreeDemoHeader) demoheader_t header;
-	if (G_ReadDemoHeader(buffer, &header) != HEADER_OK)
+	if (G_ReadDemoHeader(buffer, &header, false) != HEADER_OK)
 		return;
 
 	if (!(header.demoflags & DF_GHOST))

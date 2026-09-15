@@ -6580,8 +6580,11 @@ int32_t MR_HandleReplayHutList(int32_t choice)
 		M_OpenVirtualKeyboard(&replayqueryinput, replayqueryinput_buffer, &replaysearch);
 	}
 
+	if (replayquerycheck != sizedirmenu)
+		return true;
+
 	if (!replaylistgenerated)
-		return false;
+		return true;
 
 	if (menucmd[0].delay > 0)
 		return false;
@@ -6774,6 +6777,14 @@ void MP_TickReplayHutInfoBackground(menupanelinst_t *pi)
 
 	menudemo_t *mdemo = &demolist[dir_on[menudepthleft]];
 
+	if (replayquerycheck != sizedirmenu || !replaylistgenerated)
+	{
+		M_SetItemVisible(pi, "CENTERTEXT", true);
+		M_SetItemText(pi, "CENTERTEXT", "Loading replays...");
+		M_GetMenuItem(pi, "CENTERTEXT")->status &= ~ITH_WARNING;
+		return;
+	}
+
 	switch (mdemo->type)
 	{
 		case MD_NOTLOADED:
@@ -6855,8 +6866,12 @@ void MP_TickReplayHutDemoList(menupanelinst_t *pi)
 
 	M_HutCheckReplays(cv_replaysearchrate.value);
 
+	pi->visible = false;
+
 	if (replayquerycheck != sizedirmenu)
 		return;
+
+	pi->visible = true;
 
 	CreateReplayItems(pi);
 
