@@ -749,7 +749,7 @@ static uint8_t *G_ReadRawExtraData(extradata_t *extra, uint8_t *dp, uint16_t ver
 
 // parses a demo header from the given byte pointer
 // remember to call G_FreeDemoHeader!
-static headerstatus_e G_ReadDemoHeader(uint8_t *dp, demoheader_t *header)
+static headerstatus_e G_ReadDemoHeader(uint8_t *dp, demoheader_t *header, dboolean nameonly)
 {
 	uint8_t *startdp = dp;
 	uint8_t attack;
@@ -850,6 +850,9 @@ static headerstatus_e G_ReadDemoHeader(uint8_t *dp, demoheader_t *header)
 		header->demotitle[0] = '\0';
 	else
 		READMEM(dp, &header->demotitle, 64);
+
+	if (nameonly)
+		return HEADER_OK;
 
 	header->demochecksum = READUINT64(dp);
 	if (kart) (void)READUINT64(dp); // truncate the md5, this is only used for avoiding duped ghosts
@@ -3413,7 +3416,7 @@ uint8_t G_CmpDemoTime(char *oldname, char *newname)
 
 	// read demo header
 	CLEANUP(G_FreeDemoHeader) demoheader_t header;
-	headerstatus_e status = G_ReadDemoHeader(buffer, &header);
+	headerstatus_e status = G_ReadDemoHeader(buffer, &header, false);
 	(void)status;
 	I_Assert(status == HEADER_OK && header.version == VERSION
 	      && header.subversion == SUBVERSION && header.demoversion == DEMOVERSION);
@@ -3442,7 +3445,7 @@ uint8_t G_CmpDemoTime(char *oldname, char *newname)
 
 	// read demo header
 	CLEANUP(G_FreeDemoHeader) demoheader_t oldheader;
-	if (G_ReadDemoHeader(buffer, &oldheader) != HEADER_OK)
+	if (G_ReadDemoHeader(buffer, &oldheader, false) != HEADER_OK)
 	{
 		CONS_Alert(CONS_NOTICE, M_GetText("File '%s' invalid format. It will be overwritten.\n"), oldname);
 		Z_Free(buffer);
@@ -3483,7 +3486,7 @@ uint8_t G_CmpDemoTime(char *oldname, char *newname)
 	return c;
 }
 
-void G_LoadDemoInfo(menudemo_t *pdemo)
+void G_LoadDemoInfo(menudemo_t *pdemo, dboolean nameonly)
 {
 	CLEANUP(Z_Pfree) uint8_t *infobuffer = NULL;
 	const uint8_t *extrainfo_p;
@@ -3491,39 +3494,47 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	if (!FIL_ReadFile(pdemo->filepath, &infobuffer))
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("Failed to read file '%s'.\n"), pdemo->filepath);
-		pdemo->type = MD_INVALID;
+		if (!nameonly)
+			pdemo->type = MD_INVALID;
 		snprintf(pdemo->title, sizeof(pdemo->title), "INVALID REPLAY");
 		return;
 	}
 
-	pdemo->type = MD_LOADED;
+	if (!nameonly)
+		pdemo->type = MD_LOADED;
 
 	CLEANUP(G_FreeDemoHeader) demoheader_t header;
-	switch (G_ReadDemoHeader(infobuffer, &header))
+	switch (G_ReadDemoHeader(infobuffer, &header, nameonly))
 	{
 	case HEADER_OK:
 		break;
 
 	case HEADER_BADMAGIC:
 		CONS_Alert(CONS_ERROR, M_GetText("%s is not a SRB2Kart replay file.\n"), pdemo->filepath);
-		pdemo->type = MD_INVALID;
+		if (!nameonly)
+			pdemo->type = MD_INVALID;
 		snprintf(pdemo->title, sizeof(pdemo->title), "INVALID REPLAY");
 		return;
 
 	case HEADER_BADVERSION:
 		CONS_Alert(CONS_ERROR, M_GetText("%s is an incompatible replay format and cannot be played.\n"), pdemo->filepath);
-		pdemo->type = MD_INVALID;
+		if (!nameonly)
+			pdemo->type = MD_INVALID;
 		snprintf(pdemo->title, sizeof(pdemo->title), "INVALID REPLAY");
 		return;
 
 	case HEADER_BADFORMAT:
 		CONS_Alert(CONS_ERROR, M_GetText("%s is the wrong type of recording and cannot be played.\n"), pdemo->filepath);
-		pdemo->type = MD_INVALID;
+		if (!nameonly)
+			pdemo->type = MD_INVALID;
 		snprintf(pdemo->title, sizeof(pdemo->title), "INVALID REPLAY");
 		return;
 	}
 
 	strlcpy(pdemo->title, header.demotitle, sizeof(pdemo->title));
+
+	if (nameonly)
+		return;
 
 	if (header.version != VERSION || header.subversion != SUBVERSION)
 		pdemo->type = MD_OUTDATED;
@@ -3776,7 +3787,7 @@ void G_DoPlayDemo(char *defdemoname)
 	demo.buffer = freebuffer = &demobuf;
 
 	CLEANUP(G_FreeDemoHeader) demoheader_t header;
-	switch (G_ReadDemoHeader(demobuf.p, &header))
+	switch (G_ReadDemoHeader(demobuf.p, &header, false))
 	{
 	case HEADER_OK:
 		demobuf.p += header.endofs;
@@ -4173,7 +4184,7 @@ void G_AddGhost(char *defdemoname)
 		buffer = W_CacheLumpNum(l, PU_LEVEL);
 
 	CLEANUP(G_FreeDemoHeader) demoheader_t header;
-	switch (G_ReadDemoHeader(buffer, &header))
+	switch (G_ReadDemoHeader(buffer, &header, false))
 	{
 	case HEADER_OK:
 		break;
@@ -4342,7 +4353,7 @@ void G_UpdateStaffGhostName(lumpnum_t l)
 	CLEANUP(Z_Pfree) uint8_t *buffer = W_CacheLumpNum(l, PU_CACHE);
 
 	CLEANUP(G_FreeDemoHeader) demoheader_t header;
-	if (G_ReadDemoHeader(buffer, &header) != HEADER_OK)
+	if (G_ReadDemoHeader(buffer, &header, false) != HEADER_OK)
 		return;
 
 	if (!(header.demoflags & DF_GHOST))

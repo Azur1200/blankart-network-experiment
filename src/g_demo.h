@@ -210,7 +210,7 @@ ATTRNORETURN void FUNCNORETURN G_StopMetalRecording(dboolean kill);
 void G_StopDemo(void);
 dboolean G_CheckDemoStatus(void);
 
-void G_LoadDemoInfo(menudemo_t *pdemo);
+void G_LoadDemoInfo(menudemo_t *pdemo, dboolean nameonly);
 void G_DeferedPlayDemo(const char *demo);
 
 void G_SaveDemo(void);

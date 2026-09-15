@@ -443,6 +443,8 @@ static uint32_t M_StringCvarLength(consvar_t *cv)
 		return MAXPLAYERNAME + 1;
 	else if (cv == &cv_dummyreplaysave)
 		return 65;
+	else if (cv == &cv_dummyreplaysearch)
+		return MAXREPLAYQUERY;
 	else
 		return MAXSTRINGLENGTH;
 }
@@ -582,6 +584,9 @@ static const char *CupName(const cupheader_t *cup, dboolean suffix)
 static CV_PossibleValue_t debugpanels_cons_t[] = {{0, "Off"}, {1, "No render"}, {2, "No drawroutines"}, {0, NULL}};
 consvar_t cv_debugpanels = CVAR_INIT ("debugpanels", "Off", 0, debugpanels_cons_t, NULL);
 
+// How much replays are checked per frame when using search
+consvar_t cv_replaysearchrate = CVAR_INIT ("replaysearchrate", "1000", CV_SAVE, CV_Natural, NULL);
+
 consvar_t cv_showfocuslost = CVAR_INIT ("showfocuslost", "Yes", CV_SAVE, CV_YesNo, NULL);
 
 consvar_t cv_nextmap = CVAR_INIT ("nextmap", "0", CV_HIDEN|CV_CALL|CV_NOINIT, CV_Unsigned, Nextmap_OnChange);
@@ -704,10 +709,13 @@ consvar_t cv_debugvirtualkeyboard = CVAR_INIT ("debugvirtualkeyboard", "Off", 0,
 
 static void AddonSearch(void);
 
-consvar_t cv_addons_oldinput = CVAR_INIT ("addons_oldinput", "Off", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_search_oldinput = CVAR_INIT ("search_oldinput", "Off", CV_SAVE, CV_OnOff, NULL);
 
-consvar_t cv_dummyaddonsearch = CVAR_INIT ("dummymenusearch", "", CV_HIDEN|CV_CALL|CV_NOINIT, NULL, AddonSearch);
+consvar_t cv_dummyaddonsearch = CVAR_INIT ("dummyaddonsearch", "", CV_HIDEN|CV_CALL|CV_NOINIT, NULL, AddonSearch);
 
+static void ReplaySearch(void);
+
+consvar_t cv_dummyreplaysearch = CVAR_INIT ("dummyreplaysearch", "", CV_HIDEN|CV_CALL|CV_NOINIT, NULL, ReplaySearch);
 
 // ==========================================================================
 // ALL MENU DEFINITIONS GO HERE
@@ -3336,6 +3344,8 @@ static void M_HandleMenuInput(void)
 	}
 }
 
+static void M_HutCheckReplays(size_t maxnum);
+
 void M_Ticker(void)
 {
 	size_t i;
@@ -3482,7 +3492,7 @@ void M_Init(void)
 
 	CV_RegisterVar(&cv_showallmaps);
 
-	CV_RegisterVar(&cv_addons_oldinput);
+	CV_RegisterVar(&cv_search_oldinput);
 
 	// Menu hacks
 	CV_RegisterVar(&cv_dummymenuplayer);
@@ -3501,6 +3511,7 @@ void M_Init(void)
 	CV_RegisterVar(&cv_dummycolor);
 	CV_RegisterVar(&cv_dummyserverpage);
 	CV_RegisterVar(&cv_dummyaddonsearch);
+	CV_RegisterVar(&cv_dummyreplaysearch);
 	CV_RegisterVar(&cv_dummyreplaysave);
 
 	quitmsg[QUITMSG] = M_GetText("Eggman's tied explosives\nto your girlfriend, and\nwill activate them if\nyou press the 'Y' key!\nPress 'N' to save her!\n");
@@ -3530,6 +3541,7 @@ void M_Init(void)
 
 	CV_RegisterVar(&cv_serversort);
 	CV_RegisterVar(&cv_menucaps);
+	CV_RegisterVar(&cv_replaysearchrate);
 
 	CV_RegisterVar(&cv_debugpanels);
 
@@ -5919,7 +5931,7 @@ void MP_TickAddonsBackground(menupanelinst_t *pi)
 	M_SetItemDisabled(pi, "DISKICON", majormods);
 	M_SetItemVisible(pi, "ADDONSLOADED", modifiedgame);
 
-	if (cv_addons_oldinput.value)
+	if (cv_search_oldinput.value)
 	{
 		M_SetItemDisabled(pi, "SEARCHICON", menusearch.length == 0);
 		M_SetItemDisabled(pi, "SEARCHTEXT", menusearch.length == 0);
@@ -6046,8 +6058,8 @@ static void AddonSearch(void)
 }
 
 // lolololol
-static char searchtext[] = "Search for files and folders";
-static menuitem_t addonsearch = {.text = searchtext, .cvar = &cv_dummyaddonsearch};
+static char addonssearchtext[] = "Search for files and folders";
+static menuitem_t addonsearch = {.text = addonssearchtext, .cvar = &cv_dummyaddonsearch};
 
 int32_t MR_HandleAddons(int32_t choice)
 {
@@ -6056,7 +6068,7 @@ int32_t MR_HandleAddons(int32_t choice)
 
 	const char *filename = curpanels[panelOn].items[curpanels[panelOn].itemon].extra;
 
-	if (cv_addons_oldinput.value && M_TextInputHandle(&menusearch, choice))
+	if (cv_search_oldinput.value && M_TextInputHandle(&menusearch, choice))
 	{
 		S_StartSound(NULL,sfx_menu1);
 
@@ -6198,41 +6210,43 @@ int32_t MR_QuitAddons(int32_t choice)
 // ---- REPLAY HUT -----
 menudemo_t *demolist = NULL;
 
+// Locked behind Lock_search_state
+menudemo_t *demolist_all; // All replays
+dboolean replaynamesloaded = false;
+
+#ifdef HAVE_THREADS
+I_mutex replayquerymutex;
+
+// I_In_Exiting_Signal_Handler is an evil hack
+// to avoid infinite SIGABRT recursion in the signal handler
+// due to poisoned locks or mach-o kernel not supporting locks in signals
+// or something like that. idk
+#  define Lock_search_state()    if (!I_In_Exiting_Signal_Handler()) { I_lock_mutex(&replayquerymutex); }
+#  define Unlock_search_state()  if (!I_In_Exiting_Signal_Handler()) { I_unlock_mutex(replayquerymutex); }
+#else/*HAVE_THREADS*/
+#  define Lock_search_state()
+#  define Unlock_search_state()
+#endif/*HAVE_THREADS*/
+
+static char replayqueryinput_buffer[MAXREPLAYQUERY+1]; // The input typed
+static textinput_t replayqueryinput;
+
+static size_t replayqueryfound = 0; // Number of checked replay entries
+static size_t replayquerycheck = 0; // Index of next replay entry to check in demolist_all
+static dboolean replaylistgenerated = false; // if the list is ready to use?
+
 #define DF_ENCORE       0x40
 
-void MP_PrepReplayList(menupanelinst_t *pi)
+static void CreateReplayItems(menupanelinst_t *pi)
 {
-	size_t i;
+	if (replaylistgenerated)
+		return;
 
 	M_ClearPanelItems(pi);
 
-	if (demolist)
-		Z_Free(demolist);
-
-	demolist = Z_Calloc(sizeof(menudemo_t) * sizedirmenu, PU_STATIC, NULL);
-
-	if (demolist == NULL)
-		I_Error("MP_PrepReplayList: Ran out of Memory!\n");
-
-	for (i = 0; i < sizedirmenu; i++)
+	size_t i;
+	for (i = 0; i < replayqueryfound; i++)
 	{
-		if (dirmenu[i][DIR_TYPE] == EXT_UP)
-		{
-			demolist[i].type = MD_SUBDIR;
-			snprintf(demolist[i].title, sizeof(demolist[i].title), "UP");
-		}
-		else if (dirmenu[i][DIR_TYPE] == EXT_FOLDER)
-		{
-			demolist[i].type = MD_SUBDIR;
-			strncpy(demolist[i].title, dirmenu[i] + DIR_STRING, 64);
-		}
-		else
-		{
-			demolist[i].type = MD_NOTLOADED;
-			snprintf(demolist[i].filepath, MAXFILEPATH, "%s%s", menupath, dirmenu[i] + DIR_STRING);
-			snprintf(demolist[i].title, sizeof(demolist[i].title), ".....");
-		}
-
 		menuitem_t *item = M_AppendMenuItem(pi, 0, 0, IT_INTERACT);
 		M_SetItemTextRaw(item, demolist[i].title);
 		M_SetItemExtraRaw(item, dirmenu[i] + DIR_STRING);
@@ -6249,7 +6263,210 @@ void MP_PrepReplayList(menupanelinst_t *pi)
 		}
 	}
 
+	replaylistgenerated = true;
 	M_RawSetItemOn(pi, dir_on[menudepthleft]);
+}
+
+static void ReplayNamesLoadThread(void* userdata)
+{
+	Lock_search_state();
+
+	size_t demolist_all_size = sizedirmenu;
+	menudemo_t *demolist_all_local = (menudemo_t*)malloc(sizeof(menudemo_t)*sizedirmenu);
+	memcpy(demolist_all_local, demolist_all, sizeof(menudemo_t)*sizedirmenu);
+	char *replaydirpath = (char*)userdata;
+
+	Unlock_search_state();
+
+	for (size_t i = 0; i < demolist_all_size; ++i)
+	{
+		if (demolist_all_local[i].type != MD_SUBDIR)
+		{
+			G_LoadDemoInfo(&demolist_all_local[i], true);
+
+			// this is fucking horrid, but i wanna be able to search for dates
+			/*if (demolist_all_local[i].date[0] != '\0')
+			{
+				snprintf(demolist_all_local[i].title, sizeof(demolist_all_local[i].title), "%s %s", demolist_all_local[i].title, demolist_all_local[i].date);
+			}*/
+		}
+	}
+
+	Lock_search_state();
+
+	if (strcmp(menupath, replaydirpath) == 0)
+	{
+		memcpy(demolist_all, demolist_all_local, sizeof(menudemo_t)*sizedirmenu);
+		replaynamesloaded = true;
+	}
+
+	Unlock_search_state();
+
+	// Was allocated before thread start, we need to free it
+	free(replaydirpath);
+	free(demolist_all_local);
+}
+
+static void LoadReplayNames(void)
+{
+	char *replaydirpath = strdup(menupath);
+
+	Lock_search_state();
+	replaynamesloaded = false;
+	Unlock_search_state();
+
+#ifdef HAVE_THREADS
+	I_spawn_thread("replay-names-load", ReplayNamesLoadThread, replaydirpath);
+#else
+	ReplayNamesLoadThread(replaydirpath);
+#endif
+}
+
+static void ResetReplayQuery(void)
+{
+	memset(replayqueryinput_buffer, 0, MAXREPLAYQUERY);
+	CV_StealthSet(&cv_dummyreplaysearch, "");
+	M_TextInputInit(&replayqueryinput, replayqueryinput_buffer, MAXREPLAYQUERY);
+
+	replayqueryfound = 0;
+	replayquerycheck = 0;
+}
+
+static void AddCheckedReplay(void)
+{
+	memcpy(&demolist[replayqueryfound], &demolist_all[replayquerycheck], sizeof(menudemo_t));
+	++replayqueryfound;
+	++replayquerycheck;
+}
+
+// Check up to maxnum replays if they match with query
+static void M_HutCheckReplays(size_t maxnum)
+{
+	if (!replaynamesloaded)
+		return;
+
+	// Already checked everything
+	if (replayquerycheck == sizedirmenu)
+		return;
+
+	replaylistgenerated = false;
+
+	// If we don't have any query, just copy all demos and consider them checked
+	if (replayqueryinput.length == 0)
+	{
+		// Mark as done
+		replayqueryfound = replayquerycheck = sizedirmenu;
+
+		memcpy(demolist, demolist_all, sizeof(menudemo_t) * sizedirmenu);
+
+		return;
+	}
+
+	while (maxnum-- && replayquerycheck < sizedirmenu)
+	{
+		switch (demolist_all[replayquerycheck].type)
+		{
+			case MD_SUBDIR:
+				AddCheckedReplay(); // Just add subdirs
+				// Will also be decremented on next iteration. Basically, we just don't want to
+				// spend our number of tries on subdirs, since we don't check anything for them
+				++maxnum;
+				break;
+
+			case MD_NOTLOADED:
+			case MD_OUTDATED:
+			case MD_LOADED:
+				if (demolist_all[replayquerycheck].title[0] && strcasestr(demolist_all[replayquerycheck].title, replayqueryinput.buffer) != NULL)
+					AddCheckedReplay(); // It matches, add it!
+				else
+					replayquerycheck++; // Doesn't match, moving on...
+
+				break;
+
+			// Don't show invalid replays
+			case MD_INVALID:
+				replayquerycheck++;
+		}
+	}
+}
+
+static int ReplayListSortComparator(const void *entry1, const void *entry2)
+{
+	const menudemo_t *demo1 = (const menudemo_t*)entry1;
+	const menudemo_t *demo2 = (const menudemo_t*)entry2;
+
+	char filepath1[sizeof(demo1->filepath)];
+	char filepath2[sizeof(demo2->filepath)];
+
+	// First check for directories, they always should be at the top
+	if (demo1->type == MD_SUBDIR && demo2->type != MD_SUBDIR)
+		return -1;
+	else if (demo2->type == MD_SUBDIR && demo1->type != MD_SUBDIR)
+		return 1;
+	else if (demo1->type == MD_SUBDIR && demo2->type == MD_SUBDIR)
+		return 0;
+
+	memcpy(filepath1, demo1->filepath, sizeof(filepath1));
+	memcpy(filepath2, demo2->filepath, sizeof(filepath2));
+
+	nameonly(filepath1);
+	nameonly(filepath2);
+
+	// Comparing in opposite order to move new replays to the top
+	return strncmp(filepath2, filepath1, sizeof(filepath1));
+}
+
+static void PrepReplayList(dboolean reset)
+{
+	size_t i;
+
+	replayquerycheck = replayqueryfound = 0;
+
+	Z_Free(demolist);
+	demolist = Z_Calloc(sizeof(menudemo_t) * sizedirmenu, PU_STATIC, NULL);
+
+	// If directory didn't change, keep demolist_all
+	if (!reset)
+		return;
+
+	Lock_search_state();
+
+	if (demolist_all)
+		Z_Free(demolist_all);
+
+	demolist_all = Z_Calloc(sizeof(menudemo_t) * sizedirmenu, PU_STATIC, NULL);
+
+	for (i = 0; i < sizedirmenu; i++)
+	{
+		if (dirmenu[i][DIR_TYPE] == EXT_UP)
+		{
+			demolist_all[i].type = MD_SUBDIR;
+			snprintf(demolist_all[i].title, sizeof(demolist_all[i].title), "UP");
+		}
+		else if (dirmenu[i][DIR_TYPE] == EXT_FOLDER)
+		{
+			demolist_all[i].type = MD_SUBDIR;
+			strncpy(demolist_all[i].title, dirmenu[i] + DIR_STRING, 64);
+		}
+		else
+		{
+			demolist_all[i].type = MD_NOTLOADED;
+			snprintf(demolist_all[i].filepath, MAXFILEPATH, "%s%s", menupath, dirmenu[i] + DIR_STRING);
+			snprintf(demolist_all[i].title, sizeof(demolist_all[i].title), ".....");
+		}
+	}
+
+	qs22j(demolist_all, sizedirmenu, sizeof(menudemo_t), ReplayListSortComparator);
+
+	Unlock_search_state();
+
+	LoadReplayNames();
+}
+
+void MP_PrepReplayList(menupanelinst_t *pi)
+{
+	(void)pi;
+	PrepReplayList(true);
 }
 
 int32_t MR_ReplayHut(int32_t choice)
@@ -6260,6 +6477,7 @@ int32_t MR_ReplayHut(int32_t choice)
 	{
 		snprintf(menupath, 1024, "%s"PATHSEP"media"PATHSEP"replay"PATHSEP"online"PATHSEP, srb2home);
 		menupathindex[(menudepthleft = menudepth-1)] = strlen(menupath);
+		ResetReplayQuery();
 	}
 	if (!preparefilemenu(false, true))
 	{
@@ -6313,9 +6531,59 @@ void MP_ReplayHutStart(menupanelinst_t *pi)
 	}
 }
 
+static dboolean M_HandleReplayHutQuery(int32_t choice)
+{
+	// Yea gonna copy buffer and check if it changed, thats better than checking for specific keys i think
+	char tmp[MAXREPLAYQUERY+1];
+	memcpy(tmp, replayqueryinput_buffer, MAXREPLAYQUERY+1);
+
+	if (M_TextInputHandle(&replayqueryinput, choice))
+	{
+		S_StartSound(NULL,sfx_menu1);
+
+		// Restart search only if we actually modified input and not just moved in it
+		if (memcmp(tmp, replayqueryinput_buffer, MAXREPLAYQUERY+1))
+		{
+			preparefilemenu(false, true);
+			dir_on[menudepthleft] = 0;
+
+			menupanelinst_t *pi = &curpanels[panelOn];
+			MP_PrepReplayList(pi);
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
+static void ReplaySearch(void)
+{
+	preparefilemenu(false, true);
+	dir_on[menudepthleft] = 0;
+
+	menupanelinst_t *pi = &curpanels[panelOn];
+	MP_PrepReplayList(pi);
+}
+
+// lolololol 2
+static char replayssearchtext[] = "Search for replays";
+static menuitem_t replaysearch = {.text = replayssearchtext, .cvar = &cv_dummyreplaysearch};
+
 int32_t MR_HandleReplayHutList(int32_t choice)
 {
-	(void)choice;
+	if (cv_search_oldinput.value && M_HandleReplayHutQuery(choice))
+		return false;
+	else if (M_MenuButtonPressed(0, MBT_INFO2))
+	{
+		M_OpenVirtualKeyboard(&replayqueryinput, replayqueryinput_buffer, &replaysearch);
+	}
+
+	if (replayquerycheck != sizedirmenu)
+		return true;
+
+	if (!replaylistgenerated)
+		return true;
 
 	if (menucmd[0].delay > 0)
 		return false;
@@ -6326,7 +6594,7 @@ int32_t MR_HandleReplayHutList(int32_t choice)
 
 	if (menucmd[0].dpad_ud > 0)
 	{
-		if (dir_on[menudepthleft] < sizedirmenu-1)
+		if (dir_on[menudepthleft] < replayqueryfound-1)
 		{
 			dir_on[menudepthleft]++;
 			M_SetMenuDelay(0);
@@ -6354,6 +6622,7 @@ int32_t MR_HandleReplayHutList(int32_t choice)
 				{
 					menupathindex[--menudepthleft] = strlen(menupath);
 					menupath[menupathindex[menudepthleft]] = 0;
+					ResetReplayQuery();
 
 					if (!preparefilemenu(false, true))
 					{
@@ -6379,11 +6648,13 @@ int32_t MR_HandleReplayHutList(int32_t choice)
 					S_StartSound(NULL, sfx_s26d);
 					M_StartMessage2("Replay Hut", va("%c%s\x80\nThis folder is too deep to navigate to!\n", ('\x80' + (highlightflags>>V_CHARCOLORSHIFT)), M_AddonsHeaderPath()),MB_NONE,MM_NOTHING, "Press any key", NULL);
 					menupath[menupathindex[menudepthleft]] = 0;
+					ResetReplayQuery();
 				}
 				break;
 			case EXT_UP:
 				S_StartSound(NULL, sfx_menu1);
 				menupath[menupathindex[++menudepthleft]] = 0;
+				ResetReplayQuery();
 				if (!preparefilemenu(false, true))
 				{
 					M_ExitMenu();
@@ -6395,10 +6666,6 @@ int32_t MR_HandleReplayHutList(int32_t choice)
 				return false;
 		}
 	}
-	/*else if (M_MenuButtonPressed(0, MBT_INFO2))
-	{
-		M_OpenVirtualKeyboard(&menusearch, menusearchbuf, &addonsearch);
-	}*/
 	else
 	{
 		switch (choice)
@@ -6509,6 +6776,55 @@ void MP_TickReplayHutInfoBackground(menupanelinst_t *pi)
 
 	menudemo_t *mdemo = &demolist[dir_on[menudepthleft]];
 
+	if (menustack[0] == MN_MISC_REPLAYSTART)
+	{
+		M_SetItemVisible(pi, "SEARCHICON", false);
+		M_SetItemVisible(pi, "SEARCHTEXT", false);
+		M_SetItemVisible(pi, "SEARCHBOX", false);
+	}
+	else
+	{
+
+		M_SetItemVisible(pi, "SEARCHICON", true);
+		M_SetItemVisible(pi, "SEARCHTEXT", true);
+		M_SetItemVisible(pi, "SEARCHBOX", true);
+		if (cv_search_oldinput.value)
+		{
+			M_SetItemDisabled(pi, "SEARCHICON", replayqueryinput.length == 0);
+			M_SetItemDisabled(pi, "SEARCHTEXT", replayqueryinput.length == 0);
+			if (replayqueryinput.length == 0)
+			{
+				M_SetItemText(pi, "SEARCHTEXT", "Type to search...");
+			}
+			else
+			{
+				M_SetItemText(pi, "SEARCHTEXT", replayqueryinput.buffer);
+			}
+		}
+		else
+		{
+			M_SetItemDisabled(pi, "SEARCHICON", *cv_dummyreplaysearch.string == 0);
+			M_SetItemDisabled(pi, "SEARCHTEXT", *cv_dummyreplaysearch.string == 0);
+			if (*cv_dummyreplaysearch.string == 0)
+			{
+				const char *button = M_ButtonName(0, gc_drift, "DRIFT", false);
+				M_SetItemText(pi, "SEARCHTEXT", va("Press %s to Search", button));
+			}
+			else
+			{
+				M_SetItemText(pi, "SEARCHTEXT", cv_dummyreplaysearch.string);
+			}
+		}
+	}
+
+	if (replayquerycheck != sizedirmenu || !replaylistgenerated)
+	{
+		M_SetItemVisible(pi, "CENTERTEXT", true);
+		M_SetItemText(pi, "CENTERTEXT", "Loading replays...");
+		M_GetMenuItem(pi, "CENTERTEXT")->status &= ~ITH_WARNING;
+		return;
+	}
+
 	switch (mdemo->type)
 	{
 		case MD_NOTLOADED:
@@ -6586,15 +6902,24 @@ void MP_TickReplayHutMain(menupanelinst_t *pi)
 void MP_TickReplayHutDemoList(menupanelinst_t *pi)
 {
 	size_t i;
-	pi->scrollheight = (vid.scaledheight - 90)*FRACUNIT;
+
+	M_HutCheckReplays(cv_replaysearchrate.value);
+
+	pi->visible = false;
+
+	if (replayquerycheck != sizedirmenu)
+		return;
+
+	pi->visible = true;
+
+	CreateReplayItems(pi);
 
 	for (i = 0; i < 50; i++)
 	{
 		size_t demoi = pi->itemon + (i/2 * (i & 1 ? -1 : 1));
-		if (demoi < sizedirmenu && demolist[demoi].type == MD_NOTLOADED)
+		if (demoi < replayqueryfound && demolist[demoi].type == MD_NOTLOADED)
 		{
-			G_LoadDemoInfo(&demolist[demoi]);
-			M_SetItemTextRaw(&pi->items[demoi], demolist[demoi].title);
+			G_LoadDemoInfo(&demolist[demoi], false);
 			break;
 		}
 	}
