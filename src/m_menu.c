@@ -6282,7 +6282,7 @@ static void ReplayNamesLoadThread(void* userdata)
 	{
 		if (demolist_all_local[i].type != MD_SUBDIR)
 		{
-			G_LoadDemoInfo(&demolist_all_local[i]);
+			G_LoadDemoInfo(&demolist_all_local[i], true);
 
 			// this is fucking horrid, but i wanna be able to search for dates
 			/*if (demolist_all_local[i].date[0] != '\0')
@@ -6592,7 +6592,7 @@ int32_t MR_HandleReplayHutList(int32_t choice)
 
 	if (menucmd[0].dpad_ud > 0)
 	{
-		if (dir_on[menudepthleft] < sizedirmenu-1)
+		if (dir_on[menudepthleft] < replayqueryfound-1)
 		{
 			dir_on[menudepthleft]++;
 			M_SetMenuDelay(0);
@@ -6859,6 +6859,16 @@ void MP_TickReplayHutDemoList(menupanelinst_t *pi)
 		return;
 
 	CreateReplayItems(pi);
+
+	for (i = 0; i < 50; i++)
+	{
+		size_t demoi = pi->itemon + (i/2 * (i & 1 ? -1 : 1));
+		if (demoi < replayqueryfound && demolist[demoi].type == MD_NOTLOADED)
+		{
+			G_LoadDemoInfo(&demolist[demoi], false);
+			break;
+		}
+	}
 
 	menuitemstyle_t *style = DEH_FindMenuItemStyle("REPLAYSELECT");
 	if (style == NULL)

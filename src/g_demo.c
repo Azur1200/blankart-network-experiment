@@ -3483,7 +3483,7 @@ uint8_t G_CmpDemoTime(char *oldname, char *newname)
 	return c;
 }
 
-void G_LoadDemoInfo(menudemo_t *pdemo)
+void G_LoadDemoInfo(menudemo_t *pdemo, dboolean nameonly)
 {
 	CLEANUP(Z_Pfree) uint8_t *infobuffer = NULL;
 	const uint8_t *extrainfo_p;
@@ -3491,12 +3491,14 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 	if (!FIL_ReadFile(pdemo->filepath, &infobuffer))
 	{
 		CONS_Alert(CONS_ERROR, M_GetText("Failed to read file '%s'.\n"), pdemo->filepath);
-		pdemo->type = MD_INVALID;
+		if (!nameonly)
+			pdemo->type = MD_INVALID;
 		snprintf(pdemo->title, sizeof(pdemo->title), "INVALID REPLAY");
 		return;
 	}
 
-	pdemo->type = MD_LOADED;
+	if (!nameonly)
+		pdemo->type = MD_LOADED;
 
 	CLEANUP(G_FreeDemoHeader) demoheader_t header;
 	switch (G_ReadDemoHeader(infobuffer, &header))
@@ -3506,24 +3508,30 @@ void G_LoadDemoInfo(menudemo_t *pdemo)
 
 	case HEADER_BADMAGIC:
 		CONS_Alert(CONS_ERROR, M_GetText("%s is not a SRB2Kart replay file.\n"), pdemo->filepath);
-		pdemo->type = MD_INVALID;
+		if (!nameonly)
+			pdemo->type = MD_INVALID;
 		snprintf(pdemo->title, sizeof(pdemo->title), "INVALID REPLAY");
 		return;
 
 	case HEADER_BADVERSION:
 		CONS_Alert(CONS_ERROR, M_GetText("%s is an incompatible replay format and cannot be played.\n"), pdemo->filepath);
-		pdemo->type = MD_INVALID;
+		if (!nameonly)
+			pdemo->type = MD_INVALID;
 		snprintf(pdemo->title, sizeof(pdemo->title), "INVALID REPLAY");
 		return;
 
 	case HEADER_BADFORMAT:
 		CONS_Alert(CONS_ERROR, M_GetText("%s is the wrong type of recording and cannot be played.\n"), pdemo->filepath);
-		pdemo->type = MD_INVALID;
+		if (!nameonly)
+			pdemo->type = MD_INVALID;
 		snprintf(pdemo->title, sizeof(pdemo->title), "INVALID REPLAY");
 		return;
 	}
 
 	strlcpy(pdemo->title, header.demotitle, sizeof(pdemo->title));
+
+	if (nameonly)
+		return;
 
 	if (header.version != VERSION || header.subversion != SUBVERSION)
 		pdemo->type = MD_OUTDATED;
