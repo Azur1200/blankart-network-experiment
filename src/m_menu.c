@@ -6777,6 +6777,47 @@ void MP_TickReplayHutInfoBackground(menupanelinst_t *pi)
 
 	menudemo_t *mdemo = &demolist[dir_on[menudepthleft]];
 
+	if (menustack[0] == MN_MISC_REPLAYSTART)
+	{
+		M_SetItemVisible(pi, "SEARCHICON", false);
+		M_SetItemVisible(pi, "SEARCHTEXT", false);
+		M_SetItemVisible(pi, "SEARCHBOX", false);
+	}
+	else
+	{
+
+		M_SetItemVisible(pi, "SEARCHICON", true);
+		M_SetItemVisible(pi, "SEARCHTEXT", true);
+		M_SetItemVisible(pi, "SEARCHBOX", true);
+		if (cv_addons_oldinput.value)
+		{
+			M_SetItemDisabled(pi, "SEARCHICON", replayqueryinput.length == 0);
+			M_SetItemDisabled(pi, "SEARCHTEXT", replayqueryinput.length == 0);
+			if (replayqueryinput.length == 0)
+			{
+				M_SetItemText(pi, "SEARCHTEXT", "Type to search...");
+			}
+			else
+			{
+				M_SetItemText(pi, "SEARCHTEXT", replayqueryinput.buffer);
+			}
+		}
+		else
+		{
+			M_SetItemDisabled(pi, "SEARCHICON", *cv_dummyreplaysearch.string == 0);
+			M_SetItemDisabled(pi, "SEARCHTEXT", *cv_dummyreplaysearch.string == 0);
+			if (*cv_dummyreplaysearch.string == 0)
+			{
+				const char *button = M_ButtonName(0, gc_drift, "DRIFT", false);
+				M_SetItemText(pi, "SEARCHTEXT", va("Press %s to Search", button));
+			}
+			else
+			{
+				M_SetItemText(pi, "SEARCHTEXT", cv_dummyreplaysearch.string);
+			}
+		}
+	}
+
 	if (replayquerycheck != sizedirmenu || !replaylistgenerated)
 	{
 		M_SetItemVisible(pi, "CENTERTEXT", true);
@@ -6862,7 +6903,6 @@ void MP_TickReplayHutMain(menupanelinst_t *pi)
 void MP_TickReplayHutDemoList(menupanelinst_t *pi)
 {
 	size_t i;
-	pi->scrollheight = (vid.scaledheight - 90)*FRACUNIT;
 
 	M_HutCheckReplays(cv_replaysearchrate.value);
 

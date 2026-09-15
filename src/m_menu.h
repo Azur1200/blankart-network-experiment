@@ -30,7 +30,7 @@
 extern "C" {
 #endif
 
-#define MAXREPLAYQUERY 37
+#define MAXREPLAYQUERY 33
 
 // Compatibility with old-style named NiGHTS replay files.
 #define OLDNREPLAYNAME
