@@ -30,6 +30,8 @@
 extern "C" {
 #endif
 
+#define MAXREPLAYQUERY 33
+
 // Compatibility with old-style named NiGHTS replay files.
 #define OLDNREPLAYNAME
 
@@ -64,7 +66,6 @@ extern menutyping_t menutyping;
 
 #define MENUDELAYTIME 7
 #define MENUMINDELAY 2
-
 
 typedef enum
 {
@@ -690,6 +691,8 @@ uint16_t M_GetColorBefore(uint16_t color);
 uint16_t M_GetColorAfter(uint16_t color);
 void M_InitPlayerSetupColors(void);
 void M_FreePlayerSetupColors(void);
+
+extern consvar_t cv_dummyreplaysearch;
 
 #ifdef __cplusplus
 } // extern "C"

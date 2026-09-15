@@ -663,6 +663,4 @@ _(FHRN)
 _(VIEW)
 
 // New Spring.
-_(NSPV)
-_(NSPD)
-_(NSPH)
+_(NSPG)

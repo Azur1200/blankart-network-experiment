@@ -1053,3 +1053,6 @@ _(rcefin)
 _(gprnk)
 _(gprng)
 _(gprnf)
+
+// Adventure Spring
+_(advsp)

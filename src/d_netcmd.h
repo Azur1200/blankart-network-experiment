@@ -382,6 +382,27 @@ extern consvar_t cv_debugmappatch;
 
 extern consvar_t cv_allowmismatchmappatch;
 
+extern consvar_t cv_neospringbackx;
+extern consvar_t cv_neospringbacky;
+
+extern consvar_t cv_neospringfrontx;
+extern consvar_t cv_neospringfronty;
+extern consvar_t cv_neospringfrontbackz;
+
+extern consvar_t cv_neospringtopbotx;
+extern consvar_t cv_neospringtopboty;
+extern consvar_t cv_neospringtopz;
+extern consvar_t cv_neospringbotz;
+
+extern consvar_t cv_neospringleftx;
+extern consvar_t cv_neospringlefty;
+extern consvar_t cv_neospringleftz;
+
+
+extern consvar_t cv_neospringrightx;
+extern consvar_t cv_neospringrighty;
+extern consvar_t cv_neospringrightz;
+
 extern char timedemo_name[256];
 extern dboolean timedemo_csv;
 extern char timedemo_csv_id[256];

@@ -10550,6 +10550,12 @@ static dboolean P_MobjRegularThink(mobj_t *mobj)
 	case MT_RAINBOWDASHRING:
 		Obj_RainbowDashRingThink(mobj);
 		break;
+
+	case MT_NEOSPRING:
+	case MT_NEODIAG:
+	case MT_NEOHORIZ:
+		Obj_ThinkNeoSpring(mobj);
+		break;
 	default:
 		// check mobj against possible water content, before movement code
 		P_MobjCheckWater(mobj);
@@ -13656,30 +13662,6 @@ static dboolean P_MapAlreadyHasStarPost(mobj_t *mobj)
 	return false;
 }
 
-static skincolornum_t P_HandleNewSpringColor(fixed_t speedval)
-{
-	if (speedval >= 70 *FRACUNIT)
-	{
-		return SKINCOLOR_RED;
-	}
-	else if (speedval > 40*FRACUNIT && speedval < 70*FRACUNIT)
-	{
-		return SKINCOLOR_YELLOW;
-	}
-	else if (speedval > 30*FRACUNIT && speedval <= 40*FRACUNIT)
-	{
-		return SKINCOLOR_BLUEBERRY;
-	}
-	else if (speedval > 0 && speedval <= 30 *FRACUNIT)
-	{
-		return SKINCOLOR_GREY;
-	}
-	else
-	{
-		return SKINCOLOR_WHITE;
-	}
-}
-
 static dboolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, dboolean *doangle)
 {
 	dboolean override = LUA_HookMapThingSpawn(mobj, mthing);
@@ -14212,7 +14194,7 @@ static dboolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, dboolea
 		if (mthing->args[0] & TMSPR_NOGRAVITY)
 			mobj->flags |= MF_NOGRAVITY;
 
-		mobj->color = P_HandleNewSpringColor(mobj->extravalue1);
+		mobj->color = Obj_HandleNeoSpringColor(mobj->extravalue1);
 		break;
 	case MT_NEODIAG:
 		mobj->extravalue1 = mthing->args[2]> 0 ? mthing->args[2]*FRACUNIT : mobj->info->mass;
@@ -14224,7 +14206,7 @@ static dboolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, dboolea
 		if (mthing->args[0] & TMSPR_ROTATEEXTRA)
 			mobj->angle += ANGLE_22h;
 
-		mobj->color = P_HandleNewSpringColor(max(mobj->extravalue1, mobj->extravalue2));
+		mobj->color = Obj_HandleNeoSpringColor(max(mobj->extravalue1, mobj->extravalue2));
 
 		*doangle = false;
 		break;
@@ -14241,7 +14223,7 @@ static dboolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, dboolea
 		if (mthing->args[0] & TMSPR_NOGRAVITY)
 			mobj->flags |= MF_NOGRAVITY;
 
-		mobj->color = P_HandleNewSpringColor(mobj->extravalue2);
+		mobj->color = Obj_HandleNeoSpringColor(mobj->extravalue2);
 		break;
 	}
 	default:

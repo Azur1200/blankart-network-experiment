@@ -39,6 +39,7 @@
 #include "i_video.h" // rendermode
 #include "z_zone.h"
 #include "lua_script.h"
+#include "i_threads.h"
 
 #include <tracy/tracy/TracyC.h>
 
@@ -71,6 +72,8 @@ typedef struct memblock_s
 #define ALIGNPAD (((sizeof (memblock_t) + (alignof (max_align_t) - 1)) & ~(alignof (max_align_t) - 1)) - sizeof (memblock_t))
 #define MEMORY(x) (void *)((uintptr_t)(x) + sizeof(memblock_t) + ALIGNPAD)
 #define MEMBLOCK(x) (memblock_t *)((uintptr_t)(x) - ALIGNPAD - sizeof(memblock_t))
+
+static I_mutex alloc_mutex;
 
 // both the head and tail of the zone memory block list
 static memblock_t headlist[NUM_PURGETAGS];
@@ -140,6 +143,8 @@ void Z_Free2(void *ptr, const char *file, int32_t line)
 	if (ptr == NULL)
 		return;
 
+	I_lock_mutex(&alloc_mutex);
+
 /*
 // Sal: There's a print exactly like this just below?
 #ifdef ZDEBUG
@@ -173,6 +178,8 @@ void Z_Free2(void *ptr, const char *file, int32_t line)
 	block->prev->next = block->next;
 	block->next->prev = block->prev;
 	TracyCFree(block);
+	I_unlock_mutex(alloc_mutex);
+
 	free(block);
 }
 
@@ -234,6 +241,8 @@ void *Z_Malloc2(size_t size, int32_t tag, void *user, int32_t alignbits,
 	ptr = MEMORY(block);
 	I_Assert((intptr_t)ptr % alignof (max_align_t) == 0);
 
+	I_lock_mutex(&alloc_mutex);
+
 	block->next = headlist[tag].next;
 	block->prev = &headlist[tag];
 	headlist[tag].next = block;
@@ -252,6 +261,8 @@ void *Z_Malloc2(size_t size, int32_t tag, void *user, int32_t alignbits,
 #endif
 
 	block->id = ZONEID;
+
+	I_unlock_mutex(alloc_mutex);
 
 	if (user != NULL)
 	{
