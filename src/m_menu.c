@@ -6233,7 +6233,7 @@ void MP_PrepReplayList(menupanelinst_t *pi)
 			snprintf(demolist[i].title, sizeof(demolist[i].title), ".....");
 		}
 
-		menuitem_t *item = M_AppendMenuItem(pi, 0, i*10*FRACUNIT, IT_INTERACT);
+		menuitem_t *item = M_AppendMenuItem(pi, 0, 0, IT_INTERACT);
 		M_SetItemTextRaw(item, demolist[i].title);
 		M_SetItemExtraRaw(item, dirmenu[i] + DIR_STRING);
 		item->argument = dirmenu[i][DIR_TYPE];
