@@ -1492,6 +1492,7 @@ static dboolean M_WipeBuffer(int32_t ch, menufunc_f *routine)
 static int32_t MR_Dummy(int32_t ch) { (void)ch; return true; }
 
 static fixed_t M_GetItemAbsY(const menupanelinst_t *pi, size_t index);
+static int64_t M_GetItemAbsY_64(const menupanelinst_t *pi, size_t index);
 
 static dboolean M_GamestateCanOpenMenu(void)
 {
@@ -4009,6 +4010,35 @@ static fixed_t M_GetItemAbsY(const menupanelinst_t *pi, size_t index)
 	return y;
 }
 
+static int64_t M_GetItemAbsY_64(const menupanelinst_t *pi, size_t index)
+{
+	size_t i;
+	int64_t y = 0;
+	menupaneldef_t *pd = M_GetDefFromInst(pi);
+	for (i = 0; i < pi->numitems; i++)
+	{
+		const menuitem_t *item = &pi->items[i];
+
+		if (item->status & IT_HIDDEN)
+			continue;
+
+		if (item->y)
+		{
+			if (!(item->status & IT_OFSY))
+				y = item->y;
+			else if (!(item->status & IT_TEMPORARY))
+				y = y + item->y;
+		}
+
+		if (i >= index)
+			break;
+
+		y += pd->lineheight*FRACUNIT + M_ItemExtraOffset(item);
+	}
+
+	return y;
+}
+
 static void M_UpdateStyleFixedStrings(void)
 {
 	menuitemstyle_t *style;
@@ -4079,32 +4109,41 @@ static void M_DrawMenuPanel(menupanelinst_t *pi, dboolean selected)
 		V_SetClipRect(x_clip, y_clip, pi->cliprect_width, pi->cliprect_height, pflags);
 	}
 
-	fixed_t scrollx = pi->x, scrolly = pi->y;
+	fixed_t scrollx = pi->x;
+	int64_t scrolly = pi->y;
 	fixed_t scrollheight = pi->scrollheight;
 	if (!scrollheight)
 		scrollheight = INT32_MAX;
 
 	dboolean hidecursor = !selected || pi->numitems == 0 || pd->drawroutine == MD_DrawMonitorToggles || pd->drawroutine == MD_DrawLevelPlatterMenu;
 
-	fixed_t topy = M_GetItemAbsY(pi, 0);
-	fixed_t boty = M_GetItemAbsY(pi, pi->numitems-1);
+	int64_t topy = M_GetItemAbsY(pi, 0);
+	int64_t boty = M_GetItemAbsY_64(pi, pi->numitems-1);
 
 	if (pi->altscroll || (selected && boty - topy > scrollheight))
 	{
-		scrolly -= M_GetItemAbsY(pi, pi->itemon) - (pi->altscroll ? 0 : scrollheight/2);
+		scrolly -= M_GetItemAbsY_64(pi, pi->itemon) - (pi->altscroll ? 0 : scrollheight/2);
+
+		const int64_t topbound = ((int64_t)(pi->y) - topy);
+		const int64_t bottombound = ((int64_t)(pi->y) - boty + scrollheight);
+
 		if (pi->altscroll)
 			;
-		else if (scrolly > pi->y - topy)
-			scrolly = pi->y - topy;
-		else if (scrolly < pi->y - boty + scrollheight)
-			scrolly = pi->y - boty + scrollheight;
+		else if (scrolly > topbound)
+			scrolly = topbound;
+		else if (scrolly < bottombound)
+			scrolly = bottombound;
 	}
+
+	fixed_t scrolly_fixed = (fixed_t)(scrolly);
 
 	// draw title (or big pic)
 	M_DrawMenuTitle();
 
 	size_t i;
-	fixed_t w, x = scrollx, y = scrolly, cursorx = 0, cursory = 0;
+	fixed_t w, x = scrollx;
+	int64_t y = scrolly;
+	fixed_t cursorx = 0, cursory = 0;
 	dboolean clipbot = false, cliptop = false;
 
 	// levelselect no longer needs a special drawer!
@@ -4114,7 +4153,7 @@ static void M_DrawMenuPanel(menupanelinst_t *pi, dboolean selected)
 			patch_t *patch;
 			fixed_t scale = M_GetMapThumbnail(cv_nextmap.value - 1, &patch);
 			V_DrawSciencePatch(BASEVIDWIDTH*FRACUNIT - patch->width*scale/4 - pi->x,
-			                  scrolly + M_GetItemAbsY(pi, i) + 35*FRACUNIT - patch->height*scale/8,
+			                  scrolly_fixed + M_GetItemAbsY(pi, i) + 35*FRACUNIT - patch->height*scale/8,
 			                  pflags, patch, scale/4);
 			break;
 		}
@@ -4152,7 +4191,8 @@ static void M_DrawMenuPanel(menupanelinst_t *pi, dboolean selected)
 
 	for (i = 0; i < pi->numitems; i++)
 	{
-		fixed_t dx, dy;
+		fixed_t dx;
+		int64_t dy;
 		menuitem_t *item = &pi->items[i];
 
 		if (item->status & IT_HIDDEN)
@@ -4187,17 +4227,19 @@ static void M_DrawMenuPanel(menupanelinst_t *pi, dboolean selected)
 			goto nodraw;
 		}
 
-		w = M_DrawMenuItem(pi, item, dx, dy, pi->vflags | MENUCAPS, !hidecursor && item->status & IT_INTERACT && i == pi->itemon);
+		w = M_DrawMenuItem(pi, item, dx, (fixed_t)(dy), pi->vflags | MENUCAPS, !hidecursor && item->status & IT_INTERACT && i == pi->itemon);
 
 		if (!hidecursor && i == pi->itemon)
 		{
-			cursory = y;
+			cursory = (fixed_t)(y);
 			cursorx = x - w - 24*FRACUNIT + pi->cursoroffset;
 		}
 
 	nodraw:
 		y += pd->lineheight*FRACUNIT + M_ItemExtraOffset(item);
 	}
+
+	fixed_t yfx = (fixed_t)(y);
 
 	dboolean wipebuffer = (noFurtherInput > 0 || menucmd[0].wipebuffer);
 
@@ -4240,14 +4282,14 @@ static void M_DrawMenuPanel(menupanelinst_t *pi, dboolean selected)
 	{
 		int32_t bh = (vid.scaledheight - 80)*FRACUNIT;
 		x = (BASEVIDWIDTH - 4)*FRACUNIT;
-		y = 75*FRACUNIT;
+		yfx = 75*FRACUNIT;
 		int32_t barheight = max(FRACUNIT,FixedDiv(FixedMul(bh, bh) - 1, boty) - FRACUNIT);
 		if (boty > bh)
 		{
 			boty += scrollheight + 10*FRACUNIT;
-			V_DrawFixedFill(x, y, 4*FRACUNIT, bh, V_SNAPTOTOP|V_SNAPTORIGHT|159);
-			x += FRACUNIT, y += FRACUNIT;
-			V_DrawFixedFill(x, y + FixedMul(bh, FixedDiv(M_GetItemAbsY(pi, pi->itemon), boty)), 2*FRACUNIT, barheight, V_SNAPTOTOP|V_SNAPTORIGHT|149);
+			V_DrawFixedFill(x, yfx, 4*FRACUNIT, bh, V_SNAPTOTOP|V_SNAPTORIGHT|159);
+			x += FRACUNIT, yfx += FRACUNIT;
+			V_DrawFixedFill(x, yfx + FixedMul(bh, FixedDiv(M_GetItemAbsY(pi, pi->itemon), boty)), 2*FRACUNIT, barheight, V_SNAPTOTOP|V_SNAPTORIGHT|149);
 		}
 	}
 	else
