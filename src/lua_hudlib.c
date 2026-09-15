@@ -783,7 +783,7 @@ static int libd_drawOnMinimap(lua_State *L)
 
 	// variables used to replicate k_kart's mmap drawer:
 	int32_t mx, my;
-	int32_t splitflags, minimaptrans;
+	int32_t splitflags, minimaptrans = 0;
 
 	// variables used for actually drawing the icon:
 	fixed_t amnumxpos, amnumypos;
