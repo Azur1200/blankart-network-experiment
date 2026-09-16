@@ -12595,8 +12595,9 @@ fixed_t positionfactor = 0;
 void K_UpdatePositionFactorAndPlayerRanks(void)
 {
 	cannotrank = false;
+	dboolean disterror = ((!K_UsingLegacyCheckpoints()) && (K_GetCircuitLength() == 0));
 
-	if (!rankingactive || (!(gametypes[gametype]->rules & GTR_CIRCUIT)) || (players_racing <= 1) || (modeattacking) || (K_GetCircuitLength() == 0))
+	if (!rankingactive || (!(gametypes[gametype]->rules & GTR_CIRCUIT)) || (players_racing <= 1) || (modeattacking) || (disterror))
 	{
 		// Can't do nuthin'
 		positionfactor = 0;
