@@ -9072,12 +9072,20 @@ void K_UpdateProgressThroughCourse(player_t *player)
 		return;
 	}
 
+	const dboolean disterror = ((!K_UsingLegacyCheckpoints()) && (K_GetCircuitLength() == 0));
+
 	player->progressupdate = false;
 
 	if (waypointcap == NULL)
 	{
 		// Map isn't waypointed, attempt to use old-school checkpoints
 		K_UpdateProgressThroughCourseClassic(player);
+		return;
+	}
+
+	if (disterror)
+	{
+		// Invalid distance for this map...
 		return;
 	}
 
@@ -9130,8 +9138,16 @@ void K_UpdateProgressThroughCourse(player_t *player)
 			// The course length IS how long the sectioned course is, AKA: DON'T multiply the damn distances!
 			lap_mul = 1;
 		}
+
 		// Multiply the course distance by the lap count to get the length of the entire race
 		coursedist *= lap_mul;
+
+		if (coursedist < 1)
+		{
+			// If the overall course distance is zero (or less?!), don't do shit
+			Z_Free(pathtofinish.array);
+			return;
+		}
 
 		// Divide our distance by the overall course distance
 		fixed_t factor = (fixed_t)(CLAMP(pathdist / coursedist, 0, BIGFRACUNIT));
