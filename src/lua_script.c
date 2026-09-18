@@ -26,6 +26,7 @@
 #include "p_local.h"
 #include "p_slopes.h" // for P_SlopeById and slopelist
 #include "p_polyobj.h" // polyobj_t, PolyObjects
+#include "k_kart.h" // Rankscore macros
 #include "k_battle.h"
 #include "k_items.h"
 #include "k_waypoint.h"
@@ -250,6 +251,11 @@ int LUA_Call(lua_State *L, int nargs, int nresults, int errorhandlerindex, dbool
 	X(trailslow_active) \
 	X(trailslowactive) \
 	X(playerbumpactive) \
+	X(rankingactive) \
+	X(ranking_penaltyactive) \
+	X(ranking_driftbonusactive) \
+	X(ranking_hitbonusactive) \
+	X(cannotrank) \
 	X(hyubgone) \
 	X(encoremode) \
 	X(franticitems) \
@@ -276,6 +282,10 @@ int LUA_Call(lua_State *L, int nargs, int nresults, int errorhandlerindex, dbool
 	X(initial_seed) \
 	X(initialseed) \
 	X(greasetics) \
+	X(bestbeforeprank) \
+	X(rankdivisor) \
+	X(lowestrankscore) \
+	X(highestrankscore) \
 	X(wipeoutslowtime) \
 	X(wantedreduce) \
 	X(wantedfrequency) \
@@ -297,6 +307,8 @@ const char *const global_opt[] = {
 };
 
 int global_fields_ref = LUA_NOREF;
+
+#define NOSET luaL_error(L, "global field " LUA_QS " cannot be set.", field)
 
 // Moved here from lib_getenum.
 int LUA_PushGlobals(lua_State *L)
@@ -583,6 +595,21 @@ int LUA_PushGlobals(lua_State *L)
 		case global_playerbumpactive:
 			lua_pushinteger(L, playerbumpactive);
 			return 1;
+		case global_rankingactive:
+			lua_pushdboolean(L, rankingactive);
+			return 1;
+		case global_ranking_penaltyactive:
+			lua_pushdboolean(L, ranking_penaltyactive);
+			return 1;
+		case global_ranking_hitbonusactive:
+			lua_pushdboolean(L, ranking_hitbonusactive);
+			return 1;
+		case global_ranking_driftbonusactive:
+			lua_pushdboolean(L, ranking_driftbonusactive);
+			return 1;
+		case global_cannotrank:
+			lua_pushdboolean(L, cannotrank);
+			return 1;
 		case global_hyubgone:
 			lua_pushinteger(L, K_GetKartResult("hyudoro")->cooldown);
 			return 1;
@@ -658,6 +685,20 @@ int LUA_PushGlobals(lua_State *L)
 			return 1;
 		case global_greasetics:
 			lua_pushinteger(L, greasetics);
+			return 1;
+		case global_bestbeforeprank:
+			lua_pushinteger(L, BEST_SCORE_BEFORE_P_RANK);
+			return 1;
+		case global_lowestrankscore:
+			// "Couldn't you just get the cvar?"
+			// You could, but convenience also matters :^)
+			lua_pushinteger(L, LOWESTRANKSCORE);
+			return 1;
+		case global_highestrankscore:
+			lua_pushinteger(L, HIGHESTRANKSCORE);
+			return 1;
+		case global_rankdivisor:
+			lua_pushinteger(L, RANKSCORE_DIVISOR);
 			return 1;
 		case global_wipeoutslowtime:
 			lua_pushinteger(L, wipeoutslowtime);
@@ -806,6 +847,21 @@ int LUA_WriteGlobals(lua_State *L)
 			break;
 		case global_playerbumpactive:
 			playerbumpactive = luaL_checkinteger(L, 2);
+			break;
+		case global_rankingactive:
+			rankingactive = luaL_checkdboolean(L, 2);
+			break;
+		case global_ranking_penaltyactive:
+			ranking_penaltyactive = luaL_checkdboolean(L, 2);
+			break;
+		case global_ranking_hitbonusactive:
+			ranking_hitbonusactive = luaL_checkdboolean(L, 2);
+			break;
+		case global_ranking_driftbonusactive:
+			ranking_driftbonusactive = luaL_checkdboolean(L, 2);
+			break;
+		case global_cannotrank:
+			return NOSET;
 			break;
 		case global_gamespeed:
 			gamespeed = (uint8_t)luaL_checkinteger(L, 2);

@@ -237,6 +237,19 @@ extern consvar_t cv_kartsmonitor_decaydist;
 extern consvar_t cv_kartsmonitor_decaytime;
 extern consvar_t cv_kartsmonitor_intangible;
 
+// Rank-score bounds
+extern consvar_t cv_kartrank_lowestscore, cv_kartrank_highestscore;
+
+// Ranking values, since this is overall opinionated
+extern consvar_t cv_kartrank_progressionpoints, cv_kartrank_spbtimepoints,
+    cv_kartrank_driftboostpoints, cv_kartrank_hitconfirmpoints, cv_kartrank_offroad_divisor,
+    cv_kartrank_lawnmowerthreshold, cv_kartrank_wallbonkpenalty, cv_kartrank_hazardpenalty,
+    cv_kartrank_respawnpenalty, cv_kartrank_hazardmercy, cv_kartrank_respawnmercy,
+    cv_kartrank_leadertimepoints, cv_kartrank_finishbonus, cv_kartrank_finishpenalty,
+    cv_kartrank_genericpartime, cv_kartrank_maxpotentialprogress, cv_kartrank_minprogress;
+
+extern consvar_t cv_kartrank_partimehelper;
+
 // opinionated stuff for testing
 extern consvar_t cv_kartbubble_defense_canidle;
 extern consvar_t cv_kartbubble_defense_damagerate;
@@ -301,6 +314,11 @@ extern consvar_t cv_kartspbrush;
 extern consvar_t cv_usegenericlapsounds;
 
 extern consvar_t cv_itemlist;
+extern consvar_t cv_kartraceranks;
+extern consvar_t cv_kartrankpenalties;
+
+// These are a bit more opinionated, so let's let hosts toggle these
+extern consvar_t cv_kartrank_driftbonus, cv_kartrank_hitbonus;
 
 extern consvar_t cv_encorevotes;
 
@@ -310,11 +328,12 @@ extern consvar_t cv_kartdebugitem, cv_kartdebugamount, cv_kartdebugdistribution,
 extern consvar_t cv_kartdebugshrink;
 extern consvar_t cv_kartdebugcheckpoint, cv_kartdebugnodes, cv_kartdebugcolorize, cv_kartdebugdirector;
 extern consvar_t cv_kartdebugwaypoints, cv_kartdebuglap, cv_kartdebugbot, cv_kartdebugcluster, cv_kartdebugrings;
+extern consvar_t cv_kartdebugprogress;
 extern consvar_t cv_gptest;
 
 extern consvar_t cv_itemfinder;
 
-extern consvar_t cv_inttime, cv_rolltime, cv_advancemap;
+extern consvar_t cv_inttime, cv_rolltime, cv_graphtime, cv_rankscoretime, cv_advancemap;
 extern consvar_t cv_overtime;
 extern consvar_t cv_startinglives;
 

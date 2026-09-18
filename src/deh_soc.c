@@ -1466,6 +1466,23 @@ void readlevelheader(MYFILE *f, char * name)
 			{
 				globalmapefxparameters(num, i, word, word2);
 			}
+			// Par times
+			else if (fastcmp(word, "PARTIMEEASY"))
+			{
+				mapheaderinfo[num]->par_time[KARTSPEED_EASY] = (tic_t)i;
+			}
+			else if (fastcmp(word, "PARTIMENORMAL"))
+			{
+				mapheaderinfo[num]->par_time[KARTSPEED_NORMAL] = (tic_t)i;
+			}
+			else if (fastcmp(word, "PARTIMEHARD"))
+			{
+				mapheaderinfo[num]->par_time[KARTSPEED_HARD] = (tic_t)i;
+			}
+			else if (fastcmp(word, "PARTIMEEXPERT"))
+			{
+				mapheaderinfo[num]->par_time[KARTSPEED_EXPERT] = (tic_t)i;
+			}
 			 // ignored for compatibility
 			else if (fastcmp(word, "NEXTLEVEL") || fastcmp(word, "TIMEATTACK") || fastcmp(word, "RECORDATTACK"))
 				continue;

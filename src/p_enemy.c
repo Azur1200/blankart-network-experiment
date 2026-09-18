@@ -11030,6 +11030,29 @@ void A_JawzExplode(void *thing)
 	return;
 }
 
+#define SPBPLAYERMINDIST (mobjinfo[MT_SPB].radius + mobjinfo[MT_PLAYER].radius)
+#define SPBCHASEDISTMUL (8)
+
+#define SPBCHASEPOINTS (6)
+
+// Get the rank points earned from having an SPB tail you.
+// The closer it is, the more points you earn. Don't get reckless!
+static int32_t P_GetSPBChaseRankPoints(mobj_t *spb, mobj_t *spb_target)
+{
+	const int64_t divisor = max(1, (SPBPLAYERMINDIST * SPBCHASEDISTMUL) / FRACUNIT);
+	const int64_t min_dist = divisor / SPBCHASEDISTMUL;
+
+	int64_t dist = K_IntDistanceForMap(spb->x, spb->y, spb->z, spb_target->x, spb_target->y, spb_target->z);
+
+	int64_t factor = max(0, dist - min_dist);
+
+	factor = min(FRACUNIT, factor * FRACUNIT / divisor);
+
+	fixed_t mul = max(0, FRACUNIT - (fixed_t)factor);
+
+	return FixedMul(SPBCHASEPOINTS, mul);
+}
+
 void A_SPBChase(void *thing)
 {
 	mobj_t *actor = thing;
@@ -11147,6 +11170,9 @@ void A_SPBChase(void *thing)
 				{
 					spbplace = actor->tracer->player->position;
 				}
+
+				// Log the player's time spent being tailed by us.
+				actor->tracer->player->ranklog.spbattack += P_GetSPBChaseRankPoints(actor, actor->tracer);
 			}
 
 			if ((K_RingsActive() == true) ) // Spawn rings to make up for the fact first has ring grabbing

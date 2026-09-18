@@ -50,6 +50,8 @@
 #include "k_itemlist.hpp"
 #include "k_vote.h"
 
+#include "cvector.h"
+
 #include <tracy/tracy/TracyC.h>
 
 savedata_t savedata;
@@ -434,7 +436,56 @@ static void P_RelinkWaypoint(savebuffer_t *save, waypoint_t **ptr)
 #define ARCHIVEBLOCK_WAYPOINTS	0x7F46498F
 
 // Specialized netsynch markers
-#define PLYRSYNC_ITEMLIST (1)
+#define PLYRSYNC_TOKEN (0x504C0000) // Upper bytes: "PL"
+#define PLYRSYNC_ITEMLIST (PLYRSYNC_TOKEN|1)
+#define PLYRSYNC_RANKPTLOG (PLYRSYNC_TOKEN|2)
+
+#define WYPTSYNC_TOKEN (0x57500000) // Upper bytes: "WP"
+#define WYPTSYNC_OLDGRADE (WYPTSYNC_TOKEN|1) // legacygradelap
+
+static uint32_t P_SyncRankScoreLog(savebuffer_t* save, int32_t pid)
+{
+	uint32_t buffer_size = 0;
+	uint32_t i = 0;
+
+	if (save->write)
+	{
+		buffer_size = cvector_size(rankscore_tracker[pid]);
+
+		// First, write the size of the buffer we're about to send over.
+		WRITEUINT32(save->p, buffer_size);
+
+		// Then, comb through the list and write every entry in it to the save buffer.
+		for (i = 0; i < buffer_size; i++)
+		{
+			WRITEINT32(save->p, rankscore_tracker[pid][i]);
+		}
+
+		return buffer_size;
+	}
+	else
+	{
+		// Get the buffer size.
+		buffer_size = READUINT32(save->p);
+
+		cvector_resize(rankscore_tracker[pid], buffer_size, 0);
+
+		int32_t this_rankscore = 0;
+
+		for (i = 0; i < buffer_size; i++)
+		{
+			// Loop through the save buffer and write everything we find into the
+			// rankscore tracker.
+			this_rankscore = READUINT32(save->p);
+
+			rankscore_tracker[pid][i] = this_rankscore;
+		}
+
+		return buffer_size;
+	}
+
+	return 0;
+}
 
 static inline void P_ArchivePlayer(savebuffer_t *save)
 {
@@ -521,6 +572,53 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		{
 			SYNC(players[i].availabilities[j]);
 		}
+
+		//////////////////////
+		// Player Rank Data //
+		//////////////////////
+		// Rankscore Trackers
+		if (P_SyncUINT32(save, ((rankscore_tracker[i] != NULL) ? PLYRSYNC_RANKPTLOG : 0)))
+		{
+			P_SyncRankScoreLog(save, i);
+		}
+		// Ranklog
+		SYNC(players[i].ranklog.numhitconfirms);
+		// Not using a loop for driftboostcount for micro-optimization reasons
+		SYNC(players[i].ranklog.driftboostcount[0]);
+		SYNC(players[i].ranklog.driftboostcount[1]);
+		SYNC(players[i].ranklog.driftboostcount[2]);
+		SYNC(players[i].ranklog.driftboostcount[3]);
+		SYNC(players[i].ranklog.leaderscore);
+		SYNC(players[i].ranklog.potentialbestscore);
+		SYNC(players[i].ranklog.realvspotential);
+		SYNC(players[i].ranklog.spbattack);
+		SYNC(players[i].ranklog.startboostgrading);
+		SYNC(players[i].ranklog.posgrading);
+		SYNC(players[i].ranklog.gaining);
+		SYNC(players[i].ranklog.timeoffroadcurrent);
+		SYNC(players[i].ranklog.timeoffroadtotal);
+		SYNC(players[i].ranklog.wallbonks);
+		SYNC(players[i].ranklog.hitdamagingsector);
+		SYNC(players[i].ranklog.numrespawns);
+		SYNC(players[i].ranklog.ijustgothitasshole);
+		SYNC(players[i].ranklog.numlapgrades);
+		SYNCBOOLEAN(players[i].ranklog.lapwasgraded);
+		SYNCBOOLEAN(players[i].ranklog.prankeligible);
+		// Rankscore Factor
+		SYNC(players[i].rankscorefactor.posgradescore);
+		SYNC(players[i].rankscorefactor.finishgrading);
+		SYNC(players[i].rankscorefactor.hitbonus);
+		SYNC(players[i].rankscorefactor.driftbonus);
+		SYNC(players[i].rankscorefactor.spbattackbonus);
+		SYNC(players[i].rankscorefactor.offroadpenalty);
+		SYNC(players[i].rankscorefactor.wallpenalty);
+		SYNC(players[i].rankscorefactor.hazardpenalty);
+		SYNC(players[i].rankscorefactor.respawnpenalty);
+		SYNC(players[i].rankscorefactor.potential);
+		// Rankscores and Final Rank
+		SYNC(players[i].rankscore);
+		SYNC(players[i].realrankscore);
+		SYNC(players[i].ranktier);
 
 		SYNC(players[i].score);
 		SYNC(players[i].lives);
@@ -620,6 +718,9 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		RSYNC(players[i].nextwaypoint);
 		SYNCBOOLEAN(players[i].onbadwaypoint);
 		SYNC(players[i].bigwaypointgap);
+		SYNC(players[i].progressthrumap);
+		SYNC(players[i].progressdelta);
+		SYNCBOOLEAN(players[i].progressupdate);
 		SYNC(players[i].airtime);
 		SYNC(players[i].startboost);
 
@@ -3752,13 +3853,63 @@ static void P_NetSyncWaypoints(savebuffer_t *save)
 	if (P_SyncUINT32(save, numWaypoints) != numWaypoints)
 		I_Error("Bad $$$.sav: More saved waypoints than created!");
 
-	// The only thing we save for each waypoint is the mobj.
-	// Waypoints should NEVER be completely created or destroyed mid-race as a result of this
-	for (i = 0U; i < numWaypoints; i++)
+	if (numWaypoints > 0)
 	{
-		waypoint = K_GetWaypointFromIndex(i);
-		RSYNC(waypoint->mobj);
-		RELINK(&waypoint->mobj);
+		// The only thing we save for each waypoint is the mobj.
+		// Waypoints should NEVER be completely created or destroyed mid-race as a result of this
+		for (i = 0U; i < numWaypoints; i++)
+		{
+			waypoint = K_GetWaypointFromIndex(i);
+			RSYNC(waypoint->mobj);
+			RELINK(&waypoint->mobj);
+		}
+	}
+
+	// If we have a legacygradelap array set up, synch that as well
+	if (P_SyncUINT32(save, ((legacygradelap != NULL) ? WYPTSYNC_OLDGRADE : 0)))
+	{
+		const uint32_t server_gradelapsize = P_SyncUINT32(save, legacygradelap_size);
+
+		if (server_gradelapsize)
+		{
+			// Lap grades do indeed exist; run some checks to synch the data over
+			const size_t arraysize = sizeof(int16_t) * legacygradelap_size;
+
+			if (server_gradelapsize != legacygradelap_size)
+			{
+				I_OutputMsg("WYPTSYNC_OLDGRADE: expected array capacity (%d) doesn't match current (%d); resizing\n", server_gradelapsize, legacygradelap_size);
+				// Our array size doesn't match the server's, so we need to reallocate
+				if (legacygradelap)
+				{
+					legacygradelap = Z_Realloc(legacygradelap, arraysize, PU_STATIC, NULL);
+				}
+				else
+				{
+					// legacygradelap never existed, so let's just initialize it
+					legacygradelap = Z_Malloc(arraysize, PU_STATIC, NULL);
+				}
+
+				// This either goes well, or horribly!
+				memset(legacygradelap, 0, arraysize);
+			}
+
+			legacygradelap_size = server_gradelapsize;
+
+			const size_t iter = (legacygradelap_size / MAXPLAYERS);
+			size_t j = 0;
+			size_t k = 0;
+
+			// Send the actual data over
+			for (j = 0; j < iter; j++)
+			{
+				const size_t idx = (j * MAXPLAYERS);
+
+				for (k = 0; k < MAXPLAYERS; k++)
+				{
+					SYNC(legacygradelap[idx + k]);
+				}
+			}
+		}
 	}
 
 	TracyCZoneEnd(__zone);
@@ -4388,6 +4539,11 @@ static dboolean P_NetSyncMisc(savebuffer_t *save, dboolean resending)
 	SYNCBOOLEAN(itempushing);
 	SYNCBOOLEAN(itemlistactive);
 	SYNCBOOLEAN(trailslow_active);
+	SYNCBOOLEAN(rankingactive);
+	SYNCBOOLEAN(ranking_penaltyactive);
+	SYNCBOOLEAN(ranking_hitbonusactive);
+	SYNCBOOLEAN(ranking_driftbonusactive);
+	SYNCBOOLEAN(cannotrank);
 	SYNC(airdropactive);
 	SYNC(bumpsparkactive);
 	SYNC(antibumptime);
@@ -4467,6 +4623,9 @@ static dboolean P_NetSyncMisc(savebuffer_t *save, dboolean resending)
 
 	SYNC(gamespeed);
 	SYNC(numlaps);
+	SYNC(autopartime);
+	SYNC(leaderfinishtime);
+	SYNC(comebackscorecap);
 	SYNCBOOLEAN(franticitems);
 	SYNCBOOLEAN(comeback);
 

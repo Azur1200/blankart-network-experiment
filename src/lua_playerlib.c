@@ -493,6 +493,12 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(itemreservetype) \
 	X(itemreserveamount) \
 	X(clan) \
+	X(rankscore) \
+	X(realrankscore) \
+	X(rankposition) \
+	X(ranktier) \
+	X(ranklog) \
+	X(rankscorefactor) \
 	X(playerid)
 
 enum player_e
@@ -1325,6 +1331,24 @@ static int player_get(lua_State *L)
 		break;
 	case player_clan:
 		lua_pushstring(L, plr->clan);
+		break;
+	case player_rankscore:
+		lua_pushinteger(L, plr->rankscore);
+		break;
+	case player_realrankscore:
+		lua_pushinteger(L, plr->realrankscore);
+		break;
+	case player_rankposition:
+		lua_pushinteger(L, ranksort_positions[(uint32_t)(plr - players)]);
+		break;
+	case player_ranktier:
+		lua_pushinteger(L, plr->ranktier);
+		break;
+	case player_ranklog:
+		LUA_PushUserdata(L, &plr->ranklog, META_RANKLOG);
+		break;
+	case player_rankscorefactor:
+		LUA_PushUserdata(L, &plr->rankscorefactor, META_RANKSCOREFAC);
 		break;
 	case player_playerid:
 		// Doesn't actually exist in hardcode, but this is very useful and relevant
@@ -2187,6 +2211,29 @@ static int player_set(lua_State *L)
 		break;
 	case player_karttiltmomentum:
 		plr->karttiltmomentum = lua_tointeger(L, 3);
+		break;
+	case player_rankscore:
+		plr->rankscore = lua_tointeger(L, 3);
+		break;
+	case player_realrankscore:
+		plr->realrankscore = lua_tointeger(L, 3);
+		break;
+	case player_rankposition:
+		return NOSET; // At least, not for now. No, this isn't consistent with player.position...
+		break;
+	case player_ranktier:
+		const ranktier_e luatier = lua_tointeger(L, 3);
+		if (luatier < RTIER_E || luatier >= NUMRANKTIERS)
+			return luaL_error(L, "ranktier index %d out of range (%d - %d)", luatier, RTIER_E, NUMRANKTIERS-1);
+
+		// Likely impossible after that safety check, but better safe than sorry...
+		plr->ranktier = (ranktier_e)(CLAMP(luatier, RTIER_E, NUMRANKTIERS - 1));
+		break;
+	case player_ranklog:
+		return NOSET;
+		break;
+	case player_rankscorefactor:
+		return NOSET;
 		break;
 	case player_playerid:
 		return NOSET;
@@ -3274,6 +3321,449 @@ static int boostinfo_set(lua_State *L)
 #undef NOSET
 #undef NOFIELD
 
+// dritcount_array, i -> ranklog.driftboostcount[i]
+static int driftcount_array_get(lua_State *L)
+{
+	int32_t *dritcount_array = *((int32_t **)luaL_checkudata(L, 1, META_RANKLOG_DRIFTCOUNT));
+	int32_t i = luaL_checkinteger(L, 2);
+
+	if (i < 0 || i >= 4)
+		return luaL_error(L, "index %d out of range (0 - %d)", i, 3);
+
+	lua_pushinteger(L, dritcount_array[i]);
+	return 1;
+}
+
+static int driftcount_array_set(lua_State *L)
+{
+	int32_t *dritcount_array = *((int32_t **)luaL_checkudata(L, 1, META_RANKLOG_DRIFTCOUNT));
+	int32_t i = luaL_checkinteger(L, 2);
+
+	if (hud_running)
+		return luaL_error(L, "Do not alter ranklog_t.driftboostcount[] in HUD rendering code!");
+	if (hook_cmd_running)
+		return luaL_error(L, "Do not alter ranklog_t.driftboostcount[] in CMD building code!");
+
+	if (i < 0 || i >= 4)
+		return luaL_error(L, "index %d out of range (0 - %d)", i, 3);
+
+	dritcount_array[i] = luaL_checkinteger(L, 3);
+	return 0;
+}
+
+// #ranklog.driftboostcount -> 4
+static int driftcount_array_num(lua_State *L)
+{
+	lua_pushinteger(L, 4);
+	return 1;
+}
+
+#define NOSET luaL_error(L, LUA_QL("ranklog_t") " field " LUA_QS " should not be set directly.", ranklog_opt[field])
+#define NOFIELD luaL_error(L, "%s %s", LUA_QL("ranklog_t"), va("has no field named %ui", field))
+
+enum plranklog
+{
+	/* Non-Grading */
+	ranklog_ijustgothitasshole = 0,
+	ranklog_numlapgrades,
+	ranklog_lapwasgraded,
+	ranklog_prankeligible,
+	/* Bonuses */
+	ranklog_numhitconfirms,
+	ranklog_driftboostcount,
+	ranklog_leaderscore,
+	ranklog_spbattack,
+	ranklog_startboostgrading,
+	/* Volatile Values */
+	ranklog_posgrading,
+	ranklog_gaining,
+	/* Penalties */
+	ranklog_timeoffroadcurrent,
+	ranklog_timeoffroadtotal,
+	ranklog_wallbonks,
+	ranklog_hitdamagingsector,
+	ranklog_numrespawns,
+	ranklog_potentialbestscore,
+	ranklog_realvspotential
+};
+
+static const char *const ranklog_opt[] = {
+	/* Non-Grading */
+	"ijustgothitasshole",
+	"numlapgrades",
+	"lapwasgraded",
+	"prankeligible",
+	/* Bonuses */
+	"numhitconfirms",
+	"driftboostcount",
+	"leaderscore",
+	"spbattack",
+	"startboostgrading",
+	/* Volatile Values */
+	"posgrading",
+	"gaining",
+	/* Penalties */
+	"timeoffroadcurrent",
+	"timeoffroadtotal",
+	"wallbonks",
+	"hitdamagingsector",
+	"numrespawns",
+	"potentialbestscore",
+	"realvspotential",
+	NULL,
+};
+
+int ranklog_fields_ref = LUA_NOREF;
+
+static int ranklog_get(lua_State *L)
+{
+	ranklog_t *rank_log = *((ranklog_t **)luaL_checkudata(L, 1, META_RANKLOG));
+	enum plranklog field = Lua_optoption(L, 2, -1, ranklog_fields_ref);
+
+	// This should always be valid.
+	I_Assert(rank_log != NULL);
+
+	switch (field)
+	{
+		case ranklog_ijustgothitasshole:
+			lua_pushinteger(L, rank_log->ijustgothitasshole);
+			break;
+		case ranklog_numlapgrades:
+			lua_pushinteger(L, rank_log->numlapgrades);
+			break;
+		case ranklog_lapwasgraded:
+			lua_pushdboolean(L, rank_log->lapwasgraded);
+			break;
+		case ranklog_prankeligible:
+			lua_pushdboolean(L, rank_log->prankeligible);
+			break;
+		case ranklog_numhitconfirms:
+			lua_pushinteger(L, rank_log->numhitconfirms);
+			break;
+		case ranklog_driftboostcount:
+			LUA_PushUserdata(L, rank_log->driftboostcount, META_RANKLOG_DRIFTCOUNT);
+			break;
+		case ranklog_leaderscore:
+			lua_pushinteger(L, rank_log->leaderscore);
+			break;
+		case ranklog_spbattack:
+			lua_pushinteger(L, rank_log->spbattack);
+			break;
+		case ranklog_startboostgrading:
+			lua_pushfixed(L, rank_log->startboostgrading);
+			break;
+		case ranklog_posgrading:
+			lua_pushinteger(L, rank_log->posgrading);
+			break;
+		case ranklog_gaining:
+			lua_pushinteger(L, rank_log->gaining);
+			break;
+		case ranklog_timeoffroadcurrent:
+			lua_pushinteger(L, rank_log->timeoffroadcurrent);
+			break;
+		case ranklog_timeoffroadtotal:
+			lua_pushinteger(L, rank_log->timeoffroadtotal);
+			break;
+		case ranklog_wallbonks:
+			lua_pushinteger(L, rank_log->wallbonks);
+			break;
+		case ranklog_hitdamagingsector:
+			lua_pushinteger(L, rank_log->hitdamagingsector);
+			break;
+		case ranklog_numrespawns:
+			lua_pushinteger(L, rank_log->numrespawns);
+			break;
+		case ranklog_potentialbestscore:
+			lua_pushinteger(L, rank_log->potentialbestscore);
+			break;
+		case ranklog_realvspotential:
+			lua_pushinteger(L, rank_log->realvspotential);
+			break;
+		default:
+			lua_getfield(L, LUA_REGISTRYINDEX, LREG_EXTVARS);
+			I_Assert(lua_istable(L, -1));
+			lua_pushlightuserdata(L, rank_log);
+			lua_rawget(L, -2);
+			if (!lua_istable(L, -1)) { // no extra values table
+				CONS_Debug(DBG_LUA, M_GetText("'%s' has no extvars table or field named '%s'; returning nil.\n"), "ranklog_t", lua_tostring(L, 2));
+				return 0;
+			}
+			lua_pushvalue(L, 2); // field name
+			lua_gettable(L, -2);
+			if (lua_isnil(L, -1)) // no value for this field
+				CONS_Debug(DBG_LUA, M_GetText("'%s' has no field named '%s'; returning nil.\n"), "ranklog_t", lua_tostring(L, 2));
+			break;
+	}
+
+	return 1;
+}
+
+static int ranklog_set(lua_State *L)
+{
+	ranklog_t *rank_log = *((ranklog_t **)luaL_checkudata(L, 1, META_RANKLOG));
+	enum plranklog field = Lua_optoption(L, 2, -1, ranklog_fields_ref);
+
+	// This is a property that always exists in a player.
+	I_Assert(rank_log != NULL);
+
+	INLEVEL
+
+	if (hud_running)
+		return luaL_error(L, "Do not alter player_t in HUD rendering code!");
+	if (hook_cmd_running)
+		return luaL_error(L, "Do not alter player_t in CMD building code!");
+
+	switch (field)
+	{
+		case ranklog_ijustgothitasshole:
+			rank_log->ijustgothitasshole = luaL_checkinteger(L, 3);
+			break;
+		case ranklog_numlapgrades:
+			rank_log->numlapgrades = (uint16_t)luaL_checkinteger(L, 3);
+			break;
+		case ranklog_lapwasgraded:
+			rank_log->lapwasgraded = luaL_checkdboolean(L, 3);
+			break;
+		case ranklog_prankeligible:
+			rank_log->prankeligible = luaL_checkdboolean(L, 3);
+			break;
+		case ranklog_numhitconfirms:
+			rank_log->numhitconfirms = (uint16_t)luaL_checkinteger(L, 3);
+			break;
+		case ranklog_driftboostcount:
+			return NOSET;
+			break;
+		case ranklog_leaderscore:
+			rank_log->leaderscore = luaL_checkinteger(L, 3);
+			break;
+		case ranklog_spbattack:
+			rank_log->spbattack = luaL_checkinteger(L, 3);
+			break;
+		case ranklog_startboostgrading:
+			rank_log->startboostgrading = luaL_checkfixed(L, 3);
+			break;
+		case ranklog_posgrading:
+			rank_log->posgrading = luaL_checkinteger(L, 3);
+			break;
+		case ranklog_gaining:
+			rank_log->gaining = luaL_checkinteger(L, 3);
+			break;
+		case ranklog_timeoffroadcurrent:
+			rank_log->timeoffroadcurrent = luaL_checkinteger(L, 3);
+			break;
+		case ranklog_timeoffroadtotal:
+			rank_log->timeoffroadtotal = luaL_checkinteger(L, 3);
+			break;
+		case ranklog_wallbonks:
+			rank_log->wallbonks = luaL_checkinteger(L, 3);
+			break;
+		case ranklog_hitdamagingsector:
+			rank_log->hitdamagingsector = (uint16_t)luaL_checkinteger(L, 3);
+			break;
+		case ranklog_numrespawns:
+			rank_log->numrespawns = (uint16_t)luaL_checkinteger(L, 3);
+			break;
+		case ranklog_potentialbestscore:
+			rank_log->potentialbestscore = luaL_checkinteger(L, 3);
+			break;
+		case ranklog_realvspotential:
+			rank_log->realvspotential = luaL_checkinteger(L, 3);
+			break;
+		default:
+			// Modders are going to want to log damn near anything; let's let them do it!
+			lua_getfield(L, LUA_REGISTRYINDEX, LREG_EXTVARS);
+			I_Assert(lua_istable(L, -1));
+			lua_pushlightuserdata(L, rank_log);
+			lua_rawget(L, -2);
+			if (lua_isnil(L, -1)) {
+				// This index doesn't have a table for extra values yet, let's make one.
+				lua_pop(L, 1);
+				CONS_Debug(DBG_LUA, M_GetText("'%s' has no field named '%s'; adding it as Lua data.\n"), "ranklog_t", lua_tostring(L, 2));
+				lua_newtable(L);
+				lua_pushlightuserdata(L, rank_log);
+				lua_pushvalue(L, -2); // ext value table
+				lua_rawset(L, -4); // LREG_EXTVARS table
+			}
+			lua_pushvalue(L, 2); // key
+			lua_pushvalue(L, 3); // value to store
+			lua_settable(L, -3);
+			lua_pop(L, 2);
+			break;
+	}
+
+	return 0;
+}
+
+#undef NOSET
+#undef NOFIELD
+
+#define NOSET luaL_error(L, LUA_QL("rankscorefactor_t") " field " LUA_QS " should not be set directly.", rankscorefac_opt[field])
+#define NOFIELD luaL_error(L, "%s %s", LUA_QL("rankscorefactor_t"), va("has no field named %ui", field))
+
+enum rankscorefac
+{
+	rankscorefactor_posgradescore = 0,
+	rankscorefactor_finishgrading,
+	rankscorefactor_hitbonus,
+	rankscorefactor_driftbonus,
+	rankscorefactor_spbattackbonus,
+	rankscorefactor_offroadpenalty,
+	rankscorefactor_wallpenalty,
+	rankscorefactor_hazardpenalty,
+	rankscorefactor_respawnpenalty,
+	rankscorefactor_potential,
+};
+
+static const char *const rankscorefac_opt[] = {
+	"posgradescore",
+	"finishgrading",
+	"hitbonus",
+	"driftbonus",
+	"spbattackbonus",
+	"offroadpenalty",
+	"wallpenalty",
+	"hazardpenalty",
+	"respawnpenalty",
+	"potential",
+	NULL,
+};
+
+int rankscorefac_fields_ref = LUA_NOREF;
+
+static int rankscorefac_get(lua_State *L)
+{
+	rankscorefactor_t *scorefac = *((rankscorefactor_t **)luaL_checkudata(L, 1, META_RANKSCOREFAC));
+	enum rankscorefac field = Lua_optoption(L, 2, -1, rankscorefac_fields_ref);
+
+	// This should always be valid.
+	I_Assert(scorefac != NULL);
+
+	switch (field)
+	{
+		case rankscorefactor_posgradescore:
+			lua_pushinteger(L, scorefac->posgradescore);
+			break;
+		case rankscorefactor_finishgrading:
+			lua_pushinteger(L, scorefac->finishgrading);
+			break;
+		case rankscorefactor_hitbonus:
+			lua_pushinteger(L, scorefac->hitbonus);
+			break;
+		case rankscorefactor_driftbonus:
+			lua_pushinteger(L, scorefac->driftbonus);
+			break;
+		case rankscorefactor_spbattackbonus:
+			lua_pushinteger(L, scorefac->spbattackbonus);
+			break;
+		case rankscorefactor_offroadpenalty:
+			lua_pushinteger(L, scorefac->offroadpenalty);
+			break;
+		case rankscorefactor_wallpenalty:
+			lua_pushinteger(L, scorefac->wallpenalty);
+			break;
+		case rankscorefactor_hazardpenalty:
+			lua_pushinteger(L, scorefac->hazardpenalty);
+			break;
+		case rankscorefactor_respawnpenalty:
+			lua_pushinteger(L, scorefac->respawnpenalty);
+			break;
+		case rankscorefactor_potential:
+			lua_pushinteger(L, scorefac->potential);
+			break;
+		default:
+			lua_getfield(L, LUA_REGISTRYINDEX, LREG_EXTVARS);
+			I_Assert(lua_istable(L, -1));
+			lua_pushlightuserdata(L, scorefac);
+			lua_rawget(L, -2);
+			if (!lua_istable(L, -1)) { // no extra values table
+				CONS_Debug(DBG_LUA, M_GetText("'%s' has no extvars table or field named '%s'; returning nil.\n"), "rankscorefactor_t", lua_tostring(L, 2));
+				return 0;
+			}
+			lua_pushvalue(L, 2); // field name
+			lua_gettable(L, -2);
+			if (lua_isnil(L, -1)) // no value for this field
+				CONS_Debug(DBG_LUA, M_GetText("'%s' has no field named '%s'; returning nil.\n"), "rankscorefactor_t", lua_tostring(L, 2));
+			break;
+	}
+
+	return 1;
+}
+
+static int rankscorefac_set(lua_State *L)
+{
+	rankscorefactor_t *scorefac = *((rankscorefactor_t **)luaL_checkudata(L, 1, META_RANKSCOREFAC));
+	enum rankscorefac field = Lua_optoption(L, 2, -1, rankscorefac_fields_ref);
+
+	// This is a property that always exists in a player.
+	I_Assert(scorefac != NULL);
+
+	INLEVEL
+
+	if (hud_running)
+		return luaL_error(L, "Do not alter player_t in HUD rendering code!");
+	if (hook_cmd_running)
+		return luaL_error(L, "Do not alter player_t in CMD building code!");
+
+	switch (field)
+	{
+		case rankscorefactor_posgradescore:
+			scorefac->posgradescore = luaL_checkinteger(L, 3);
+			break;
+		case rankscorefactor_finishgrading:
+			scorefac->finishgrading = luaL_checkinteger(L, 3);
+			break;
+		case rankscorefactor_hitbonus:
+			scorefac->hitbonus = luaL_checkinteger(L, 3);
+			break;
+		case rankscorefactor_driftbonus:
+			scorefac->driftbonus = luaL_checkinteger(L, 3);
+			break;
+		case rankscorefactor_spbattackbonus:
+			scorefac->spbattackbonus = luaL_checkinteger(L, 3);
+			break;
+		case rankscorefactor_offroadpenalty:
+			scorefac->offroadpenalty = luaL_checkinteger(L, 3);
+			break;
+		case rankscorefactor_wallpenalty:
+			scorefac->wallpenalty = luaL_checkinteger(L, 3);
+			break;
+		case rankscorefactor_hazardpenalty:
+			scorefac->hazardpenalty = luaL_checkinteger(L, 3);
+			break;
+		case rankscorefactor_respawnpenalty:
+			scorefac->respawnpenalty = luaL_checkinteger(L, 3);
+			break;
+		case rankscorefactor_potential:
+			scorefac->potential = luaL_checkinteger(L, 3);
+			break;
+		default:
+			// Just as they'll want to log anything, they'll want to SCORE anything...
+			lua_getfield(L, LUA_REGISTRYINDEX, LREG_EXTVARS);
+			I_Assert(lua_istable(L, -1));
+			lua_pushlightuserdata(L, scorefac);
+			lua_rawget(L, -2);
+			if (lua_isnil(L, -1)) {
+				// This index doesn't have a table for extra values yet, let's make one.
+				lua_pop(L, 1);
+				CONS_Debug(DBG_LUA, M_GetText("'%s' has no field named '%s'; adding it as Lua data.\n"), "rankscorefactor_t", lua_tostring(L, 2));
+				lua_newtable(L);
+				lua_pushlightuserdata(L, scorefac);
+				lua_pushvalue(L, -2); // ext value table
+				lua_rawset(L, -4); // LREG_EXTVARS table
+			}
+			lua_pushvalue(L, 2); // key
+			lua_pushvalue(L, 3); // value to store
+			lua_settable(L, -3);
+			lua_pop(L, 2);
+			break;
+	}
+
+	return 0;
+}
+
+#undef NOSET
+#undef NOFIELD
+
 int LUA_PlayerLib(lua_State *L)
 {
 	player_fields_ref = Lua_CreateFieldTable(L, player_opt);
@@ -3283,6 +3773,9 @@ int LUA_PlayerLib(lua_State *L)
 	sonicloopcamvars_fields_ref = Lua_CreateFieldTable(L, sonicloopcamvars_opt);
 
 	boostinfo_fields_ref = Lua_CreateFieldTable(L, boostinfo_opt);
+
+	ranklog_fields_ref = Lua_CreateFieldTable(L, ranklog_opt);
+	rankscorefac_fields_ref = Lua_CreateFieldTable(L, rankscorefac_opt);
 
 	luaL_newmetatable(L, META_PLAYER);
 		lua_pushcfunction(L, player_get);
@@ -3351,6 +3844,33 @@ int LUA_PlayerLib(lua_State *L)
 		lua_setfield(L, -2, "__index");
 
 		lua_pushcfunction(L, boostinfo_set);
+		lua_setfield(L, -2, "__newindex");
+	lua_pop(L,1);
+
+	luaL_newmetatable(L, META_RANKLOG_DRIFTCOUNT);
+		lua_pushcfunction(L, driftcount_array_get);
+		lua_setfield(L, -2, "__index");
+
+		lua_pushcfunction(L, driftcount_array_set);
+		lua_setfield(L, -2, "__newindex");
+
+		lua_pushcfunction(L, driftcount_array_num);
+		lua_setfield(L, -2, "__len");
+	lua_pop(L,1);
+
+	luaL_newmetatable(L, META_RANKLOG);
+		lua_pushcfunction(L, ranklog_get);
+		lua_setfield(L, -2, "__index");
+
+		lua_pushcfunction(L, ranklog_set);
+		lua_setfield(L, -2, "__newindex");
+	lua_pop(L,1);
+
+	luaL_newmetatable(L, META_RANKSCOREFAC);
+		lua_pushcfunction(L, rankscorefac_get);
+		lua_setfield(L, -2, "__index");
+
+		lua_pushcfunction(L, rankscorefac_set);
 		lua_setfield(L, -2, "__newindex");
 	lua_pop(L,1);
 

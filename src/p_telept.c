@@ -18,6 +18,7 @@
 #include "s_sound.h"
 #include "r_main.h"
 #include "r_fps.h"
+#include "k_kart.h"
 
 /**	\brief	The P_MixUp function
 
@@ -93,6 +94,9 @@ void P_MixUp(mobj_t *thing, fixed_t x, fixed_t y, fixed_t z, angle_t angle,
 		thing->player->starposty = starposty;
 		thing->player->starpostz = starpostz;
 		thing->player->starpostnum = starpostnum;
+
+		if (waypointcap == NULL)
+			K_UpdateProgressThroughCourse(thing->player);
 
 		thing->player->drawangle = drawangle;
 

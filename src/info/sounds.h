@@ -735,6 +735,17 @@ _(kc6e)
 // Mario Kart DS
 _(mds0a)
 
+// Rhythm Heaven Megamix
+_(rhmgug)
+_(rhmgus)
+_(rhmnms)
+_(rhmrng)
+_(rhmrok)
+_(rhmrhi)
+
+// Dig Dug Arrangement
+_(dda96)
+
 // SRB2kart
 _(slip)
 _(screec)
@@ -1037,6 +1048,11 @@ _(cntdwg)
 _(nxtlap)
 _(finlap)
 _(rcefin)
+
+// P-Rank
+_(gprnk)
+_(gprng)
+_(gprnf)
 
 // Adventure Spring
 _(advsp)

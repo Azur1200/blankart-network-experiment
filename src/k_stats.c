@@ -101,6 +101,11 @@ void K_StatRound(void)
 		{
 			kartstats.totalpodium++;
 		}
+
+		if ((!cannotrank) && players[consoleplayer].ranktier == RTIER_P)
+		{
+			kartstats.perfectmedals++;
+		}
 	}
 }
 
@@ -136,9 +141,14 @@ static void K_ReadStatsCustom(savebuffer_t *save)
 	kartstats.sinked = READUINT32(save->p);
 	kartstats.respawns = READUINT32(save->p);
 
+	if (kartstats.version < 2)
+		return;
+	
+	kartstats.perfectmedals = READUINT32(save->p);
+
 	// If kartstats gets updated, uncomment this and read next fields after this early return. Do same on next updates,
 	// this way even data is read on different versions, it doesn't get corrupted (as long as fields aren't removed, which shouldn't happen)
-	//if (kartstats.version < 2)
+	//if (kartstats.version < 3)
 	//	return;
 	//
 	//kartstats.somenewfield = READUINT32(save->p);
@@ -194,9 +204,12 @@ static void K_WriteStatsCustom(savebuffer_t *save)
 	WRITEUINT32(save->p, kartstats.sinked);
 	WRITEUINT32(save->p, kartstats.respawns);
 
+	// Version 2
+	WRITEUINT32(save->p, kartstats.perfectmedals);
+
 	// No need for early returns, but please mark each new block of write's with version it corresponds to :3
 
-	// Version 2
+	// Version 3
 	//WRITEUINT32(save->p, kartstats.somenewfield);
 }
 

@@ -719,6 +719,9 @@ dboolean P_EndingMusic(player_t *player)
 	if (multiplayer && demo.playback) // Don't play this in multiplayer replays
 		return false;
 
+	const dboolean racemode = (gametypes[gametype]->rules & GTR_CIRCUIT);
+	const dboolean racewasgraded = (!cannotrank) && ((!grandprixinfo.gp) || (grandprixinfo.gp && grandprixinfo.ranked));
+
 	// Event - Level Finish
 	// Check for if this is valid or not
 #define getplayerpos(p) \
@@ -763,8 +766,26 @@ dboolean P_EndingMusic(player_t *player)
 
 #undef getplayerpos
 
-	if ((gametypes[gametype]->rules & GTR_CIRCUIT) && bestlocalpos == MAXPLAYERS+1)
+	dboolean forcestandardresults = false;
+
+	if (racemode && bestlocalpos == MAXPLAYERS+1)
+	{
 		snprintf(buffer, sizeof(buffer), "k*fail"); // F-Zero death results theme
+		forcestandardresults = true;
+	}
+	else if (racemode && racewasgraded)
+	{
+		// Race used ranks; play a fanfare and prepare the ticker for the intermission music
+		looping = false;
+		if (K_IsPlayerLosing(bestlocalplayer))
+			snprintf(buffer, sizeof(buffer), "pgdbad");
+		else if (bestlocalpos == 1)
+			snprintf(buffer, sizeof(buffer), "pgdfst");
+		else
+			snprintf(buffer, sizeof(buffer), "pgdgud");
+
+		S_SetMusicQueue("grade", true, (9 * TICRATE / 2));
+	}
 	else
 	{
 		if (K_IsPlayerLosing(bestlocalplayer))
@@ -777,7 +798,7 @@ dboolean P_EndingMusic(player_t *player)
 
 	S_SpeedMusic(1.0f);
 
-	if ((gametypes[gametype]->rules & GTR_CIRCUIT))
+	if (racemode && ((!racewasgraded) || forcestandardresults))
 		buffer[1] = 'r';
 	else if ((gametypes[gametype]->rules & GTR_BUMPERS))
 	{
@@ -1297,12 +1318,131 @@ mobj_t *P_SpawnGhostMobjEX(mobj_t *mobj, dboolean legacy)
 	return ghost;
 }
 
+// FRACUNIT / 3
+#define FRAC_1div3 21845
+
+static void P_DoRankedRaceFinish(player_t* player, dboolean losing)
+{
+	const int32_t scoretiergap = K_GetScoreForRankTier(RTIER_A) - K_GetScoreForRankTier(RTIER_B);
+	const size_t pid = (player - players);
+	const fixed_t leadermul =
+	    (K_GetPositionMultiplier(ranksort_positions[pid]) >> (BIGTOSTDBITS - 1));
+	dboolean noprank = false;
+
+	// Win/loss severity per the player's rank-based position
+	// Range: [-1.0, 1.0]
+	fixed_t winlosefac = abs(leadermul - FRACUNIT);
+
+	if ((players_racing > 1) && (!grandprixinfo.gp))
+	{
+		int32_t podium = min(3, max(1, FixedMul(players_racing, (3 * FRACUNIT / 7))));
+
+		// P-rank vaiidity check: if you aren't in the podium, your race isn't perfect
+
+		if ((player->position > podium) && (player->realrankscore >= BEST_SCORE_BEFORE_P_RANK))
+		{
+			// You fumbled; penalty time!
+			noprank = true;
+			int32_t penaltyfac = (player->realrankscore - (BEST_SCORE_BEFORE_P_RANK - max(1, scoretiergap / 5)));
+
+			I_OutputMsg("rankscore: %d, best before P: %d, penalty factor: %d\n", player->realrankscore, BEST_SCORE_BEFORE_P_RANK, penaltyfac);
+
+			player->rankscorefactor.finishgrading -= penaltyfac;
+
+			if (P_IsDisplayPlayer(player))
+			{
+				S_StartSound(NULL, sfx_gprnf);
+			}
+		}
+	}
+
+	if (players_racing < 6)
+	{
+		// Don't bother running this for small lobbies
+		winlosefac = 0;
+	}
+	else
+	{
+		const dboolean losingbyrank = K_IsPlayerLosingByRank(player);
+		const dboolean losingbypos = K_IsPlayerLosing(player);
+
+		if (losingbyrank && (!losingbypos) && (player->rankscore < comebackscorecap))
+		{
+			// This player was struggling all race, and got a good finish! Give
+			// them a bonus for a chance at a comeback!
+			fixed_t potential_delta = (player->ranklog.realvspotential) / 32;
+
+			fixed_t calculated_potential = BigFixedMul(potential_delta, (RANKPOINTS_FINISHBONUS << BIGTOSTDBITS));
+
+			const fixed_t racepercentage = BIGFRACUNIT - ((RANK_MINPROGRESS << BIGTOSTDBITS) / 100);
+			const fixed_t scoring_mult = BigFixedDiv(BIGFRACUNIT, racepercentage);
+
+			// Rescale potential to accomodate the percentage not counted
+			calculated_potential = BigFixedMul(calculated_potential, scoring_mult) >> BIGTOSTDBITS;
+
+			// FILTER 1: Rebalance based on the progression score
+			calculated_potential = FixedMul(calculated_potential, RANKPOINTS_PROGRESS);
+
+			// FILTER 2: Multiply by the win-loss factor
+			calculated_potential = FixedMul(calculated_potential, winlosefac);
+
+			// FILTER 3: Apply diminishing returns: if you're above a C rank,
+			// exponentially kill the bonus the higher your rank is
+
+			const int32_t minscore = K_GetScoreForRankTier(RTIER_C);
+			const int32_t maxscore = K_GetScoreForRankTier(RTIER_THREESTAR);
+			int64_t player_rankrange = CLAMP(player->rankscore, minscore, maxscore) * BIGFRACUNIT;
+			int32_t factor_rankrange = max(1, maxscore - minscore);
+
+			player_rankrange -= minscore;
+
+			fixed_t diminish_mul = (fixed_t)((player_rankrange / factor_rankrange) >> BIGTOSTDBITS);
+
+			calculated_potential = FixedMul(calculated_potential, Easing_InCubic(diminish_mul, FRACUNIT, 0));
+
+			player->rankscorefactor.finishgrading += (calculated_potential >> FRACBITS);
+
+			int32_t rankscore_estimate = (player->rankscorefactor.posgradescore + player->rankscorefactor.finishgrading) + (player->rankscorefactor.spbattackbonus + player->rankscorefactor.driftbonus + player->rankscorefactor.hitbonus) - (player->rankscorefactor.offroadpenalty + player->rankscorefactor.wallpenalty + player->rankscorefactor.hazardpenalty + player->rankscorefactor.respawnpenalty);
+
+			// FILTER 4: Prevent excessive comebacks by shaving the bonus if it goes over 4th place's score
+			if (comebackscorecap)
+			{
+				const int32_t bonus_maximum = (comebackscorecap - (scoretiergap / 4));
+				if (rankscore_estimate > bonus_maximum)
+				{
+					const int32_t scorecap_delta = (rankscore_estimate - bonus_maximum);
+					player->rankscorefactor.finishgrading = max(0, player->rankscorefactor.finishgrading - scorecap_delta);
+
+					// Leaving this debug print in since I haven't really managed go get this scenario yet
+					I_OutputMsg("[%s] bonus causes finish grading to exceed the bonus cap (%d) by %d pts\n", player_names[player - players], bonus_maximum, scorecap_delta);
+
+					rankscore_estimate = (player->rankscorefactor.posgradescore + player->rankscorefactor.finishgrading) + (player->rankscorefactor.spbattackbonus + player->rankscorefactor.driftbonus + player->rankscorefactor.hitbonus) - (player->rankscorefactor.offroadpenalty + player->rankscorefactor.wallpenalty + player->rankscorefactor.hazardpenalty + player->rankscorefactor.respawnpenalty);
+				}
+			}
+
+			// FILTER 5: If this player lost the P-rank, shave
+			// their bonus so it won't hit a P-rank
+			if (noprank)
+			{
+				if (rankscore_estimate >= BEST_SCORE_BEFORE_P_RANK)
+				{
+					player->rankscorefactor.finishgrading -= (rankscore_estimate - (BEST_SCORE_BEFORE_P_RANK + 1));
+				}
+			}
+		}
+	}
+}
+
+#undef FRAC_1div3
+
 //
 // P_DoPlayerExit
 //
 // Player exits the map via sector trigger
-void P_DoPlayerExit(player_t *player, pflags_t flags)
+void P_DoPlayerExit(player_t* player, pflags_t flags)
 {
+	char parhelper_buffer[256] = {0};
+
 	if (player->exiting || mapreset)
 		return;
 
@@ -1312,15 +1452,60 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 		legitimateexit = true;
 
 	if (player->griefstrikes > 0)
-		player->griefstrikes--; // Remove a strike for finishing a race normally
+		player->griefstrikes--;  // Remove a strike for finishing a race normally
 
 	if (!player->spectator)
 	{
 		dboolean losing = false;
 		uint8_t should_force_winloss = 0;
-		if ((gametypes[gametype]->rules & GTR_CIRCUIT)) // If in Race Mode, allow
+		if ((gametypes[gametype]->rules & GTR_CIRCUIT))  // If in Race Mode, allow
 		{
+			// Handle the player headcount and grading BEFORE positions are finalized
+			K_GetPlayerNumber();
+
+			if ((!cannotrank) && (players_racing > 1))
+			{
+				P_DoRankedRaceFinish(player, losing);
+			}
+
+			K_CalculateLapGrading(player);
+			if (grandprixinfo.gp && (player->ranktier < RTIER_ONESTAR) && (player->laps >= numlaps))
+			{
+				// If you're below one star, you can't get a P-rank in GP
+				player->ranklog.prankeligible = false;
+			}
+			K_UpdatePositionFactorAndPlayerRanks();
+			K_AddScoreToTracker((uint16_t)(player - players), player->rankscore + LOWESTRANKSCORE_ABS);
+
+			if (cv_kartrank_partimehelper.value && (player == &players[consoleplayer]))
+			{
+				tic_t possiblepartime = player->realtime + PARTIMEMERCY;
+
+				snprintf(parhelper_buffer, 256, "%02i'%02i\"%02i",
+					G_TicsToMinutes(player->realtime, true),
+					G_TicsToSeconds(player->realtime),
+					G_TicsToCentiseconds(player->realtime));
+
+				CONS_Printf("Finished race in %u tics (%s)\n", player->realtime, parhelper_buffer);
+
+				memset(parhelper_buffer, 0, sizeof(parhelper_buffer));
+
+				snprintf(parhelper_buffer, 256, "%02i'%02i\"%02i",
+					G_TicsToMinutes(possiblepartime, true),
+					G_TicsToSeconds(possiblepartime),
+					G_TicsToCentiseconds(possiblepartime));
+
+				CONS_Printf("Possible par time: %u tics (%s)\n", possiblepartime, parhelper_buffer);
+			}
+
+			if (player->ranklog.prankeligible && (player->ranktier == RTIER_P) && P_IsDisplayPlayer(player))
+			{
+				// You did it!
+				S_StartSound(NULL, sfx_gprng);
+			}
+
 			player->exiting = raceexittime+2;
+			player->pflags |= PF_WASINRACE;
 			K_UpdateAllPlayerPositions();
 
 			if (!(modeattacking||dedicated))
@@ -1333,6 +1518,11 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 			if (should_force_winloss)
 			{
 				losing = (should_force_winloss > 1) ? false : true;
+			}
+
+			if (player->position < 2 && (!losing) && (!modeattacking) && (!leaderfinishtime))
+			{
+				leaderfinishtime = player->realtime;
 			}
 
 			if (cv_kartvoices.value)
@@ -1355,18 +1545,21 @@ void P_DoPlayerExit(player_t *player, pflags_t flags)
 			if (P_CheckRacers())
 			{
 				player->exiting = raceexittime+1;
+				player->pflags |= PF_WASINRACE;
 				G_BeginLevelExit();
 			}
 		}
 		else if ((gametypes[gametype]->rules & GTR_BUMPERS)) // Battle Mode exiting
 		{
 			player->exiting = battleexittime+1;
+			player->pflags |= PF_WASINRACE;
 			G_BeginLevelExit();
 			P_EndingMusic(player);
 		}
 		else // Accidental death safeguard???
 		{
 			player->exiting = raceexittime+2;
+			player->pflags |= PF_WASINRACE;
 			G_BeginLevelExit();
 		}
 
@@ -3766,7 +3959,7 @@ void P_DoTimeOver(player_t *player)
 	dboolean confirmloss = true;
 	uint8_t should_force_winloss = LUA_HookPlayerFinish(player, true, confirmloss);
 
-	player->pflags |= PF_NOCONTEST;
+	player->pflags |= (PF_NOCONTEST|PF_WASINRACE);
 
 	if (should_force_winloss)
 	{
@@ -3790,8 +3983,29 @@ void P_DoTimeOver(player_t *player)
 
 	if (player->mo)
 	{
+		if (!cannotrank)
+		{
+			player->pflags &= ~PF_NOCONTEST;
+
+			K_UpdateIndividualPlayerRank(player); // Update ranks with the new data
+
+			// Log this
+			K_AddScoreToTracker((uint16_t)(player - players), player->rankscore + LOWESTRANKSCORE_ABS);
+
+			// ...and THEN update the ranking positions
+			K_GetRankBasedPositions();
+
+			// Reset the NOCONTEST flag after
+			player->pflags |= PF_NOCONTEST;
+		}
+
 		S_StopSound(player->mo);
-		P_DamageMobj(player->mo, NULL, NULL, 1, DMG_TIMEOVER);
+		if (P_DamageMobj(player->mo, NULL, NULL, 1, DMG_TIMEOVER))
+		{
+			// The rank system will count this as a death; let's undo that...
+			player->ranklog.numrespawns--;
+			//I_OutputMsg("[%s] death was player retiring\n", player_names[player - players]);
+		}
 	}
 
 	P_EndingMusic(player);
@@ -4194,7 +4408,10 @@ void P_PlayerThink(player_t *player)
 			}
 
 			if (i == MAXPLAYERS && player->exiting == raceexittime+2) // finished
+			{
 				player->exiting = raceexittime+1;
+				player->pflags |= PF_WASINRACE;
+			}
 
 #if 0
 			// If 10 seconds are left on the timer,

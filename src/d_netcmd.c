@@ -183,6 +183,10 @@ static void KartBumpSpark_OnChange(void);
 static void KartItemList_OnChange(void);
 static void KartTrailSlow_OnChange(void);
 static void PlayerBump_OnChange(void);
+static void KartRaceRanks_OnChange(void);
+static void KartRankPenalties_OnChange(void);
+static void KartRankDriftBonus_OnChange(void);
+static void KartRankHitBonus_OnChange(void);
 
 static void Schedule_OnChange(void);
 
@@ -764,7 +768,69 @@ consvar_t cv_kartaltshrinktime = CVAR_INIT ("kartaltshrinktime", "14", CV_NETVAR
 static CV_PossibleValue_t kartinvintheme_cons_t[] = {{0, "Standard"}, {1, "Full"}, {0, NULL}};
 consvar_t cv_kartinvintheme = CVAR_INIT ("kartinvintheme", "Standard", CV_SAVE, kartinvintheme_cons_t, NULL);
 
-// Invincibility damage toggles
+static CV_PossibleValue_t kartrankpts_f_cons_t[] = {{0, "MIN"},  {(INT32_MAX / 2), "MAX"}, {0, NULL}};
+static CV_PossibleValue_t kartrankpts_cons_t[] = {{0, "MIN"},  {0x3fff, "MAX"}, {0, NULL}};
+static CV_PossibleValue_t kartrankpts_signed_cons_t[] = {{-16383, "MIN"}, {16383, "MAX"}, {0, NULL}};
+
+static CV_PossibleValue_t kartrankpts_bigf_cons_t[] = {{FRACUNIT / 1000, "MIN"},  {(90 * FRACUNIT), "MAX"}, {0, NULL}};
+
+consvar_t cv_kartraceranks = CVAR_INIT ("raceranks", "Off", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartRaceRanks_OnChange);
+consvar_t cv_kartrankpenalties = CVAR_INIT ("racerankpenalties", "Off", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartRankPenalties_OnChange);
+consvar_t cv_kartrank_driftbonus = CVAR_INIT ("rank_driftbonus", "Off", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartRankDriftBonus_OnChange);
+consvar_t cv_kartrank_hitbonus = CVAR_INIT ("rank_hitbonus", "Off", CV_NETVAR|CV_CALL|CV_NOINIT, CV_OnOff, KartRankHitBonus_OnChange);
+
+// Tracks time in a race and displays a potential par time. Helps if you want to manually make par times!
+consvar_t cv_kartrank_partimehelper = CVAR_INIT ("partimehelper", "Off", 0, CV_OnOff, NULL);
+
+consvar_t cv_kartrank_lowestscore = CVAR_INIT ("rank_lowestscore", "0", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_signed_cons_t, NULL);
+consvar_t cv_kartrank_highestscore = CVAR_INIT ("rank_highestscore", "150", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_signed_cons_t, NULL);
+
+// Ranks: the point value players earn based on their "leader score", which is calculated via a
+// multiplier applied to their map progression.
+consvar_t cv_kartrank_progressionpoints = CVAR_INIT ("rank_progressionpoints", "153.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
+
+// Ranks: The generic par-time for non-waypointed maps.
+// Default is 3 minutes 55 seconds; an average Kart race on Hard is about 3 minutes 15 seconds.
+// Since the average time can vary HEAVILY based on the server, let hosts customize this.
+consvar_t cv_kartrank_genericpartime = CVAR_INIT ("rank_genericpartime", "235.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_FloatingTicrate, NULL);
+
+consvar_t cv_kartrank_finishbonus = CVAR_INIT ("rank_finishbonus", "2.2", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
+consvar_t cv_kartrank_finishpenalty = CVAR_INIT ("rank_finishpenalty", "25.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
+
+// Ranks: the point bonus given dependent on position (1st place gets the raw value), meant to offset the par-time deficit
+consvar_t cv_kartrank_leadertimepoints = CVAR_INIT ("rank_leadertimepoints", "400.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
+
+// Ranks: the point bonus given for being chased by an SPB; varies by distance
+consvar_t cv_kartrank_spbtimepoints = CVAR_INIT ("rank_spbtimepoints", "15.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_f_cons_t, NULL);
+
+// Ranks: the point bonus given with each drift boost.
+// Higher driftboost tiers multiply this value to give more points.
+consvar_t cv_kartrank_driftboostpoints = CVAR_INIT ("rank_driftboostpoints", "2", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
+
+// Ranks: the point bonus given for hitting other players.
+consvar_t cv_kartrank_hitconfirmpoints = CVAR_INIT ("rank_hitconfirmpoints", "3", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
+
+static CV_PossibleValue_t kartoffroadpenaltydiv_cons_t[] = {{1, "MIN"},  {256, "MAX"}, {0, NULL}};
+
+// Ranks: the value the tics spent offroad is divided by, to determine the amount of points taken for going offroad.
+consvar_t cv_kartrank_offroad_divisor = CVAR_INIT ("rank_offroad_divisor", "40", CV_NETVAR|CV_CHEAT|CV_GUARD, kartoffroadpenaltydiv_cons_t, NULL);
+
+// Ranks: the time, in seconds, before the player is fully penalzied for driving through offroad.
+consvar_t cv_kartrank_lawnmowerthreshold = CVAR_INIT ("rank_lawnmowerthreshold", "4.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, CV_FloatingTicrateDiv, NULL);
+
+consvar_t cv_kartrank_wallbonkpenalty = CVAR_INIT ("rank_wallbonkpenalty", "3", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
+
+static CV_PossibleValue_t kartrank_mercy_cons_t[] = {{0, "MIN"}, {0x7FFF, "MAX"}, {0, NULL}};
+
+consvar_t cv_kartrank_hazardmercy = CVAR_INIT ("rank_hazardmercy", "5", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrank_mercy_cons_t, NULL);
+consvar_t cv_kartrank_hazardpenalty = CVAR_INIT ("rank_hazardpenalty", "5", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
+
+consvar_t cv_kartrank_respawnmercy = CVAR_INIT ("rank_respawnmercy", "5", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrank_mercy_cons_t, NULL);
+consvar_t cv_kartrank_respawnpenalty = CVAR_INIT ("rank_respawnpenalty", "40", CV_NETVAR|CV_CHEAT|CV_GUARD, kartrankpts_cons_t, NULL);
+
+consvar_t cv_kartrank_maxpotentialprogress = CVAR_INIT ("rank_maxpotentialprogress", "43.33", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_bigf_cons_t, NULL);
+consvar_t cv_kartrank_minprogress = CVAR_INIT ("rank_minprogress", "20.0", CV_NETVAR|CV_FLOAT|CV_CHEAT|CV_GUARD, kartrankpts_bigf_cons_t, NULL);
+
 static CV_PossibleValue_t kartinvindmg_cons_t[] = {{0, "None"}, {DMG_WIPEOUT, "Wipe-out"}, {DMG_FLIPOVER, "Flip-over"}, {0, NULL}};
 
 // Experiment: Let's allow changing the damage type
@@ -838,6 +904,7 @@ consvar_t cv_kartdebuglap = CVAR_INIT ("kartdebuglap", "Off", CV_NETVAR|CV_CHEAT
 consvar_t cv_kartdebugbot = CVAR_INIT ("kartdebugbot", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_kartdebugcluster = CVAR_INIT ("kartdebugcluster", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 consvar_t cv_kartdebugrings = CVAR_INIT ("kartdebugrings", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
+consvar_t cv_kartdebugprogress = CVAR_INIT ("kartdebugprogress", "Off", CV_NETVAR|CV_CHEAT, CV_OnOff, NULL);
 
 consvar_t cv_kartdebugcheckpoint = CVAR_INIT ("kartdebugcheckpoint", "Off", 0, CV_OnOff, NULL);
 consvar_t cv_kartdebugnodes = CVAR_INIT ("kartdebugnodes", "Off", 0, CV_OnOff, NULL);
@@ -947,6 +1014,10 @@ consvar_t cv_showviewpointtext = CVAR_INIT ("showviewpointtext", "On", CV_SAVE, 
 static CV_PossibleValue_t inttime_cons_t[] = {{0, "MIN"}, {3600, "MAX"}, {0, NULL}};
 consvar_t cv_inttime = CVAR_INIT ("inttime", "10", CV_SAVE|CV_NETVAR, inttime_cons_t, NULL);
 consvar_t cv_rolltime = CVAR_INIT ("rolltime", "10", CV_SAVE|CV_NETVAR, inttime_cons_t, NULL);
+
+static CV_PossibleValue_t inttime_f_cons_t[] = {{0, "MIN"}, {(3600 * FRACUNIT), "MAX"}, {0, NULL}};
+consvar_t cv_graphtime = CVAR_INIT ("graphtime", "6.5", CV_SAVE|CV_NETVAR|CV_FLOAT, inttime_f_cons_t, NULL);
+consvar_t cv_rankscoretime = CVAR_INIT ("rankscoretime", "7.0", CV_SAVE|CV_NETVAR|CV_FLOAT, inttime_f_cons_t, NULL);
 
 static CV_PossibleValue_t advancemap_cons_t[] = {{0, "Same"}, {1, "Next"}, {2, "Random"}, {3, "Vote"}, {0, NULL}};
 consvar_t cv_advancemap = CVAR_INIT ("advancemap", "Vote", CV_NETVAR, advancemap_cons_t, NULL);
@@ -1263,6 +1334,8 @@ void D_RegisterServerCommands(void)
 
 	CV_RegisterVar(&cv_inttime);
 	CV_RegisterVar(&cv_rolltime);
+	CV_RegisterVar(&cv_graphtime);
+	CV_RegisterVar(&cv_rankscoretime);
 	CV_RegisterVar(&cv_advancemap);
 	CV_RegisterVar(&cv_timelimit);
 	CV_RegisterVar(&cv_playbackspeed);
@@ -1341,6 +1414,10 @@ void D_RegisterServerCommands(void)
 	CV_RegisterVar(&cv_encorevotes);
 
 	CV_RegisterVar(&cv_itemlist);
+	CV_RegisterVar(&cv_kartraceranks);
+	CV_RegisterVar(&cv_kartrankpenalties);
+	CV_RegisterVar(&cv_kartrank_driftbonus);
+	CV_RegisterVar(&cv_kartrank_hitbonus);
 
 #ifdef USE_STUN
 	CV_RegisterVar(&cv_stunserver);
@@ -4274,6 +4351,7 @@ static void Command_Map_f(void)
 				grandprixinfo.gamespeed = (cv_kartspeed.value == KARTSPEED_AUTO ? KARTSPEED_DEFAULT : cv_kartspeed.value);
 				grandprixinfo.masterbots = false;
 				grandprixinfo.lunaticmode = false;
+				grandprixinfo.ranked = (dboolean)(cv_kartraceranks.value);
 
 				if (option_skill)
 				{
@@ -10468,6 +10546,138 @@ static void KartTrailSlow_OnChange(void)
 		else
 		{
 			CONS_Printf(M_GetText("Trailing slowdown will be turned \"Off\" next round.\n"));
+		}
+	}
+}
+
+static void KartRaceRanks_OnChange(void)
+{
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
+	if (!K_RankingsActive() && cv_kartraceranks.value)
+	{
+		if (leveltime < starttime)
+		{
+			rankingactive = true;
+			CONS_Printf(M_GetText("Player performance will be ranked.\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Player performance will be ranked next round.\n"));
+		}
+	}
+	else if (K_RankingsActive() && !cv_kartraceranks.value)
+	{
+		if (leveltime < starttime)
+		{
+			rankingactive = false;
+			CONS_Printf(M_GetText("Player performance will not be ranked.\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Player performance will not be ranked next round.\n"));
+		}
+	}
+}
+
+static void KartRankPenalties_OnChange(void)
+{
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
+	if (!K_RankPenaltiesActive() && cv_kartrankpenalties.value)
+	{
+		if (leveltime < starttime)
+		{
+			ranking_penaltyactive = true;
+			CONS_Printf(M_GetText("Penalties will be applied to ranks.\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Penalties will be applied to ranks next round.\n"));
+		}
+	}
+	else if (K_RankPenaltiesActive() && !cv_kartrankpenalties.value)
+	{
+		if (leveltime < starttime)
+		{
+			ranking_penaltyactive = false;
+			CONS_Printf(M_GetText("Penalties will not be applied to ranks.\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Penalties will not be applied to ranks next round.\n"));
+		}
+	}
+}
+
+static void KartRankDriftBonus_OnChange(void)
+{
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
+	if (!K_RankDriftBonusActive() && cv_kartrank_driftbonus.value)
+	{
+		if (leveltime < starttime)
+		{
+			ranking_driftbonusactive = true;
+			CONS_Printf(M_GetText("Players will now earn points for drifts.\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Players will earn points for drifts next round.\n"));
+		}
+	}
+	else if (K_RankDriftBonusActive() && !cv_kartrank_driftbonus.value)
+	{
+		if (leveltime < starttime)
+		{
+			ranking_driftbonusactive = false;
+			CONS_Printf(M_GetText("Players will no longer earn points for drifts.\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Players will no longer earn points for drifts next round.\n"));
+		}
+	}
+}
+
+static void KartRankHitBonus_OnChange(void)
+{
+	if (K_CanChangeRules(false) == false)
+	{
+		return;
+	}
+
+	if (!K_RankHitBonusActive() && cv_kartrank_hitbonus.value)
+	{
+		if (leveltime < starttime)
+		{
+			ranking_hitbonusactive = true;
+			CONS_Printf(M_GetText("Players will now earn points for item hits.\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Players will earn points for item hits next round.\n"));
+		}
+	}
+	else if (K_RankHitBonusActive() && !cv_kartrank_hitbonus.value)
+	{
+		if (leveltime < starttime)
+		{
+			ranking_hitbonusactive = false;
+			CONS_Printf(M_GetText("Players will no longer earn points for item hits.\n"));
+		}
+		else
+		{
+			CONS_Printf(M_GetText("Players will no longer earn points for item hits next round.\n"));
 		}
 	}
 }

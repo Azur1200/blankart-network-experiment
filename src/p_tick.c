@@ -845,6 +845,8 @@ void P_Ticker(dboolean run)
 		}
 	}
 
+	S_TickMusicQueue();
+
 	// Check for pause or menu up in single player
 	if (paused || P_AutoPause())
 	{
@@ -908,7 +910,10 @@ void P_Ticker(dboolean run)
 		PS_START_TIMING(ps_playerthink_time);
 
 		K_UpdateClusterPoints();
+		K_GetPlayerNumber();
 		K_UpdateAllPlayerPositions();
+		K_UpdatePositionFactorAndPlayerRanks();
+		K_LogPlayerRankScores();
 
 		// OK! Now that we got all of that sorted, players can think!
 		uint8_t p = 0;
@@ -1025,8 +1030,11 @@ void P_Ticker(dboolean run)
 						}
 
 						if (leveltime < startingtime) // SRB2Kart
+						{
+							S_ClearMusicQueue(); // Clear the queue, stupid!
 							S_ChangeMusicInternal(((grandprixinfo.gp == true
 							) ? "gpstrt" : (encoremode ? "estart" : "kstart")), false); // yes this will be spammed otherwise encore and some stuff WILL overwrite it
+						}
 							else if (leveltime == startingtime) // The GO! sound stops the level start ambience
 								S_StopMusic();
 					}

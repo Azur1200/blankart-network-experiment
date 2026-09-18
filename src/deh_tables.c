@@ -385,7 +385,7 @@ const char *const PLAYERFLAG_LIST[] = {
 	// TODO: Is there a better way to track this?
 	"GAINAX",
 	"KICKSTARTACCEL",	 // Accessibility feature: Is accelerate in kickstart mode?
-	"\x01",
+	"WASINRACE",		 // Was in the race when it finished
 	"NOSCALEGRAVITY",
 
 	"WANTSTOJOIN",		 // Spectator that wants to join
@@ -787,6 +787,10 @@ const char *const KARTHUD_LIST[] = {
 
 	"ITEMTIMER_XOFF",
 	"ITEMTIMER_YOFF",
+
+	"PREVRANKSCORE",
+	"PREVRANKSCOREDELAY",
+	"PREVRANKTIER",
 };
 
 const char *const HUDITEMS_LIST[] = {
@@ -1002,6 +1006,12 @@ struct int_const_s const INT_CONST[] = {
 	{"FU"      ,FRACUNIT},
 	{"FRACBITS",FRACBITS},
 	{"M_TAU_FIXED",M_TAU_FIXED},
+	{"BIGFRACUNIT",BIGFRACUNIT},
+	{"BFU",BIGFRACUNIT},
+	{"BIGFRACBITS",BIGFRACBITS},
+	{"BIGTOSTDBITS",BIGTOSTDBITS},
+	{"FRACHALF",FRACHALF},
+	{"BIGFRACHALF",BIGFRACHALF},
 
 	// doomdef.h constants
 	{"TICRATE",TICRATE},
@@ -2041,6 +2051,19 @@ struct int_const_s const INT_CONST[] = {
 	{"KARMAMODE_DEFAULT", KARMAMODE_DEFAULT},
 	{"KARMAMODE_ITEM", KARMAMODE_ITEM},
 	{"KARMAMODE_EGGMAN", KARMAMODE_EGGMAN},
+
+	// Rank tiers (player.ranktier)
+	{"RTIER_E", RTIER_E},
+	{"RTIER_D", RTIER_D},
+	{"RTIER_C", RTIER_C},
+	{"RTIER_B", RTIER_B},
+	{"RTIER_A", RTIER_A},
+	{"RTIER_ONESTAR", RTIER_ONESTAR},
+	{"RTIER_TWOSTAR", RTIER_TWOSTAR},
+	{"RTIER_THREESTAR", RTIER_THREESTAR},
+	{"NUMSTDRANKTIERS", NUMSTDRANKTIERS},
+	{"RTIER_P", RTIER_P},
+	{"NUMRANKTIERS", NUMRANKTIERS},
 
 	{NULL,0}
 };

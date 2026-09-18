@@ -126,6 +126,54 @@ extern vector3_t clusterpoint, clusterdtf;
 // Bump weight for a Bubble Shield
 #define BUBBLEMINWEIGHT (5 * FRACUNIT)
 
+// Ranks: Worst possible score
+#define LOWESTRANKSCORE CV_Get(&cv_kartrank_lowestscore)
+
+// Ranks: Best possible score
+#define HIGHESTRANKSCORE CV_Get(&cv_kartrank_highestscore)
+
+#define LOWESTRANKSCORE_ABS ((LOWESTRANKSCORE < 0) ? (-LOWESTRANKSCORE) : LOWESTRANKSCORE)
+
+// Ranks: P-Rank threshold and score divisor
+#define BEST_SCORE_BEFORE_P_RANK (FixedMul(HIGHESTRANKSCORE, 63569) + LOWESTRANKSCORE_ABS)
+#define RANKSCORE_DIVISOR (BEST_SCORE_BEFORE_P_RANK / NUMSTDRANKTIERS)
+
+// Generic par-time for ranked races in non-waypointed maps.
+// On waypointed maps, the game attempts to create a par-time automatically based on the given path.
+#define GENERICPARTIME CV_Get(&cv_kartrank_genericpartime)
+
+#define TIMECHECKOFFSET (5 * TICRATE / 2)
+
+// "Mercy value" for par times
+#define PARTIMEMERCY (33 * TICRATE)
+
+#define RANKPOINTS_PROGRESS CV_Get(&cv_kartrank_progressionpoints)
+#define RANKPOINTS_FINISHBONUS CV_Get(&cv_kartrank_finishbonus)
+#define RANKPOINTS_FINISHPENALTY CV_Get(&cv_kartrank_finishpenalty)
+
+#define RANKPOINTS_LEADERTIME CV_Get(&cv_kartrank_leadertimepoints)
+#define RANKPOINTS_SPBTIME CV_Get(&cv_kartrank_spbtimepoints)
+#define RANKPOINTS_DRIFTBOOST CV_Get(&cv_kartrank_driftboostpoints)
+#define RANKPOINTS_HITCONFIRM CV_Get(&cv_kartrank_hitconfirmpoints)
+
+// Ranks: The value that the tics spent offroad are divided by, for score penalties.
+// Was TICRATE / 20 rounded up, but it seemed too aggressive of a penalty.
+#define OFFROADPENALTYDIV CV_Get(&cv_kartrank_offroad_divisor)
+
+// Ranks: At this point, the game thinks you're mowing the offroad and penalizes you more harshly.
+#define LAWNMOWERTHRESHOLD \
+	((int32_t)(FixedToFloat(CV_Get(&cv_kartrank_lawnmowerthreshold)) * TICRATE))
+
+#define RANKPOINTS_WALLPENALTY CV_Get(&cv_kartrank_wallbonkpenalty)
+#define RANKPOINTS_HZRDPENALTY CV_Get(&cv_kartrank_hazardpenalty)
+#define RANKPOINTS_RSPWPENALTY CV_Get(&cv_kartrank_respawnpenalty)
+
+#define RANKPOINTS_HZRDMERCY CV_Get(&cv_kartrank_hazardmercy)
+#define RANKPOINTS_RSPWMERCY CV_Get(&cv_kartrank_respawnmercy)
+
+#define RANK_MAXPOTENTIALPROGRESS CV_Get(&cv_kartrank_maxpotentialprogress)
+#define RANK_MINPROGRESS CV_Get(&cv_kartrank_minprogress)
+
 // Invincibility damage value
 #define INVINDAMAGE CV_Get(&cv_kartinvindamage)
 
@@ -259,14 +307,32 @@ extern vector3_t clusterpoint, clusterdtf;
 #define RINGVOLUMEREGEN 1
 #define RINGTRANSPARENCYREGEN 3
 
+#define POSGRADEFACTOR (1 << 24)
+extern fixed_t positionfactor;
+
+// Number of all players currently in the race
+extern int32_t players_racing;
+
 angle_t K_ReflectAngle(angle_t angle, angle_t against, fixed_t maxspeed, fixed_t yourspeed);
 
 void K_RegisterKartStuff(void);
+
+// Clears all rankscore tracker arrays.
+void K_InitRankScoreTrackers(void);
+
+// Adds the provided point value to the `rankscore_trackers` array of the given player ID.
+void K_AddScoreToTracker(uint16_t pid, int32_t score);
+
+// Logs all players' current rank-scores over a set interval once the race starts.
+// External factors (such as laps and race finishes) are instead handled in their
+// respective functions.
+void K_LogPlayerRankScores(void);
 
 void K_TimerReset(void);
 void K_TimerInit(void);
 uint32_t K_GetPlayerDontDrawFlag(player_t *player);
 dboolean K_IsPlayerLosing(const player_t *player);
+dboolean K_IsPlayerLosingByRank(const player_t *player);
 fixed_t K_GetKartGameSpeedScalar(int8_t value);
 
 fixed_t K_GetMobjWeight(mobj_t *mobj, mobj_t *against);
@@ -357,6 +423,7 @@ int32_t K_GetKartBaseRingPower(const player_t *player, dboolean boosted);
 uint8_t K_GetKartRingCap(const player_t *player);
 dboolean K_IsPlayerRingBurnt(const player_t *player, uint16_t ringpower);
 int32_t K_GetKartRingPower(const player_t *player, dboolean boosted);
+void K_UpdateProgressThroughCourse(player_t *player);
 size_t K_NextRespawnWaypointIndex(waypoint_t *waypoint);
 dboolean K_CheckPlayersRespawnColliding(int32_t playernum, fixed_t x, fixed_t y);
 dboolean K_SafeRespawnWaypoint(waypoint_t *waypoint);
@@ -366,11 +433,13 @@ int32_t K_GetKartDriftSparkValue(const player_t *player);
 int32_t K_GetKartDriftSparkValueForStage(const player_t *player, uint8_t stage);
 uint8_t K_GetKartDriftSparkStageForValue(const player_t *player, int32_t value);
 int32_t K_GetDriftAngleOffset(player_t *player);
+fixed_t K_GetPositionMultiplier(int32_t position);
 void K_KartUpdatePosition(player_t *player);
 void K_KartLegacyUpdatePosition(player_t *player);
 void K_UpdateClusterPoints(void);
 uint32_t K_GetClusterDistanceForPlayer(player_t * player);
 void K_UpdateAllPlayerPositions(void);
+void K_GetPlayerNumber(void);
 mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, int8_t flip, uint8_t type, uint8_t amount);
 void K_DropItems(player_t *player);
 void K_DropRocketSneaker(player_t *player);
@@ -444,6 +513,10 @@ dboolean K_ItemLitterActive(void);
 dboolean K_ItemListActive(void);
 dboolean K_ItemPushingActive(void);
 dboolean K_TrailSlowActive(void);
+dboolean K_RankingsActive(void);
+dboolean K_RankPenaltiesActive(void);
+dboolean K_RankDriftBonusActive(void);
+dboolean K_RankHitBonusActive(void);
 int32_t K_GetBumpSpark(void);
 playerbumptype_t K_GetPlayerBump(void);
 dboolean K_BoostChain(player_t *player, int32_t timer, dboolean chainsound);
@@ -451,6 +524,14 @@ int32_t K_ChainOrDeincrementTime(player_t *player, int32_t timer, int32_t deincr
 dboolean K_UsingLegacyCheckpoints(void);
 dboolean K_UsingPatchedMap(void);
 int32_t K_CheckpointThreshold(dboolean roundup);
+
+ranktier_e K_GetRankTier(int32_t rank_score, int8_t prankoverride);
+int32_t K_GetScoreForRankTier(ranktier_e rank_tier);
+void K_UpdateIndividualPlayerRank(player_t *player);
+void K_UpdateRankScore(void);
+void K_UpdatePositionFactorAndPlayerRanks(void);
+void K_CalculateLapGrading(player_t *player);
+void K_UpdatePlayerPotential(player_t *player, int32_t posfactor, int32_t addend, uint32_t maximum_progress);
 
 fixed_t K_BoostRescale(fixed_t value,fixed_t oldmin,fixed_t oldmax,fixed_t newmin,fixed_t newmax);
 void K_DoBoost(player_t *player, fixed_t speedboost, fixed_t accelboost, fixed_t handleboost, dboolean stack, dboolean visible);
@@ -515,6 +596,17 @@ void K_KartPlayerBumpyRoad(player_t *player);
 fixed_t K_HandleAirDrag(player_t *player, dboolean onground, fixed_t speed, fixed_t airdrag);
 
 void K_ShoveObject(mobj_t *victim, mobj_t *source, fixed_t force);
+
+// Array containing each player's rank-scores over the course of the race.
+// During end-of-race intermissions, this is used for a chart display.
+extern int32_t *rankscore_tracker[MAXPLAYERS];
+
+extern uint16_t ranksort_positions[MAXPLAYERS];
+
+void K_GetRankBasedPositions(void);
+
+extern int16_t *legacygradelap;
+extern uint32_t legacygradelap_size;
 
 #ifdef __cplusplus
 } // extern "C"

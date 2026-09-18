@@ -649,6 +649,9 @@ extern dboolean itempushing;
 extern uint8_t   bumpsparkactive;
 extern dboolean itemlistactive;
 extern dboolean trailslow_active;
+extern dboolean rankingactive;
+extern dboolean ranking_penaltyactive, ranking_hitbonusactive, ranking_driftbonusactive;
+extern dboolean cannotrank;
 extern uint16_t bossdisabled;
 extern dboolean stoppedclock;
 

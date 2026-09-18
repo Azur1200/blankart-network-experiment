@@ -79,7 +79,7 @@ typedef enum
 	PF_GAINAX			= 1<<3,
 	PF_KICKSTARTACCEL	= 1<<4, // Accessibility feature: Is accelerate in kickstart mode?
 
-	// free: 1<<5
+	PF_WASINRACE		= 1<<5, // Was in the race when it finished
 
 	PF_NOSCALEGRAVITY	= 1<<6, // Don't scale gravity by player object scale (cleared when grounded)
 
@@ -251,8 +251,14 @@ typedef enum
 	khud_afterimagetime, // tics left for displaying afterimage
 	khud_afterimagevalue, // what value the drift ended at
 
+	// Item Timers
 	khud_itemtimer_xoff, // used to move itemtimers, useful for mods that want stuff in the middle.
 	khud_itemtimer_yoff, // ^
+
+	// Race Ranks
+	khud_prevrankscore, // previously displayed race rank score
+	khud_prevrankscoredelay, // delay until we increment displayed value
+	khud_prevranktier, // previously displayed race rank
 
 	NUMKARTHUD
 } karthudtype_t;
@@ -552,6 +558,96 @@ struct playermagnet_t
 	fixed_t friction_weights; // So you don't go sliding like mad when going too fast.
 };
 
+// Anything but the P-rank is divided up into multiples of 120
+
+typedef enum
+{
+	RTIER_E = 0,				// Good job! That was... AWFUL
+	RTIER_D,
+	RTIER_C,
+	RTIER_B,
+	RTIER_A,
+	RTIER_ONESTAR,
+	RTIER_TWOSTAR,		
+	RTIER_THREESTAR,
+	NUMSTDRANKTIERS,
+	RTIER_P = NUMSTDRANKTIERS,	// Go for a Perfect!
+	NUMRANKTIERS
+} ATTRPACK ranktier_e;
+
+struct ranklog_t
+{
+	//
+	// NON-GRADING
+	//
+
+	// "I JUST GOT HIT, ASSHOLE!"
+	// Prevents certain penalties if the player was hit or bumped recently.
+	int32_t ijustgothitasshole;
+
+	uint16_t numlapgrades; // How many times did we grade a lap?
+	dboolean lapwasgraded; // Was a lap graded?
+	dboolean prankeligible; // (Grand Prix) This player knows what they're doing; they're contending for a P-Rank!
+
+	//
+	// BONUSES
+	//
+
+	uint16_t numhitconfirms; // How many times did you hit other players with items?
+	int32_t driftboostcount[4]; // Number of driftboosts performed, separated by tier.
+	int32_t leaderscore; // Points earned based on position. Per the name, the leader (1st place) gets the most!
+	int32_t potentialbestscore; // If you performed at your potential, you'd have earned this many points.
+	int32_t realvspotential; // If your actual leaderscore falls below your estimated potential, this is the amount lost overall.
+	int32_t spbattack; // Time spent being tailed by a Self-Propelled Bomb. The closer it is, the faster this increases.
+	fixed_t startboostgrading; // (Currently unused) How well did this player perform the startboost?
+
+	//
+	// VOLATILE (can increment or decrement)
+	//
+
+	int32_t posgrading; // "Pseudo-EXP"; grading points calculated based on a percentage value (race position) each lap.
+	int32_t gaining; // Gaining/losing value
+
+	//
+	// PENALTIES
+	//
+
+	int32_t timeoffroadcurrent; // Current time (in tics) spent offroad. Affects timeoffroadtotal
+	int32_t timeoffroadtotal; // Time in tics spent offroad.
+	int32_t wallbonks; // Number of times the player hit a wall.
+	uint16_t hitdamagingsector; // Hit a damaging sector or stray course hazard.
+	uint16_t numrespawns; // If you manage to respawn over 65535 times, color me impressed.
+};
+
+struct rankscorefactor_t
+{
+	//
+	// VOLATILE (can increment or decrement)
+	//
+
+	int32_t posgradescore; // Points earned/lost dependent on the player's position over time
+	int32_t finishgrading;
+
+	int32_t potential; // Max. average rate of change for the first portion of the race, used for rank bonus at the end
+
+	//
+	// BONUSES
+	//
+
+	int32_t hitbonus; // Points earned for each hitconfirm
+	int32_t driftbonus; // Points earned for driftboosts performed
+	int32_t spbattackbonus; // Points earned for having a Self-Propelled Bomb trail you
+
+	//
+	// PENALTIES
+	//
+
+	int32_t offroadpenalty; // Points lost based on time spent offroad
+	int32_t wallpenalty; // Points lost for hitting walls past a speed threshold
+	int32_t hazardpenalty; // Points lost for running into course hazards or damaging sectors
+	int32_t respawnpenalty; // Points lost for respawning past a grace threshold
+};
+
 // ========================================================================
 //                          PLAYER STRUCTURE
 // ========================================================================
@@ -659,6 +755,13 @@ struct player_t
 	uint32_t distancefromcluster;
 	uint32_t distancefrombestfit;
 
+	// Progress through the map, based on waypoints/checkpoints
+	// Checkpoints use the total count, waypoints use the pathfinding distance
+	uint32_t progressthrumap;
+	int32_t progressdelta;
+
+	dboolean progressupdate;
+
 	waypoint_t *currentwaypoint;
 	waypoint_t *nextwaypoint;
 	dboolean onbadwaypoint;	// This waypoint is bad, so we need to find a better one
@@ -695,6 +798,12 @@ struct player_t
 	uint8_t wipeoutslow;		// Timer before you slowdown when getting wiped out
 	uint8_t justbumped;		// Prevent players from endlessly bumping into each other
 	dboolean noclip;			// Fix Grow breaking the "noclip" cheat. Also applies noclip as a bonus.
+
+	ranklog_t ranklog;		// Data relevant to a player's rank.
+	rankscorefactor_t rankscorefactor;	// The point values that factor into your final rank
+	int32_t realrankscore;    // Un-clamped ranking score.
+	int32_t rankscore;		// Final rank score.
+	ranktier_e ranktier;         // The actual rank.
 
 	driftmode_e driftmode;
 	int8_t drift;			// (-5 to 5) - Drifting Left or Right, plus a bigger counter = sharper turn

@@ -84,6 +84,9 @@ IMPL_HUD_OFFSET_Y(chek); // Check gfx
 IMPL_HUD_OFFSET(mini); // Minimap
 IMPL_HUD_OFFSET(want); // Wanted
 IMPL_HUD_OFFSET(lapem); // Lap emblem
+IMPL_HUD_OFFSET(rank); // Rank score
+IMPL_HUD_OFFSET(dialrank); // Rank score (Dial speedometer)
+IMPL_HUD_OFFSET(bigrank); // Rank score (Big speedometer)
 //IMPL_HUD_OFFSET(stat); // Stats
 
 #undef IMPL_HUD_OFFSET
@@ -124,6 +127,8 @@ consvar_t cv_showstats = CVAR_INIT ("showstats", "On", CV_SAVE, CV_OnOff, NULL);
 
 // make char potraits use their high-res version instead
 consvar_t cv_highresportrait = CVAR_INIT ("highresportrait", "Off", CV_SAVE, CV_OnOff, NULL);
+
+consvar_t cv_racerankperfecttext = CVAR_INIT ("racerankperfecttext", "On", CV_SAVE, CV_OnOff, NULL);
 
 typedef enum
 {
@@ -257,6 +262,10 @@ static patch_t *kp_dialbase[4] = {NULL};
 static patch_t *kp_speedpatchesdial[8] = {NULL};
 static patch_t *kp_dialnum[20] = {NULL};
 
+patch_t *kp_rankmedals[2] = {NULL};
+patch_t *kp_ranktier[NUMRANKTIERS] = {NULL};
+patch_t *kp_ranktier4p[NUMRANKTIERS] = {NULL};
+
 void K_RegisterKartHUDStuff(void)
 {
 	K_ReloadHUDColorCvar();
@@ -288,6 +297,9 @@ void K_RegisterKartHUDStuff(void)
 	REG_HUD_OFFSET(mini); // Minimap
 	REG_HUD_OFFSET(want); // Wanted
 	REG_HUD_OFFSET(lapem); // Lap emblem
+	REG_HUD_OFFSET(rank); // Rank score
+	REG_HUD_OFFSET(dialrank); // Rank score (Dial speedometer)
+	REG_HUD_OFFSET(bigrank); // Rank score (Big speedometer)
 	//REG_HUD_OFFSET(stat); // Stats
 
 #undef REG_HUD_OFFSET
@@ -311,6 +323,7 @@ void K_RegisterKartHUDStuff(void)
 	CV_RegisterVar(&cv_draftindicator);
 	CV_RegisterVar(&cv_showstats);
 	CV_RegisterVar(&cv_highresportrait);
+	CV_RegisterVar(&cv_racerankperfecttext);
 
 	// h_timers.cpp
 	CV_RegisterVar(&cv_itemtimers);
@@ -518,7 +531,7 @@ void K_LoadKartHUDGraphics(void)
 	HU_UpdatePatch(&kp_driftgaugeparts[3], "K_WDGM4");
 	HU_UpdatePatch(&kp_driftgaugeparts[4], "K_DGAU3M");
 
-	// S-Monitor. Sparkles
+	// S-Monitor Sparkles
 	HU_UpdatePatch(&kp_smonitorsparkle, "ALTISPRK");
 
 	kp_smonitorsparkle->pivot.x = kp_smonitorsparkle->width / 2;
@@ -833,6 +846,27 @@ void K_LoadKartHUDGraphics(void)
 		buffer[7] = '0'+i;
 		HU_UpdatePatch(&kp_itemtarget_near[1][i], "%s", buffer);
 	}
+
+	// Rank Tiers
+	sprintf(buffer, "BKRNKxx");
+	for (i = 0; i < NUMRANKTIERS; i++)
+	{
+		buffer[5] = '0'+((i+1)/10);
+		buffer[6] = '0'+((i+1)%10);
+		HU_UpdatePatch(&kp_ranktier[i], "%s", buffer);
+	}
+
+	sprintf(buffer, "BKRNSxx");
+	for (i = 0; i < NUMRANKTIERS; i++)
+	{
+		buffer[5] = '0'+((i+1)/10);
+		buffer[6] = '0'+((i+1)%10);
+		HU_UpdatePatch(&kp_ranktier4p[i], "%s", buffer);
+	}
+
+	// Rank medals
+	HU_UpdatePatch(&kp_rankmedals[0], "RNKMDL");
+	HU_UpdatePatch(&kp_rankmedals[1], "RNKMDP");
 }
 
 //}
@@ -851,6 +885,7 @@ int32_t STCD_X, STCD_Y;	// Starting countdown
 int32_t CHEK_Y;			// CHECK graphic
 int32_t MINI_X, MINI_Y;	// Minimap
 int32_t WANT_X, WANT_Y;	// Battle WANTED poster
+int32_t RANK_X, RANK_Y;	// Race ranks
 
 // This is for the P2 and P4 side of splitscreen. Then we'll flip P1's and P2's to the bottom with V_SPLITSCREEN.
 int32_t ITEM2_X, ITEM2_Y;
@@ -859,6 +894,7 @@ int32_t RING2_X, RING2_Y;
 int32_t POSI2_X, POSI2_Y;
 int32_t DRAT2_X, DRAT2_Y;
 int32_t LIVE2_X, LIVE2_Y;
+int32_t RANK2_X, RANK2_Y;
 
 void K_ReloadHUDColorCvar(void)
 {
@@ -1148,6 +1184,38 @@ static void K_initKartHUD(void)
 	// Battle WANTED poster
 	WANT_X = BASEVIDWIDTH - 55 + cv_want_xoffset.value;			// 270
 	WANT_Y = BASEVIDHEIGHT- 71 + cv_want_yoffset.value;			// 176
+	// Rank Score
+	RANK_X = 96 + cv_rank_xoffset.value;						//  96
+	RANK_Y = BASEVIDHEIGHT - 50 + cv_rank_yoffset.value;		// 150
+
+	const dboolean dialspeedometer = (cv_newspeedometer.value == 3 && r_splitscreen < 1);
+	const dboolean bigspeedometer = (cv_newspeedometer.value == 0 || cv_newspeedometer.value == 2);
+
+	if (dialspeedometer)  // Dial Speedometer
+	{
+		// This sits on top of the speedometer, so we need to adjust FURTHER for rings
+		// Also: dial-unique offsets! What joy...
+
+		if (K_RingsActive() == true)
+		{
+			RANK_X = 40 + cv_dialrank_xoffset.value;
+			RANK_Y = (BASEVIDHEIGHT) - 53 + cv_dialrank_yoffset.value;
+		}
+		else
+		{
+			RANK_X = 41 + cv_dialrank_xoffset.value;
+			RANK_Y = (BASEVIDHEIGHT) - 42 + cv_dialrank_yoffset.value;
+		}
+	}
+	else if (bigspeedometer)  // Classic/Default or P-Meter Speedometer
+	{
+		if (K_RingsActive() == false)
+		{
+			// THREE OFFSET VALUES FOR ONE HUD ELEMENT?!
+			RANK_X = 61 + cv_bigrank_xoffset.value;
+			RANK_Y = (BASEVIDHEIGHT) - 72 + cv_bigrank_yoffset.value;
+		}
+	}
 
 	if (r_splitscreen)	// Splitscreen
 	{
@@ -1179,6 +1247,9 @@ static void K_initKartHUD(void)
 		MINI_X = BASEVIDWIDTH - 50;
 		MINI_Y = (BASEVIDHEIGHT/2);
 
+		RANK_X = 91;
+		RANK_Y = (BASEVIDHEIGHT/2)-32;
+
 		if (r_splitscreen > 1)	// 3P/4P Small Splitscreen
 		{
 			// 1P (top left)
@@ -1200,6 +1271,9 @@ static void K_initKartHUD(void)
 			LIVE_X = 3;
 			LIVE_Y = (BASEVIDHEIGHT/2)-12;
 
+			RANK_X = (BASEVIDWIDTH/2)-37;
+			RANK_Y = 4;
+
 			// 2P (top right)
 			ITEM2_X = (BASEVIDWIDTH/2)-39;
 			ITEM2_Y = -8;
@@ -1218,6 +1292,9 @@ static void K_initKartHUD(void)
 
 			LIVE2_X = (BASEVIDWIDTH/2)-43;
 			LIVE2_Y = (BASEVIDHEIGHT/2)-12;
+
+			RANK2_X = (BASEVIDWIDTH/2)+4;
+			RANK2_Y = (BASEVIDHEIGHT)-12; // Bottom of the screen, for this
 
 			// Reminder that 3P and 4P are just 1P and 2P splitscreen'd to the bottom.
 
@@ -1936,6 +2013,131 @@ static void K_drawKartItem(void)
 		}
 	}
 }
+
+#define BASEPADDING (4)
+
+static void k_drawKartRaceRank(player_t* p, int32_t x, int32_t y, uint32_t flags, uint8_t* colormap)
+{
+	if (dedicated)
+		return;  // Not for dedis, stupid!
+
+	if (cannotrank)
+		return;  // No point in displaying something irrelevant!
+
+	if (!p)
+		return;  // ...of course.
+
+	const dboolean drawcompact = (r_splitscreen >= 1) ? true : false;
+
+	patch_t** rankpicarray = (drawcompact) ? &kp_ranktier4p[0] : &kp_ranktier[0];
+
+	patch_t* rankpic = rankpicarray[p->ranktier];
+
+	if (!rankpic)
+	{
+		// Yeah.
+		return;
+	}
+
+	const dboolean is_negative = (p->rankscore < 0);
+	int32_t num = abs(p->rankscore);
+	int32_t prevnum = abs(p->karthud[khud_prevrankscore]);
+	int32_t xx = 0;
+
+	if (drawcompact)
+	{
+		// Draw the rank patch first
+		V_DrawMappedPatch(x, y, flags, rankpic, colormap);
+
+		uint16_t align = BASEPADDING;
+		uint16_t numdiv = num;
+
+		// Padding = 10 ^ (BASEPADDING - 1)
+		const double maxpad_d =
+		    min((double)(INT32_MAX), pow(10.0, (double)(max(0, BASEPADDING))));
+		int32_t maxpadding = (int32_t)(maxpad_d);
+
+		// If we're over the base padding, increase our padding
+		while (numdiv > maxpadding)
+		{
+			align++;
+			numdiv /= 10;
+		}
+
+		if (is_negative)
+		{
+			// If this is a negative number, draw the minus right before the actual
+			// numbers
+			V_DrawScaledPatch(x + 16, y + 2, flags, kp_ringdebtminussmall);
+			xx = 4;
+
+			// Reduce the padding a little so we're not clipping into the other player's
+			// screen
+			align--;
+		}
+
+		const int32_t pingwidth = LSBF_SHORT(fontv[PINGNUM_FONT].font[0]->width);
+
+		// Pingnums are only ever right-aligned, so we have to force it to be left-aligned
+		xx += (pingwidth - 1) * align;
+
+		V_DrawPingNumPadded(x + 16 + xx, y, flags, num, align, NULL);
+
+		return;
+	}
+
+	const int16_t basewidth = kp_facenum[0]->width;
+	const int16_t rnknumwidth = basewidth - 1;
+	int16_t rnkstringwidth = 0;
+
+	V_DrawMappedPatch(x + 7, y - (p->karthud[khud_prevranktier] < p->ranktier ? 1 : 0), flags, rankpic, colormap);
+	if (p->exiting)
+	{
+		// broken / successful perfect
+	}
+	else if (cv_racerankperfecttext.value)
+	{
+		// Go for Perfect!
+		//todo: make the non-prank check also take into account the slope of the rank score
+		if (p->ranktier == RTIER_P || (p->ranktier >= RTIER_THREESTAR && (ranksort_positions[p - players] < 2)))
+		{
+			if (!((leveltime/24) % 2))
+				V_DrawSmallString(x + 25, y, flags|V_ALLOWLOWERCASE, "Go for Perfect!");
+		}
+	}
+
+	// First loop: get the "width" of the numbers
+	do
+	{
+		rnkstringwidth += (rnknumwidth - 1);
+		num /= 10;
+	} while (num);
+
+	// Add the minus if we're drawing a negative number
+	if (is_negative)
+		rnkstringwidth += 5;
+
+	const int32_t centering = 15 + (rnkstringwidth / 2) - basewidth;
+
+	// If this is a negative number, draw the minus right before the actual numbers
+	if (is_negative)
+		V_DrawScaledPatch(
+		    x + 15 - ((rnkstringwidth / 2) + 5), y + 16 - (p->karthud[khud_prevrankscore] < p->rankscore ? 1 : 0), flags, kp_ringdebtminus);
+
+	num = abs(p->rankscore);
+	prevnum = abs(p->karthud[khud_prevrankscore]);
+
+	// Second loop: actually fucking draw the numbers
+	do
+	{
+		V_DrawScaledPatch(x + centering - xx, y + 16 - ((prevnum < num && (p->karthud[khud_prevrankscoredelay] == 1)) ? 1 : 0), flags, kp_facenum[prevnum % 10]);
+		xx += (rnknumwidth - 1);
+		num /= 10;
+		prevnum /= 10;
+	} while (num);
+}
+
+#undef BASEPADDING
 
 void K_drawKartTimestamp(tic_t drawtime, int32_t TX, int32_t TY, mapnum_t emblemmap, uint8_t mode)
 {
@@ -3327,17 +3529,11 @@ static void K_DrawDialSpeedometer(fixed_t speed,
 {
 	const uint8_t* colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 
-	int32_t ringoffset = 0;
 	const uint8_t infoidx = (infoactive) ? 1 : 0;
 
 	const fixed_t spd = FixedDiv(speed, divisor);
 	const angle_t speedangle =
 		FixedAngle(((min(135 * FRACUNIT, spd) - (45 * FRACUNIT))));
-
-	if (K_RingsActive() == true)
-	{
-		ringoffset = -16;
-	}
 
 	if (colorized)  // Colourized hud
 	{
@@ -6632,6 +6828,29 @@ static void K_DrawClusterDebugger(void)
 	}
 }
 
+static void K_DrawProgressDebugger(void)
+{
+	if (cv_kartdebugprogress.value == 0)
+		return;
+
+	if (stplyrnum != 0) // only for p1
+		return;
+
+	int32_t vflags = V_6WIDTHSPACE|V_ALLOWLOWERCASE;
+
+	int32_t y = 146;
+
+	const int32_t leaderscore = stplyr->ranklog.leaderscore;
+	const uint32_t progress = stplyr->progressthrumap;
+	const double prog_d = FixedToDouble(progress >> BIGTOSTDBITS);
+
+	V_DrawThinString(8, y, vflags, va("Leader score: %f, raw: %d", FixedToDouble((leaderscore / 32) >> BIGTOSTDBITS) * 100.0, leaderscore));
+	y -= 10;
+
+	V_DrawThinString(8, y, vflags, va("Progress percentage: %f, fixed: %d, raw: %d", (prog_d * 100.0), (progress >> BIGTOSTDBITS), progress));
+	y -= 10;
+}
+
 void K_getSlipstreamDrawinfo(drawinfo_t *out)
 {
 	int32_t fx, fy, splitflags = 0;
@@ -6904,6 +7123,52 @@ void K_drawKartHUD(void)
 				K_drawKartAccessibilityIcons((cv_newspeedometer.value == 0 || cv_newspeedometer.value == 2) ? 50 : 0);
 			}
 
+			// Draw the player's rank score
+			if (!(dedicated || cannotrank))
+			{
+				const skincolornum_t ranktier_color =
+				    (stplyr->ranktier >= RTIER_ONESTAR) ? SKINCOLOR_GOLD
+									: SKINCOLOR_SILVER;
+				uint8_t* cmap =
+				    (stplyr->ranklog.prankeligible && stplyr->ranktier == RTIER_P)
+					? R_GetTranslationColormap(
+					      TC_RAINBOW, K_SMonitorColor(leveltime / 2), GTC_CACHE)
+					: R_GetTranslationColormap(
+					      TC_RAINBOW, ranktier_color, GTC_CACHE);
+
+				if (r_splitscreen < 1)
+				{
+					k_drawKartRaceRank(
+					    stplyr,
+					    RANK_X,
+					    RANK_Y,
+					    V_HUDTRANS | V_SNAPTOBOTTOM | V_SNAPTOLEFT,
+					    cmap);
+				}
+				else if (r_splitscreen == 1)
+				{
+					k_drawKartRaceRank(stplyr,
+							   RANK_X,
+							   RANK_Y,
+							   V_SNAPTOBOTTOM | V_SNAPTOLEFT |
+							       V_HUDTRANS | V_SPLITSCREEN,
+							   cmap);
+				}
+				else if (r_splitscreen >= 2)
+				{
+					const dboolean oppositeside = ((stplyrnum & 1) == 1);
+					const dboolean onbottom = (stplyrnum >= 2);
+					const uint32_t snapflags =
+					    (onbottom) ? V_SNAPTOBOTTOM : V_SNAPTOTOP;
+
+					k_drawKartRaceRank(stplyr,
+							   (oppositeside) ? RANK2_X : RANK_X,
+							   (onbottom) ? RANK2_Y : RANK_Y,
+							   V_HUDTRANS | snapflags,
+							   cmap);
+				}
+			}
+
 			if (LUA_HudEnabled(hud_rings) && K_RingsActive() == true)
 			{
 				K_drawRingMeter();
@@ -7008,6 +7273,7 @@ void K_drawKartHUD(void)
 
 	K_DrawWaypointDebugger();
 	K_DrawClusterDebugger();
+	K_DrawProgressDebugger();
 	K_DrawDirectorDebugger();
 
 	if (stplyrnum == 0)

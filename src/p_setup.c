@@ -178,6 +178,11 @@ uint8_t   bumpsparkactive = 0;
 dboolean itemlistactive = false;
 dboolean trailslow_active = false;
 playerbumptype_t playerbumpactive = PBUMP_STANDARD;
+dboolean rankingactive = false;
+dboolean ranking_penaltyactive = false;
+dboolean ranking_hitbonusactive = false;
+dboolean ranking_driftbonusactive = false;
+dboolean cannotrank = false; // We can't rank this race!
 uint16_t bossdisabled = 0;
 dboolean stoppedclock = false;
 dboolean levelloading = false;
@@ -479,6 +484,10 @@ static void P_ClearSingleMapHeaderInfo(mapnum_t num)
 	mapheaderinfo[num]->menuflags = 0;
 	mapheaderinfo[num]->mobj_scale = FRACUNIT;
 	mapheaderinfo[num]->default_waypoint_radius = 0;
+	mapheaderinfo[num]->par_time[0] = 0;
+	mapheaderinfo[num]->par_time[1] = 0;
+	mapheaderinfo[num]->par_time[2] = 0;
+	mapheaderinfo[num]->par_time[3] = 0;
 	P_ClearMapHeaderLighting(&mapheaderinfo[num]->lighting);
 	P_ClearMapHeaderLighting(&mapheaderinfo[num]->lighting_encore);
 	mapheaderinfo[num]->use_encore_lighting = false;
@@ -8431,6 +8440,10 @@ static void P_InitLevelSettings(dboolean reloadinggamestate)
 	itempushing = false;
 	itemlistactive = false;
 	trailslow_active = false;
+	rankingactive = false;
+	ranking_hitbonusactive = false;
+	ranking_driftbonusactive = false;
+	ranking_penaltyactive = false;
 	bumpsparkactive = 0;
 	antibumptime = 0;
 	playerbumpactive = PBUMP_STANDARD;
@@ -8480,9 +8493,29 @@ static void P_InitLevelSettings(dboolean reloadinggamestate)
 
 	if (cv_itemlist.value)
 		itemlistactive = true;
+	
+	if ((cv_kartraceranks.value || grandprixinfo.gp) && (!modeattacking))
+	{
+		rankingactive = true;
+
+		if (cv_kartrank_driftbonus.value)
+		{
+			ranking_driftbonusactive = true;
+		}
+
+		if (cv_kartrank_hitbonus.value)
+		{
+			ranking_hitbonusactive = true;
+		}
+
+		if (cv_kartrankpenalties.value || grandprixinfo.gp)
+			ranking_penaltyactive = true;
+	}
 
 	if (cv_trailslow.value)
 		trailslow_active = true;
+
+	cannotrank = false;
 
 	bumpsparkactive = (uint8_t)cv_kartbumpspark.value;
 	playerbumpactive = (playerbumptype_t)cv_playerbump.value;
@@ -8490,6 +8523,7 @@ static void P_InitLevelSettings(dboolean reloadinggamestate)
 	antibumptime = (tic_t)cv_kartantibump.value * TICRATE;
 
 	K_ClearItemRollLists();
+	K_InitRankScoreTrackers();
 
 	// emerald hunt
 	hunt1 = hunt2 = hunt3 = NULL;
@@ -8500,6 +8534,13 @@ static void P_InitLevelSettings(dboolean reloadinggamestate)
 	numbosswaypoints = 0;
 	if (!reloadinggamestate)
 		timeinmap = 0;
+
+	if (legacygradelap)
+	{
+		Z_Free(legacygradelap);
+		legacygradelap = NULL;
+		legacygradelap_size = 0;
+	}
 
 	// special stage
 	stagefailed = true; // assume failed unless proven otherwise - P_GiveEmerald or emerald touchspecial
@@ -8799,8 +8840,46 @@ static void P_InitPlayers(void)
 			G_SetupDemoPlayer(i);
 	}
 	K_UpdateClusterPoints();
+	K_GetPlayerNumber();
 	K_UpdateAllPlayerPositions();
+	K_UpdatePositionFactorAndPlayerRanks();
 }
+
+
+#define DIST_TO_SECONDS (60.3904821429)
+
+static tic_t P_GenerateAutoParTime(void)
+{
+	if (waypointcap == NULL)
+	{
+		// No length or waypoints, don't do anything
+		I_OutputMsg("map is not waypointed\n");
+		return 0;
+	}
+
+	double lap_mul = (double)(numlaps);
+
+	if ((mapheaderinfo[gamemap-1]->levelflags & LF_SECTIONRACE) == LF_SECTIONRACE)
+	{
+		// The course length IS how long the sectioned course is, AKA: DON'T multiply the damn distances!
+		lap_mul = 1.0;
+	}
+
+	const uint32_t course_length = K_GetCircuitLength();
+	double course_length_f = ((double)(course_length) / FIXED_TO_FLOAT(mapobjectscale)) * lap_mul;
+	double divisor = DIST_TO_SECONDS / max(1.0, FIXED_TO_FLOAT(K_GetKartGameSpeedScalar(gamespeed)));
+	tic_t result = 0;
+
+	// Resulting par time is the course length divided by the divisor, rounded up and given extra seconds
+	result = (tic_t)(max(0.0, round(course_length_f / divisor))) + PARTIMEMERCY;
+
+	if (cv_kartrank_partimehelper.value)
+		CONS_Alert(CONS_NOTICE, "P_GenerateAutoParTime generated a par time of %u\n", result);
+
+	return result;
+}
+
+#undef DIST_TO_SECONDS
 
 static void P_InitGametype(void)
 {
@@ -8813,6 +8892,12 @@ static void P_InitGametype(void)
 		P_LoadRecordGhosts();
 
 	numlaps = K_RaceLapCount(gamemap - 1);
+
+	// Set autopartime here
+	autopartime = P_GenerateAutoParTime();
+
+	leaderfinishtime = 0;
+	comebackscorecap = 0;
 
 	wantedcalcdelay = wantedfrequency*2;
 
@@ -9279,6 +9364,22 @@ dboolean P_LoadLevel(dboolean fromnetsave, dboolean reloadinggamestate)
 	// ...NOW we can spawn patched mapthings
 	P_SpawnMapThings(!fromnetsave, true);
 
+	if (legacygradelap)
+	{
+		I_Error("legacygradelap is dirty!\n");
+		return false;
+	}
+
+	if ((waypointcap == NULL) && (numstarposts))
+	{
+		legacygradelap_size = (numstarposts + 1) * MAXPLAYERS;
+
+		const size_t arraysize = sizeof(int16_t) * legacygradelap_size;
+		legacygradelap = Z_Malloc(arraysize, PU_STATIC, NULL);
+
+		memset(legacygradelap, 0, arraysize);
+	}
+
 	skyboxmo[0] = skyboxviewpnts[0];
 	skyboxmo[1] = skyboxcenterpnts[0];
 
@@ -9305,17 +9406,24 @@ dboolean P_LoadLevel(dboolean fromnetsave, dboolean reloadinggamestate)
 	// The waypoint data that's in PU_LEVEL needs to be reset back to 0/NULL now since PU_LEVEL was cleared
 	K_ClearWaypoints();
 
+	dboolean needsautopar = false;
+	autopartime = 0;
+
 	// Load the ccheckpoints and waypoints please!
 	if (gametypes[gametype]->rules & GTR_CIRCUIT && gamestate != GS_TITLESCREEN)
 	{
 
-			if ((K_SetupWaypointList() == false))
+		if ((K_SetupWaypointList() == false))
+		{
+			if (!K_UsingLegacyCheckpoints())
 			{
-				if (!K_UsingLegacyCheckpoints())
-				{
-					CONS_Alert(CONS_ERROR, "Waypoints were not able to be setup and legacy checkpoints do not exist! Player positions will not work correctly.\n");
-				}
+				CONS_Alert(CONS_ERROR, "Waypoints were not able to be setup and legacy checkpoints do not exist! Player positions will not work correctly.\n");
 			}
+		}
+		else
+		{
+			needsautopar = true;
+		}
 	}
 
 #ifdef HWRENDER // not win32 only 19990829 by Kin

@@ -127,7 +127,10 @@ int16_t K_PowerLevelPlacementScore(player_t *player)
 
 	if (gametypes[gametype]->rules & GTR_CIRCUIT)
 	{
-		return MAXPLAYERS - player->position;
+		if (cannotrank)
+			return MAXPLAYERS - player->position;
+		else
+			return player->rankscore;
 	}
 	else
 	{

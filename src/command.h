@@ -178,6 +178,8 @@ extern CV_PossibleValue_t CV_YesNo[];
 extern CV_PossibleValue_t CV_Signed[];
 extern CV_PossibleValue_t CV_Unsigned[];
 extern CV_PossibleValue_t CV_Natural[];
+extern CV_PossibleValue_t CV_FloatingTicrate[];
+extern CV_PossibleValue_t CV_FloatingTicrateDiv[];
 
 // SRB2kart
 #define KARTSPEED_AUTO -1
@@ -204,6 +206,8 @@ extern CV_PossibleValue_t CV_Natural[];
 
 // Lowest game speed.
 #define KARTSPEED_EASIEST (KARTSPEED_EASY)
+
+#define NUMKARTSPEEDS (4)
 
 extern CV_PossibleValue_t kartspeed_cons_t[], gpdifficulty_cons_t[];
 

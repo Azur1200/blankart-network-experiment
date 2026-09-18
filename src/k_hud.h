@@ -50,6 +50,9 @@ IMPL_HUD_OFFSET(stcd); // Starting countdown
 IMPL_HUD_OFFSET_Y(chek); // Check gfx
 IMPL_HUD_OFFSET(mini); // Minimap
 IMPL_HUD_OFFSET(want); // Wanted
+IMPL_HUD_OFFSET(rank); // Rank score
+IMPL_HUD_OFFSET(dialrank); // Rank score (Dial speedometer)
+IMPL_HUD_OFFSET(bigrank); // Rank score (Big speedometer)
 //IMPL_HUD_OFFSET(stat); // Stats
 
 #undef IMPL_HUD_OFFSET
@@ -74,6 +77,7 @@ extern consvar_t cv_newtabranking;
 extern consvar_t cv_kartdebughudtracker;
 
 extern consvar_t cv_highresportrait;
+extern consvar_t cv_racerankperfecttext;
 
 extern patch_t *kp_facenum[MAXPLAYERS+1];
 extern patch_t *kp_itemboxminimap;
@@ -191,6 +195,10 @@ extern patch_t *kp_itemtarget_icon[2];
 extern patch_t *kp_itemtarget_far[2][2];
 extern patch_t *kp_itemtarget_far_text[2];
 extern patch_t *kp_itemtarget_near[2][8];
+
+extern patch_t *kp_rankmedals[2];
+extern patch_t *kp_ranktier[NUMRANKTIERS];
+extern patch_t *kp_ranktier4p[NUMRANKTIERS];
 
 dboolean K_UseHighResPortraits(void);
 

@@ -80,6 +80,8 @@ CV_PossibleValue_t CV_YesNo[] = {{0, "No"}, {1, "Yes"}, {0, NULL}};
 CV_PossibleValue_t CV_Signed[] = {{-999999999, "MIN"}, {999999999, "MAX"}, {0, NULL}};
 CV_PossibleValue_t CV_Unsigned[] = {{0, "MIN"}, {999999999, "MAX"}, {0, NULL}};
 CV_PossibleValue_t CV_Natural[] = {{1, "MIN"}, {999999999, "MAX"}, {0, NULL}};
+CV_PossibleValue_t CV_FloatingTicrate[] = {{0, "MIN"}, {INT32_MAX / TICRATE, "MAX"}, {0, NULL}};
+CV_PossibleValue_t CV_FloatingTicrateDiv[] = {{FRACUNIT / 1000, "MIN"}, {INT32_MAX / TICRATE, "MAX"}, {0, NULL}};
 
 // SRB2kart
 CV_PossibleValue_t kartspeed_cons_t[] = {

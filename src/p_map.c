@@ -4054,10 +4054,13 @@ papercollision:
 // Bounce move, for players.
 //
 
+#define VALIDLOGBUMPPCT (2 * FRACUNIT / 3)
+
 static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 {
 	fixed_t mmomx = 0, mmomy = 0;
 	fixed_t oldmomx = mo->momx, oldmomy = mo->momy;
+	fixed_t impactspeed = 0;
 
 	if (P_MobjWasRemoved(mo) == true)
 		return;
@@ -4121,6 +4124,8 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 
 	slidemo = mo;
 
+	int32_t bump_penalty = 1;
+	dboolean dontpenalize = false;
 	// Let Lua do its thing or overwrite if it wants to.
 	if (LUA_HookPlayerBounceWall(mo->player, result->line, slideline, tripwire))
 	{
@@ -4134,6 +4139,9 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	{
 		// TRIPWIRE CANNOT BE MADE NONBOUNCY
 		K_ApplyTripWire(mo->player, TRIPSTATE_BLOCKED);
+
+		// Running into a tripwire will cost you double!
+		bump_penalty = 2;
 	}
 	else
 	{
@@ -4144,6 +4152,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 		{
 			// SRB2Kart: Non-bouncy line!
 			P_SlideMove(mo, result);
+			dontpenalize = true;
 			return;
 		}
 		if (result->line != NULL)
@@ -4176,8 +4185,18 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	P_PlayerHitBounceLine(&result->normal, tripwire);
 	mo->eflags |= MFE_JUSTBOUNCEDWALL;
 
-	if (mo->player)
+	if (mo->player && (!dontpenalize))
+	{
+		if ((impactspeed >= FixedMul(K_GetKartSpeed(mo->player, false, false), VALIDLOGBUMPPCT)) && (!mo->player->ranklog.ijustgothitasshole))
+		{
+			// We check impact speed to make things a bit more fair.
+			// You can have a tendency to "glue-wall", which can make you bonk SEVERAL times in quick succession.
+			// Not only that, but sometimes a more optimal line requires bumping a wall.
+			mo->player->ranklog.wallbonks += bump_penalty;
+		}
+
 		mo->player->bumpUnstuck += 5;
+	}
 
 	mo->momx = tmxmove;
 	mo->momy = tmymove;

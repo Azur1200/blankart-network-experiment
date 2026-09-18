@@ -454,6 +454,8 @@ struct mapheader_t
 	int32_t base_track_complexity;				///< Decides what the base track compexity for the current map is.
 	fixed_t track_modifier_max;					///< Decides what the modifier max for the current map is.
 
+	tic_t par_time[NUMKARTSPEEDS];				///< Par time for the map, used as part of the rank system.
+
 	// EFX
 	efx_t *globalEFX;							///< Decides what global EFX for the current map is. ONLY USE FOR TYPE AND VARS.
 };
@@ -631,9 +633,13 @@ extern uint16_t nightslinktics;
 // SRB2kart
 extern tic_t introtime;
 extern tic_t starttime;
+extern tic_t autopartime;
+extern tic_t leaderfinishtime;
 
 extern tic_t raceexittime;
 extern tic_t battleexittime;
+
+extern int32_t comebackscorecap;
 
 extern int32_t hyudorotime;
 extern int32_t stealtime;

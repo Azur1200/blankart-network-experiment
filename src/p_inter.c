@@ -995,6 +995,9 @@ void P_TouchStarPost(mobj_t *post, player_t *player, dboolean snaptopost)
 
 	player->grieftime = 0;
 	player->starpostnum = post->health;
+
+	if (waypointcap == NULL)
+		K_UpdateProgressThroughCourse(player);
 }
 
 /** Checks if the level timer is over the timelimit and the round should end,
@@ -2189,6 +2192,7 @@ dboolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t
 	dboolean force = false;
 	dboolean spbpop = false;
 	dboolean painsound = false;
+	dboolean hithazard = false;
 
 	if (objectplacing)
 		return false;
@@ -2294,6 +2298,15 @@ dboolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t
 					K_SetRespawnAtNextWaypoint(player);
 				}
 			}
+			else
+			{
+				//I_OutputMsg("[%s] respawn/death logged\n", player_names[player - players]);
+				
+				// DON'T let sinks be a free rank-grief!
+				// Don't penalize the player for getting hit off the map, either!
+				if (!(inflictor && !P_MobjWasRemoved(inflictor) && inflictor->type == MT_SINK) && !player->ranklog.ijustgothitasshole)
+					player->ranklog.numrespawns++; // Log a respawn
+			}
 		}
 		else if (LUA_HookMobjDamage(target, inflictor, source, damage, damagetype))
 		{
@@ -2398,11 +2411,30 @@ dboolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t
 					}
 				}
 
+				// Update the ranklog
+				//I_OutputMsg("[%s] hitconfirm\n", player_names[source->player - players]);
+				source->player->ranklog.numhitconfirms++;
+
+				// Some post-hit mercy
+				player->ranklog.ijustgothitasshole = 7 * TICRATE;
+
 				K_TryHurtSoundExchange(target, source);
 			}
 			else
 			{
 				K_DestroyBumpers(player, 1);
+			}
+
+			if ((!inflictor) || (!source))
+			{
+				// Must be some stray hazard
+				hithazard = true;
+			}
+
+			if (source && source == player->mo)
+			{
+				// Self hit; not a hazard
+				hithazard = false;
 			}
 
 			if (type == DMG_EXPLODE || type == DMG_KARMA || type == DMG_SQUISH ||
@@ -2578,6 +2610,13 @@ dboolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t
 			if (painsound)
 			{
 				K_PlayPainSound(target, source);
+			}
+
+			if (hithazard)
+			{
+				// Log a hazard hit
+				//I_OutputMsg("[%s] damaged by hazard\n", player_names[player - players]);
+				player->ranklog.hitdamagingsector++;
 			}
 
 			if ((explosioncombo == true) || (cv_kartdebughuddrop.value && !modeattacking))

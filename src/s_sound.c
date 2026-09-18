@@ -76,6 +76,11 @@ consvar_t cv_numChannels = CVAR_INIT ("snd_channels", "64", CV_SAVE|CV_CALL, CV_
 
 consvar_t surround = CVAR_INIT ("surround", "Off", CV_SAVE, CV_OnOff, NULL);
 
+char musicqueue_string[9] = {0};
+int64_t musicqueue_time = -1;
+dboolean musicqueue_loops = false;
+uint16_t musicqueue_flags = 0;
+
 static void Captioning_OnChange(void)
 {
 	S_ResetCaptions();
@@ -2587,6 +2592,39 @@ void S_ChangeMusicEx(const char *mmusic, uint16_t mflags, dboolean looping, uint
 	}
 }
 
+void S_SetMusicQueue(const char *mmusic, dboolean looping, tic_t time)
+{
+	memset(musicqueue_string, 0, sizeof(musicqueue_string));
+	uint8_t musstrlen = min(7, (uint8_t)(strlen(mmusic) + 1));
+	snprintf(musicqueue_string, musstrlen, "%s", mmusic);
+
+	musicqueue_loops = looping;
+	musicqueue_time = (int64_t)(time);
+}
+
+void S_ClearMusicQueue(void)
+{
+	memset(musicqueue_string, 0, sizeof(musicqueue_string));
+	musicqueue_flags = 0;
+	musicqueue_loops = false;
+	musicqueue_time = -1;
+}
+
+void S_TickMusicQueue(void)
+{
+	if (musicqueue_time > 0)
+	{
+		musicqueue_time--;
+
+		if (musicqueue_time == 0)
+		{
+			S_ChangeMusicInternal(musicqueue_string, musicqueue_loops);
+
+			S_ClearMusicQueue();
+		}
+	}
+}
+
 void S_ChangeMusicSpecial (const char *mmusic)
 {
 	if (cv_resetspecialmusic.value)
@@ -2816,6 +2854,7 @@ void S_InitLevelMusic(dboolean fromnetsave)
 	}
 
 	S_StopMusic(); // Starting ambience should always be restarted, if playing.
+	S_ClearMusicQueue();
 
 	S_ChangeMusicEx(((grandprixinfo.gp == true
 	) ? "gpstrt" : (encoremode ? "estart" : "kstart")), 0, false, mapmusposition, 0, 0);

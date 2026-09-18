@@ -42,17 +42,18 @@ typedef enum {
 
 struct waypoint_t
 {
-	mobj_t             *mobj;
-	waypoint_t        **nextwaypoints;
-	waypoint_t        **prevwaypoints;
-	uint32_t             *nextwaypointdistances;
-	uint32_t             *prevwaypointdistances;
-	size_t              numnextwaypoints;
-	size_t              numprevwaypoints;
-	uint32_t              distancetofinish;
-	driftSetting_e      driftsettings;
-	dboolean             onaline;
-	waypointstatus_e    respawnstatus;
+	mobj_t* mobj;
+	waypoint_t** nextwaypoints;
+	waypoint_t** prevwaypoints;
+	uint32_t* nextwaypointdistances;
+	uint32_t* prevwaypointdistances;
+	size_t numnextwaypoints;
+	size_t numprevwaypoints;
+	uint32_t distancetofinish;
+	driftSetting_e driftsettings;
+	dboolean onaline;
+	waypointstatus_e respawnstatus;
+	int16_t playergradelap[MAXPLAYERS];  // ..."lapplayerwasgradedat" sounded stupid, ok?
 };
 
 

@@ -132,7 +132,7 @@ demoghost *ghosts = NULL;
 // DEMO RECORDING
 //
 
-#define DEMOVERSION 0x0013
+#define DEMOVERSION 0x0014
 #define DEMOHEADER  "\xF0" "BlanReplay" "\x0F"
 
 #define DF_GHOST        0x01 // This demo contains ghost data too!
@@ -310,6 +310,7 @@ typedef struct
 	{
 		dboolean masterbots;
 		dboolean lunaticmode;
+		dboolean ranked;
 		uint8_t gamespeed;
 		uint8_t eventmode;
 	} grandprix;
@@ -762,6 +763,7 @@ static headerstatus_e G_ReadDemoHeader(uint8_t *dp, demoheader_t *header, dboole
 	dboolean availabilities = true; // Store player availabilities
 	dboolean gplunatic = true; // Grand Prix: Lunatic mode
 	dboolean multiseed = true; // Multi-seeded RNG
+	dboolean ranked_gp = true; // Grand Prix: Ranked races
 	int32_t i;
 
 	// these may not be present in old demo formats, so initialize them
@@ -816,6 +818,9 @@ static headerstatus_e G_ReadDemoHeader(uint8_t *dp, demoheader_t *header, dboole
 		case 0x0012:
 			multiseed = false;
 			break;
+		case 0x0013:
+			ranked_gp = false;
+			break;
 
 		default: // too old, cannot support.
 			return HEADER_BADVERSION;
@@ -825,7 +830,7 @@ static headerstatus_e G_ReadDemoHeader(uint8_t *dp, demoheader_t *header, dboole
 	{
 		dubs = rapreset = raflag = false;
 		gplunatic = serverinfo = availabilities = false;
-		multiseed = false;
+		ranked_gp = multiseed = false;
 		switch (header->demoversion)
 		{
 		case 0x0001: // SRB2Kart 1.0.x (only staff ghosts supported)
@@ -1033,6 +1038,9 @@ skipfiles:
 
 		if (gplunatic)
 			header->grandprix.lunaticmode = READUINT8(dp) != 0;
+
+		if (ranked_gp)
+			header->grandprix.ranked = READUINT8(dp) != 0;
 
 		header->grandprix.eventmode = READUINT8(dp);
 	}
@@ -3077,6 +3085,7 @@ void G_BeginRecording(void)
 		WRITEUINT8(demobuf.p, grandprixinfo.gamespeed);
 		WRITEUINT8(demobuf.p, grandprixinfo.masterbots == true);
 		WRITEUINT8(demobuf.p, grandprixinfo.lunaticmode == true);
+		WRITEUINT8(demobuf.p, grandprixinfo.ranked == true);
 		WRITEUINT8(demobuf.p, grandprixinfo.eventmode);
 	}
 
@@ -3940,6 +3949,7 @@ void G_DoPlayDemo(char *defdemoname)
 		grandprixinfo.gamespeed = header.grandprix.gamespeed;
 		grandprixinfo.masterbots = header.grandprix.masterbots;
 		grandprixinfo.lunaticmode = header.grandprix.lunaticmode;
+		grandprixinfo.ranked = header.grandprix.ranked;
 		grandprixinfo.eventmode = header.grandprix.eventmode;
 	}
 

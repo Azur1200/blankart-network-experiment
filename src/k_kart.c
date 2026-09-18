@@ -53,6 +53,7 @@
 #include "p_spec.h"
 #include "m_easing.h"   // Invincibility gradienting
 #include "qs22j.h" // Cluster list sorting
+#include "cvector.h"
 
 #include "k_stats.h"
 #include "k_waypoint.h"
@@ -100,6 +101,131 @@ consvar_t cv_karthitemdialog = CVAR_INIT ("karthitemdialog", "On", CV_SAVE, CV_O
 // the distance to finish with the most active number of players.
 dboolean clusterplayer[MAXPLAYERS];
 vector3_t clusterpoint, clusterdtf;
+
+cvector(int32_t) rankscore_tracker[MAXPLAYERS] = {NULL};
+
+// Dynamically-allocated array for non-waypointed maps; this keeps track of which lap
+// the player's progress was updated on, so that Position Grading only changes when necessary
+int16_t *legacygradelap = NULL;
+
+// Size of the legacygradelap array
+uint32_t legacygradelap_size = 0;
+
+uint16_t ranksort_positions[MAXPLAYERS] = {0};
+
+void K_InitRankScoreTrackers(void)
+{
+	I_OutputMsg("init rankscore trackers\n");
+
+	int32_t i = 0;
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		// Initialize the rankscore trackers for each player by clearing them out
+		// This seems counterproductive... but the cvector allocators will solve the problem
+		// for us!
+		if (rankscore_tracker[i] != NULL)
+		{
+			cvector_free(rankscore_tracker[i]);
+			rankscore_tracker[i] = NULL;
+		}
+	}
+}
+
+void K_AddScoreToTracker(uint16_t pid, int32_t score)
+{
+	if (cannotrank)
+		return;  // Can't rank, don't do this
+
+	cvector_push_back(rankscore_tracker[pid], score);
+}
+
+#define SCORELOG_INTERVAL (5 * TICRATE)
+
+void K_LogPlayerRankScores(void)
+{
+	if (cannotrank)
+		return;  // We can't rank in the first place...
+
+	int32_t elapsed = max(0, (signed)(leveltime) - (signed)(starttime));
+	int32_t elapsed_interval = (elapsed % SCORELOG_INTERVAL);
+
+	dboolean logme = false;
+
+	if (!elapsed)
+		return;  // Race hasn't started yet
+
+	int32_t i = 0;
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		logme = false;
+
+		if (!playeringame[i])
+			continue;  // Not in game
+
+		if (players[i].spectator)
+			continue;  // Spectating
+
+		if (P_MobjWasRemoved(players[i].mo))
+			continue;  // No object
+
+		const dboolean playerfinishing = ((players[i].exiting > 0) || (players[i].pflags & PF_NOCONTEST));
+
+		if ((elapsed_interval == 0) && (!playerfinishing))
+			logme = true;
+
+		if (logme)
+			K_AddScoreToTracker(i, players[i].rankscore + LOWESTRANKSCORE_ABS);
+	}
+}
+
+static int compareRankScores(const void* a, const void* b)
+{
+	const uint16_t* a16 = (const uint16_t*)(a);
+	const uint16_t* b16 = (const uint16_t*)(b);
+
+	if (players[*a16].rankscore > players[*b16].rankscore)
+		return -1;
+	else if (players[*a16].rankscore < players[*b16].rankscore)
+		return 1;
+
+	return 0;
+}
+
+void K_GetRankBasedPositions(void)
+{
+	uint16_t sorted_pids[MAXPLAYERS] = {0};
+
+	int32_t i = 0;
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		sorted_pids[i] = i;
+		ranksort_positions[i] = MAXPLAYERS;
+	}
+
+	qs22j((void*)(sorted_pids), MAXPLAYERS, sizeof(uint16_t), &compareRankScores);
+
+	// Best rank always lead the pack
+	ranksort_positions[&players[sorted_pids[0]] - players] = 1;
+
+	uint16_t position = 1;
+	for (i = 1; i < MAXPLAYERS; i++)
+	{
+		// We've sorted the players by their rank scores, so it's impossible for a lower
+		// score to be in front of a higher one...hopefully 🥹
+		if (players[sorted_pids[i - 1]].rankscore > players[sorted_pids[i]].rankscore)
+		{
+			position++;
+		}
+
+		// Around 4th place in an 8-player lobby
+		if ((position == max(1, min(4, players_racing / 2))) && (!leaderfinishtime))
+		{
+			comebackscorecap = players[sorted_pids[i]].rankscore;
+		}
+
+		ranksort_positions[&players[sorted_pids[i]] - players] = position;
+	}
+}
 
 void K_TimerReset(void)
 {
@@ -270,6 +396,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartdebugdistribution);
 	CV_RegisterVar(&cv_kartdebughuddrop);
 	CV_RegisterVar(&cv_kartdebugwaypoints);
+	CV_RegisterVar(&cv_kartdebugprogress);
 	CV_RegisterVar(&cv_kartdebuglap);
 	CV_RegisterVar(&cv_kartdebugbot);
     CV_RegisterVar(&cv_kartdebugcluster);
@@ -462,6 +589,30 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_kartsmonitor_intangible);
 
+	// Ranking point values
+	CV_RegisterVar(&cv_kartrank_highestscore);
+	CV_RegisterVar(&cv_kartrank_lowestscore);
+	CV_RegisterVar(&cv_kartrank_genericpartime);
+	CV_RegisterVar(&cv_kartrank_progressionpoints);
+	CV_RegisterVar(&cv_kartrank_finishbonus);
+	CV_RegisterVar(&cv_kartrank_finishpenalty);
+	CV_RegisterVar(&cv_kartrank_leadertimepoints);
+	CV_RegisterVar(&cv_kartrank_spbtimepoints);
+	CV_RegisterVar(&cv_kartrank_driftboostpoints);
+	CV_RegisterVar(&cv_kartrank_hitconfirmpoints);
+	CV_RegisterVar(&cv_kartrank_offroad_divisor);
+	CV_RegisterVar(&cv_kartrank_lawnmowerthreshold);
+	CV_RegisterVar(&cv_kartrank_wallbonkpenalty);
+	CV_RegisterVar(&cv_kartrank_hazardpenalty);
+	CV_RegisterVar(&cv_kartrank_respawnpenalty);
+	CV_RegisterVar(&cv_kartrank_hazardmercy);
+	CV_RegisterVar(&cv_kartrank_respawnmercy);
+	CV_RegisterVar(&cv_kartrank_maxpotentialprogress);
+	CV_RegisterVar(&cv_kartrank_minprogress);
+
+	// Ranks: Helper cvar for par times
+	CV_RegisterVar(&cv_kartrank_partimehelper);
+
 	// experimental stuff
 	CV_RegisterVar(&cv_kartbubble_defense_canidle);
 	CV_RegisterVar(&cv_kartbubble_defense_damagerate);
@@ -553,6 +704,38 @@ dboolean K_IsPlayerLosing(const player_t *player)
 		winningpos++;
 
 	return (player->position > winningpos);
+}
+
+dboolean K_IsPlayerLosingByRank(const player_t *player)
+{
+	int32_t winningpos = 1;
+	uint8_t i, pcount = 0;
+
+	if (itembreaker && numtargets == 0)
+		return true; // Didn't even TRY?
+
+	if (itembreaker || bossinfo.boss)
+		return (player->bumper <= 0); // anything short of DNF is COOL
+
+	if (ranksort_positions[player - players] == 1)
+		return false;
+
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i] || players[i].spectator)
+			continue;
+		if (players[i].position > pcount)
+			pcount = players[i].position;
+	}
+
+	if (pcount <= 1)
+		return false;
+
+	winningpos = pcount/2;
+	if (pcount % 2) // any remainder?
+		winningpos++;
+
+	return (ranksort_positions[player - players] > winningpos);
 }
 
 fixed_t K_GetKartGameSpeedScalar(int8_t value)
@@ -801,6 +984,12 @@ static void K_SetPlayerBumped(player_t *player, mobj_t *comparemobj)
 	player->rmomx = player->mo->momx - player->cmomx;
 	player->rmomy = player->mo->momy - player->cmomy;
 	player->justbumped = bumptime;
+
+	if (comparemobj->player && player->ranklog.ijustgothitasshole < (7 * TICRATE))
+	{
+		// Make this count towards penalty mercy
+		player->ranklog.ijustgothitasshole = ApproachOneWayINT32(player->ranklog.ijustgothitasshole, (7 * TICRATE), (4 * TICRATE));
+	}
 
 	pshield = K_GetShieldFromPlayer(player->mo->player);
 
@@ -3915,9 +4104,6 @@ void K_TumblePlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 		fixed_t my_gravity = abs(P_GetMobjGravity(player->mo));
 
 		fixed_t zjump = CrashZMomentum(my_gravity, player->mo->scale);
-
-		I_OutputMsg("crash jump: %f (fixedpt: %d), gravity: %f, global grav: %f\n",
-			FIXED_TO_FLOAT(zjump), zjump, FIXED_TO_FLOAT(my_gravity), FIXED_TO_FLOAT(gravity));
 
 		player->crash_zoffset_delta = zjump * P_MobjFlip(player->mo);
 
@@ -7097,6 +7283,27 @@ void K_KartPlayerHUDUpdate(player_t *player)
 
 	if (player->karthud[khud_afterimagetime])
 		player->karthud[khud_afterimagetime]--;
+
+	if (player->karthud[khud_prevrankscore] < player->rankscore)
+	{
+		if (player->karthud[khud_prevrankscoredelay] == 0)
+		{
+			player->karthud[khud_prevrankscoredelay] = 2;
+		}
+		else if (player->karthud[khud_prevrankscoredelay] == 1)
+		{
+			player->karthud[khud_prevrankscore] += 1;
+		}
+	}
+	else if (player->karthud[khud_prevrankscore] > player->rankscore)
+	{
+		player->karthud[khud_prevrankscore] = player->rankscore;
+	}
+	
+	if (player->karthud[khud_prevrankscoredelay])
+		player->karthud[khud_prevrankscoredelay]--;
+
+	player->karthud[khud_prevranktier] = player->ranktier;
 }
 
 #undef RINGANIM_DELAYMAX
@@ -7288,6 +7495,9 @@ static void K_RaceStart(player_t *player)
 		// Not even trying?
 		if (player->boostcharge < 35)
 		{
+			// No effort means no grade!
+			player->ranklog.startboostgrading = 0;
+
 			if (player->boostcharge > 17)
 				S_StartSound(player->mo, sfx_cdfm00); // chosen instead of a conventional skid because it's more engine-like
 		}
@@ -7299,6 +7509,13 @@ static void K_RaceStart(player_t *player)
 			{
 				player->startboost += (4 - player->position) * 8;
 			}
+
+			// 50 - 36 = 14
+
+			fixed_t charge_factor = min(FRACUNIT, abs(player->boostcharge - 36) * FRACUNIT / 14);
+
+			// A perfect boost will have a factor of 0, giving a 100% grading!
+			player->ranklog.startboostgrading = max(0, FRACUNIT - charge_factor);
 
 			if (player->boostcharge <= 36)
 			{
@@ -7312,6 +7529,8 @@ static void K_RaceStart(player_t *player)
 					player->realsneakertimer += (4 - player->position) * 8;
 				}
 
+				player->ranklog.startboostgrading = FRACUNIT;
+
 				if (!player->floorboost || player->floorboost == 3) // Let everyone hear this one
 					S_StartSound(player->mo, sfx_s25f);
 			}
@@ -7321,7 +7540,9 @@ static void K_RaceStart(player_t *player)
 				if ((!player->floorboost || player->floorboost == 3) && P_IsLocalPlayer(player))
 				{
 					if (player->boostcharge <= 40)
+					{
 						S_StartSound(player->mo, sfx_cdfm01); // You were almost there!
+					}
 					else
 						S_StartSound(player->mo, sfx_s23c); // Nope, better luck next time.
 				}
@@ -7330,6 +7551,7 @@ static void K_RaceStart(player_t *player)
 		// You overcharged your engine? Those things are expensive!!!
 		else if (player->boostcharge > 50)
 		{
+			player->ranklog.startboostgrading = 0; // An awful start deserves an awful grade...
 			player->nocontrol = 40;
 			//S_StartSound(player->mo, sfx_kc34);
 			S_StartSound(player->mo, sfx_s3k83);
@@ -7781,6 +8003,8 @@ playerbumptype_t K_GetPlayerBump(void)
 	return max(min(PBUMP_NONE, (playerbumptype_t)playerbumpactive), PBUMP_STANDARD);
 }
 
+#define HIGHEST_OFFROADTIME_TO_ADD (2 * OFFROADPENALTYDIV / 3)
+
 /**	\brief	Decreases various kart timers and powers per frame. Called in P_PlayerThink in p_user.c
 
 	\param	player	player object passed from P_PlayerThink
@@ -7833,6 +8057,27 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	K_UpdateOffroad(player);
 	K_UpdateDashArea(player);
 	K_UpdateDraft(player);
+
+	if (player->offroad && K_ApplyOffroad(player) && !(cv_kartflame_offroadburn.value && player->flameoverheat))
+	{
+		// Log offroad tics
+		player->ranklog.timeoffroadcurrent++;
+		//I_OutputMsg("[%s] time offroad: %d\n", player_names[player - players], player->ranklog.timeoffroadcurrent);
+	}
+	else
+	{
+		player->ranklog.timeoffroadcurrent = 0;
+
+		// Only subtract the mercy timer if we're not in offroad.
+		if (player->ranklog.ijustgothitasshole)
+			player->ranklog.ijustgothitasshole--;
+	}
+
+	if (player->ranklog.timeoffroadcurrent)
+	{
+		fixed_t mowerfactor = (fixed_t)(min(FRACUNIT, ((uint64_t)(player->ranklog.timeoffroadcurrent) * FRACUNIT) / LAWNMOWERTHRESHOLD));
+		player->ranklog.timeoffroadtotal += Easing_InCubic(mowerfactor, 0, HIGHEST_OFFROADTIME_TO_ADD);
+	}
 
 	if (player->draftpower > 0)
 	{
@@ -8584,6 +8829,8 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	TracyCZoneEnd(__zone);
 }
 
+#undef HIGHEST_OFFROADTIME_TO_ADD
+
 static void K_KartResetPlayerFullbright(player_t *player)
 {
 	dboolean fullbright = false;
@@ -8764,6 +9011,163 @@ void K_KartPlayerAfterThink(player_t *player)
 	}
 
 	TracyCZoneEnd(__zone);
+}
+
+static void K_UpdateProgressThroughCourseClassic(player_t *player)
+{
+	if (!(gametypes[gametype]->rules & GTR_CIRCUIT))
+	{
+		// Not racing, don't bother
+		return;
+	}
+
+	if ((player == NULL) || (P_MobjWasRemoved(player->mo)))
+	{
+		return;
+	}
+
+	if (!numstarposts)
+	{
+		// No starposts...
+		return;
+	}
+
+	// Using floating points for this, because trying fixed-point bullshit will make me age at mach speed
+	int32_t nextlap_mul = max(0, player->laps - 1);
+	int32_t checkpts = numstarposts;
+	int64_t playerprog_temp = (player->starpostnum + (numstarposts * nextlap_mul)) * BIGFRACUNIT;
+
+	// Multiply the checkpoint number by the lap count to get the length of the entire race
+	checkpts = (checkpts) * numlaps;
+
+	// Divide our distance by the overall course distance
+	fixed_t factor = (fixed_t)(CLAMP((playerprog_temp / checkpts), 0, INT32_MAX));
+
+	// On EXCRUCIATINGLY long maps, this will throw off the delta calculation system
+	// But we have to keep things 32-bit for Lua's sake...
+
+	// BIGFRACUNIT * factor
+	uint32_t current_progress = (uint32_t)(min(BIGFRACUNIT, max(0, BigFixedMul64(BIGFRACUNIT, factor))));
+
+	// Only ever count progress increments
+	if (current_progress > player->progressthrumap)
+	{
+		player->progressdelta = (int32_t)((int64_t)(current_progress) - (int64_t)(player->progressthrumap));
+		player->progressthrumap = current_progress;
+		player->progressupdate = true;
+	}
+}
+
+// Updates a player's progress multiplier through the map.
+void K_UpdateProgressThroughCourse(player_t *player)
+{
+	if (!(gametypes[gametype]->rules & GTR_CIRCUIT))
+	{
+		// Not racing, don't bother
+		return;
+	}
+
+	if ((player == NULL) || (P_MobjWasRemoved(player->mo)))
+	{
+		return;
+	}
+
+	const dboolean disterror = ((!K_UsingLegacyCheckpoints()) && (K_GetCircuitLength() == 0));
+
+	player->progressupdate = false;
+
+	if (waypointcap == NULL)
+	{
+		// Map isn't waypointed, attempt to use old-school checkpoints
+		K_UpdateProgressThroughCourseClassic(player);
+		return;
+	}
+
+	if (disterror)
+	{
+		// Invalid distance for this map...
+		return;
+	}
+
+	const dboolean sectionrace = ((mapheaderinfo[gamemap-1]->levelflags & LF_SECTIONRACE) == LF_SECTIONRACE);
+
+	waypoint_t *finishline   = K_GetFinishLineWaypoint();
+
+	if ((player->currentwaypoint == NULL) || (finishline == NULL) || (player->laps < 1))
+	{
+		return;
+	}
+
+	const dboolean useshortcuts = false;
+	const dboolean huntbackwards = false;
+	dboolean pathfindsuccess = false;
+	path_t pathtofinish = {0};
+
+	pathfindsuccess =
+		K_PathfindToWaypoint(player->currentwaypoint, finishline, &pathtofinish, useshortcuts, huntbackwards);
+
+	if (!pathfindsuccess)
+	{
+		// We failed...
+		// Lets try shortcut waypoints if that happens to be the only path.
+		pathfindsuccess =
+		K_PathfindToWaypoint(player->currentwaypoint, finishline, &pathtofinish, true, huntbackwards);
+	}
+
+	if (pathfindsuccess)
+	{
+		int32_t nextlap_mul = (sectionrace) ? 0.0 : max(0, player->laps - 1);
+		int64_t coursedist = K_GetCircuitLength();
+		uint32_t path_thru_course = (uint32_t)(max(0, coursedist - (int64_t)(pathtofinish.totaldist)));
+		int64_t pathdist = ((int64_t)(path_thru_course) + (coursedist * nextlap_mul)) * BIGFRACUNIT;
+		int32_t lap_mul = numlaps;
+
+		if (path_thru_course > coursedist)
+		{
+			// In theory: a looping circuit should never exceed the actual course length, and the lap change should account for
+			// exact-length measurements, so it should never precisely match either
+			// It is theoretically impossible for a sectioned race to reach this value, as well
+			// If it does, we probably looped around to get to a waypoint behind us; DO NOT count this!
+			/*I_OutputMsg("K_UpdateProgressThroughCourse: wraparound; measured a distance of %d when the course is only %d units long\n", pathtofinish.totaldist, coursedist);*/
+			Z_Free(pathtofinish.array);
+			return;
+		}
+
+		if (sectionrace)
+		{
+			// The course length IS how long the sectioned course is, AKA: DON'T multiply the damn distances!
+			lap_mul = 1;
+		}
+
+		// Multiply the course distance by the lap count to get the length of the entire race
+		coursedist *= lap_mul;
+
+		if (coursedist < 1)
+		{
+			// If the overall course distance is zero (or less?!), don't do shit
+			Z_Free(pathtofinish.array);
+			return;
+		}
+
+		// Divide our distance by the overall course distance
+		fixed_t factor = (fixed_t)(CLAMP(pathdist / coursedist, 0, BIGFRACUNIT));
+
+		// On EXCRUCIATINGLY long maps, this will throw off the delta calculation system
+		// But we have to keep things 32-bit for Lua's sake...
+
+		// BIGFRACUNIT * factor
+		uint32_t current_progress = (uint32_t)(min(BIGFRACUNIT, max(0, BigFixedMul64(BIGFRACUNIT, factor))));
+
+		// Only ever count progress increments
+		if (current_progress > player->progressthrumap)
+		{
+			player->progressdelta = (int32_t)((int64_t)(current_progress) - (int64_t)(player->progressthrumap));
+			player->progressthrumap = current_progress;
+			player->progressupdate = true;
+		}
+
+		Z_Free(pathtofinish.array);
+	}
 }
 
 static int clostVal(fixed_t arr[], int N, fixed_t K)
@@ -9104,6 +9508,9 @@ static dboolean K_SetPlayerNextWaypoint(player_t *player)
 		{
 			player->currentwaypoint = bestwaypoint;
 
+			// The current waypoint changed, so update our progress!
+			K_UpdateProgressThroughCourse(player);
+
 			// if currentwaypoint is the finish line, don't set nextwaypoint to it!
 			// fixes bigwaypointgap triggering if we're facing the back of the finish line
 			if (bestwaypoint == finishline)
@@ -9308,7 +9715,6 @@ static dboolean K_SetPlayerNextWaypoint(player_t *player)
 
 	return updaterespawn;
 }
-
 
 /*--------------------------------------------------
 	static void K_UpdateDistanceFromFinishLine(player_t *const player)
@@ -9782,6 +10188,9 @@ static void K_UpdatePlayerWaypoints(player_t *const player)
 			player->currentwaypoint = old_currentwaypoint;
 			player->nextwaypoint = old_nextwaypoint;
 			player->distancetofinish = player->distancetofinishprev;
+
+			// Just in case: update progress, even if we may have not gone anywhere
+			K_UpdateProgressThroughCourse(player);
 
 			// Start the auto respawn timer when the distance jumps.
 			if (!player->bigwaypointgap)
@@ -10448,14 +10857,17 @@ static void K_KartDrift(player_t *player, dboolean onground)
 			{
 				case 1:
 					boost = 20;
+					player->ranklog.driftboostcount[0]++;
 					break;
 				case 2:
 					boost = 50;
+					player->ranklog.driftboostcount[1]++;
 					if (cv_kartdriftsounds.value)
 						S_StartSound(player->mo, sfx_kc5b);
 					break;
 				case 3:
 					boost = 80;
+					player->ranklog.driftboostcount[2]++;
 					if (cv_kartdriftsounds.value)
 					{
 						S_StartSound(player->mo, sfx_kc5b);
@@ -10465,6 +10877,7 @@ static void K_KartDrift(player_t *player, dboolean onground)
 					break;
 				case 4:
 					boost = 125;
+					player->ranklog.driftboostcount[3]++;
 					if (cv_kartdriftsounds.value)
 					{
 						S_StartSound(player->mo, sfx_s3k81);
@@ -11010,6 +11423,31 @@ static fixed_t K_PlayerDistance3D(player_t *source, player_t *destination)
 
     return K_Distance3D(source->mo->x,source->mo->y,source->mo->z,destination->mo->x,destination->mo->y,destination->mo->z);
 }*/
+
+// Gets an 8.24 fixed_t value between 0.0 and 1.0 representing their position in the race.
+// 1st place -> 1.0, last place -> 0.0
+fixed_t K_GetPositionMultiplier(int32_t position)
+{
+	const int32_t playerseed = max(0, players_racing - 1);
+
+	if (playerseed > 0)
+	{
+		const int32_t leaderfactor = max(0, playerseed - max(0, position - 1));
+		const int32_t convtopercent = (BIGFRACUNIT / playerseed);
+
+		// There's always a chance some off-kilter value fucks up the multiplier, so we
+		// "round up" by a tiiny bit...
+		const fixed_t leadermul = min(BIGFRACUNIT, (convtopercent * leaderfactor) + 512);
+
+		return leadermul;
+	}
+
+	// Check if we're racing alone, if we fall through
+	if (players_racing == 1)
+		return BIGFRACUNIT;
+
+	return 0; // Nobody's around...
+}
 
 /*--------------------------------------------------
 	uint32_t K_UndoMapScaling(uint32_t distance)
@@ -12016,6 +12454,48 @@ void K_UpdateClusterPoints(void)
 	K_FindPlayerCluster(&clusterpoint);
 }
 
+/** \brief Calculates the average rate of change of position grade for Potential.
+ *
+ * Weighed more heavily towards the old value if the given player isn't ganing as many points as
+ their peak.
+
+	\param player   (player_t) player to check
+
+	\param addend	(int32_t) value to add
+
+	\param maximum_progress	(uint32_t) potential stops updating past this
+*/
+void K_UpdatePlayerPotential(player_t* player, int32_t posfactor, int32_t addend, uint32_t maximum_progress)
+{
+	if (!player)
+		return;
+
+	if (leveltime > starttime)
+	{
+		if (player->progressthrumap <= maximum_progress)
+		{
+			if (posfactor > player->rankscorefactor.potential)
+			{
+				// exact average rate of change
+				player->rankscorefactor.potential =
+					(player->rankscorefactor.potential + posfactor) / 2;
+			}
+			else
+			{
+				// gradual easing from the previous best rate of change
+				player->rankscorefactor.potential =
+					(9 * player->rankscorefactor.potential + posfactor) / 10;
+			}
+		}
+
+		// Use the best between these two
+		int32_t usemul = min(32, max(player->rankscorefactor.potential, posfactor));
+
+		player->ranklog.potentialbestscore += (player->progressdelta * usemul);
+		player->ranklog.realvspotential = max(0, (int64_t)(player->ranklog.potentialbestscore) - (int64_t)(player->ranklog.leaderscore));
+	}
+}
+
 void K_UpdateAllPlayerPositions(void)
 {
 	int32_t i;
@@ -12032,6 +12512,75 @@ void K_UpdateAllPlayerPositions(void)
 			}
 
 			K_UpdatePlayerWaypoints(player);
+
+			if (player->progressupdate)
+			{
+				// Sprint/section maps ALWAYS force playergradelap to think it's lap 1
+				const dboolean sprintmap = ((mapheaderinfo[gamemap-1]->levelflags & LF_SECTIONRACE) == LF_SECTIONRACE);
+
+				// Even for circuit-based sprint-races, this updating is fine
+				int32_t checklap = (sprintmap) ? 1 : player->laps;
+
+				if (waypointcap != NULL)
+				{
+					// player->progressupdate will likely be false if there's no current waypoint, but just in case...
+					if (player->currentwaypoint)
+					{
+						if (checklap > player->currentwaypoint->playergradelap[i])
+						{
+							player->currentwaypoint->playergradelap[i] = checklap;
+
+							if (player->progressthrumap >= ((RANK_MINPROGRESS << BIGTOSTDBITS) / 100))
+							{
+								// Progress updated; update leaderscore
+								const fixed_t leadermul = (K_GetPositionMultiplier(player->position) >> BIGTOSTDBITS);
+								int32_t difference = (player->progressdelta * FixedMul(32, leadermul));
+								player->ranklog.leaderscore += difference;
+
+								K_UpdatePlayerPotential(player, FixedMul(32, leadermul), difference, ((RANK_MAXPOTENTIALPROGRESS << BIGTOSTDBITS) / 100));
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		// Just do a quick loop for legacy WPs
+		for (i = 0; i < MAXPLAYERS; i++)
+		{
+			player_t* player = &players[i];
+			if (!playeringame[i] || player->spectator || !player->mo ||
+			    P_MobjWasRemoved(player->mo))
+			{
+				continue;
+			}
+
+			if (player->progressupdate)
+			{
+				if (waypointcap == NULL)
+				{
+					if (legacygradelap)
+					{
+						const size_t idx = (max(0, player->starpostnum) * MAXPLAYERS) + i;
+						if (player->laps > legacygradelap[idx])
+						{
+							legacygradelap[idx] = player->laps;
+
+							if (player->progressthrumap >= ((RANK_MINPROGRESS << BIGTOSTDBITS) / 100))
+							{
+								// Progress updated; update leaderscore
+								const fixed_t leadermul = (K_GetPositionMultiplier(player->position) >> BIGTOSTDBITS);
+								const int32_t difflegacy = (player->progressdelta * FixedMul(32, leadermul));
+								player->ranklog.leaderscore += difflegacy;
+
+								K_UpdatePlayerPotential(player, FixedMul(32, leadermul), difflegacy, ((RANK_MAXPOTENTIALPROGRESS << BIGTOSTDBITS) / 100));
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 
@@ -12048,6 +12597,54 @@ void K_UpdateAllPlayerPositions(void)
 			// Get the cluster distance.
 			players[i].distancefromcluster =
 			    K_UpdateDistanceFromCluster(&players[i]);
+		}
+	}
+}
+
+// An 8.24 fixed-point integer that calculates a grading factor, based on the players
+// currently racing.
+//
+// NOTE: To use this as a standard fracunit, divide it by 256, or shift right 8 bits.
+fixed_t positionfactor = 0;
+
+// Updates `positionfactor`, then grades all players with a rank (`p->rankscore`).
+void K_UpdatePositionFactorAndPlayerRanks(void)
+{
+	cannotrank = false;
+	dboolean disterror = ((!K_UsingLegacyCheckpoints()) && (K_GetCircuitLength() == 0));
+
+	if (!rankingactive || (!(gametypes[gametype]->rules & GTR_CIRCUIT)) || (players_racing <= 1) || (modeattacking) || (disterror))
+	{
+		// Can't do nuthin'
+		positionfactor = 0;
+		cannotrank = true;
+		return;
+	}
+
+	// Calculate position factor
+	positionfactor = (POSGRADEFACTOR / max(1, players_racing - 1)); // Forgot about zero-indexing...
+
+	// And then update ranks
+	K_UpdateRankScore();
+
+	// ...and THEN update the ranking positions
+	K_GetRankBasedPositions();
+}
+
+int32_t players_racing = 0;
+
+// Counts all racing players and saves it to a global number.
+void K_GetPlayerNumber(void)
+{
+	int32_t i = 0;
+	players_racing = 0;
+
+	// Loop 1: count all players and measure a "position factor" for lap grading
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (playeringame[i] && !players[i].spectator && players[i].mo && !P_MobjWasRemoved(players[i].mo))
+		{
+			players_racing++;
 		}
 	}
 }
@@ -13047,6 +13644,342 @@ dboolean K_TrailSlowActive(void)
 	}
 
 	return false;
+}
+
+dboolean K_RankingsActive(void)
+{
+	return rankingactive;
+}
+
+dboolean K_RankPenaltiesActive(void)
+{
+	return ranking_penaltyactive;
+}
+
+dboolean K_RankDriftBonusActive(void)
+{
+	return ranking_driftbonusactive;
+}
+
+dboolean K_RankHitBonusActive(void)
+{
+	return ranking_hitbonusactive;
+}
+
+#define WALLBONKPENALTYDIV (3) // Every 3 bumps, since hitting walls is inevitable.
+
+static int32_t K_GetDriftBoostRankScore(player_t * player)
+{
+	const int32_t bluepoints = (player->ranklog.driftboostcount[0] / 2); // 0.5
+	const int32_t redpoints = (player->ranklog.driftboostcount[1]); // 1.0
+	const int32_t purplepoints = (3 * player->ranklog.driftboostcount[2] / 2); // 1.5
+	const int32_t rainbowpoints = (2 * player->ranklog.driftboostcount[3]); // 2.0
+	return bluepoints + redpoints + purplepoints + rainbowpoints;
+}
+
+// Only really kept for very specific systems at this point...
+void K_CalculateLapGrading(player_t *player)
+{
+	// Calculate rank score.
+	const int64_t posfac_64 = min(POSGRADEFACTOR, (int64_t)(positionfactor) * max(0, players_racing - player->position));
+	const fixed_t realposfac = (fixed_t)(posfac_64 / 256);
+
+	// +100 for leading, -100 for trailing
+	// Before: +100 for leading, -50 for trailing
+	int32_t lapgrade_addend = FixedMul(200, realposfac) - 100;
+
+	if (player->ranklog.prankeligible && player->position > 1)
+	{
+		// No P-rank, buddy. You biffed it!
+		player->ranklog.prankeligible = false;
+
+		if (P_IsDisplayPlayer(player))
+		{
+			S_StartSound(NULL, sfx_gprnf);
+		}
+	}
+
+	player->ranklog.numlapgrades++;
+
+	// The rank thinker will zero this out; just blind-set it
+	player->ranklog.lapwasgraded = true;
+
+	// Update gaining values
+	player->ranklog.gaining += intsign(lapgrade_addend);
+}
+
+// Gets a tier value based on the provided ranking score.
+ranktier_e K_GetRankTier(int32_t rank_score, int8_t prankoverride)
+{
+	// Rank scores can go as low as the host wants
+	int32_t _rank_score = rank_score + LOWESTRANKSCORE_ABS;
+
+	dboolean prankcondition =
+		(grandprixinfo.gp && prankoverride >= 0) ?
+			((dboolean)prankoverride) :
+				(_rank_score >= BEST_SCORE_BEFORE_P_RANK);
+
+	if (prankcondition)
+	{
+		// P-rank: perfect play! You're CRAZY good!
+		return RTIER_P;
+	}
+	
+	// Cap the rank score
+	_rank_score = min(BEST_SCORE_BEFORE_P_RANK, _rank_score);
+
+	// All other ranks are decided by dividing the score by a multipler
+	return (ranktier_e)(max(0, min(NUMSTDRANKTIERS - 1, _rank_score / RANKSCORE_DIVISOR)));
+}
+
+int32_t K_GetScoreForRankTier(ranktier_e rank_tier)
+{
+	// Rank scores can go as low as the host wants
+	int32_t _rank_score = LOWESTRANKSCORE;
+
+	if (rank_tier == RTIER_P)
+		return BEST_SCORE_BEFORE_P_RANK;
+
+	// If we're not looking for a P-rank, get the score via basic math
+	_rank_score += (RANKSCORE_DIVISOR * rank_tier);
+
+	return _rank_score;
+}
+
+// Updates the rank score of an individual player, based on a series of factors within their ranklog
+// struct.
+void K_UpdateIndividualPlayerRank(player_t* player)
+{
+	dboolean penalizing = K_RankPenaltiesActive();
+
+	if (!player)
+	{
+		// No player
+		return;
+	}
+
+	const uint16_t pid = (uint16_t)(player - players);
+
+	int32_t raceStarRankScore = 0;
+	int64_t krtTime = 0;
+
+	if (!playeringame[pid] || player->spectator)
+	{
+		// Not in the game
+		return;
+	}
+
+	if (!player->mo)
+	{
+		// No object
+		return;
+	}
+
+	if (player->exiting || (player->pflags & PF_NOCONTEST))
+	{
+		// We finished, doofus!
+		return;
+	}
+
+	if (LUA_HookPlayerPreRank(player))
+	{
+		// If this returns true, the scripter PROBABLY wanted to skip the whole mess below
+		return;
+	}
+
+	// Get this map's time limit
+	int32_t engineClass = (grandprixinfo.gp) ? grandprixinfo.gamespeed : gamespeed;
+
+	krtTime = mapheaderinfo[gamemap - 1]->par_time[engineClass];
+
+	if (krtTime <= 0)
+	{
+		// No par time? Try seeing if we have an auto-generated one.
+		if (autopartime)
+		{
+			// We do, use that
+			krtTime = autopartime;
+		}
+		else
+		{
+			// Nope? Use a flat rate.
+			const double generic_time = DoubleToTicrate(FixedToDouble(GENERICPARTIME));
+			krtTime = (int64_t)(generic_time / FixedToDouble(K_GetKartGameSpeedScalar(engineClass)));
+		}
+	}
+
+	const double progpoints = FixedToDouble(max(0, RANKPOINTS_PROGRESS));
+
+	// Calculate position bonus; the more you lead, the higher the gain
+	// Frontrun the whole race for the full bonus :)
+
+	const fixed_t racepercentage = BIGFRACUNIT - ((RANK_MINPROGRESS << BIGTOSTDBITS) / 100);
+
+	//I_OutputMsg("percentage for race: %f (%d)\n", BigFixedToDouble(racepercentage) * 100.0, racepercentage);
+	const fixed_t scoring_mult = BigFixedDiv(BIGFRACUNIT, racepercentage);
+
+	//I_OutputMsg("scoring multiplier: %f (%d)\n", BigFixedToDouble(scoring_mult) * 100.0, scoring_mult);
+	const fixed_t real_leaderscore = BigFixedMul(player->ranklog.leaderscore, scoring_mult);
+	//const double real_leaderscore = FixedToDouble(((player->ranklog.leaderscore / 32) >> BIGTOSTDBITS));
+	player->rankscorefactor.posgradescore = LOWESTRANKSCORE + (FixedToDouble((real_leaderscore / 32) >> BIGTOSTDBITS) * progpoints);
+
+	if (leveltime > (starttime + TIMECHECKOFFSET))
+	{
+		const float spbtimepoints = FIXED_TO_FLOAT(RANKPOINTS_SPBTIME);
+		const float spbtimepoints_lunatic = (spbtimepoints / 1.8);
+
+		// Calculate time bonus corresponding to the time spent being targeted by an SPB.
+		player->rankscorefactor.spbattackbonus =
+		    (player->ranklog.spbattack *
+		     ((grandprixinfo.lunaticmode) ? spbtimepoints_lunatic : spbtimepoints)) /
+		    krtTime;
+	}
+
+	// Apply bonus for successful rocket start.
+	// yama: On second thought: Start Bonus sucks ass, let's... not
+
+	if (ranking_driftbonusactive)
+	{
+		// Apply bonus for number of miniturbos performed.
+		int32_t miniturbos = K_GetDriftBoostRankScore(player);
+		player->rankscorefactor.driftbonus = (miniturbos * RANKPOINTS_DRIFTBOOST);
+	}
+	else
+	{
+		player->rankscorefactor.driftbonus = 0;
+	}
+
+	if (ranking_hitbonusactive)
+	{
+		// Apply bonus for number of times the player hits another player with items.
+		uint16_t hitOthersWithItemsCount = player->ranklog.numhitconfirms;
+		player->rankscorefactor.hitbonus = (hitOthersWithItemsCount * RANKPOINTS_HITCONFIRM);
+	}
+	else
+	{
+		player->rankscorefactor.hitbonus = 0;
+	}
+
+	if (penalizing)
+	{
+		// Apply penalty for the time spent offroad.
+		player->rankscorefactor.offroadpenalty =
+		    (player->ranklog.timeoffroadtotal / OFFROADPENALTYDIV);
+
+		// Apply penalty for number of times the player hits a wall.
+		// Adjusting this because you're going to hit walls in BlanKart... a LOT.
+		int32_t numWallCollision = (player->ranklog.wallbonks / WALLBONKPENALTYDIV);
+		player->rankscorefactor.wallpenalty = (numWallCollision * RANKPOINTS_WALLPENALTY);
+
+		// Apply penalty for number of times the player gets damaged by a course object.
+		// Some maps will force you to tank hits (looking at you, UINST Hell!), so we need a
+		// mercy system like respawns.
+		const int32_t hazardMercy = RANKPOINTS_HZRDMERCY;
+
+		uint16_t numObjectCollision =
+		    (uint16_t)(max(0, (int32_t)(player->ranklog.hitdamagingsector) - hazardMercy));
+		player->rankscorefactor.hazardpenalty =
+		    (numObjectCollision * RANKPOINTS_HZRDPENALTY);
+
+		// Let's allow you to respawn a few times before they're counted against you.
+		// This is BlanKart; some stupid thing WILL force you to eat a respawn or two.
+		const int32_t respawnMercy = RANKPOINTS_RSPWMERCY;
+
+		// Apply penalty for number of times the player respawned during a race.
+		// Also adjusting this because letting people freely rank-grief by weightchecking
+		// does not sound fun.
+		int32_t outOfBounds = max(0, player->ranklog.numrespawns - respawnMercy);
+		player->rankscorefactor.respawnpenalty = (outOfBounds * RANKPOINTS_RSPWPENALTY);
+	}
+
+	// FINALLY, apply all bonuses, penalties, and volatile scores...
+	raceStarRankScore =
+	    (player->rankscorefactor.posgradescore + player->rankscorefactor.finishgrading) +
+	    (player->rankscorefactor.spbattackbonus + player->rankscorefactor.driftbonus +
+	    player->rankscorefactor.hitbonus) -
+	    (player->rankscorefactor.offroadpenalty + player->rankscorefactor.wallpenalty +
+	     player->rankscorefactor.hazardpenalty + player->rankscorefactor.respawnpenalty);
+
+	// ...and let Lua scripters mess with this a bit...
+	int32_t luascore = LUA_HookPlayerRank(player, raceStarRankScore);
+
+	if (luascore)
+	{
+		raceStarRankScore += luascore;
+	}
+
+	// ...and make that our total
+	player->realrankscore = raceStarRankScore;
+
+	// Clamp the star rank score for this race between [LOWESTRANKSCORE, HIGHESTRANKSCORE]
+	if (raceStarRankScore < LOWESTRANKSCORE)
+	{
+		raceStarRankScore = LOWESTRANKSCORE;
+	}
+
+	if (raceStarRankScore > HIGHESTRANKSCORE)
+	{
+		raceStarRankScore = HIGHESTRANKSCORE;
+	}
+
+	// Save the new star rank score
+	player->rankscore = raceStarRankScore;
+
+	// Get the tier we're about to swap the player to
+	ranktier_e newtier =
+	    K_GetRankTier(raceStarRankScore,
+			  (player->ranklog.prankeligible &&
+			   ((raceStarRankScore + 200) >= BEST_SCORE_BEFORE_P_RANK)));
+
+	// NEW P-RANK ALGORITHM:
+	// - Must be leading by rankscore
+	// - Must lead before the next lap
+	// It's tougher to start with Star ranks with this new system
+
+	if (grandprixinfo.gp && player->position <= 1 && player->ranklog.numlapgrades < 2 &&
+	    player->ranklog.lapwasgraded && (ranksort_positions[player - players] < 2))
+	{
+		// This player is officially in the running for a P-Rank; set it as so and update
+		// their tier again
+		player->ranklog.prankeligible = true;
+
+		if (P_IsDisplayPlayer(player))
+		{
+			// Play a neat sound
+			S_StartSound(NULL, sfx_gprnk);
+		}
+		newtier = K_GetRankTier(raceStarRankScore,
+					(player->ranklog.prankeligible &&
+					 ((raceStarRankScore + 200) >= BEST_SCORE_BEFORE_P_RANK)));
+	}
+
+	player->ranklog.lapwasgraded = false;
+
+	// Finally: set their tier
+	player->ranktier = newtier;
+}
+
+// Updates rank data for all players, based on factors within their ranklog structs.
+void K_UpdateRankScore(void)
+{
+	int32_t i = 0;
+	if (cannotrank || !rankingactive || (gametypes[gametype]->rules & GTR_BUMPERS) || (players_racing <= 1))
+	{
+		// If ranking is disabled, or we're in Battle, we can't rank
+		for (i = 0; i < MAXPLAYERS; i++)
+    	{
+			// Zero out the rank scores, since they don't really matter
+			players[i].rankscore = 0;
+		}
+
+		return;
+	}
+
+    for (i = 0; i < MAXPLAYERS; i++)
+    {
+		player_t *p = &players[i];
+        K_UpdateIndividualPlayerRank(p);
+    }
 }
 
 dboolean K_UsingLegacyCheckpoints(void)

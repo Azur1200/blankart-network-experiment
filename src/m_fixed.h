@@ -31,8 +31,15 @@ extern "C" {
   \brief units of the fraction
 */
 #define FRACUNIT (1<<FRACBITS)
+/*!
+  \brief Half of FRACUNIT
+*/
 #define FRACHALF (1<<(FRACBITS-1))
 #define FRACMASK (FRACUNIT -1)
+/*!
+  \brief FRACUNIT as a double-precision floating-point value
+*/
+#define FRACFLOAT 65536.0
 /**	\brief	Redefinition of int32_t as fixed_t
 	unit used as fixed_t
 */
@@ -44,6 +51,30 @@ extern "C" {
 #define M_PI_FIXED (M_TAU_FIXED >> 1)
 
 typedef int32_t fixed_t;
+
+// Unsigned fixed_t
+typedef uint32_t ufixed_t;
+
+#define BIGFRACBITS 24
+
+/*!
+  \brief 8.24 fixed-point value (range: 0.0 to 127.99)
+*/
+#define BIGFRACUNIT (1<<BIGFRACBITS)
+/*!
+  \brief Half of BIGFRACUNIT
+*/
+#define BIGFRACHALF (1<<(BIGFRACBITS-1))
+/*!
+  \brief BIGFRACUNIT as a double-precision floating-point value
+*/
+#define BIGFRACFLOAT 16777216.0
+/*!
+  \brief Bits to convert a BIGFRACUNIT to a FRACUNIT
+*/
+#define BIGTOSTDBITS (BIGFRACBITS - FRACBITS)
+
+#define BIGFRACMASK (BIGFRACUNIT - 1)
 
 /*!
   \brief convert fixed_t into floating number
@@ -72,6 +103,18 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t DoubleToFixed(double f)
 {
 	return (fixed_t)(f * FRACUNIT);
 }
+
+FUNCMATH FUNCINLINE static ATTRINLINE tic_t DoubleToTicrate(double f)
+{
+	return (tic_t)(f * TICRATE);
+}
+
+#define BigFixedToFloat(x) FixedToFloat(x >> BIGTOSTDBITS)
+#define BigFixedToDouble(x) FixedToDouble(x >> BIGTOSTDBITS)
+#define BigFixedToTicrate(x) DoubleToTicrate(FixedToDouble(x >> BIGTOSTDBITS))
+
+#define FloatToBigFixed(x) (FloatToFixed(x) << BIGTOSTDBITS)
+#define DoubleToBigFixed(x) (DoubleToFixed(x) << BIGTOSTDBITS)
 
 /** \brief Converts seconds (in tics) to fixed-point number values; 1 second is 1 fracunit.
 
@@ -330,6 +373,100 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedRound(fixed_t x)
 			return x-(FRACUNIT-f);
 	}
 	return INT32_MAX;
+}
+
+/**	\brief	The BigFixedMul function
+
+	\param	a	fixed_t 8.24 number
+	\param	b	fixed_t 8.24 number
+
+	\return	a*b>>BIGFRACBITS
+
+*/
+FUNCMATH FUNCINLINE static ATTRINLINE fixed_t BigFixedMul(fixed_t a, fixed_t b)
+{
+	// Need to cast to unsigned before shifting to avoid undefined behaviour
+	// for negative integers
+	return (fixed_t)(((uint64_t)((int64_t)a * (int64_t)b)) >> BIGFRACBITS);
+}
+
+/**	\brief	The BigFixedMul64 function; identical to BigFixedMul, but returns a 64-bit value
+
+	\param	a	fixed_t 8.24 number
+	\param	b	fixed_t 8.24 number
+
+	\return	a*b>>BIGFRACBITS
+
+*/
+FUNCMATH FUNCINLINE static ATTRINLINE int64_t BigFixedMul64(int64_t a, int64_t b)
+{
+	// Need to cast to unsigned before shifting to avoid undefined behaviour
+	// for negative integers
+	return (int64_t)(((uint64_t)((int64_t)a * (int64_t)b)) >> BIGFRACBITS);
+}
+
+/**	\brief	The BigFixedDiv2 function
+
+	\param	a	fixed_t 8.24 number
+	\param	b	fixed_t 8.24 number
+
+	\return	a/b * BIGFRACUNIT
+
+*/
+FUNCMATH FUNCINLINE static ATTRINLINE fixed_t BigFixedDiv2(fixed_t a, fixed_t b)
+{
+	// This does not check for division overflow or division by 0!
+	// That is the caller's responsibility.
+	return (fixed_t)(((int64_t)a * BIGFRACUNIT) / b);
+}
+
+/**	\brief	The BigFixedDiv function
+
+	\param	a	fixed_t 8.24 number
+	\param	b	fixed_t 8.24 number
+
+	\return	a/b
+
+
+*/
+FUNCMATH FUNCINLINE static ATTRINLINE fixed_t BigFixedDiv(fixed_t a, fixed_t b)
+{
+	if ((abs(a / (BIGFRACUNIT/4))) >= abs(b))
+		return (a^b) < 0 ? INT32_MIN : INT32_MAX;
+
+	return BigFixedDiv2(a, b);
+}
+
+/**	\brief	The BigFixedDivUnsigned2 function
+
+	\param	a	fixed_t 8.24 number
+	\param	b	fixed_t 8.24 number
+
+	\return	a/b * BIGFRACUNIT
+
+*/
+FUNCMATH FUNCINLINE static ATTRINLINE ufixed_t BigFixedDivUnsigned2(fixed_t a, fixed_t b)
+{
+	// This does not check for division overflow or division by 0!
+	// That is the caller's responsibility.
+	return (ufixed_t)(((int64_t)a * BIGFRACUNIT) / b);
+}
+
+/**	\brief	The BigFixedDivUnsigned function
+
+	\param	a	fixed_t 8.24 number
+	\param	b	fixed_t 8.24 number
+
+	\return	a/b
+
+
+*/
+FUNCMATH FUNCINLINE static ATTRINLINE ufixed_t BigFixedDivUnsigned(fixed_t a, fixed_t b)
+{
+	if ((abs(a / (BIGFRACUNIT/4))) >= abs(b))
+		return (a^b) < 0 ? INT32_MIN : INT32_MAX;
+
+	return BigFixedDivUnsigned2(a, b);
 }
 
 struct vector2_t

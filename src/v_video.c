@@ -3851,7 +3851,7 @@ void V_DrawCenteredStringAtFixed(fixed_t x, fixed_t y, int32_t option, const cha
 // Draws a number using the PING font thingy.
 // TODO: Merge number drawing functions into one with "font name" selection.
 
-int32_t V_DrawPingNum(int32_t x, int32_t y, int32_t flags, int32_t num, const uint8_t *colormap)
+int32_t V_DrawPingNumPadded(int32_t x, int32_t y, int32_t flags, int32_t num, uint16_t padding, const uint8_t *colormap)
 {
 	int32_t w = LSBF_SHORT(fontv[PINGNUM_FONT].font[0]->width);	// this SHOULD always be 5 but I guess custom graphics exist.
 
@@ -3866,8 +3866,13 @@ int32_t V_DrawPingNum(int32_t x, int32_t y, int32_t flags, int32_t num, const ui
 	{
 		x -= (w-1);	// Oni wanted their outline to intersect.
 		V_DrawFixedPatch(x<<FRACBITS, y<<FRACBITS, FRACUNIT, flags, fontv[PINGNUM_FONT].font[num%10], colormap);
-		num /= 10;
-	} while (num);
+
+		if (num) // No need to divide if we're at zero...
+			num /= 10;
+
+		if (padding)
+			padding--; // Subtract padding
+	} while (num || padding);
 
 	return x;
 }
@@ -3902,7 +3907,7 @@ int32_t V_DrawPingNumScaled(fixed_t x, fixed_t y, fixed_t scale, int32_t flags, 
 //
 void V_DrawRankNum(int32_t x, int32_t y, int32_t flags, int32_t num, int32_t digits, const uint8_t *colormap)
 {
-	int32_t w = LSBF_SHORT(fontv[PINGNUM_FONT].font[0]->width) - 1;
+	int32_t w = kp_facenum[0]->width - 1;
 
 	if (flags & V_NOSCALESTART)
 		w *= vid.dup;
@@ -3915,7 +3920,7 @@ void V_DrawRankNum(int32_t x, int32_t y, int32_t flags, int32_t num, int32_t dig
 	{
 		x -= (w - 1);
 
-		V_DrawFixedPatch(x << FRACBITS, y << FRACBITS, FRACUNIT, flags, fontv[PINGNUM_FONT].font[num % 10], colormap);
+		V_DrawFixedPatch(x << FRACBITS, y << FRACBITS, FRACUNIT, flags, kp_facenum[num % 10], colormap);
 		num /= 10;
 	} while (--digits);
 }

@@ -8283,6 +8283,7 @@ void MP_StatsExtra(menupanelinst_t *pi)
 	AMOUNTSTAT("SINKS", sinks);
 	AMOUNTSTAT("SINKED", sinked);
 	AMOUNTSTAT("RESPAWNS", respawns);
+	AMOUNTSTAT("PERFECTMEDALS", perfectmedals);
 }
 
 void MD_DrawLevelStats(menupanelinst_t *pi)
@@ -8444,6 +8445,7 @@ int32_t MR_StartGrandPrix(int32_t choice)
 	I_Assert(gpcup != NULL);
 
 	grandprixinfo.gp = true;
+	grandprixinfo.ranked = (dboolean)(cv_kartraceranks.value);
 	grandprixinfo.wonround = false;
 	grandprixinfo.initalize = true;
 	grandprixinfo.cup = gpcup;

@@ -53,6 +53,11 @@ extern consvar_t cv_music_resync_powerups_only;
 extern consvar_t cv_altmusic;
 extern consvar_t cv_streamersafemusic;
 
+extern char musicqueue_string[];
+extern int64_t musicqueue_time;
+extern dboolean musicqueue_loops;
+extern uint16_t musicqueue_flags;
+
 #ifdef HAVE_OPENMPT
 extern consvar_t cv_modfilter;
 #endif
@@ -306,6 +311,10 @@ enum
 void S_ChangeMusicEx(const char *mmusic, uint16_t mflags, dboolean looping, uint32_t position, uint32_t prefadems, uint32_t fadeinms);
 #define S_ChangeMusicInternal(a,b) S_ChangeMusicEx(a,0,b,0,0,0)
 #define S_ChangeMusic(a,b,c) S_ChangeMusicEx(a,b,c,0,0,0)
+
+void S_SetMusicQueue(const char *mmusic, dboolean looping, tic_t time);
+void S_ClearMusicQueue(void);
+void S_TickMusicQueue(void);
 
 void S_ChangeMusicSpecial (const char *mmusic);
 

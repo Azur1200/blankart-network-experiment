@@ -1976,6 +1976,12 @@ static void K_HandleLapIncrement(player_t *player)
 			player->starpostnum = 0;
 			player->laps++;
 
+			if (waypointcap == NULL)
+			{
+				// On a lap increment in non-waypointed maps, update our progress
+				K_UpdateProgressThroughCourse(player);
+			}
+
 			// P_DoPlayerExit can edit latestlap, so we do this first
 			dboolean lapisfresh = (player->laps > player->latestlap);
 			if (lapisfresh) // mcgamer would be proud
@@ -2003,7 +2009,9 @@ static void K_HandleLapIncrement(player_t *player)
 				// immediately update our waypoint to one after the finish line
 				K_FixupFinishWaypoint(player, false);
 
+				K_GetPlayerNumber();
 				K_UpdateAllPlayerPositions(); // P_DoPlayerExit calls this
+				K_UpdatePositionFactorAndPlayerRanks();
 			}
 
 			if (!K_UsingLegacyCheckpoints())
@@ -2113,6 +2121,21 @@ static void K_HandleLapIncrement(player_t *player)
 					// Nice-to-have: Halfway-through-lap splits?
 					const uint8_t fakegradingpoint = ((uint8_t)(player->laps - 1) & 7);
 					K_HandleRaceSplits(player, leveltime - starttime, fakegradingpoint);
+
+					if (!player->exiting)
+					{
+						// Grade this lap
+						K_CalculateLapGrading(player);
+
+						// Update ranks with the new data
+						K_UpdateIndividualPlayerRank(player);
+
+						// Log this
+						K_AddScoreToTracker((uint16_t)(player - players), player->rankscore + LOWESTRANKSCORE_ABS);
+
+						// ...and THEN update the ranking positions
+						K_GetRankBasedPositions();
+					}
 				}
 			}
 
@@ -2154,7 +2177,9 @@ static void K_HandleLapDecrement(player_t *player)
 			player->starpostnum = numstarposts;
 			player->laps--;
 			K_FixupFinishWaypoint(player, true);
+			K_GetPlayerNumber();
 			K_UpdateAllPlayerPositions();
+			K_UpdatePositionFactorAndPlayerRanks();
 			player->laptime[LAP_CUR] = UINT32_MAX;
 		}
 	}

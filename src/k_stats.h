@@ -5,7 +5,7 @@
 #include "d_player.h"
 #include "p_saveg.h"
 
-#define KARTSTATSVERSION 1
+#define KARTSTATSVERSION 2
 
 typedef struct kartstats_s {
 	// Remember if stats we loaded are vanilla ones or not
@@ -34,6 +34,7 @@ typedef struct kartstats_s {
 	uint32_t sinks; // Times hitting *others* by kitchen sink
 	uint32_t sinked; // Times *being hit* by kitchen sink
 	uint32_t respawns;
+	uint32_t perfectmedals; // Times Perfect rank has been obtained in Ranked Races
 
 	uint8_t *copy; // Copy of stats block that has been read from file. In case we're older version that reads newer save, we will keep values that we couldn't read
 } kartstats_t;
