@@ -607,7 +607,6 @@ const char *const SSF_LIST[] = {
 	"GRAVITYOVERRIDE",
 	"WALLTRANSFER",
 	"BUMPYROAD",
-	"DASHAREA",
 	NULL
 };
 

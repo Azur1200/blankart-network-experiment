@@ -399,7 +399,6 @@ typedef enum
 	SSF_GRAVITYOVERRIDE = 1<<19, // combine with MSF_GRAVITYFLIP
 	SSF_WALLTRANSFER = 1<<20,
 	SSF_BUMPYROAD = 1<<21,
-	SSF_DASHAREA = 1<<22,
 } sectorspecialflags_t;
 
 typedef enum
