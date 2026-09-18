@@ -785,6 +785,10 @@ const char *const KARTHUD_LIST[] = {
 
 	"ITEMTIMER_XOFF",
 	"ITEMTIMER_YOFF",
+
+	"PREVRANKSCORE",
+	"PREVRANKSCOREDELAY",
+	"PREVRANKTIER",
 };
 
 const char *const HUDITEMS_LIST[] = {
