@@ -5521,7 +5521,7 @@ static void G_DoCompleted(void)
 		}
 	}
 
-	if (numforfeit >= numplayers)
+	if (numforfeit && (numforfeit >= numplayers))
 	{
 		// This was likely an "exitlevel" call or RTV; DO NOT rank this race!
 		cannotrank = true;
@@ -5535,8 +5535,6 @@ static void G_DoCompleted(void)
 
 	if (!cannotrank)
 		K_GetRankBasedPositions();
-
-	//const boolean grademusicqueued = (!stricmp("grade", musicqueue_string));
 
 	// See Y_StartIntermission timer handling
 	if ((gametypes[gametype]->rules & GTR_CIRCUIT) && ((multiplayer && demo.playback) || j == r_splitscreen+1) && (!K_CanChangeRules(false) || cv_inttime.value > 0))

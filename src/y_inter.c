@@ -466,6 +466,7 @@ static dboolean RankScreenVis_ShowGrade(void)
 	patch_t* rankpatch = NULL;
 
 	dboolean half_y = false;
+	dboolean spectatorcheck = false;
 
 	if (r_splitscreen)
 	{
@@ -502,6 +503,8 @@ static dboolean RankScreenVis_ShowGrade(void)
 	int32_t i = 0;
 	for (i = 0; i < drawcnt; i++)
 	{
+		spectatorcheck = false;
+
 		pid = MAXPLAYERS;
 		pid = displayplayers[i];
 
@@ -509,6 +512,7 @@ static dboolean RankScreenVis_ShowGrade(void)
 			continue;
 
 		rankpatch = kp_ranktier[players[pid].ranktier];
+		spectatorcheck = ((players[pid].spectator) || (!(players[pid].pflags & PF_WASINRACE)));
 
 		// I_OutputMsg("i: %d", i);
 
@@ -657,7 +661,7 @@ static dboolean RankScreenVis_ShowGrade(void)
 			{
 				yy += 17;
 
-				if (players[pid].spectator)
+				if (spectatorcheck)
 				{
 					V_DrawString(xx + finrank_xoffs, yy, textflags, norankstring);
 				}
@@ -1017,7 +1021,7 @@ static ATTRUSED dboolean RankScreenVis_Graph(void)
 	i = 0;
 	for (i = 0; i < num_bgplayers; i++)
 	{
-		if (players[bg_players[i]].spectator)
+		if ((players[bg_players[i]].spectator) || (!(players[bg_players[i]].pflags & PF_WASINRACE)))
 			continue;  // Spectating
 
 		my_pal_index = V_GetColorFromSkinColorWithBrightness(
@@ -1033,7 +1037,7 @@ static ATTRUSED dboolean RankScreenVis_Graph(void)
 	i = 0;
 	for (i = 0; i < num_displayplayers; i++)
 	{
-		if (players[disp_players[i]].spectator)
+		if ((players[disp_players[i]].spectator) || (!(players[disp_players[i]].pflags & PF_WASINRACE)))
 			continue;  // Spectating
 
 		my_pal_index =
@@ -1050,7 +1054,7 @@ static ATTRUSED dboolean RankScreenVis_Graph(void)
 	i = 0;
 	for (i = 0; i < num_winners; i++)
 	{
-		if (players[winnerplayers[i]].spectator)
+		if ((players[winnerplayers[i]].spectator) || (!(players[winnerplayers[i]].pflags & PF_WASINRACE)))
 			continue;  // Spectating
 
 		my_pal_index =
@@ -1687,7 +1691,7 @@ static void RankTick_Graph(void)
 						continue;
 					}
 
-					if (!players[displayplayers[i]].spectator)
+					if ((!players[displayplayers[i]].spectator) && (players[displayplayers[i]].pflags & PF_WASINRACE))
 					{
 						// By virtue of at least ONE player being in the
 						// game, everyone *isn't* spectating
@@ -1745,7 +1749,9 @@ static void RankTick_ShowGrade(void)
 		// Display rank
 		const int32_t useplayer = demo.playback ? displayplayers[0] : consoleplayer;
 
-		if (r_splitscreen || (players[useplayer].spectator))
+		dboolean spectator_check = ((players[useplayer].spectator) || (!(players[useplayer].pflags & PF_WASINRACE)));
+
+		if (r_splitscreen || spectator_check)
 		{
 			S_StartSound(NULL, sfx_dda96);
 		}

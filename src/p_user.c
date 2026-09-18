@@ -1505,6 +1505,7 @@ void P_DoPlayerExit(player_t* player, pflags_t flags)
 			}
 
 			player->exiting = raceexittime+2;
+			player->pflags |= PF_WASINRACE;
 			K_UpdateAllPlayerPositions();
 
 			if (!(modeattacking||dedicated))
@@ -1544,18 +1545,21 @@ void P_DoPlayerExit(player_t* player, pflags_t flags)
 			if (P_CheckRacers())
 			{
 				player->exiting = raceexittime+1;
+				player->pflags |= PF_WASINRACE;
 				G_BeginLevelExit();
 			}
 		}
 		else if ((gametypes[gametype]->rules & GTR_BUMPERS)) // Battle Mode exiting
 		{
 			player->exiting = battleexittime+1;
+			player->pflags |= PF_WASINRACE;
 			G_BeginLevelExit();
 			P_EndingMusic(player);
 		}
 		else // Accidental death safeguard???
 		{
 			player->exiting = raceexittime+2;
+			player->pflags |= PF_WASINRACE;
 			G_BeginLevelExit();
 		}
 
@@ -3955,7 +3959,7 @@ void P_DoTimeOver(player_t *player)
 	dboolean confirmloss = true;
 	uint8_t should_force_winloss = LUA_HookPlayerFinish(player, true, confirmloss);
 
-	player->pflags |= PF_NOCONTEST;
+	player->pflags |= (PF_NOCONTEST|PF_WASINRACE);
 
 	if (should_force_winloss)
 	{
@@ -4404,7 +4408,10 @@ void P_PlayerThink(player_t *player)
 			}
 
 			if (i == MAXPLAYERS && player->exiting == raceexittime+2) // finished
+			{
 				player->exiting = raceexittime+1;
+				player->pflags |= PF_WASINRACE;
+			}
 
 #if 0
 			// If 10 seconds are left on the timer,
