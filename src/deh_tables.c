@@ -385,7 +385,7 @@ const char *const PLAYERFLAG_LIST[] = {
 	// TODO: Is there a better way to track this?
 	"GAINAX",
 	"KICKSTARTACCEL",	 // Accessibility feature: Is accelerate in kickstart mode?
-	"\x01",
+	"WASINRACE",		 // Was in the race when it finished
 	"NOSCALEGRAVITY",
 
 	"WANTSTOJOIN",		 // Spectator that wants to join
