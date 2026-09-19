@@ -393,11 +393,11 @@ static int lib_tofixed(lua_State *L)
 {
 	const char *arg = luaL_checkstring(L, 1);
 	char *end;
-	float f = strtof(arg, &end);
+	fixed_t f = M_ParseFixed(arg, &end);
 	if (*end != '\0')
 		lua_pushnil(L);
 	else
-		lua_pushnumber(L, FLOAT_TO_FIXED(f));
+		lua_pushnumber(L, f);
 	return 1;
 }
 

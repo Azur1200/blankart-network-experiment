@@ -52,6 +52,9 @@ extern "C" {
 
 typedef int32_t fixed_t;
 
+#define FIXED_MIN INT32_MIN
+#define FIXED_MAX INT32_MAX
+
 // Unsigned fixed_t
 typedef uint32_t ufixed_t;
 
@@ -597,6 +600,8 @@ void FM_MultMatrix(matrix_t *dest, const matrix_t *multme);
 void FM_MultMatrixEx(const matrix_t *m1, const matrix_t *m2, matrix_t *dest);
 void FM_Translate(matrix_t *dest, fixed_t x, fixed_t y, fixed_t z);
 void FM_Scale(matrix_t *dest, fixed_t x, fixed_t y, fixed_t z);
+
+fixed_t M_ParseFixed(const char *nptr, char **endptr);
 
 //
 // Approach functions, see m_fixed.c for details

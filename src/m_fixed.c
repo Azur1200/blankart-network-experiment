@@ -1249,3 +1249,36 @@ fixed_t ApproachFixed(fixed_t current, fixed_t target, fixed_t inc, fixed_t dec)
 	}
 	return current;
 }
+
+fixed_t M_ParseFixed(const char *nptr, char **endptr)
+{
+	char *tmp;
+	if (endptr == NULL)
+		endptr = &tmp;
+
+	long exp = strtol(nptr, endptr, 10);
+	if (exp < INT16_MIN)
+		return FIXED_MIN;
+	else if (exp > INT16_MAX)
+		return FIXED_MAX;
+	if (**endptr == '.')
+	{
+		const char *fracptr = *endptr + 1;
+		unsigned long frac = strtoul(fracptr, endptr, 10);
+		unsigned long fracdiv = 1;
+		while (fracptr < *endptr)
+		{
+			fracdiv *= 10;
+			fracptr++;
+		}
+
+		if (frac > UINT16_MAX)
+			frac = UINT16_MAX;
+		else
+			frac = (frac << FRACBITS) / fracdiv;
+		return (exp << FRACBITS) | frac;
+	}
+
+	return exp << FRACBITS;
+}
+
