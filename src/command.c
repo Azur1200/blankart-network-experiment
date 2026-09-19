@@ -1740,7 +1740,12 @@ dboolean CV_CompleteValue(consvar_t *var, const char **valstrp, int32_t *intval)
 			if (fpclassify(d) == FP_ZERO && valstr[0] != '0')
 				v = INT32_MIN;
 			else
-				v = (int32_t)(d * FRACUNIT);
+			{
+				char* endptr;
+				fixed_t fval = M_ParseFixed(valstr, &endptr);
+
+				v = (int32_t)(fval);
+			}
 		}
 		else
 		{
@@ -1906,8 +1911,10 @@ static void Setvalue(consvar_t *var, const char *valstr, dboolean stealth)
 
 		if (var->flags & CV_FLOAT)
 		{
-			double d = atof(var->string);
-			var->value = (int32_t)(d * FRACUNIT);
+			char* endptr;
+			fixed_t fval = M_ParseFixed(var->string, &endptr);
+
+			var->value = (int32_t)(fval);
 		}
 		else
 			var->value = atoi(var->string);
