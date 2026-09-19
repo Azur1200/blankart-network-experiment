@@ -37,9 +37,6 @@ static int  trigger_subsector = 0xFFFFFFFF;
 static byte trigger_trace = 0;
 #endif
 
-// Allocate poly from ZAlloc.
-#define ZPLANALLOC
-
 #define POLYTILE
 
 
@@ -55,7 +52,7 @@ static byte trigger_trace = 0;
 polyvertex_t* poly_vert = NULL;
 
 // Create float poly vert from level map vertexes.
-// These are freed by Z_Free( PU_HWRPLANE ).
+// These are freed by Z_Free(PU_HWRPLANE).
 static void create_poly_vert(void)
 {
 	polyvertex_t * pv;
@@ -233,15 +230,15 @@ static void polyvertex_dump(polyvertex_t *pv)
 	fixed_t y1 = pv->y * FRACUNIT;
 	for (j = 0; j < numvertexes; j++)
 	{
-		vertex_t * vt = &vertexes[j];
+		vertex_t *vt = &vertexes[j];
 		if (abs(x1 - vt->x) + abs(y1 - vt->y) < 2 )
 		{
-			CONS_Debug(DBG_RENDER, " V%i(%6.2f, %6.2f)", j, pv->x, pv->y);
+			CONS_Debug(DBG_RENDER, "V%i(%6.2f, %6.2f)", j, pv->x, pv->y);
 			return;
 		}
 	}
 
-	CONS_Debug(DBG_RENDER, " (%6.2f, %6.2f)", pv->x, pv->y);
+	CONS_Debug(DBG_RENDER, "(%6.2f, %6.2f)", pv->x, pv->y);
 }
 
 static void wpoly_dump(const char *str, wpoly_t *poly)
@@ -260,7 +257,7 @@ static void wpoly_dump(const char *str, wpoly_t *poly)
 		if (cnt > 120 )
 		{
 			cnt = 6;
-			CONS_Debug(DBG_RENDER, "\n	  ");
+			CONS_Debug(DBG_RENDER, "\n");
 		}
 		polyvertex_dump( poly->ppts[i]);
 		cnt+=20;
@@ -323,10 +320,10 @@ static void wpoly_append(wpoly_t *src_poly, int32_t copy_from, int32_t copy_cnt,
 	int32_t n;
 
 #ifdef DEBUG_HWBSP
-	if (copy_cnt > src_poly->numpts )
+	if (copy_cnt > src_poly->numpts)
 	{
-		CONS_Debug(DBG_RENDER,  "ERROR wpoly_append, exceeds src bounds, copy_from= %i, copy_cnt= %i, src numpts= %i\n",
-				   copy_cnt, src_poly->numpts);
+		CONS_Debug(DBG_RENDER, "ERROR wpoly_append, exceeds src bounds, copy_from= %i, copy_cnt= %i, src numpts= %i\n",
+				   copy_from, copy_cnt, src_poly->numpts);
 	}
 #endif
 
@@ -349,7 +346,7 @@ static void wpoly_append(wpoly_t *src_poly, int32_t copy_from, int32_t copy_cnt,
 		return;
 	}
 
-	pvp = & dest_poly->ppts[dest_poly->numpts];  // append
+	pvp = &dest_poly->ppts[dest_poly->numpts];  // append
 	dest_poly->numpts += copy_cnt;  // before copy_cnt gets decremented
 
 	n = src_poly->numpts - copy_from;  // vertexes to end of poly
@@ -364,9 +361,9 @@ static void wpoly_append(wpoly_t *src_poly, int32_t copy_from, int32_t copy_cnt,
 	}
 
 #ifdef DEBUG_HWBSP
-	if (copy_from + copy_cnt > src_poly->numpts )  // after wrap
+	if (copy_from + copy_cnt > src_poly->numpts)  // after wrap
 	{
-		CONS_Debug(DBG_RENDER,  "ERROR wpoly_append, exceeds src bounds, copy_from= %i, copy_cnt= %i, src numpts= %i\n",
+		CONS_Debug(DBG_RENDER, "ERROR wpoly_append, exceeds src bounds, copy_from= %i, copy_cnt= %i, src numpts= %i\n",
 				   copy_from, copy_cnt, src_poly->numpts);
 	}
 #endif
@@ -383,7 +380,6 @@ static void wpoly_append(wpoly_t *src_poly, int32_t copy_from, int32_t copy_cnt,
 		memcpy(pvp, &(src_poly->ppts[copy_from]), copy_cnt*sizeof(void*));
 	}
 }
-
 
 // Insert some new vertex, and then,
 // copy some of another poly to the destination poly.
@@ -463,7 +459,7 @@ static void wpoly_insert_vert(polyvertex_t *v1, int32_t v_at, /*INOUT*/ wpoly_t 
 
 	if (trigger_trace)
 	{
-		CONS_Debug(DBG_RENDER, "	 Insert creates poly id=%i,%i,%i\n", xpoly->id1, xpoly->id2, xpoly->id3 );
+		CONS_Debug(DBG_RENDER, "Insert creates poly id=%i,%i,%i\n", xpoly->id1, xpoly->id2, xpoly->id3);
 	}
 #endif
 	wpoly_init_alloc(numpts + 1, xpoly);
@@ -512,25 +508,12 @@ static int total_subsecpoly_cnt = 0;
 // Polygon fast alloc / free
 // --------------------------------------------------------------------------
 
-#define ZPLANALLOC
-
-#ifndef ZPLANALLOC
-#define POLY_ALLOCINC  4096
-#define POLY_VERTINC	256
-static byte* gr_polypool = NULL;
-static unsigned int gr_polypool_free = 0;
-#endif
-
 static void HWR_Freepolysubsectors(void);
 
 // only between levels, clear poly pool
 static void HWR_ClearPolys(void)
 {
-	Z_FreeTags(PU_HWRPLANE, PU_HWRPLANE);
-#ifndef ZPLANALLOC
-	gr_polypool = NULL;
-	gr_polypool_free = 0;
-#endif
+	Z_FreeTag(PU_HWRPLANE);
 	poly_vert = NULL;
 	polyvert_store = NULL;
 }
@@ -553,21 +536,7 @@ static poly_t* HWR_AllocPoly(int32_t numpts)
 	size_t size;
 
 	size = sizeof(poly_t) + sizeof(polyvertex_t) * numpts;
-#ifdef ZPLANALLOC
 	p = Z_Malloc(size, PU_HWRPLANE, NULL);
-#else
-	if (gr_polypool_free < size)
-	{
-		// Allocate another pool.
-		// Z_FreeTags reclaims the leftover memory of previous pool.
-		gr_polypool_free = POLY_ALLOCINC;
-		gr_polypool = Z_Malloc(gr_polypool_free, PU_HWRPLANE, NULL);
-	}
-
-	p = (poly_t*) gr_polypool;
-	gr_polypool += size;
-	gr_polypool_free -= size;
-#endif
 	p->numpts = numpts;
 
 	return p;
@@ -578,7 +547,7 @@ static poly_t* HWR_AllocPoly(int32_t numpts)
 void pwpoly(wpoly_t *poly)
 {
 	int i;
-	for (i = 0; i<poly->numpts; i++)
+	for (i = 0; i < poly->numpts; i++)
 	{
 		if (poly->ppts[i])
 			printf("(%6.2f,%6.2f)", poly->ppts[i]->x, poly->ppts[i]->y);
@@ -588,11 +557,11 @@ void pwpoly(wpoly_t *poly)
 }
 
 // print poly for debugging
-void ppoly( poly_t * poly )
+void ppoly(poly_t *poly)
 {
 	int i;
-	for ( i = 0; i<poly->numpts; i++ )
-	   printf( "(%6.2f,%6.2f)", poly->pts[i].x, poly->pts[i].y);
+	for (i = 0; i < poly->numpts; i++)
+	   printf("(%6.2f,%6.2f)", poly->pts[i].x, poly->pts[i].y);
 	printf("\n");
 }
 #endif
@@ -618,9 +587,9 @@ void ppoly( poly_t * poly )
 typedef enum
 {
    DVL_none,  // no divide
-   DVL_v1,	// divide at v1 end of segment
+   DVL_v1,    // divide at v1 end of segment
    DVL_mid,   // divide between v1 and v2
-   DVL_v2,	// divide at v2 end of segment
+   DVL_v2,    // divide at v2 end of segment
 } divline_e;
 
 typedef struct
@@ -632,16 +601,16 @@ typedef struct
 #ifdef DEBUG_HWBSP
 static void fdivline_dump(const char * str, fdivline_t * dl)
 {
-	polyvertex_t  v1;
+	polyvertex_t v1;
 	v1.x = dl->x;
 	v1.y = dl->y;
 	CONS_Debug(DBG_RENDER, "%s", str);
-	polyvertex_dump( & v1);
-	CONS_Debug(DBG_RENDER, " to ", str);
+	polyvertex_dump(&v1);
+	CONS_Debug(DBG_RENDER, " to ");
 	v1.x += dl->dx;
 	v1.y += dl->dy;
-	polyvertex_dump( & v1);
-	CONS_Debug(DBG_RENDER, " slope (%f, %f)\n", dl->dx, dl->dy);
+	polyvertex_dump(&v1);
+	CONS_Debug(DBG_RENDER, "slope (%f, %f)\n", dl->dx, dl->dy);
 }
 #endif
 
@@ -655,24 +624,27 @@ typedef struct
 } div_result_t;
 
 #ifdef DEBUG_HWBSP
-static void divresult_dump( onst char * str, div_result_t * dr)
+static void divresult_dump(const char *str, div_result_t *dr)
 {
 	CONS_Debug(DBG_RENDER, "%s", str);
 	CONS_Debug(DBG_RENDER, " CROSS %6.4f BEFORE v1+%i AFTER v1+%i ", dr->divfrac, dr->before, dr->after);
-	if (dr->at_vert )
+
+	if (dr->at_vert)
 	{
 		CONS_Debug(DBG_RENDER, " AT");
 	}
-	if (dr->vertex )
+
+	if (dr->vertex)
 	{
 		CONS_Debug(DBG_RENDER, " SEGPT");
-		polyvertex_dump( dr->vertex);
+		polyvertex_dump(dr->vertex);
 	}
 	else
 	{
 		CONS_Debug(DBG_RENDER, " PT");
 		polyvertex_dump( &dr->divpt);
 	}
+
 	CONS_Debug(DBG_RENDER, "\n");
 }
 #endif
@@ -765,7 +737,7 @@ static divline_e fracdivline(fdivline_t* partline, polyvertex_t* v1, polyvertex_
 // Point is to rightside of divline when result > 0,
 // but result is multiplied by length of divline.
 // Returns near 0, when point is on, or nearly on, the divline.
-static inline float point_rightside(fdivline_t * dl, polyvertex_t * v4)
+static inline float point_rightside(fdivline_t *dl, polyvertex_t *v4)
 {
 	// Cross product of dl and vector dl->(x,y) to v4,
 	// is > 0 when v4 is to right side of divline.
@@ -781,7 +753,7 @@ static inline float point_rightside(fdivline_t * dl, polyvertex_t * v4)
 // The cross product is > 0 when v4 is to the right side of the vector.
 // If the coordinates are rotated until the vector dy>0 and dx = 0, then the
 // cross product is > 0 when v4 is to the right of the vector.
-static inline double cross_product(polyvertex_t * p1, polyvertex_t * p2, polyvertex_t * v4)
+static inline double cross_product(polyvertex_t *p1, polyvertex_t *p2, polyvertex_t *v4)
 {
 	return
 	( ((double)(v4->x) - (double)(p1->x)) * ((double)(p2->y) - (double)(p1->y))
@@ -804,7 +776,7 @@ typedef struct polytile_store_s
 	wpoly_t *tile[POLYTILE_NUM_POLY];
 } polytile_store_t;
 
-// These are freed by Z_Free( PU_HWRPLANE ).
+// These are freed by Z_FreeTag(PU_HWRPLANE). --lug: no theyre not lmao
 polytile_store_t *polytile_store = NULL;
 polytile_store_t *polytile_free = NULL;
 
@@ -817,6 +789,9 @@ static void polytile_clean(void)
 		polytile_store = ptp->next;
 		Z_Free(ptp);
 	}
+
+	// null this just in case, we dont want any dingalinging pointers
+	polytile_free = NULL;
 }
 
 // Save the poly ptr within the polytile lists.
@@ -848,7 +823,7 @@ static void polytile_enter(wpoly_t * poly)
 		polytile_store->num_tile_used = 0;
 	}
 
-	polytile_store->tile[ polytile_store->num_tile_used++ ] = poly;
+	polytile_store->tile[polytile_store->num_tile_used++] = poly;
 }
 
 static void polytile_remove(wpoly_t * poly)
@@ -856,19 +831,19 @@ static void polytile_remove(wpoly_t * poly)
 	polytile_store_t *ptp;
 	wpoly_t **wpp;
 	wpoly_t *lp;
-	INT32 i;
+	int i;
 
 	// Search poly tiling.
 	ptp = polytile_store;
+
 	while (ptp)
 	{
 		// Search for poly in all polytile_store_t
-		wpp = & ptp->tile[0];
+		wpp = &ptp->tile[0];
 		for (i = ptp->num_tile_used-1; i >= 0; i--)
 		{
 			if (*wpp == poly)
 				goto found;
-
 			wpp++;
 		}
 		ptp = ptp->next;
@@ -882,7 +857,7 @@ found:
 	*wpp = lp;  // keep store compacted (ok if *wpp == lp already)
 
 	// Remove last poly spot.
-	polytile_store->num_tile_used --;
+	polytile_store->num_tile_used--;
 	if (polytile_store->num_tile_used == 0)
 	{
 		// Went empty, put on free list.
@@ -990,8 +965,8 @@ static void SplitPoly(fdivline_t *dlnp, wpoly_t *poly, /*OUT*/  wpoly_t *frontpo
 	int32_t A_before_wrap, B_after_wrap;
 #endif
 	divline_e dle;
-	div_result_t A, B;  // dividing points
-	div_result_t *result;
+	div_result_t A = {}, B = {};  // dividing points
+	div_result_t *result = NULL;
 
 #ifdef DEBUG_TRACE
 	if (trigger_trace)
@@ -1536,7 +1511,7 @@ static dboolean apply_seg_chains(wpoly_t *poly)
 #endif
 
 #ifdef SEG_CHAIN_2
-		if (! sctp->loose1 )
+		if (! sctp->loose1)
 #endif
 		{
 			// Find original crossing point.
@@ -1548,7 +1523,7 @@ static dboolean apply_seg_chains(wpoly_t *poly)
 		}
 
 #ifdef SEG_CHAIN_2
-		if (! sctp->loose2 )
+		if (! sctp->loose2)
 #endif
 		{
 			// Find original crossing point.
@@ -1558,20 +1533,6 @@ static dboolean apply_seg_chains(wpoly_t *poly)
 					break;
 			}
 		}
-
-#ifdef SEG_CHAIN_2
-		if (sctp->loose1 && ! sctp->loose2 )
-		{
-		}
-
-		if (sctp->loose2 && ! sctp->loose1 )
-		{
-		}
-
-		if (sctp->loose1 && sctp->loose2 )
-		{
-		}
-#endif
 
 		if ((i1 < numpts) && (i2 < numpts))
 		{
@@ -1585,7 +1546,7 @@ static dboolean apply_seg_chains(wpoly_t *poly)
 			if (n < 0)
 				n += numpts;
 
-			wpoly_init_alloc(sctp->num_seg + 1 + n, & comb_poly);
+			wpoly_init_alloc(sctp->num_seg + 1 + n, &comb_poly);
 #ifdef DEBUG_TRACE
 			comb_poly.id3 = poly->id2;
 			comb_poly.id2 = poly->id1;
@@ -1607,7 +1568,7 @@ static dboolean apply_seg_chains(wpoly_t *poly)
 			if (n > 0)
 			{
 				// Save i2 to i1, which starts after rv2, to the comb_poly.
-				wpoly_append(poly, i2, n, /*OUT*/ & comb_poly);
+				wpoly_append(poly, i2, n, /*OUT*/ &comb_poly);
 			}
 
 			wpoly_move(&comb_poly, /*OUT*/ poly);  // empty comb_poly
@@ -1736,7 +1697,8 @@ static void CutOutSubsecPoly(int32_t ssindex, /*INOUT*/ wpoly_t* poly)
 			// the same vertex.  It is NULL for DVL_mid.
 			// When dividing point is at a vertex, is found at next segment too.
 			if (B.vertex  // ( dle == DVL_v1 || dle == DVL_v2 )
-				&& B.vertex == A.vertex )  continue;
+				&& B.vertex == A.vertex)
+				continue;
 
 			// Split at B
 			// Dependent upon dle, setup in fracdivline.
@@ -2084,7 +2046,6 @@ static void HWR_WalkBSPNode(int32_t bspnum, wpoly_t* poly, uint16_t *leafnode, f
 			trigger_trace = 1;
 		}
 #endif
-
 		HWR_SubsecPoly(subsecnum, poly);
 
 		// Add the poly points into the bounding box.
@@ -2094,7 +2055,6 @@ static void HWR_WalkBSPNode(int32_t bspnum, wpoly_t* poly, uint16_t *leafnode, f
 			pt = poly->ppts[i];
 			M_AddToBox(bbox, (fixed_t)(pt->x * FRACUNIT), (fixed_t)(pt->y * FRACUNIT));
 		}
-
 #ifdef POLYTILE
 		polytile_remove(poly);
 #endif
@@ -2103,12 +2063,10 @@ static void HWR_WalkBSPNode(int32_t bspnum, wpoly_t* poly, uint16_t *leafnode, f
 #ifdef POLYTILE
 		polytile_enter(&wpoly_subsectors[subsecnum]);
 #endif
-
 #ifdef DEBUG_TRACE
 		if (trigger_trace == 1)  // only turn off specifc subsector traces
 			trigger_trace = 0;
 #endif
-
 #ifdef HWR_LOADING_SCREEN
 		//Hurdler: implement a loading status
 		if (ls_count-- <= 0)
@@ -2152,7 +2110,6 @@ static void HWR_WalkBSPNode(int32_t bspnum, wpoly_t* poly, uint16_t *leafnode, f
 			CONS_Debug(DBG_RENDER, "BSP-FRONT %i:\n", frontpoly.id1);
 		}
 #endif
-
 		HWR_WalkBSPNode(bsp->children[0], &frontpoly, &bsp->children[0], bsp->bbox[0]);
 
 		// copy child bbox
@@ -2166,7 +2123,6 @@ static void HWR_WalkBSPNode(int32_t bspnum, wpoly_t* poly, uint16_t *leafnode, f
 			CONS_Debug(DBG_RENDER, "BSP-FRONT %i EMPTY:\n", backpoly.id1);
 		}
 #endif
-
 		// [WDJ] Having no front poly is as likely as no back poly, since
 		// logic in Split Poly was changed to check poly direction.
 		// I_Error ("HWR_WalkBSPNode: no front poly, bspnum= %d\n", bspnum); // I_SoftError
@@ -2319,12 +2275,12 @@ static int num_T_vertex_fixed;
 
 // A structure to pass in BSP recursion, reducing it to one parameter.
 typedef struct {
-   fixed_t max_x, min_x, max_y, min_y;
-   wpoly_t * poly;  // our poly
-   polyvertex_t * pt;  // T-split vertex
-   polyvertex_t * before, * after;  // shared vertex before and after it
-   int our_secnum, find_secnum;  // sectors
-   int pt_index;
+	fixed_t max_x, min_x, max_y, min_y;
+	wpoly_t *poly;     // our poly
+	polyvertex_t *pt;  // T-split vertex
+	polyvertex_t *before, *after;   // shared vertex before and after it
+	//int our_secnum, find_secnum;  // sectors
+	int pt_index;
 } split_T_t;
 
 // Dist 0.4999 cures HOM in Freedoom map09
@@ -2341,6 +2297,7 @@ static void SearchSegInBSP(int32_t bspnum, split_T_t * stp)
 	const fixed_t maxy = stp->max_y;
 	const fixed_t maxx = stp->max_x;
 	const fixed_t miny = stp->min_y;
+	const fixed_t minx = stp->min_x;
 
 	for (;;)
 	{
@@ -2348,27 +2305,22 @@ static void SearchSegInBSP(int32_t bspnum, split_T_t * stp)
 			goto got_subsector;
 
 		const node_t  *node = &nodes[bspnum];
-		const fixed_t *bbox0 = nodes[bspnum].bbox[0];
-
-		const boolean left =
-			((bbox0[BOXBOTTOM] <= maxy) &
-			 (bbox0[BOXTOP]    >= miny) &
-			 (bbox0[BOXLEFT]   <= maxx) &
-			 (bbox0[BOXRIGHT]  >= miny));
+		const fixed_t *bbox0 = node->bbox[0];
+		const fixed_t *bbox1 = node->bbox[1];
 
 		// Not a subsector, visit left and right children.
-		if (left)
+		if (   (bbox0[BOXBOTTOM] <= maxy)
+			&& (bbox0[BOXTOP   ] >= miny)
+			&& (bbox0[BOXLEFT  ] <= maxx)
+			&& (bbox0[BOXRIGHT ] >= minx)
+			)
 			SearchSegInBSP(node->children[0], stp);
 
-		const fixed_t *bbox1 = nodes[bspnum].bbox[1];
-
-		const boolean right =
-			((bbox1[BOXBOTTOM] <= maxy) &
-			 (bbox1[BOXTOP]    >= miny) &
-			 (bbox1[BOXLEFT]   <= maxx) &
-			 (bbox1[BOXRIGHT]  >= miny));
-
-		if (!right)
+		if (! ((bbox1[BOXBOTTOM] <= maxy)
+			&& (bbox1[BOXTOP   ] >= miny)
+			&& (bbox1[BOXLEFT  ] <= maxx)
+			&& (bbox1[BOXRIGHT ] >= minx)
+			) )
 			break;
 
 		// Tail recursion within loop.
@@ -2383,7 +2335,7 @@ got_subsector:
 		return;
 
 	// For every subsector polygon different than poly
-	wq = & wpoly_subsectors[subsecnum];
+	wq = &wpoly_subsectors[subsecnum];
 	if (wq == stp->poly || !wq)
 		return;
 
@@ -2540,7 +2492,7 @@ static sector_t *find_poly_sector(wpoly_t *ssp)
 	// But a linedef may be much closer along the other axis, so we test along both X and Y.
 	for (k = 0; k < numlines; k++)
 	{
-		line_t *lp = & lines[k];
+		line_t *lp = &lines[k];
 
 		if (lp->frontsector == lp->backsector)
 			continue;  // self-ref lines lie.
@@ -2658,7 +2610,7 @@ static void AdjustSegs(void)
 	// for all segs in all sectors
 	for (ssnum = 0; ssnum < numsubsectors; ssnum++)
 	{
-		wp = & wpoly_subsectors[ssnum];
+		wp = &wpoly_subsectors[ssnum];
 		if (wp->numpts == 0)
 			continue;
 
@@ -2853,7 +2805,7 @@ static void finalize_polygons(void)
 	// For all segs in all sectors.
 	for (ssnum = 0; ssnum < numsubsectors; ssnum++)
 	{
-		wpoly = & wpoly_subsectors[ssnum];
+		wpoly = &wpoly_subsectors[ssnum];
 
 #ifdef DEBUG_TRACE
 		if (trigger_subsector == 0xFFFFFFF2 || trigger_subsector == ssnum)
@@ -2866,7 +2818,7 @@ static void finalize_polygons(void)
 		poly_subsectors[ssnum].planepoly = dpoly;
 		pv = dpoly->pts;
 
-		for ( ps = 0; ps < wpoly->numpts; ps++ )
+		for (ps = 0; ps < wpoly->numpts; ps++)
 		{
 			*pv++ = *(wpoly->ppts[ps]);  // copy of each vertex
 		}
