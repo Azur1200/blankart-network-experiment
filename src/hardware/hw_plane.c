@@ -40,7 +40,7 @@ static FUINT HWR_CalcSlopeLight(FUINT lightnum, pslope_t *slope, const sector_t 
 // -----------------+
 // HWR_RenderPlane  : Render a floor or ceiling convex polygon
 // -----------------+
-void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, dboolean isceiling, fixed_t fixedheight, FBITFIELD PolyFlags, int32_t lightlevel, levelflat_t *levelflat, sector_t *FOFsector, uint8_t alpha, extracolormap_t *planecolormap)
+void HWR_RenderPlane(subsector_t *subsector, poly_subsector_t *xsub, dboolean isceiling, fixed_t fixedheight, FBITFIELD PolyFlags, int32_t lightlevel, levelflat_t *levelflat, sector_t *FOFsector, uint8_t alpha, extracolormap_t *planecolormap)
 {
 	polyvertex_t *  pv;
 	float           height; //constant y for all points on the convex flat polygon

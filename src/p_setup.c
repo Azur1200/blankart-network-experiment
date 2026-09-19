@@ -9412,7 +9412,6 @@ dboolean P_LoadLevel(dboolean fromnetsave, dboolean reloadinggamestate)
 	// Load the ccheckpoints and waypoints please!
 	if (gametypes[gametype]->rules & GTR_CIRCUIT && gamestate != GS_TITLESCREEN)
 	{
-
 		if ((K_SetupWaypointList() == false))
 		{
 			if (!K_UsingLegacyCheckpoints())
@@ -9429,8 +9428,8 @@ dboolean P_LoadLevel(dboolean fromnetsave, dboolean reloadinggamestate)
 #ifdef HWRENDER // not win32 only 19990829 by Kin
 	gl_maploaded = false;
 
-	// Lactozilla: Free extrasubsectors regardless of renderer.
-	HWR_FreeExtraSubsectors();
+	// Lactozilla: Free poly_subsectors regardless of renderer.
+	HWR_FreePolyPool();
 
 	// Create plane polygons.
 	if (rendermode == render_opengl)
