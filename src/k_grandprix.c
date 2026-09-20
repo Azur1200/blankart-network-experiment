@@ -120,18 +120,18 @@ void K_InitGrandPrixBots(void)
 	const uint16_t defaultbotskin = K_BotDefaultSkin();
 
 	const uint8_t startingdifficulty = K_BotStartingDifficulty(grandprixinfo.gamespeed);
-	uint8_t difficultylevels[MAXGPPLAYERS];
+	uint8_t difficultylevels[MAXGPPLAYERS] = {0};
 
 	uint8_t playercount = 8;
 	uint8_t wantedbots = 0;
 
 	uint8_t numplayers = 0;
-	uint8_t competitors[MAXSPLITSCREENPLAYERS];
+	uint8_t competitors[MAXSPLITSCREENPLAYERS] = {0};
 
 	uint16_t usableskins, skincount = numskins;
-	uint16_t grabskins[MAXSKINS+1];
+	uint16_t grabskins[MAXSKINS+1] = {0};
 
-	uint16_t botskinlist[MAXGPPLAYERS];
+	uint16_t botskinlist[MAXGPPLAYERS] = {0};
 	uint16_t botskinlistpos = 0;
 
 	uint8_t newplayernum = 0;
@@ -255,6 +255,10 @@ void K_InitGrandPrixBots(void)
 			{
 				uint16_t index = P_RandomKey(PR_BOTS, numskins);
 				skinnum = grabskins[index];
+
+				if (skinnum == MAXSKINS)
+					skinnum = defaultbotskin;
+
 				if (usableskins >= K_GetGPPlayerCount(1))
 				{
 					grabskins[index] = grabskins[--usableskins];
