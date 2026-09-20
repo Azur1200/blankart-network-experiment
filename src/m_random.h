@@ -49,6 +49,7 @@ extern "C" {
 	X(PLAYERSTARTS) /* Player starts */ \
 	X(RESTAT) /* Restat system */ \
 	X(BOTS) \
+	X(SHUFFLE) /* Permutative list shuffle */ \
 	X(DEADFLING) \
 	\
 	X(RULESCRAMBLE) \
