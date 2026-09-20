@@ -4623,6 +4623,8 @@ mapnum_t G_GetFirstMapOfGametype(uint8_t pgametype)
 				continue;
 			if (mapheaderinfo[mapnum]->menuflags & LF2_HIDEINMENU)
 				continue;
+			if (mapheaderinfo[mapnum]->menuflags & LF2_HIDEINVOTE)
+				continue;
 			break;
 		}
 	}
@@ -4647,6 +4649,8 @@ static int32_t TOLMaps(uint8_t pgametype)
 		if (!(mapheaderinfo[i]->typeoflevel & tolflag))
 			continue;
 		if (mapheaderinfo[i]->menuflags & LF2_HIDEINMENU) // Don't include Map Hell
+			continue;
+		if (mapheaderinfo[i]->menuflags & LF2_HIDEINVOTE)
 			continue;
 		num++;
 	}
@@ -4750,6 +4754,12 @@ tryAgain:
 			|| (usehellmaps && usehellmaps != ((mapheaderinfo[i]->menuflags & LF2_HIDEINMENU) == LF2_HIDEINMENU)))
 		{
 			// THIS IS BAD
+			continue;
+		}
+
+		if (mapheaderinfo[i]->menuflags & LF2_HIDEINVOTE)
+		{
+			// Sorry no voting pal.
 			continue;
 		}
 
@@ -4873,6 +4883,12 @@ void G_AddMapToBuffer(mapnum_t map)
 		}
 
 		if (mapheaderinfo[i]->menuflags & LF2_HIDEINMENU)
+		{
+			// Don't include hidden
+			continue;
+		}
+
+		if (mapheaderinfo[i]->menuflags & LF2_HIDEINVOTE)
 		{
 			// Don't include hidden
 			continue;
@@ -5278,7 +5294,8 @@ mapnum_t G_CheckNextMap(dboolean noadvancemap)
 			if (!mapheaderinfo[cm]
 				|| mapheaderinfo[cm]->lumpnum == LUMPERROR
 				|| !(mapheaderinfo[cm]->typeoflevel & tolflag)
-				|| (mapheaderinfo[cm]->menuflags & LF2_HIDEINMENU))
+				|| (mapheaderinfo[cm]->menuflags & LF2_HIDEINMENU)
+				|| (mapheaderinfo[cm]->menuflags & LF2_HIDEINVOTE))
 			{
 				continue;
 			}

@@ -471,6 +471,7 @@ struct mapheader_t
 #define LF2_HIDEINSTATS   (1<<1) ///< Hide in the statistics screen
 #define LF2_NOTIMEATTACK  (1<<2) ///< Hide this map in Time Attack modes
 #define LF2_VISITNEEDED   (1<<3) ///< Not available in Time Attack modes until you visit the level
+#define LF2_HIDEINVOTE    (1<<4) ///< Hide in the vote screen
 
 extern mapheader_t** mapheaderinfo;
 extern int32_t nummapheaders, mapallocsize;

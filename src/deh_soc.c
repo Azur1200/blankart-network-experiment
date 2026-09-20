@@ -1441,6 +1441,13 @@ void readlevelheader(MYFILE *f, char * name)
 				else
 					mapheaderinfo[num]->menuflags |= LF2_VISITNEEDED;
 			}
+			else if (fastcmp(word, "HIDEINVOTE"))
+			{
+				if (i || word2[0] == 'T' || word2[0] == 'Y')
+					mapheaderinfo[num]->menuflags |= LF2_HIDEINVOTE;
+				else
+					mapheaderinfo[num]->menuflags &= ~LF2_HIDEINVOTE;
+			}
 			else if (fastcmp(word, "GRAVITY"))
 				mapheaderinfo[num]->gravity = FLOAT_TO_FIXED(atof(word2));
 			else if (fastcmp(word, "WALLTRANSFER") || fastcmp(word, "WALLRUNNING"))

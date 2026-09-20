@@ -8087,7 +8087,7 @@ void MP_StatsRecords(menupanelinst_t *pi)
 		if (!mapheaderinfo[i] || mapheaderinfo[i]->lvlttl[0] == '\0')
 			continue;
 
-		if (mapheaderinfo[i]->menuflags & (LF2_HIDEINSTATS|LF2_HIDEINMENU))
+		if (mapheaderinfo[i]->menuflags & (LF2_HIDEINSTATS|LF2_HIDEINMENU|LF2_HIDEINVOTE))
 			continue;
 
 		if (M_MapLocked(i+1)) // !mapvisited[i]
