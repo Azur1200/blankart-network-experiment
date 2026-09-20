@@ -271,7 +271,16 @@ void K_InitGrandPrixBots(void)
 
 	for (i = 0; i < wantedbots; i++)
 	{
-		if (!K_AddBot(botskinlist[i], difficultylevels[i], BOT_STYLE_NORMAL, &newplayernum))
+		uint16_t this_skin = botskinlist[i];
+
+		if (this_skin >= numskins)
+		{
+			// SOMEHOW fed the bot adder an out-of-range skin
+			I_Error("K_InitGrandPrixBots: received garbage skin number %d (acceptable range is 0 to %d)\n", this_skin, (numskins - 1));
+			break;
+		}
+
+		if (!K_AddBot(this_skin, difficultylevels[i], BOT_STYLE_NORMAL, &newplayernum))
 		{
 			break;
 		}

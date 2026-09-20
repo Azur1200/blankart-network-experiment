@@ -150,6 +150,13 @@ void K_SetNameForBot(uint8_t newplayernum, const char *realname)
 --------------------------------------------------*/
 void K_SetBot(uint8_t newplayernum, uint16_t skinnum, uint8_t difficulty, botStyle_e style)
 {
+	// Double check our skin first
+	if ((skinnum >= numskins) || (skinnum == MAXSKINS))
+	{
+		I_Error("K_SetBot: received garbage skin number %d (acceptable range is 0 to %d)\n", skinnum, (numskins - 1));
+		return;
+	}
+
 	CONS_Debug(DBG_NETPLAY, "addbot: %d\n", newplayernum);
 
 	G_AddPlayer(newplayernum, newplayernum);
