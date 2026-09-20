@@ -49,7 +49,6 @@ extern "C" {
 	X(PLAYERSTARTS) /* Player starts */ \
 	X(RESTAT) /* Restat system */ \
 	X(BOTS) \
-	X(SHUFFLE) /* Permutative list shuffle */ \
 	X(DEADFLING) \
 	\
 	X(RULESCRAMBLE) \
@@ -91,7 +90,8 @@ extern "C" {
 	X(LUA_3) \
 	X(LUA_4) \
 	X(LUA_5) \
-	X(LUA_6)
+	X(LUA_6) \
+	X(SHUFFLE) /* Permutative list shuffle */ \
 
 //#define DEBUGRANDOM
 
