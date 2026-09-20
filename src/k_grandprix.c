@@ -253,7 +253,7 @@ void K_InitGrandPrixBots(void)
 
 			if (usableskins > 0)
 			{
-				uint16_t index = P_RandomKey(PR_BOTS, numskins);
+				uint16_t index = P_RandomKey(PR_BOTS, usableskins);
 				skinnum = grabskins[index];
 
 				if (skinnum == MAXSKINS)
