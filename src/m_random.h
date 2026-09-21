@@ -109,6 +109,7 @@ typedef enum
 	RNGSEEDS(ENUMITEM)
 
 	PRLASTLUACLASS = PR_LUA_6,
+	PR_FIRSTAFTERLUA = PR_SHUFFLE,
 
 	// Place new ones at the end for demo compatibility.
 
