@@ -46,6 +46,7 @@
 #include "../z_zone.h"
 #include "../r_draw.h"
 #include "../k_hud.h"
+#include "../k_hud_message.h"
 #include "../r_fps.h"
 #include "../m_misc.h"
 #include "../f_finale.h"
@@ -4486,6 +4487,52 @@ bool CallFunc_GetThingUserProperty(ACSVM::Thread *thread, const ACSVM::Word *arg
 	}
 
 	thread->dataStk.push(ret);
+	return false;
+}
+
+bool CallFunc_AddMessage(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC)
+{
+	ACSVM::MapScope *map = thread->scopeMap;
+
+	K_AddMessage(map->getString(argV[0])->str, argV[1], argV[2]);
+
+	return false;
+}
+
+bool CallFunc_AddMessageForPlayer(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC)
+{
+	ACSVM::MapScope *map = thread->scopeMap;
+
+	auto info = &static_cast<Thread *>(thread)->info;
+
+	if ((info != NULL)
+		&& (info->mo != NULL && P_MobjWasRemoved(info->mo) == false)
+		&& (info->mo->player != NULL))
+	{
+		K_AddMessageForPlayer(info->mo->player, map->getString(argV[0])->str, argV[1], argV[2]);
+	}
+
+	return false;
+}
+
+bool CallFunc_ClearPersistentMessages(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC)
+{
+	K_ClearPersistentMessages();
+
+	return false;
+}
+
+bool CallFunc_ClearPersistentMessageForPlayer(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC)
+{
+	auto info = &static_cast<Thread *>(thread)->info;
+
+	if ((info != NULL)
+		&& (info->mo != NULL && P_MobjWasRemoved(info->mo) == false)
+		&& (info->mo->player != NULL))
+	{
+		K_ClearPersistentMessageForPlayer(info->mo->player);
+	}
+
 	return false;
 }
 

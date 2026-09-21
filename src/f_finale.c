@@ -936,6 +936,7 @@ const char *blancredits[] = {
 	"Sally \"TehRealSalt\" Cochenour", // Map Buffer rewrite, Voting rewrites
 	"\"Jartha\"", // Various bugfixes, RRID, Virtual Keyboard
 	"\"Lat'\"", // Virtual Keyboard
+	"\"Jisk\"", // K_AddMessage Lua exposure
 	"",
 	"\1Item Design",
 	"\"NepDisk\"",

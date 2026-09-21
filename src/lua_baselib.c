@@ -33,6 +33,7 @@
 #include "k_collide.h"
 #include "k_color.h"
 #include "k_hud.h"
+#include "k_hud_message.h"
 #include "k_waypoint.h"
 #include "k_items.h"
 #include "k_cluster.hpp"
@@ -3746,6 +3747,54 @@ static int lib_gMapIsSafe(lua_State *L)
 	//HUDSAFE
 	lua_pushdboolean(L, G_MapIsSafe(map));
 	return 1;
+}
+
+// K_HUD_MESSAGE
+////////////
+
+static int lib_kAddMessage(lua_State *L)
+{
+	const char *msg = luaL_checkstring(L, 1);
+	dboolean interrupt = lua_optdboolean(L, 2);
+	dboolean persist = lua_optdboolean(L, 3);
+	INLEVEL
+	if (msg == NULL)
+		return luaL_error(L, "argument #1 not given (expected string)");
+	K_AddMessage(msg, interrupt, persist);
+	return 0;
+}
+
+static int lib_kAddMessageForPlayer(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	const char *msg = luaL_checkstring(L, 2);
+	dboolean interrupt = lua_optdboolean(L, 3);
+	dboolean persist = lua_optdboolean(L, 4);
+	INLEVEL
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	if (msg == NULL)
+		return luaL_error(L, "argument #2 not given (expected string)");
+	K_AddMessageForPlayer(player, msg, interrupt, persist);
+	return 0;
+}
+
+static int lib_kClearPersistentMessages(lua_State *L)
+{
+	INLEVEL
+	K_ClearPersistentMessages();
+	lua_pushnil(L);
+	return 0;
+}
+
+static int lib_kClearPersistentMessageForPlayer(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	INLEVEL
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+	K_ClearPersistentMessageForPlayer(player);
+	return 0;
 }
 
 // K_KART

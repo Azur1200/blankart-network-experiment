@@ -3677,8 +3677,6 @@ static void M_DrawSliderCursor(fixed_t x, fixed_t y, int32_t vflags, consvar_t *
 	V_DrawSciencePatch(x - 4*FRACUNIT + (SLIDER_RANGE+4)*range, y, vflags, W_CachePatchName("M_SLIDEC", PU_CACHE), FRACUNIT);
 }
 
-static void M_DrawSticker(int32_t x, int32_t y, int32_t width, int32_t flags, dboolean isSmall);
-
 static fixed_t M_GetAlignment(const menuitempart_t *part, fixed_t x, fixed_t width)
 {
 	switch (part->align)
@@ -3805,7 +3803,7 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 			width = M_GetAlignment(part, x, widthfunc(string, -1, vflags)*FRACUNIT);
 
 			//if (part->flags & IT_STICKER)
-				//M_DrawSticker((x - width)/FRACUNIT, y/FRACUNIT + 2, widthfunc(string, -1, vflags), vflags & ~V_FLIP, true);
+				//K_DrawSticker((x - width)/FRACUNIT, y/FRACUNIT + 2, widthfunc(string, -1, vflags), vflags & ~V_FLIP, true);
 
 			V_DrawStringScaled(x - width + part->xofs, y + part->yofs, scale, FRACUNIT, FRACUNIT, colorflag|vflags, part->font, string);
 			retwidth = max(retwidth, width);
@@ -11686,28 +11684,6 @@ int32_t MR_QuitSRB2(int32_t choice)
 	return true;
 }
 
-// (this goes in k_hud.c when merged into v2)
-static void M_DrawSticker(int32_t x, int32_t y, int32_t width, int32_t flags, dboolean isSmall)
-{
-	patch_t *stickerEnd;
-	int32_t height;
-
-	if (isSmall == true)
-	{
-		stickerEnd = W_CachePatchName("K_STIKE2", PU_CACHE);
-		height = 6;
-	}
-	else
-	{
-		stickerEnd = W_CachePatchName("K_STIKEN", PU_CACHE);
-		height = 11;
-	}
-
-	V_DrawFixedPatch(x*FRACUNIT, y*FRACUNIT, FRACUNIT, flags, stickerEnd, NULL);
-	V_DrawFill(x, y, width, height, 24|flags);
-	V_DrawFixedPatch((x + width)*FRACUNIT, y*FRACUNIT, FRACUNIT, flags|V_FLIP, stickerEnd, NULL);
-}
-
 #ifdef HAVE_DISCORDRPC
 static const tic_t confirmLength = 3*TICRATE/4;
 static tic_t confirmDelay = 0;
@@ -11839,7 +11815,7 @@ void MD_DrawDiscordRequests(menupanelinst_t *pi)
 	const char *name = M_GetDiscordName(curRequest);
 	const int32_t flags = V_ALLOWLOWERCASE|V_6WIDTHSPACE;
 
-	M_DrawSticker(x + (slide * 32), y - 1, V_ThinStringWidth(name, flags), 0, false);
+	K_DrawSticker(x + (slide * 32), y - 1, V_ThinStringWidth(name, flags), 0, false);
 	V_DrawThinString(x + (slide * 32), y, flags|V_YELLOWMAP, name);
 
 	y -= 18;
@@ -11852,7 +11828,7 @@ void MD_DrawDiscordRequests(menupanelinst_t *pi)
 
 		name = M_GetDiscordName(curRequest);
 
-		M_DrawSticker(x, y - 1 + ySlide, V_ThinStringWidth(name, flags), 0, false);
+		K_DrawSticker(x, y - 1 + ySlide, V_ThinStringWidth(name, flags), 0, false);
 		V_DrawThinString(x, y + ySlide, flags, name);
 
 		y -= 12;

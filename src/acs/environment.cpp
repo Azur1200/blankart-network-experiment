@@ -208,6 +208,11 @@ Environment::Environment()
 	addFuncDataACS0( 604, addCallFunc(CallFunc_DialogueWaitText));
 	addFuncDataACS0( 605, addCallFunc(CallFunc_DialogueAutoDismiss));
 
+	addFuncDataACS0( 700, addCallFunc(CallFunc_AddMessage));
+	addFuncDataACS0( 701, addCallFunc(CallFunc_AddMessageForPlayer));
+	addFuncDataACS0( 702, addCallFunc(CallFunc_ClearPersistentMessages));
+	addFuncDataACS0( 703, addCallFunc(CallFunc_ClearPersistentMessageForPlayer));
+
 	addFuncDataACS0( 800, addCallFunc(CallFunc_Tan));
 	addFuncDataACS0( 801, addCallFunc(CallFunc_Arcsin));
 	addFuncDataACS0( 802, addCallFunc(CallFunc_Arccos));

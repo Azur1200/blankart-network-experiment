@@ -52,6 +52,8 @@
 
 #include "radio_finish.h"
 
+#include "k_hud_message.h"
+
 #define NUMPOSNUMS 10
 #define NUMPOSFRAMES 7 // White, three blues, three reds
 #define NUMWINFRAMES 6 // Red, yellow, green, cyan, blue, purple
@@ -7275,6 +7277,7 @@ void K_drawKartHUD(void)
 	K_DrawClusterDebugger();
 	K_DrawProgressDebugger();
 	K_DrawDirectorDebugger();
+	K_DrawMessageFeed();
 
 	if (stplyrnum == 0)
 		K_DrawBotDebugger(stplyr);
@@ -7681,4 +7684,25 @@ void K_DrawFlamometer(void)
 
 	// front
 	V_DrawFixedPatch(basex, basey, FRACUNIT, flags, kp_flamometer[K_UseColorHud() ? 5 : 3], colormap);
+}
+
+void K_DrawSticker(int32_t x, int32_t y, int32_t width, int32_t flags, dboolean isSmall)
+{
+	patch_t *stickerEnd;
+	int32_t height;
+
+	if (isSmall == true)
+	{
+		stickerEnd = W_CachePatchName("K_STIKE2", PU_CACHE);
+		height = 6;
+	}
+	else
+	{
+		stickerEnd = W_CachePatchName("K_STIKEN", PU_CACHE);
+		height = 11;
+	}
+
+	V_DrawFixedPatch(x*FRACUNIT, y*FRACUNIT, FRACUNIT, flags, stickerEnd, NULL);
+	V_DrawFill(x, y, width, height, 24|flags);
+	V_DrawFixedPatch((x + width)*FRACUNIT, y*FRACUNIT, FRACUNIT, flags|V_FLIP, stickerEnd, NULL);
 }

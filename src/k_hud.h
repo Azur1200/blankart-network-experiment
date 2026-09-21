@@ -205,6 +205,8 @@ dboolean K_UseHighResPortraits(void);
 extern patch_t *kp_splitlapflag;
 extern consvar_t cv_show_riders_finish_ticker;
 
+void K_DrawSticker(int32_t x, int32_t y, int32_t width, int32_t flags, dboolean isSmall);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

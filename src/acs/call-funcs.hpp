@@ -142,6 +142,11 @@ bool CallFunc_GetSideUserProperty(ACSVM::Thread *thread, const ACSVM::Word *argV
 bool CallFunc_GetSectorUserProperty(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC);
 bool CallFunc_GetThingUserProperty(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC);
 
+bool CallFunc_AddMessage(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC);
+bool CallFunc_AddMessageForPlayer(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC);
+bool CallFunc_ClearPersistentMessages(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC);
+bool CallFunc_ClearPersistentMessageForPlayer(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC);
+
 // Use to prevent scripts from crashing if missing functions are called
 bool CallFunc_PlaceHolder(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC);
 

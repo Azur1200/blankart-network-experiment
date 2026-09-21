@@ -148,6 +148,7 @@ add_executable(BLANKART MACOSX_BUNDLE WIN32
 	k_boss.c
 	k_hud.c
 	k_hud_track.cpp
+	k_hud_message.cpp
 	k_terrain.c
 	k_brightmap.c
 	k_director.c

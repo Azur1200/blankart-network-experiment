@@ -434,7 +434,7 @@ void Dialogue::Draw(void)
 		drawer
 			.xy(speakernamewidthoffset + speakernameedge, -39-9)
 			.font(srb2::Draw::Font::kThin)
-			.flags(V_ALLOWLOWERCASE)
+			.flags(V_ALLOWLOWERCASE|V_6WIDTHSPACE)
 			.text(speakername);
 
 		speakernameedge -= 5;
@@ -455,7 +455,7 @@ void Dialogue::Draw(void)
 	drawer
 		.xy(10 - BASEVIDWIDTH, -3-32)
 		.font(srb2::Draw::Font::kConsole)
-		.flags(V_ALLOWLOWERCASE)
+		.flags(V_ALLOWLOWERCASE|V_6WIDTHSPACE)
 		.text( typewriter.text.c_str() );
 
 	if (Dismissable())
