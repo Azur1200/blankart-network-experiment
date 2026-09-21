@@ -845,6 +845,16 @@ void V_ClearClipRect(void)
 	cliprect.enabled = false;
 }
 
+void V_SaveClipRect(cliprect_t *copy)
+{
+	*copy = cliprect;
+}
+
+void V_RestoreClipRect(const cliprect_t *copy)
+{
+	cliprect = *copy;
+}
+
 static uint8_t hudplusalpha[11]  = { 10,  8,  6,  4,  2,  0,  0,  0,  0,  0,  0};
 static uint8_t hudminusalpha[11] = { 10,  9,  9,  8,  8,  7,  7,  6,  6,  5,  5};
 
