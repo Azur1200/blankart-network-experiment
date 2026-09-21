@@ -250,6 +250,6 @@ void K_DrawMessageFeed(void)
 		uint16_t sw = text.width();
 
 		K_DrawSticker(x - sw/2, y, sw, 0, true);
-		Draw(x, y+shift).align(Draw::Align::kCenter).text(text);
+		Draw(x, y+shift).align(Draw::Align::kCenter).flags(V_ALLOWLOWERCASE|V_6WIDTHSPACE).text(text);
 	}
 }
