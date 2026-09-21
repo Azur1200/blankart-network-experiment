@@ -208,16 +208,16 @@ Environment::Environment()
 	addFuncDataACS0( 604, addCallFunc(CallFunc_DialogueWaitText));
 	addFuncDataACS0( 605, addCallFunc(CallFunc_DialogueAutoDismiss));
 
-	addFuncDataACS0( 700, addCallFunc(CallFunc_Tan));
-	addFuncDataACS0( 701, addCallFunc(CallFunc_Arcsin));
-	addFuncDataACS0( 702, addCallFunc(CallFunc_Arccos));
-	addFuncDataACS0( 703, addCallFunc(CallFunc_Hypot));
-	addFuncDataACS0( 704, addCallFunc(CallFunc_Sqrt));
-	addFuncDataACS0( 705, addCallFunc(CallFunc_Floor));
-	addFuncDataACS0( 706, addCallFunc(CallFunc_Ceil));
-	addFuncDataACS0( 707, addCallFunc(CallFunc_Round));
-	addFuncDataACS0( 710, addCallFunc(CallFunc_InvAngle));
-	addFuncDataACS0( 711, addCallFunc(CallFunc_OppositeColor));
+	addFuncDataACS0( 800, addCallFunc(CallFunc_Tan));
+	addFuncDataACS0( 801, addCallFunc(CallFunc_Arcsin));
+	addFuncDataACS0( 802, addCallFunc(CallFunc_Arccos));
+	addFuncDataACS0( 803, addCallFunc(CallFunc_Hypot));
+	addFuncDataACS0( 804, addCallFunc(CallFunc_Sqrt));
+	addFuncDataACS0( 805, addCallFunc(CallFunc_Floor));
+	addFuncDataACS0( 806, addCallFunc(CallFunc_Ceil));
+	addFuncDataACS0( 807, addCallFunc(CallFunc_Round));
+	addFuncDataACS0( 810, addCallFunc(CallFunc_InvAngle));
+	addFuncDataACS0( 811, addCallFunc(CallFunc_OppositeColor));
 }
 
 ACSVM::Thread *Environment::allocThread()
