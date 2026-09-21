@@ -150,13 +150,11 @@ void Dialogue::Init(void)
 			return std::pair {std::string_view {name}, srb2::Draw::cache_patch(name)};
 		};
 		patchCache = {
-			cache("TUTDIAGA"),
-			cache("TUTDIAGB"),
-			cache("TUTDIAGC"),
-			cache("TUTDIAGD"),
-			cache("TUTDIAGF"),
-			cache("TUTDIAGE"),
-			cache("TUTDIAG2"),
+			cache("TBOXBACK"),
+			cache("TBOXFRME"),
+			cache("TBOXTALK"),
+			cache("TBOXARRW"),
+			cache("TBOXTARW"),
 		};
 	}
 
@@ -348,11 +346,13 @@ void Dialogue::Draw(void)
 		return;
 	}
 
-	const uint8_t bgcol = 235, speakerhilicol = 240;
+	const uint8_t bgcol = skincolors[K_GetHudColor()].ramp[15], speakerhilicol = skincolors[K_GetHudColor()].ramp[14];
 
 	const fixed_t height = 78 * FRACUNIT;
 
 	int32_t speakernameedge = -6;
+
+	uint8_t *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 
 	srb2::Draw drawer =
 		srb2::Draw(
@@ -366,17 +366,20 @@ void Dialogue::Draw(void)
 
 	drawer
 		.flags(speakerbgflags|V_VFLIP|V_FLIP)
-		.patch(patchCache["TUTDIAGA"]);
+		.colormap(colormap)
+		.patch(patchCache["TBOXBACK"]);
 
 	drawer
 		.flags(V_VFLIP|V_FLIP)
-		.patch(patchCache["TUTDIAGB"]);
+		.colormap(colormap)
+		.patch(patchCache["TBOXFRME"]);
 
 	if (portrait != nullptr)
 	{
 		drawer
 			.flags(V_VFLIP|V_FLIP)
-			.patch(patchCache["TUTDIAGC"]);
+			.colormap(colormap)
+			.patch(patchCache["TBOXTALK"]);
 
 		drawer
 			.xy(-10-32, -41-32)
@@ -388,7 +391,7 @@ void Dialogue::Draw(void)
 
 	const char *speakername = speaker.c_str();
 
-	const int32_t arrowstep = 8; // width of TUTDIAGD
+	const int32_t arrowstep = 8; // width of what was TUTDIAGD
 
 	if (speakername && speaker[0])
 	{
@@ -407,11 +410,6 @@ void Dialogue::Draw(void)
 			speakernameedge -= 3;
 			speakernamewidth += 3;
 			existingborder += 2;
-			drawer
-				.xy(speakernameedge, -36)
-				.width(2)
-				.height(3+11)
-				.fill(bgcol);
 		}
 
 		if (speakernamewidth > existingborder)
@@ -436,14 +434,10 @@ void Dialogue::Draw(void)
 		drawer
 			.xy(speakernamewidthoffset + speakernameedge, -39-9)
 			.font(srb2::Draw::Font::kThin)
+			.flags(V_ALLOWLOWERCASE)
 			.text(speakername);
 
 		speakernameedge -= 5;
-
-		drawer
-			.xy(speakernameedge, -36)
-			.flags(V_VFLIP|V_FLIP)
-			.patch(patchCache["TUTDIAGD"]);
 
 		drawer
 			.xy(speakernameedge, -36-3-11)
@@ -454,27 +448,14 @@ void Dialogue::Draw(void)
 		drawer
 			.xy(speakernameedge + 5, -36)
 			.flags(V_VFLIP|V_FLIP)
-			.patch(patchCache["TUTDIAGF"]);
+			.colormap(colormap)
+			.patch(patchCache["TBOXARRW"]);
 	}
-
-	while (speakernameedge > -142) // the left-most edge
-	{
-		speakernameedge -= arrowstep;
-
-		drawer
-			.xy(speakernameedge, -36)
-			.flags(V_VFLIP|V_FLIP)
-			.patch(patchCache["TUTDIAGD"]);
-	}
-
-	drawer
-		.xy(speakernameedge - arrowstep, -36)
-		.flags(V_VFLIP|V_FLIP)
-		.patch(patchCache["TUTDIAGE"]);
 
 	drawer
 		.xy(10 - BASEVIDWIDTH, -3-32)
 		.font(srb2::Draw::Font::kConsole)
+		.flags(V_ALLOWLOWERCASE)
 		.text( typewriter.text.c_str() );
 
 	if (Dismissable())
@@ -482,8 +463,9 @@ void Dialogue::Draw(void)
 		if (TextDone())
 		{
 			drawer
-				.xy(-14, -7-5)
-				.patch(patchCache["TUTDIAG2"]);
+				.xy(-19, -7-5)
+				.colormap(colormap)
+				.patch(patchCache["TBOXTARW"]);
 		}
 
 		auto bt_translate_press = [this]() -> std::optional<bool>

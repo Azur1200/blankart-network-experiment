@@ -76,6 +76,7 @@
 #include "acs/interface.h"
 #include "k_specialstage.h"
 #include "k_vote.h"
+#include "k_dialogue.h"
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
@@ -1277,6 +1278,8 @@ void D_ClearState(void)
 	tutorialmode = false;
 
 	P_InvalidateThinkersWithoutInit();
+
+	K_UnsetDialogue();
 
 	G_SetGamestate(GS_NULL);
 	wipegamestate = GS_NULL;

@@ -9047,6 +9047,8 @@ void P_FreeLevelState(void)
 		// Close text prompt before freeing the old level
 		F_EndTextPrompt(false, true);
 
+		K_UnsetDialogue();
+
 		ACS_InvalidateMapScope();
 
 		LUA_InvalidateLevel();
