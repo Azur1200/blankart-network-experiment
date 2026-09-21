@@ -222,6 +222,7 @@ void K_DrawMessageFeed(void)
 		Draw::TextElement text(submsg);
 
 		text.font(Draw::Font::kThin);
+		text.flags(V_ALLOWLOWERCASE|V_6WIDTHSPACE);
 
 		uint8_t x = 160;
 		uint8_t y = 10;
