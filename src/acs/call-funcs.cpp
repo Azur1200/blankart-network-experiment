@@ -740,6 +740,27 @@ bool CallFunc_CameraWait(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::
 }
 
 /*--------------------------------------------------
+	bool Dialogue_ValidCheck(ACSVM::Thread *thread)
+
+		Helper to check if the thread's dialogue
+		context is valid, initialising if not set.
+--------------------------------------------------*/
+static bool Dialogue_ValidCheck(ACSVM::Thread *thread)
+{
+	// TODO when we move away from g_dialogue
+	if (netgame)
+	{
+		return false;
+	}
+
+	auto info = &static_cast<Thread *>(thread)->info;
+	if (!info->dialogue_era)
+		info->dialogue_era = g_dialogue.GetNewEra();
+
+	return g_dialogue.EraIsValid(info->dialogue_era);
+}
+
+/*--------------------------------------------------
 	bool CallFunc_DialogueWaitDismiss(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC)
 
 		Pauses the thread until the current
@@ -750,9 +771,18 @@ bool CallFunc_DialogueWaitDismiss(ACSVM::Thread *thread, const ACSVM::Word *argV
 	(void)argV;
 	(void)argC;
 
+	if (Dialogue_ValidCheck(thread) == false)
+	{
+		return false;
+	}
+
+	g_dialogue.SetDismissable(true);
+
+	auto info = &static_cast<Thread *>(thread)->info;
+
 	thread->state = {
 		ACSVM::ThreadState::WaitTag,
-		0,
+		info->dialogue_era,
 		ACS_TAGTYPE_DIALOGUE
 	};
 
@@ -770,9 +800,18 @@ bool CallFunc_DialogueWaitText(ACSVM::Thread *thread, const ACSVM::Word *argV, A
 	(void)argV;
 	(void)argC;
 
+	if (Dialogue_ValidCheck(thread) == false)
+	{
+		return false;
+	}
+
+	g_dialogue.SetDismissable(false);
+
+	auto info = &static_cast<Thread *>(thread)->info;
+
 	thread->state = {
 		ACSVM::ThreadState::WaitTag,
-		1,
+		info->dialogue_era,
 		ACS_TAGTYPE_DIALOGUE
 	};
 
@@ -2329,6 +2368,99 @@ bool CallFunc_AddBot(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word
 }
 
 /*--------------------------------------------------
+	bool CallFunc_DialogueSetSpeaker(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC)
+
+		Set the dialogue speaker to a skin.
+--------------------------------------------------*/
+bool CallFunc_DialogueSetSpeaker(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC)
+{
+	ACSVM::MapScope *map = nullptr;
+
+	ACSVM::String *skinStr = nullptr;
+	const char *skinName = nullptr;
+
+	int spriteFrame = 0;
+
+	(void)argC;
+
+	if (Dialogue_ValidCheck(thread) == false)
+	{
+		return false;
+	}
+
+	map = thread->scopeMap;
+
+	skinStr = map->getString(argV[0]);
+	skinName = skinStr->str;
+
+	spriteFrame = argV[1];
+
+	g_dialogue.SetSpeaker(skinName, spriteFrame);
+	return false;
+}
+
+/*--------------------------------------------------
+	bool CallFunc_DialogueSetCustomSpeaker(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC)
+
+		Set the dialogue speaker to specific graphics.
+--------------------------------------------------*/
+bool CallFunc_DialogueSetCustomSpeaker(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC)
+{
+	ACSVM::MapScope *map = nullptr;
+
+	ACSVM::String *nametagStr = nullptr;
+	const char *nametag = nullptr;
+
+	ACSVM::String *patchStr = nullptr;
+	const char *patchName = nullptr;
+	patch_t *patch = nullptr;
+
+	ACSVM::String *colorStr = nullptr;
+	const char *colorName = nullptr;
+	skincolornum_t colorID = SKINCOLOR_NONE;
+	uint8_t *colormap = nullptr;
+
+	ACSVM::String *voiceStr = nullptr;
+	const char *voiceName = nullptr;
+	sfxenum_t voiceID = sfx_thok; //sfx_ktalk;
+
+	(void)argC;
+
+	if (Dialogue_ValidCheck(thread) == false)
+	{
+		return false;
+	}
+
+	map = thread->scopeMap;
+
+	nametagStr = map->getString(argV[0]);
+	nametag = nametagStr->str;
+
+	patchStr = map->getString(argV[1]);
+	patchName = patchStr->str;
+
+	colorStr = map->getString(argV[2]);
+	colorName = colorStr->str;
+
+	if (patchName && patchName[0])
+	{
+		patch = static_cast<patch_t *>( W_CachePatchName(patchName, PU_CACHE) );
+
+		if (ACS_GetColorFromString(colorName, &colorID) == true)
+		{
+			colormap = R_GetTranslationColormap(TC_DEFAULT, colorID, GTC_CACHE);
+		}
+	}
+
+	voiceStr = map->getString(argV[3]);
+	voiceName = voiceStr->str;
+	ACS_GetSFXFromString(voiceName, &voiceID);
+
+	g_dialogue.SetSpeaker(nametag, patch, colormap, voiceID);
+	return false;
+}
+
+/*--------------------------------------------------
 	bool CallFunc_StopLevelExit(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC)
 
 		Halts the level exit if it's happening.
@@ -2370,6 +2502,53 @@ bool CallFunc_ExitLevel(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::W
 	if (server)
 		SendNetXCmd(XD_EXITLEVEL, NULL, 0);
 
+	return false;
+}
+
+/*--------------------------------------------------
+ * bool CallFunc_DialogueNewText(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC)
+ *
+ *	Change the current dialogue text.
+ - *-------------------------------------------------*/
+bool CallFunc_DialogueNewText(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC)
+{
+	ACSVM::MapScope *map = nullptr;
+
+	ACSVM::String *textStr = nullptr;
+	const char *text = nullptr;
+
+	(void)argC;
+
+	if (Dialogue_ValidCheck(thread) == false)
+	{
+		return false;
+	}
+
+	map = thread->scopeMap;
+
+	textStr = map->getString(argV[0]);
+	text = textStr->str;
+
+	g_dialogue.NewText(text);
+	return false;
+}
+
+/*--------------------------------------------------
+ * bool CallFunc_DialogueAutoDismiss(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC)
+ *
+ *	Dismiss the current dialogue text.
+ - *-------------------------------------------------*/
+bool CallFunc_DialogueAutoDismiss(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::Word argC)
+{
+	(void)argV;
+	(void)argC;
+
+	if (Dialogue_ValidCheck(thread) == false)
+	{
+		return false;
+	}
+
+	g_dialogue.Dismiss();
 	return false;
 }
 

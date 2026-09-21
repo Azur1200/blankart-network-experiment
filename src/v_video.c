@@ -42,6 +42,7 @@
 #include "k_hud.h"
 #include "k_boss.h"
 #include "i_time.h"
+#include "k_dialogue.h" // K_GetDialogueSlide
 
 static CV_PossibleValue_t fps_cons_t[] = {{0, "No"}, {1, "Normal"}, {2, "Compact"}, {3, "Old"}, {4, "Old Compact"}, {0, NULL}};
 consvar_t cv_ticrate = CVAR_INIT ("showfps", "No", CV_SAVE, fps_cons_t, NULL);
@@ -622,18 +623,26 @@ void V_AdjustXYWithSnap(int32_t *x, int32_t *y, uint32_t options, int32_t dup)
 	int8_t player = -1;
 	uint8_t i;
 
-	if (options & V_SPLITSCREEN)
+	if (r_splitscreen > 0)
 	{
-		if (r_splitscreen > 0)
+		if (options & V_SPLITSCREEN)
 		{
 			screenheight /= 2;
 			baseheight /= 2;
-		}
 
-		if (r_splitscreen > 1)
+			if (r_splitscreen > 1)
+			{
+				screenwidth /= 2;
+				basewidth /= 2;
+			}
+		}
+	}
+	else if ((options & (V_SLIDEIN|V_SNAPTOBOTTOM)) == (V_SLIDEIN|V_SNAPTOBOTTOM))
+	{
+		int32_t slide = K_GetDialogueSlide(51 * FRACUNIT);
+		if (slide)
 		{
-			screenwidth /= 2;
-			basewidth /= 2;
+			*y -= FixedMul(slide, dup);
 		}
 	}
 

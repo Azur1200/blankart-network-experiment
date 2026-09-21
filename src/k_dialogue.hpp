@@ -1,8 +1,8 @@
 // DR. ROBOTNIK'S RING RACERS
 //-----------------------------------------------------------------------------
-// Copyright (C) by Sonic Team Junior
-// Copyright (C) by Kart Krew
-// Copyright (C) by Sally "TehRealSalt" Cochenour
+// Copyright (C) 2024 by Sally "TehRealSalt" Cochenour
+// Copyright (C) 2024 by Kart Krew
+// Copyright (C) 2020 by Sonic Team Junior
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -15,10 +15,13 @@
 #define __K_DIALOGUE_HPP__
 
 #include <string>
+#include <string_view>
+#include <unordered_map>
 
 #include "doomdef.h"
 #include "doomtype.h"
 #include "typedef.h"
+#include "sounds.h"
 #include "v_video.h"
 
 namespace srb2
@@ -26,48 +29,81 @@ namespace srb2
 
 class Dialogue
 {
+public:
+	static constexpr fixed_t kSlideSpeed = FRACUNIT / (TICRATE / 5);
+
+	void SetSpeaker(void);
+	void SetSpeaker(std::string skinName, int portraitID);
+	void SetSpeaker(std::string name, patch_t *patch, uint8_t *colormap, sfxenum_t voice);
+
+	void NewText(std::string_view newText);
+
+	bool Active(void);
+	bool TextDone(void);
+	bool Dismissable(void);
+	void SetDismissable(bool value);
+
+	void Tick(void);
+	void Draw(void);
+
+	int32_t SlideAmount(fixed_t multiplier);
+
+	void Dismiss(void);
+	void Unset(void);
+
+	uint32_t GetNewEra(void);
+	bool EraIsValid(int32_t comparison);
+
+	class Typewriter
+	{
+	public:
+		static constexpr fixed_t kTextSpeedDefault = FRACUNIT;
+		static constexpr fixed_t kTextPunctPause = (FRACUNIT * TICRATE * 2) / 5;
+
+		std::string text;
+		std::string textDest;
+
+		fixed_t textTimer;
+		fixed_t textSpeed;
+		bool textDone;
+		int textLines;
+
+		sfxenum_t voiceSfx;
+		bool syllable;
+
+		void NewText(std::string newText);
+		void ClearText(void);
+
+		void WriteText(void);
+		void CompleteText(void);
+	};
+
 private:
+	Typewriter typewriter;
+
+	int32_t current_era;
+
 	patch_t *bgPatch;
 	patch_t *confirmPatch;
-
-	bool active;
 
 	std::string speaker;
 	patch_t *portrait;
 	uint8_t *portraitColormap;
 
-	std::string text;
-	std::string textDest;
+	std::unordered_map<std::string_view, patch_t*> patchCache;
 
-	fixed_t textTimer;
-	fixed_t textSpeed;
-	bool textDone;
+	bool active;
+	fixed_t slide;
 
+	bool dismissable;
 	bool freeze;
-	std::string script;
 
-	void UpdatePatches(void);
+	void Init(void);
+	//void Unset(void);
 
-	void WriteText(void);
-	void CompleteText(void);
+	bool Pressed(void);
+	bool Held(void);
 
-public:
-	static constexpr fixed_t kTextSpeedDefault = FRACUNIT;
-	static constexpr fixed_t kTextPunctPause = FRACUNIT * TICRATE * 3 / 5;
-
-	void SetSpeaker(void);
-	void SetSpeaker(std::string skinName, int portraitID);
-	void SetSpeaker(std::string customName, std::string customPatch, uint8_t *customColormap);
-
-	void NewText(std::string newText);
-
-	bool Active(void);
-	bool TextDone(void);
-
-	void Tick(void);
-	void Draw(void);
-
-	void Dismiss(void);
 };
 
 }; // namespace srb2

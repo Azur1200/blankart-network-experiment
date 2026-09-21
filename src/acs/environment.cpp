@@ -201,14 +201,12 @@ Environment::Environment()
 	addFuncDataACS0( 509, addCallFunc(CallFunc_MusicStopAll));
 	addFuncDataACS0( 510, addCallFunc(CallFunc_MusicRemap));
 	
-	/*addFuncDataACS0( 511, addCallFunc(CallFunc_PlaceHolder));
-	addFuncDataACS0( 512, addCallFunc(CallFunc_PlaceHolder));*/
-	
 	addFuncDataACS0( 600, addCallFunc(CallFunc_DialogueSetSpeaker));
 	addFuncDataACS0( 601, addCallFunc(CallFunc_DialogueSetCustomSpeaker));
 	addFuncDataACS0( 602, addCallFunc(CallFunc_DialogueNewText));
 	addFuncDataACS0( 603, addCallFunc(CallFunc_DialogueWaitDismiss));
 	addFuncDataACS0( 604, addCallFunc(CallFunc_DialogueWaitText));
+	addFuncDataACS0( 605, addCallFunc(CallFunc_DialogueAutoDismiss));
 
 	addFuncDataACS0( 700, addCallFunc(CallFunc_Tan));
 	addFuncDataACS0( 701, addCallFunc(CallFunc_Arcsin));
@@ -352,7 +350,14 @@ bool Environment::checkTag(ACSVM::Word type, ACSVM::Word tag)
 
 		case ACS_TAGTYPE_DIALOGUE:
 		{
-			if (tag == 0) // cheeky reuse
+			// TODO when we move away from g_dialogue
+			//  See also call-funcs.cpp Dialogue_ValidCheck
+			if (netgame || !g_dialogue.EraIsValid(tag)) // cheeky reuse
+			{
+				return true;
+			}
+
+			if (g_dialogue.Dismissable())
 			{
 				// wait for dismissal
 				return (!g_dialogue.Active());
