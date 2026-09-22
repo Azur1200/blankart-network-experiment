@@ -132,7 +132,7 @@ demoghost *ghosts = NULL;
 // DEMO RECORDING
 //
 
-#define DEMOVERSION 0x0014
+#define DEMOVERSION 0x0015
 #define DEMOHEADER  "\xF0" "BlanReplay" "\x0F"
 
 #define DF_GHOST        0x01 // This demo contains ghost data too!
@@ -600,6 +600,7 @@ static uint8_t *G_ReadRawExtraData(extradata_t *extra, uint8_t *dp, uint16_t ver
 	extra->playernum = READUINT8(dp);
 	dboolean kart = version <= 0x0002;
 	dboolean singleseed = version <= 0x0012;
+	dboolean noshuffle = version <= 0x0014;
 
 	if (extra->playernum >= DW_EXTRASTUFF)
 	{
@@ -612,7 +613,12 @@ static uint8_t *G_ReadRawExtraData(extradata_t *extra, uint8_t *dp, uint16_t ver
 			}
 			else
 			{
-				for (i = 0; i < PRNUMCLASS; i++)
+				int32_t max_seeds = PR_FIRSTAFTERLUA;
+
+				if (!noshuffle)
+					max_seeds = READINT32(dp);
+
+				for (i = 0; i < max_seeds; i++)
 				{
 					extra->randseed[i] = READUINT32(dp);
 				}
@@ -764,6 +770,7 @@ static headerstatus_e G_ReadDemoHeader(uint8_t *dp, demoheader_t *header, dboole
 	dboolean gplunatic = true; // Grand Prix: Lunatic mode
 	dboolean multiseed = true; // Multi-seeded RNG
 	dboolean ranked_gp = true; // Grand Prix: Ranked races
+	dboolean arrayshuffle = true; // Permutative array shuffles (added a new RNG seed)
 	int32_t i;
 
 	// these may not be present in old demo formats, so initialize them
@@ -820,6 +827,10 @@ static headerstatus_e G_ReadDemoHeader(uint8_t *dp, demoheader_t *header, dboole
 			break;
 		case 0x0013:
 			ranked_gp = false;
+			/* FALLTHRU */
+		case 0x0014:
+			arrayshuffle = false;
+			/* FALLTHRU */
 			break;
 
 		default: // too old, cannot support.
@@ -830,7 +841,7 @@ static headerstatus_e G_ReadDemoHeader(uint8_t *dp, demoheader_t *header, dboole
 	{
 		dubs = rapreset = raflag = false;
 		gplunatic = serverinfo = availabilities = false;
-		ranked_gp = multiseed = false;
+		arrayshuffle = ranked_gp = multiseed = false;
 		switch (header->demoversion)
 		{
 		case 0x0001: // SRB2Kart 1.0.x (only staff ghosts supported)
@@ -966,9 +977,16 @@ skipfiles:
 	// Random seed
 	header->single_seed = false;
 
+	int32_t seeds_max = PR_FIRSTAFTERLUA;
+
+	if (arrayshuffle)
+	{
+		seeds_max = READINT32(dp);
+	}
+
 	if (multiseed)
 	{
-		for (i = 0; i < PRNUMCLASS; i++)
+		for (i = 0; i < seeds_max; i++)
 		{
 			header->randseed[i] = READUINT32(dp);
 		}
@@ -1588,7 +1606,7 @@ void G_WriteDemoExtraData(void)
 			timeout = 16;
 			WRITEUINT8(demobuf.p, DW_RNG);
 
-			//WRITEUINT32(demobuf.p, P_GetRandSeed());
+			WRITEINT32(demobuf.p, PRNUMCLASS);
 			for (i = 0; i < PRNUMCLASS; i++)
 			{
 				WRITEUINT32(demobuf.p, P_GetRandSeed(i));
