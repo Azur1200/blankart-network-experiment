@@ -1552,15 +1552,17 @@ dboolean M_Responder(event_t *ev)
 
 	if (messagebox.active && messagebox.messagetype == MM_EVENTHANDLER)
 	{
-		if (menucmd[0].delay > 0)
-			return true;
-
-		// dirty hack: for customising controls, I want only buttons/keys/axes, not mouse
 		if (ev->type == ev_mouse || ev->type == ev_gyroscope || ev->type == ev_accelerometer)
 			return false;
 
-		if (messagebox.callback.handler && !(ev->type == ev_joystick && messagebox.callback.handler != M_ChangecontrolResponse))
+		if (menucmd[0].delay > 0)
+			return true;
+
+		if (messagebox.callback.handler && ((ev->type != ev_joystick) || 
+			(ev->type == ev_joystick && !G_AxisInDeadzone(setupcontrolplayer-1, ev))))
+		{
 			messagebox.callback.handler(ev);
+		}
 
 		M_SetMenuDelay(0);
 		return true;
@@ -2619,7 +2621,7 @@ void M_UpdateMenuCMD(uint8_t i, dboolean bailrequired)
 				break;
 		}
 	}
-	else
+	else if (!keyboardcontrolled && (menustack[0] || messagebox.active))
 	{
 		if (G_PlayerInputDown(i, gc_aimforward, false, DEADZONE_Y)) { menucmd[i].dpad_ud--; }
 		else if (menustack[0] && menucmd[i].ev_dpad_ud < 0) { menucmd[i].dpad_ud--; }
@@ -10681,7 +10683,7 @@ static void M_ChangecontrolResponse(event_t *ev)
 	if (ev->device > 0 && G_GetDevicePlayer(ev->device) != setupcontrolplayer-1)
 		return;
 
-	if (ev->type == ev_gyroscope || ev->type == ev_accelerometer)
+	if (ev->type == ev_mouse || ev->type == ev_gyroscope || ev->type == ev_accelerometer || ev->type == ev_keyup)
 		return;
 
 	if (ev->type == ev_joystick)

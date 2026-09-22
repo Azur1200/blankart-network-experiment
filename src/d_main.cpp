@@ -276,13 +276,17 @@ void D_ProcessEvents(void)
 			// update keys current state
 			G_MapEventsToControls(ev);
 
+			if (ev->type != ev_mouse && ev->type != ev_gyroscope && ev->type != ev_accelerometer &&
+				((ev->type != ev_joystick) || (ev->type == ev_joystick && !G_AxisInDeadzone(0, ev))))
+			{
 #ifdef HAVE_THREADS
-			I_lock_mutex(&m_menu_mutex);
+				I_lock_mutex(&m_menu_mutex);
 #endif
-			eaten = M_Responder(ev);
+				eaten = M_Responder(ev);
 #ifdef HAVE_THREADS
-			I_unlock_mutex(m_menu_mutex);
+				I_unlock_mutex(m_menu_mutex);
 #endif
+			}
 		}
 
 		if (eaten)
