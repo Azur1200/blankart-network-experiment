@@ -839,7 +839,7 @@ static headerstatus_e G_ReadDemoHeader(uint8_t *dp, demoheader_t *header, dboole
 			/* FALLTHRU */
 		case 0x0012:
 			multiseed = false;
-			break;
+			/* FALLTHRU */
 		case 0x0013:
 			ranked_gp = false;
 			/* FALLTHRU */
