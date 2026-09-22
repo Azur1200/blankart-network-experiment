@@ -466,32 +466,32 @@ consvar_t cv_driftmode[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("driftmode4", "Classic", CV_SAVE|CV_CALL|CV_NOINIT, driftmode_cons_t, weaponPrefChange)
 };
 
-static CV_PossibleValue_t zerotoone_cons_t[] = {{0, "MIN"}, {FRACUNIT, "MAX"}, {0, NULL}};
+static CV_PossibleValue_t deadzone_cons_t[] = {{0, "MIN"}, {95*FRACUNIT/100, "MAX"}, {0, NULL}};
 consvar_t cv_deadzonex[MAXSPLITSCREENPLAYERS] = {
-	CVAR_INIT ("xdeadzone", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
-	CVAR_INIT ("xdeadzone2", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
-	CVAR_INIT ("xdeadzone3", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
-	CVAR_INIT ("xdeadzone4", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL)
+	CVAR_INIT ("xdeadzone", "0.25", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL),
+	CVAR_INIT ("xdeadzone2", "0.25", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL),
+	CVAR_INIT ("xdeadzone3", "0.25", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL),
+	CVAR_INIT ("xdeadzone4", "0.25", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL)
 };
 consvar_t cv_deadzoney[MAXSPLITSCREENPLAYERS] = {
-	CVAR_INIT ("ydeadzone", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
-	CVAR_INIT ("ydeadzone2", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
-	CVAR_INIT ("ydeadzone3", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
-	CVAR_INIT ("ydeadzone4", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL)
+	CVAR_INIT ("ydeadzone", "0.25", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL),
+	CVAR_INIT ("ydeadzone2", "0.25", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL),
+	CVAR_INIT ("ydeadzone3", "0.25", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL),
+	CVAR_INIT ("ydeadzone4", "0.25", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL)
 };
 
 consvar_t cv_deadzonet[MAXSPLITSCREENPLAYERS] = {
-	CVAR_INIT ("tdeadzone", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
-	CVAR_INIT ("tdeadzone2", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
-	CVAR_INIT ("tdeadzone3", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
-	CVAR_INIT ("tdeadzone4", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL)
+	CVAR_INIT ("tdeadzone", "0.25", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL),
+	CVAR_INIT ("tdeadzone2", "0.25", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL),
+	CVAR_INIT ("tdeadzone3", "0.25", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL),
+	CVAR_INIT ("tdeadzone4", "0.25", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL)
 };
 
 consvar_t cv_deadzonetwod[MAXSPLITSCREENPLAYERS] = {
-	CVAR_INIT ("twoddeadzone", "0.8", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
-	CVAR_INIT ("twoddeadzone2", "0.8", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
-	CVAR_INIT ("twoddeadzone3", "0.8", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL),
-	CVAR_INIT ("twoddeadzone4", "0.8", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL)
+	CVAR_INIT ("twoddeadzone", "0.8", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL),
+	CVAR_INIT ("twoddeadzone2", "0.8", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL),
+	CVAR_INIT ("twoddeadzone3", "0.8", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL),
+	CVAR_INIT ("twoddeadzone4", "0.8", CV_FLOAT|CV_SAVE, deadzone_cons_t, NULL)
 };
 
 static CV_PossibleValue_t deadzonestyle_cons_t[] = {{0, "Kart"}, {1, "RR"}, {0, NULL}};
