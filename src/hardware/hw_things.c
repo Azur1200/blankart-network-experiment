@@ -2205,12 +2205,12 @@ nodeterminant:
 		{
 			if (vflip)
 			{
-				gz = affine_rootpoint.y;
+				gz = affine_rootpoint.y - (f_topoffs * this_yscale);
 				gzt = gz + (FIXED_TO_FLOAT(spr_height) * this_yscale);
 			}
 			else
 			{
-				gzt = affine_rootpoint.y;
+				gzt = affine_rootpoint.y + (f_topoffs * this_yscale);
 				gz = gzt - (FIXED_TO_FLOAT(spr_height) * this_yscale);
 			}
 		}
@@ -2219,10 +2219,14 @@ nodeterminant:
 			if (vflip)
 			{
 				affine_rootpoint.y += (base_topoffs * this_yscale);
+				gz = affine_rootpoint.y - (f_topoffs * this_yscale);
+				gzt = gz + (FIXED_TO_FLOAT(spr_height) * this_yscale);
 			}
 			else
 			{
 				affine_rootpoint.y -= (base_topoffs * this_yscale);
+				gzt = affine_rootpoint.y + (f_topoffs * this_yscale);
+				gz = gzt - (FIXED_TO_FLOAT(spr_height) * this_yscale);
 			}
 		}
 	}
