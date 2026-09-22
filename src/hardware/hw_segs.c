@@ -1016,6 +1016,7 @@ static void HWR_ProcessSegFOFsSector(FOutVector *wallVerts, gl_fof_cuts *c,
 	{
 		if (!(rover->fofflags & FOF_EXISTS) || !(rover->fofflags & FOF_RENDERSIDES))
 			continue;
+
 		if (is_front_sector)
 		{
 			if (!(rover->fofflags & FOF_ALLSIDES || rover->fofflags & FOF_INVERTSIDES))
@@ -1026,7 +1027,6 @@ static void HWR_ProcessSegFOFsSector(FOutVector *wallVerts, gl_fof_cuts *c,
 			if (!(rover->fofflags & FOF_ALLSIDES) && rover->fofflags & FOF_INVERTSIDES)
 				continue;
 		}
-
 
 		SLOPEPARAMS(*rover->t_slope, high1, highslope1, *rover->topheight)
 		SLOPEPARAMS(*rover->b_slope, low1,  lowslope1,  *rover->bottomheight)
@@ -1164,6 +1164,7 @@ static void HWR_ProcessSegFOFsSector(FOutVector *wallVerts, gl_fof_cuts *c,
 			wallVerts[0].s = wallVerts[3].s = (cliplow + gl_sidedef->offsetx_mid) * grTex->scaleX;
 			wallVerts[2].s = wallVerts[1].s = (cliphigh + gl_sidedef->offsetx_mid) * grTex->scaleX;
 		}
+
 		if (rover->fofflags & FOF_FOG)
 		{
 			FBITFIELD blendmode;
@@ -1175,10 +1176,10 @@ static void HWR_ProcessSegFOFsSector(FOutVector *wallVerts, gl_fof_cuts *c,
 
 			Surf.PolyColor.s.alpha = HWR_FogBlockAlpha(rover->master->frontsector->lightlevel, rover->master->frontsector->extra_colormap);
 
-			if (gl_frontsector->numlights)
-				HWR_SplitWall(gl_frontsector, wallVerts, 0, false, &Surf, rover->fofflags, rover, blendmode);
+			if (other_sector->numlights)
+				HWR_SplitWall(other_sector, wallVerts, 0, false, &Surf, rover->fofflags, rover, blendmode);
 			else
-				HWR_AddTransparentWall(wallVerts, &Surf, 0, false ,blendmode, true, lightnum, colormap);
+				HWR_AddTransparentWall(wallVerts, &Surf, 0, false, blendmode, true, lightnum, colormap);
 		}
 		else
 		{
@@ -1193,8 +1194,8 @@ static void HWR_ProcessSegFOFsSector(FOutVector *wallVerts, gl_fof_cuts *c,
 				}
 			}
 
-			if (gl_frontsector->numlights)
-				HWR_SplitWall(gl_frontsector, wallVerts, texnum, noencore, &Surf, rover->fofflags, rover, blendmode);
+			if (other_sector->numlights)
+				HWR_SplitWall(other_sector, wallVerts, texnum, noencore, &Surf, rover->fofflags, rover, blendmode);
 			else
 			{
 				if (blendmode != PF_Masked)
