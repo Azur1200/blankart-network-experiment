@@ -299,6 +299,7 @@ typedef struct
 		uint32_t lap;
 	} attacking;
 
+	int32_t maxseeds;
 	uint32_t randseed[PRNUMCLASS];
 	dboolean single_seed;
 	uint32_t extrainfo;
@@ -368,6 +369,7 @@ typedef struct
 	uint8_t flags; // DXD flags if playernum < DW_EXTRASTUFF
 
 	// DW_RNG
+	int32_t maxseeds;
 	uint32_t randseed[PRNUMCLASS];
 
 	struct // DXD_JOINDATA
@@ -605,18 +607,30 @@ static uint8_t *G_ReadRawExtraData(extradata_t *extra, uint8_t *dp, uint16_t ver
 	if (extra->playernum >= DW_EXTRASTUFF)
 	{
 		extra->flags = 0;
+		extra->maxseeds = 0;
 		if (extra->playernum == DW_RNG)
 		{
 			if (singleseed)
 			{
 				extra->randseed[PR_LEGACY] = READUINT32(dp);
+				extra->maxseeds = 1;
 			}
 			else
 			{
-				int32_t max_seeds = PR_FIRSTAFTERLUA;
+				int32_t max_seeds = 0;
 
 				if (!noshuffle)
+				{
+					// The usual
 					max_seeds = READINT32(dp);
+				}
+				else
+				{
+					// Compat.
+					max_seeds = 49;
+				}
+
+				extra->maxseeds = max_seeds;
 
 				for (i = 0; i < max_seeds; i++)
 				{
@@ -781,6 +795,7 @@ static headerstatus_e G_ReadDemoHeader(uint8_t *dp, demoheader_t *header, dboole
 	header->mapmusrng = 0;
 	header->numlaps = 0;
 	header->raflags = 0;
+	header->maxseeds = 0;
 	memset(header->servermotd, 0, MAXSERVERMOTD);
 	memset(header->servername, 0, MAXSERVERNAME);
 	memset(header->servercontact, 0, MAXSERVERCONTACT);
@@ -977,12 +992,20 @@ skipfiles:
 	// Random seed
 	header->single_seed = false;
 
-	int32_t seeds_max = PR_FIRSTAFTERLUA;
+	int32_t seeds_max = 0;
 
 	if (arrayshuffle)
 	{
+		// The usual.
 		seeds_max = READINT32(dp);
 	}
+	else
+	{
+		// Compat.
+		seeds_max = 49;
+	}
+
+	header->maxseeds = seeds_max;
 
 	if (multiseed)
 	{
@@ -993,6 +1016,7 @@ skipfiles:
 	}
 	else
 	{
+		header->maxseeds = 1;
 		header->single_seed = true;
 		header->randseed[PR_LEGACY] = READUINT32(dp);
 	}
@@ -1333,7 +1357,7 @@ void G_ReadDemoExtraData(void)
 		if (p >= DW_EXTRASTUFF) switch (p)
 		{
 		case DW_RNG:
-			for (i = 0; i < PRNUMCLASS; i++)
+			for (i = 0; i < extra.maxseeds; i++)
 			{
 				if (P_GetRandSeed(i) != extra.randseed[i])
 				{
@@ -3086,6 +3110,7 @@ void G_BeginRecording(void)
 			break;
 	}
 
+	WRITEINT32(demobuf.p, PRNUMCLASS);
 	for (i = 0; i < PRNUMCLASS; i++)
 	{
 		WRITEUINT32(demobuf.p, P_GetInitSeed(i));
@@ -4134,7 +4159,7 @@ void G_DoPlayDemo(char *defdemoname)
 	}
 	else
 	{
-		for (i = 0; i < PRNUMCLASS; i++)
+		for (i = 0; i < header.maxseeds; i++)
 		{
 			P_SetRandSeed(i, header.randseed[i]);
 		}
