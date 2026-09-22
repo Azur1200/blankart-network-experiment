@@ -2205,12 +2205,12 @@ nodeterminant:
 		{
 			if (vflip)
 			{
-				gz = affine_rootpoint.y - (f_topoffs * this_yscale);
+				gz = affine_rootpoint.y;
 				gzt = gz + (FIXED_TO_FLOAT(spr_height) * this_yscale);
 			}
 			else
 			{
-				gzt = affine_rootpoint.y + (f_topoffs * this_yscale);
+				gzt = affine_rootpoint.y;
 				gz = gzt - (FIXED_TO_FLOAT(spr_height) * this_yscale);
 			}
 		}
