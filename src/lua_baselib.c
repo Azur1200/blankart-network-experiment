@@ -6408,6 +6408,12 @@ static luaL_Reg lib[] = {
 	{"G_RaceGametype",lib_gRaceGametype},
 	{"G_BattleGametype",lib_gBattleGametype},
 
+	// k_hud
+	{"K_AddMessage", lib_kAddMessage},
+	{"K_AddMessageForPlayer", lib_kAddMessageForPlayer},
+	{"K_ClearPersistentMessages", lib_kClearPersistentMessages},
+	{"K_ClearPersistentMessageForPlayer", lib_kClearPersistentMessageForPlayer},
+
 	// k_kart
 	{"K_PlayAttackTaunt", lib_kAttackSound},
 	{"K_PlayBoostTaunt", lib_kBoostSound},
