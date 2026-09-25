@@ -22,6 +22,7 @@
 #include "doomtype.h"
 #include "screen.h" // BASEVIDWIDTH
 #include "typedef.h"
+#include "g_input.h"
 #include "v_video.h"
 
 namespace srb2
@@ -58,24 +59,6 @@ public:
 		kWidth,
 		kHeight,
 		kBoth,
-	};
-
-	enum class Button
-	{
-		a,
-		b,
-		c,
-		x,
-		y,
-		z,
-		start,
-		l,
-		r,
-		up,
-		down,
-		right,
-		left,
-		dpad,
 	};
 
 	class TextElement
@@ -189,8 +172,7 @@ public:
 
 		void fill(uint8_t color) const;
 
-		void button(Button type, std::optional<bool> press = {}) const { button_(type, 0, press); }
-		void small_button(Button type, std::optional<bool> press = {}) const { button_(type, 1, press); }
+		void button(gamecontrols_e type, std::optional<bool> press = {}) const { button_(type, press); }
 
 		void sticker(patch_t* end_graphic, uint8_t color) const;
 		void sticker() const { sticker(Draw::cache_patch("K_STIKEN"), 24); }
@@ -232,7 +214,7 @@ public:
 		const uint8_t* colormap_ = nullptr;
 
 		void string(const char* str, int32_t flags, Font font) const;
-		void button_(Button type, int ver, std::optional<bool> press = {}) const;
+		void button_(gamecontrols_e type, std::optional<bool> press = {}) const;
 
 		friend Draw;
 	};
@@ -281,7 +263,6 @@ public:
 	VOID_METHOD(thumbnail);
 	VOID_METHOD(fill);
 	VOID_METHOD(button);
-	VOID_METHOD(small_button);
 	VOID_METHOD(sticker);
 	VOID_METHOD(small_sticker);
 

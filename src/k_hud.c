@@ -268,6 +268,43 @@ patch_t *kp_rankmedals[2] = {NULL};
 patch_t *kp_ranktier[NUMRANKTIERS] = {NULL};
 patch_t *kp_ranktier4p[NUMRANKTIERS] = {NULL};
 
+// BUTTONS AAAAAA
+patch_t *kp_buttons_a[3] = {NULL};
+patch_t *kp_buttons_b[3] = {NULL};
+patch_t *kp_buttons_x[3] = {NULL};
+patch_t *kp_buttons_y[3] = {NULL};
+
+patch_t *kp_buttons_start[3] = {NULL};
+
+patch_t *kp_buttons_dpadleft[3] = {NULL};
+patch_t *kp_buttons_dpadright[3] = {NULL};
+patch_t *kp_buttons_dpadup[3] = {NULL};
+patch_t *kp_buttons_dpaddown[3] = {NULL};
+
+patch_t *kp_buttons_lstickclick[3] = {NULL};
+patch_t *kp_buttons_rstickclick[3] = {NULL};
+
+patch_t *kp_buttons_lstickleft[3] = {NULL};
+patch_t *kp_buttons_lstickright[3] = {NULL};
+patch_t *kp_buttons_lstickup[3] = {NULL};
+patch_t *kp_buttons_lstickdown[3] = {NULL};
+patch_t *kp_buttons_rstickleft[3] = {NULL};
+patch_t *kp_buttons_rstickright[3] = {NULL};
+patch_t *kp_buttons_rstickup[3] = {NULL};
+patch_t *kp_buttons_rstickdown[3] = {NULL};
+
+patch_t *kp_buttons_lbumper[3] = {NULL};
+patch_t *kp_buttons_rbumper[3] = {NULL};
+
+patch_t *kp_buttons_ltrigger[3] = {NULL};
+patch_t *kp_buttons_rtrigger[3] = {NULL};
+
+patch_t *kp_buttons_paddle1[3] = {NULL};
+patch_t *kp_buttons_paddle2[3] = {NULL};
+patch_t *kp_buttons_paddle3[3] = {NULL};
+patch_t *kp_buttons_paddle4[3] = {NULL};
+
+
 void K_RegisterKartHUDStuff(void)
 {
 	K_ReloadHUDColorCvar();
@@ -869,6 +906,89 @@ void K_LoadKartHUDGraphics(void)
 	// Rank medals
 	HU_UpdatePatch(&kp_rankmedals[0], "RNKMDL");
 	HU_UpdatePatch(&kp_rankmedals[1], "RNKMDP");
+
+	// Buttons
+	HU_UpdatePatch(&kp_buttons_a[0], "BKB_A");
+	HU_UpdatePatch(&kp_buttons_a[1], "BKB_A_P");
+
+	HU_UpdatePatch(&kp_buttons_b[0], "BKB_B");
+	HU_UpdatePatch(&kp_buttons_b[1], "BKB_B_P");
+
+	HU_UpdatePatch(&kp_buttons_x[0], "BKB_X");
+	HU_UpdatePatch(&kp_buttons_x[1], "BKB_X_P");
+
+	HU_UpdatePatch(&kp_buttons_y[0], "BKB_Y");
+	HU_UpdatePatch(&kp_buttons_y[1], "BKB_Y_P");
+
+	HU_UpdatePatch(&kp_buttons_start[0], "BKB_S");
+	HU_UpdatePatch(&kp_buttons_start[1], "BKB_S_P");
+
+	HU_UpdatePatch(&kp_buttons_dpadleft[0], "BKB_DPL");
+	HU_UpdatePatch(&kp_buttons_dpadleft[1], "BKB_DP");
+
+	HU_UpdatePatch(&kp_buttons_dpadright[0], "BKB_DPR");
+	HU_UpdatePatch(&kp_buttons_dpadright[1], "BKB_DP");
+
+	HU_UpdatePatch(&kp_buttons_dpadup[0], "BKB_DPU");
+	HU_UpdatePatch(&kp_buttons_dpadup[1], "BKB_DP");
+
+	HU_UpdatePatch(&kp_buttons_dpaddown[0], "BKB_DPD");
+	HU_UpdatePatch(&kp_buttons_dpaddown[1], "BKB_DP");
+
+	HU_UpdatePatch(&kp_buttons_lstickclick[0], "BKB_LSC");
+	HU_UpdatePatch(&kp_buttons_lstickclick[1], "BKB_LSC_P");
+
+	HU_UpdatePatch(&kp_buttons_rstickclick[0], "BKB_RSC");
+	HU_UpdatePatch(&kp_buttons_rstickclick[1], "BKB_RSC_P");
+
+	HU_UpdatePatch(&kp_buttons_lstickleft[0], "BKB_LSL");
+	HU_UpdatePatch(&kp_buttons_lstickleft[1], "BKB_LS");
+
+	HU_UpdatePatch(&kp_buttons_lstickright[0], "BKB_LSR");
+	HU_UpdatePatch(&kp_buttons_lstickright[1], "BKB_LS");
+
+	HU_UpdatePatch(&kp_buttons_lstickup[0], "BKB_LSU");
+	HU_UpdatePatch(&kp_buttons_lstickup[1], "BKB_LS");
+
+	HU_UpdatePatch(&kp_buttons_lstickdown[0], "BKB_LSD");
+	HU_UpdatePatch(&kp_buttons_lstickdown[1], "BKB_LS");
+
+	HU_UpdatePatch(&kp_buttons_rstickleft[0], "BKB_RSL");
+	HU_UpdatePatch(&kp_buttons_rstickleft[1], "BKB_RS");
+
+	HU_UpdatePatch(&kp_buttons_rstickright[0], "BKB_RSR");
+	HU_UpdatePatch(&kp_buttons_rstickright[1], "BKB_RS");
+
+	HU_UpdatePatch(&kp_buttons_rstickup[0], "BKB_RSU");
+	HU_UpdatePatch(&kp_buttons_rstickup[1], "BKB_RS");
+
+	HU_UpdatePatch(&kp_buttons_rstickdown[0], "BKB_RSD");
+	HU_UpdatePatch(&kp_buttons_rstickdown[1], "BKB_RS");
+
+	HU_UpdatePatch(&kp_buttons_lbumper[0], "BKB_L1");
+	HU_UpdatePatch(&kp_buttons_lbumper[1], "BKB_L1_P");
+
+	HU_UpdatePatch(&kp_buttons_rbumper[0], "BKB_R1");
+	HU_UpdatePatch(&kp_buttons_rbumper[1], "BKB_R1_P");
+
+	HU_UpdatePatch(&kp_buttons_ltrigger[0], "BKB_L2");
+	HU_UpdatePatch(&kp_buttons_ltrigger[1], "BKB_L2_P");
+
+	HU_UpdatePatch(&kp_buttons_rtrigger[0], "BKB_R2");
+	HU_UpdatePatch(&kp_buttons_rtrigger[1], "BKB_R2_P");
+
+	HU_UpdatePatch(&kp_buttons_paddle1[0], "BKB_P1");
+	HU_UpdatePatch(&kp_buttons_paddle1[1], "BKB_P1_P");
+
+	HU_UpdatePatch(&kp_buttons_paddle2[0], "BKB_P2");
+	HU_UpdatePatch(&kp_buttons_paddle2[1], "BKB_P2_P");
+
+	HU_UpdatePatch(&kp_buttons_paddle3[0], "BKB_P3");
+	HU_UpdatePatch(&kp_buttons_paddle3[1], "BKB_P3_P");
+
+	HU_UpdatePatch(&kp_buttons_paddle4[0], "BKB_P4");
+	HU_UpdatePatch(&kp_buttons_paddle4[1], "BKB_P4_P");
+
 }
 
 //}
@@ -6592,6 +6712,18 @@ K_drawMiniPing (void)
 			break;
 		}
 	}
+}
+
+void K_drawButton(fixed_t x, fixed_t y, int32_t flags, patch_t *button[2], dboolean pressed)
+{
+	V_DrawFixedPatch(x, y, FRACUNIT, flags, button[(pressed == true) ? 1 : 0], NULL);
+}
+
+void K_drawButtonAnim(int32_t x, int32_t y, int32_t flags, patch_t *button[2], tic_t animtic)
+{
+	const uint16_t anim_duration = 16;
+	const dboolean anim = ((animtic % (anim_duration * 2)) < anim_duration);
+	K_drawButton(x << FRACBITS, y << FRACBITS, flags, button, anim);
 }
 
 static void K_drawDistributionDebugger(void)

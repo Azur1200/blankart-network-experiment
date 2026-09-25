@@ -479,7 +479,7 @@ void Dialogue::Draw(void)
 
 		drawer
 			.xy(17-14 - BASEVIDWIDTH, -39-16)
-			.button(srb2::Draw::Button::z, bt_translate_press());
+			.button(gc_horncode, bt_translate_press());
 	}
 }
 

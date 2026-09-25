@@ -22,6 +22,7 @@
 #include "v_video.h"
 #include "w_wad.h"
 #include "z_zone.h"
+#include "fastcmp.h"
 
 using srb2::Draw;
 using Chain = Draw::Chain;
@@ -44,19 +45,19 @@ Draw::TextElement& Draw::TextElement::parse(std::string_view raw)
 		BUTTON("right", 0x02),
 		BUTTON("left", 0x03),
 
-		BUTTON("dpad", 0x04),
+		//BUTTON("dpad", 0x04),
 
-		BUTTON("r", 0x07),
-		BUTTON("l", 0x08),
-		BUTTON("start", 0x09),
+		BUTTON("drift", 0x07),
+		BUTTON("item", 0x08),
+		BUTTON("systemmenu", 0x09),
 
-		BUTTON("a", 0x0A),
-		BUTTON("b", 0x0B),
-		BUTTON("c", 0x0C),
+		BUTTON("accel", 0x0A),
+		BUTTON("brake", 0x0B),
+		BUTTON("horn", 0x0C),
 
-		BUTTON("x", 0x0D),
-		BUTTON("y", 0x0E),
-		BUTTON("z", 0x0F),
+		BUTTON("custom1", 0x0D),
+		BUTTON("custom2", 0x0E),
+		BUTTON("custom3", 0x0F),
 
 #undef BUTTON
 
@@ -182,34 +183,145 @@ void Chain::string(const char* str, int32_t flags, Font font) const
 namespace
 {
 
-patch_t** get_button_patch(Draw::Button type, int ver)
+static const char *find_button_from_gamecontrol(gamecontrols_e type)
 {
-	switch (type)
+	int32_t i;
+	for (i = 0; i < MAXINPUTMAPPING; i++)
 	{
-#define X(x) \
-	case Draw::Button::x:\
-		return kp_button_ ## x
+		if (gamecontrol[0][type][i] == 0)
+			continue;
 
-	// TODO: Implement buttons....
-	/*X(a)[ver];
-	X(b)[ver];
-	X(c)[ver];
-	X(x)[ver];
-	X(y)[ver];
-	X(z)[ver];
-	X(start);
-	X(l);
-	X(r);
-	X(up);
-	X(down);
-	X(right);
-	X(left);
-	X(dpad);*/
+		if (gamecontrol[0][type][i] < KEY_JOY1 || gamecontrol[0][type][i] >= JOYINPUTEND)
+			continue;
 
-	default:
-		break;
+		return G_KeynumToString(gamecontrol[0][type][i]);
 
-#undef X
+	}
+
+	return NULL;
+}
+
+patch_t** get_button_patch(gamecontrols_e type)
+{
+	int32_t i, j;
+	for (i = 0; i < MAXINPUTMAPPING; i++)
+	{
+		if (gamecontrol[0][type][i] == 0)
+			continue;
+
+		if (gamecontrol[0][type][i] < KEY_JOY1 || gamecontrol[0][type][i] >= JOYINPUTEND)
+			continue;
+
+		const char *button = G_KeynumToString(gamecontrol[0][type][i]);
+
+		if (fasticmp(button, "A BUTTON"))
+		{
+			return kp_buttons_a;
+		}
+		else if (fasticmp(button, "B BUTTON"))
+		{
+			return kp_buttons_b;
+		}
+		else if (fasticmp(button, "X BUTTON"))
+		{
+			return kp_buttons_x;
+		}
+		else if (fasticmp(button, "Y BUTTON"))
+		{
+			return kp_buttons_y;
+		}
+		else if (fasticmp(button, "START BUTTON"))
+		{
+			return kp_buttons_start;
+		}
+		else if (fasticmp(button, "D-PAD LEFT"))
+		{
+			return kp_buttons_dpadleft;
+		}
+		else if (fasticmp(button, "D-PAD RIGHT"))
+		{
+			return kp_buttons_dpadright;
+		}
+		else if (fasticmp(button, "D-PAD UP"))
+		{
+			return kp_buttons_dpadup;
+		}
+		else if (fasticmp(button, "D-PAD DOWN"))
+		{
+			return kp_buttons_dpaddown;
+		}
+		else if (fasticmp(button, "L-STICK CLICK"))
+		{
+			return kp_buttons_lstickclick;
+		}
+		else if (fasticmp(button, "R-STICK CLICK"))
+		{
+			return kp_buttons_rstickclick;
+		}
+		else if (fasticmp(button, "L-STICK LEFT"))
+		{
+			return kp_buttons_lstickleft;
+		}
+		else if (fasticmp(button, "L-STICK RIGHT"))
+		{
+			return kp_buttons_lstickright;
+		}
+		else if (fasticmp(button, "L-STICK UP"))
+		{
+			return kp_buttons_lstickup;
+		}
+		else if (fasticmp(button, "L-STICK DOWN"))
+		{
+			return kp_buttons_lstickdown;
+		}
+		else if (fasticmp(button, "R-STICK LEFT"))
+		{
+			return kp_buttons_rstickleft;
+		}
+		else if (fasticmp(button, "R-STICK RIGHT"))
+		{
+			return kp_buttons_rstickright;
+		}
+		else if (fasticmp(button, "R-STICK UP"))
+		{
+			return kp_buttons_lstickup;
+		}
+		else if (fasticmp(button, "R-STICK DOWN"))
+		{
+			return kp_buttons_rstickdown;
+		}
+		else if (fasticmp(button, "L BUMPER"))
+		{
+			return kp_buttons_lbumper;
+		}
+		else if (fasticmp(button, "R BUMPER"))
+		{
+			return kp_buttons_rbumper;
+		}
+		else if (fasticmp(button, "L TRIGGER"))
+		{
+			return kp_buttons_ltrigger;
+		}
+		else if (fasticmp(button, "R TRIGGER"))
+		{
+			return kp_buttons_rtrigger;
+		}
+		else if (fasticmp(button, "PADDLE BUTTON 1"))
+		{
+			return kp_buttons_paddle1;
+		}
+		else if (fasticmp(button, "PADDLE BUTTON 2"))
+		{
+			return kp_buttons_paddle2;
+		}
+		else if (fasticmp(button, "PADDLE BUTTON 3"))
+		{
+			return kp_buttons_paddle3;
+		}
+		else if (fasticmp(button, "PADDLE BUTTON 4"))
+		{
+			return kp_buttons_paddle4;
+		}
 	}
 
 	return nullptr;
@@ -217,23 +329,18 @@ patch_t** get_button_patch(Draw::Button type, int ver)
 
 }; // namespace
 
-void Chain::button_(Button type, int ver, std::optional<bool> press) const
+void Chain::button_(gamecontrols_e type, std::optional<bool> press) const
 {
 	const auto _ = Clipper(*this);
 
-	(void)type;
-	(void)ver;
-	(void)press;
-
-	// TODO: Implement buttons....
-	/*if (press)
+	if (press)
 	{
-		K_drawButton(FloatToFixed(x_), FloatToFixed(y_), flags_, get_button_patch(type, ver), *press);
+		K_drawButton(FloatToFixed(x_), FloatToFixed(y_), flags_, get_button_patch(type), *press);
 	}
 	else
 	{
-		K_drawButtonAnim(x_, y_, flags_, get_button_patch(type, ver), I_GetTime());
-	}*/
+		K_drawButtonAnim(x_, y_, flags_, get_button_patch(type), I_GetTime());
+	}
 }
 
 void Chain::sticker(patch_t* end_graphic, uint8_t color) const

@@ -207,6 +207,45 @@ extern consvar_t cv_show_riders_finish_ticker;
 
 void K_DrawSticker(int32_t x, int32_t y, int32_t width, int32_t flags, dboolean isSmall);
 
+void K_drawButton(fixed_t x, fixed_t y, int32_t flags, patch_t *button[2], dboolean pressed);
+void K_drawButtonAnim(int32_t x, int32_t y, int32_t flags, patch_t *button[2], tic_t animtic);
+
+// BUTTONS AAAAAA
+extern patch_t *kp_buttons_a[3];
+extern patch_t *kp_buttons_b[3];
+extern patch_t *kp_buttons_x[3];
+extern patch_t *kp_buttons_y[3];
+
+extern patch_t *kp_buttons_start[3];
+
+extern patch_t *kp_buttons_dpadleft[3];
+extern patch_t *kp_buttons_dpadright[3];
+extern patch_t *kp_buttons_dpadup[3];
+extern patch_t *kp_buttons_dpaddown[3];
+
+extern patch_t *kp_buttons_lstickclick[3];
+extern patch_t *kp_buttons_rstickclick[3];
+
+extern patch_t *kp_buttons_lstickleft[3];
+extern patch_t *kp_buttons_lstickright[3];
+extern patch_t *kp_buttons_lstickup[3];
+extern patch_t *kp_buttons_lstickdown[3];
+extern patch_t *kp_buttons_rstickleft[3];
+extern patch_t *kp_buttons_rstickright[3];
+extern patch_t *kp_buttons_rstickup[3];
+extern patch_t *kp_buttons_rstickdown[3];
+
+extern patch_t *kp_buttons_lbumper[3];
+extern patch_t *kp_buttons_rbumper[3];
+
+extern patch_t *kp_buttons_ltrigger[3];
+extern patch_t *kp_buttons_rtrigger[3];
+
+extern patch_t *kp_buttons_paddle1[3];
+extern patch_t *kp_buttons_paddle2[3];
+extern patch_t *kp_buttons_paddle3[3];
+extern patch_t *kp_buttons_paddle4[3];
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

@@ -43,6 +43,7 @@
 #include "k_boss.h"
 #include "i_time.h"
 #include "k_dialogue.h" // K_GetDialogueSlide
+#include "v_draw.hpp"
 
 static CV_PossibleValue_t fps_cons_t[] = {{0, "No"}, {1, "Normal"}, {2, "Compact"}, {3, "Old"}, {4, "Old Compact"}, {0, NULL}};
 consvar_t cv_ticrate = CVAR_INIT ("showfps", "No", CV_SAVE, fps_cons_t, NULL);
@@ -333,14 +334,14 @@ static void LoadPalette(const char *lumpname)
 	Z_Free(pMasterPalette);
 	Z_Free(pGammaCorrectedPalette);
 
-	pMasterPalette = Z_Malloc(sizeof (*pMasterPalette)*palsize, PU_STATIC, NULL);
+	pMasterPalette = static_cast<RGBA_t *>(Z_Malloc(sizeof (*pMasterPalette)*palsize, PU_STATIC, NULL));
 	if (Cubeapply)
-		pLocalPalette = Z_Malloc(sizeof (*pLocalPalette)*palsize, PU_STATIC, NULL);
+		pLocalPalette = static_cast<RGBA_t *>(Z_Malloc(sizeof (*pLocalPalette)*palsize, PU_STATIC, NULL));
 	else
 		pLocalPalette = pMasterPalette;
-	pGammaCorrectedPalette = Z_Malloc(sizeof (*pGammaCorrectedPalette)*palsize, PU_STATIC, NULL);
+	pGammaCorrectedPalette = static_cast<RGBA_t *>(Z_Malloc(sizeof (*pGammaCorrectedPalette)*palsize, PU_STATIC, NULL));
 
-	pal = W_CacheLumpNum(lumpnum, PU_CACHE);
+	pal = static_cast<uint8_t *>(W_CacheLumpNum(lumpnum, PU_CACHE));
 	for (i = 0; i < palsize; i++)
 	{
 		pMasterPalette[i].s.red = *pal++;
@@ -353,7 +354,7 @@ static void LoadPalette(const char *lumpname)
 	RGBA_t *palcopy = NULL;
 	if (wadfiles[WADFILENUM(lumpnum)]->compatmode)
 	{
-		palcopy = malloc(sizeof(*palcopy)*palsize);
+		palcopy = static_cast<RGBA_t *>(malloc(sizeof(*palcopy)*palsize));
 
 		if (palcopy == NULL)
 			I_Error("LoadPalette: Out of memory!\n");
@@ -530,7 +531,7 @@ void VID_BlitLinearScreen(const uint8_t *restrict srcptr, uint8_t *restrict dest
 		while (i >= 16)
 		{
 			// TODO: find where the buffer is misaligned at times and align it
-			_mm_storeu_ps((void *)destptr, _mm_loadu_ps((const void *)srcptr));
+			_mm_storeu_ps((float *)destptr, _mm_loadu_ps((const float *)srcptr));
 			srcptr += 16;
 			destptr += 16;
 			i -= 16;
@@ -558,7 +559,7 @@ uint8_t V_GetColorFromSkinColorEx(skincolornum_t skincolor, uint8_t idx)
 		return TRANSPARENTPIXEL; // Fuck off
 	}
 
-	idx = min(idx, 15); // Do not EVER let this go out of bounds!
+	idx = std::min<uint8_t>(idx, 15); // Do not EVER let this go out of bounds!
 
 	if (skincolor >= numskincolors)
 	{
@@ -587,7 +588,7 @@ uint8_t V_GetColorFromSkinColorWithBrightness(skincolornum_t skincolor, uint8_t 
 		return V_GetColorFromSkinColorEx(skincolor, idx);
 	}
 
-	idx = min(idx, 15); // Do not EVER let this go out of bounds!
+	idx = std::min<uint8_t>(idx, 15); // Do not EVER let this go out of bounds!
 
 	brightness = CLAMP(brightness, 0, FRACUNIT);
 
@@ -820,10 +821,10 @@ void V_SetClipRect(fixed_t x, fixed_t y, fixed_t w, fixed_t h, int32_t flags)
 	if (y + h > vid.height)
 		h = vid.height - y;
 
-	x = min(x, vid.width);
-	y = min(y, vid.height);
-	w = max(w, 0);
-	h = max(h, 0);
+	x = std::min<fixed_t>(x, vid.width);
+	y = std::min<fixed_t>(y, vid.height);
+	w = std::max<fixed_t>(w, 0);
+	h = std::max<fixed_t>(h, 0);
 
 	cliprect.left = x;
 	cliprect.top = y;
@@ -979,10 +980,10 @@ affine_bounding_t* V_GetAffineBounds(const affine_t* transform,
 	// loops take more processing time. If we can help it, it's better to just cut corners.
 #define BOUNDCHECK(i)                                     \
 	{                                                 \
-		out->l = max(leftmost, min(v[i].x >> FRACBITS, out->l)); \
-		out->r = min(vw, max(v[i].x >> FRACBITS, out->r)); \
-		out->t = max(uppermost, min(v[i].y >> FRACBITS, out->t)); \
-		out->b = min(vh, max(v[i].y >> FRACBITS, out->b)); \
+		out->l = std::max<fixed_t>(leftmost, std::min(v[i].x >> FRACBITS, out->l)); \
+		out->r = std::min<fixed_t>(vw, std::max(v[i].x >> FRACBITS, out->r)); \
+		out->t = std::max<fixed_t>(uppermost, std::min(v[i].y >> FRACBITS, out->t)); \
+		out->b = std::min<fixed_t>(vh, std::max(v[i].y >> FRACBITS, out->b)); \
 	}
 
 	BOUNDCHECK(0);
@@ -1083,11 +1084,11 @@ void V_DrawAffinePatch(fixed_t x, fixed_t y, const affine_t *transform, int32_t 
 	}
 #endif
 
-	affine_bounding_t bounds = {0};
+	affine_bounding_t bounds = {};
 	V_GetAffineBounds(transform, patch, vid.dup * FRACUNIT, &bounds, false);
 
-	Patch_GenerateFlat(patch, 0);
-	const uint16_t *src = patch->flats[0];
+	Patch_GenerateFlat(patch, static_cast<pictureflags_t>(0));
+	const uint16_t *src = static_cast<uint16_t *>(patch->flats[0]);
 	if (src == NULL)
 		return;
 
@@ -1124,8 +1125,8 @@ void V_DrawAffinePatch(fixed_t x, fixed_t y, const affine_t *transform, int32_t 
 	int32_t xdiff = (bounds.xleft - (transform->ox >> FRACBITS));
 
 	// Get the clipping values, since that can vary per-resolution.
-	int32_t yclip = min(y - ydiff, 0) * -1;
-	int32_t xclip = min(x - xdiff, 0) * -1;
+	int32_t yclip = std::min(y - ydiff, 0) * -1;
+	int32_t xclip = std::min(x - xdiff, 0) * -1;
 
 	ydiff -= yclip;
 	xdiff -= xclip;
@@ -1136,7 +1137,7 @@ void V_DrawAffinePatch(fixed_t x, fixed_t y, const affine_t *transform, int32_t 
 	int32_t yy = CLAMP(y - ydiff, 0, vh);
 	int32_t xx = CLAMP(x - xdiff, 0, vw);
 
-	int32_t xmax = max(bounds.xlen - xclip, pw), ymax = max(bounds.ylen - yclip, ph);
+	int32_t xmax = std::max(bounds.xlen - xclip, pw), ymax = std::max(bounds.ylen - yclip, ph);
 
 	// Offset our X and Y positions by the bounding differences.
 	fixed_t cxx = cx + (xdiff * FRACUNIT);
@@ -1730,7 +1731,7 @@ void V_DrawContinueIcon(int32_t x, int32_t y, int32_t flags, int32_t skinnum, ui
 {
 	(void)skinnum;
 	(void)skincolor;
-	V_DrawScaledPatch(x - 10, y - 14, flags, W_CachePatchName("CONTINS", PU_PATCH));
+	V_DrawScaledPatch(x - 10, y - 14, flags, static_cast<patch_t *>(W_CachePatchName("CONTINS", PU_PATCH)));
 }
 
 //
@@ -2428,7 +2429,7 @@ void V_DrawFlatFill(int32_t x, int32_t y, int32_t w, int32_t h, lumpnum_t flatnu
 			break;
 	}
 
-	flat = W_CacheLumpNum(flatnum, PU_CACHE);
+	flat = static_cast<uint8_t *>(W_CacheLumpNum(flatnum, PU_CACHE));
 
 	dup = vid.dup;
 
@@ -2595,13 +2596,13 @@ void V_DrawVhsEffect(dboolean rewind)
 		if (y >= uby && y < uby+barsize)
 		{
 			thismapstart -= (2<<FF_TRANSSHIFT) - (5<<8);
-			offs += updistort * 2.0f * min(y-uby, uby+barsize-y) / barsize;
+			offs += updistort * 2.0f * std::min(y-uby, uby+barsize-y) / barsize;
 		}
 
 		if (y >= dby && y < dby+barsize)
 		{
 			thismapstart -= (2<<FF_TRANSSHIFT) - (5<<8);
-			offs -= downdistort * 2.0f * min(y-dby, dby+barsize-y) / barsize;
+			offs -= downdistort * 2.0f * std::min(y-dby, dby+barsize-y) / barsize;
 		}
 
 		offs += M_RandomKey(vid.dup<<1);
@@ -2610,7 +2611,7 @@ void V_DrawVhsEffect(dboolean rewind)
 		if ((y == 0 && offs < 0) || (y >= vid.height-2 && offs > 0))
 			offs = 0;
 
-		for (x = min(pos+(size_t)vid.width*2, (size_t)vid.width*vid.height); pos < x; pos++)
+		for (x = std::min(pos+(size_t)vid.width*2, (size_t)vid.width*vid.height); pos < x; pos++)
 		{
 			tmp[pos] = thismapstart[buf[pos+offs]];
 #ifdef HQ_VHS
@@ -2644,7 +2645,7 @@ void V_DrawFadeScreen(uint16_t color, uint8_t strength)
 	{
 		const uint8_t *fadetable =
 			(color > 0xFFF0) // Grab a specific colormap palette?
-			? R_GetTranslationColormap(color | 0xFFFF0000, strength, GTC_CACHE)
+			? R_GetTranslationColormap(color | 0xFFFF0000, static_cast<skincolornum_t>(strength), GTC_CACHE)
 			: ((color & 0xFF00) // Color is not palette index?
 			? ((uint8_t *)colormaps + strength*256) // Do COLORMAP fade.
 			: ((uint8_t *)R_GetTranslucencyTable((9-strength)+1) + color*256)); // Else, do TRANSMAP** fade.
@@ -2684,7 +2685,7 @@ void V_DrawCustomFadeScreen(const char *lump, uint8_t strength)
 
 		if (lumpnum != LUMPERROR)
 		{
-			clm = Z_MallocAlign(COLORMAP_SIZE, PU_STATIC, NULL, 8);
+			clm = static_cast<lighttable_t *>(Z_MallocAlign(COLORMAP_SIZE, PU_STATIC, NULL, 8));
 			W_ReadLump(lumpnum, clm);
 
 			if (clm != NULL)
@@ -2721,7 +2722,7 @@ void V_DrawFadeConsBack(int32_t plines)
 
 	// heavily simplified -- we don't need to know x or y position,
 	// just the stop position
-	deststop = vid.screens[0] + vid.rowbytes * min(plines, vid.height);
+	deststop = vid.screens[0] + vid.rowbytes * std::min(plines, vid.height);
 	for (buf = vid.screens[0]; buf < deststop; ++buf)
 		*buf = consolebgmap[*buf];
 }
@@ -3057,7 +3058,7 @@ void V_DrawTitleCardString(int32_t x, int32_t y, const char *str, int32_t flags,
 
 				// otherwise; scalex must start at 0
 				// let's have each letter do 4 spins (360*4 + 90 = 1530 "degrees")
-				fakeang = min(360 + 90, let_time*41) * ANG1;
+				fakeang = std::min(360 + 90, let_time*41) * ANG1;
 				scalex = FINESINE(fakeang>>ANGLETOFINESHIFT);
 			}
 			else if (!bossmode && let_time > threshold)
@@ -3065,7 +3066,7 @@ void V_DrawTitleCardString(int32_t x, int32_t y, const char *str, int32_t flags,
 				// Make letters disappear...
 				let_time -= threshold;
 
-				fakeang = max(0, (360+90) - let_time*41)*ANG1;
+				fakeang = std::max(0, (360+90) - let_time*41)*ANG1;
 				scalex = FINESINE(fakeang>>ANGLETOFINESHIFT);
 			}
 
@@ -3215,7 +3216,7 @@ static inline fixed_t BunchedCharacterDim(
 	(void)chw;
 	(void)hchw;
 	(void)dup;
-	(*cwp) = FixedMul (max (1, (*cwp) - 1) << FRACBITS, scale);
+	(*cwp) = FixedMul (std::max (1, (*cwp) - 1) << FRACBITS, scale);
 	return 0;
 }
 
@@ -3225,6 +3226,7 @@ typedef struct
 	fixed_t spacew;
 	fixed_t    lfh;
 	fixed_t (*dim_fn)(fixed_t,fixed_t,int32_t,int32_t,fixed_t *);
+	uint8_t button_yofs;
 } fontspec_t;
 
 static void V_GetFontSpecification(int fontno, int32_t flags, fontspec_t *result)
@@ -3236,6 +3238,7 @@ static void V_GetFontSpecification(int fontno, int32_t flags, fontspec_t *result
 
 	// All other properties are guaranteed to be set
 	result->chw = 0;
+	result->button_yofs = 0;
 
 	const int32_t spacing = ( flags & V_SPACINGMASK );
 
@@ -3331,6 +3334,53 @@ static void V_GetFontSpecification(int fontno, int32_t flags, fontspec_t *result
 			break;
 		}
 	}
+
+	switch (fontno)
+	{
+		case HU_FONT:
+			result->button_yofs = 2;
+			break;
+	}
+}
+
+static uint8_t V_GetButtonCodeWidth(uint8_t c)
+{
+	uint8_t x = 0;
+
+	switch (c & 0x0F)
+	{
+	case 0x00:
+	case 0x01:
+	case 0x02:
+	case 0x03:
+		// arrows
+		x = 12;
+		break;
+
+	case 0x07:
+	case 0x08:
+	case 0x09:
+		// shoulders, start
+		x = 14;
+		break;
+
+	case 0x04:
+		// dpad
+		x = 14;
+		break;
+
+	case 0x0A:
+	case 0x0B:
+	case 0x0C:
+	case 0x0D:
+	case 0x0E:
+	case 0x0F:
+		// faces
+		x = 10;
+		break;
+	}
+
+	return x;
 }
 
 void V_DrawStringScaledEx(
@@ -3498,6 +3548,69 @@ void V_DrawStringScaledEx(
 						cyoff = V_DanceYOffset(dancecounter) * FRACUNIT;
 					}
 
+					if (( c & 0xB0 ) & 0x80) // button prompts
+					{
+						using srb2::Draw;
+
+						struct BtConf
+						{
+							uint8_t x, y;
+							gamecontrols_e type;
+						};
+
+						auto bt_inst = [c]() -> std::optional<BtConf>
+						{
+							switch (c & 0x0F)
+							{
+								case 0x00: return {{0, 3, gc_aimforward}};
+								case 0x01: return {{0, 3, gc_aimbackward}};
+								case 0x02: return {{0, 3, gc_turnleft}};
+								case 0x03: return {{0, 3,  gc_turnright}};
+
+								//case 0x04: return {{0, 4, Draw::Button::dpad}};
+
+								case 0x07: return {{0, 2,gc_drift}};
+								case 0x08: return {{0, 2, gc_fire}};
+
+								case 0x09: return {{0, 1, gc_systemmenu}};
+
+								case 0x0A: return {{2, 1, gc_accelerate}};
+								case 0x0B: return {{2, 1, gc_brake}};
+								case 0x0C: return {{2, 1, gc_horncode}};
+
+								case 0x0D: return {{2, 1, gc_custom1}};
+								case 0x0E: return {{2, 1, gc_custom2}};
+								case 0x0F: return {{2, 1, gc_custom3}};
+
+								default: return {};
+							}
+						}();
+
+						if (bt_inst)
+						{
+							auto bt_translate_press = [c]() -> std::optional<bool>
+							{
+								switch (c & 0xB0)
+								{
+									default:
+									case 0x90: return true;
+									case 0xA0: return {};
+									case 0xB0: return false;
+								}
+							};
+
+							cw = V_GetButtonCodeWidth(c) * dup;
+							cxoff = (*fontspec.dim_fn)(scale, fontspec.chw, hchw, dup, &cw);
+							Draw(
+								FixedToFloat(cx + cxoff) - (bt_inst->x * dup),
+								 FixedToFloat(cy + cyoff) - ((bt_inst->y + fontspec.button_yofs) * dup))
+							.flags(flags)
+							.button(bt_inst->type, bt_translate_press());
+							cx += cw;
+						}
+						break;
+					}
+
 					c -= font->start;
 					if (V_CharacterValid(font, c) == true)
 					{
@@ -3629,7 +3742,7 @@ fixed_t V_StringScaledWidth(
 					cx += fontspec.spacew;
 		}
 
-		fullwidth = max(right, max(cx, fullwidth));
+		fullwidth = std::max<fixed_t>(right, std::max(cx, fullwidth));
 	}
 
 	return fullwidth;
@@ -3708,7 +3821,7 @@ char * V_ScaledWordWrap(
 	size_t potentialnewlines = 8;
 	size_t sparenewlines = potentialnewlines;
 
-	char *newstring = Z_Malloc(len + sparenewlines, PU_STATIC, NULL);
+	char *newstring = static_cast<char *>(Z_Malloc(len + sparenewlines, PU_STATIC, NULL));
 
 	for (; ( c = s[reader] ); ++reader, ++writer)
 	{
@@ -3782,7 +3895,7 @@ char * V_ScaledWordWrap(
 				if (sparenewlines == 0)
 				{
 					sparenewlines = (potentialnewlines *= 2);
-					newstring = Z_Realloc(newstring, len + sparenewlines, PU_STATIC, NULL);
+					newstring = static_cast<char *>(Z_Realloc(newstring, len + sparenewlines, PU_STATIC, NULL));
 				}
 
 				sparenewlines--;
@@ -4109,7 +4222,7 @@ int32_t V_SubStringWidth(const char *string, int32_t length, int32_t option)
 		c = string[i];
 
 		if (c == '\n') {
-			w = max(w, lw); // width is based on widest line of text
+			w = std::max(w, lw); // width is based on widest line of text
 			lw = 0;
 			continue;
 		}
@@ -4126,7 +4239,7 @@ int32_t V_SubStringWidth(const char *string, int32_t length, int32_t option)
 		else
 			lw += (charwidth ? charwidth : fontv[HU_FONT].font[c]->width);
 	}
-	w = max(w, lw);
+	w = std::max(w, lw);
 
 	if (option & (V_NOSCALESTART|V_NOSCALEPATCH))
 		w *= vid.dup;
@@ -4165,7 +4278,7 @@ int32_t V_SmallSubStringWidth(const char *string, int32_t length, int32_t option
 		c = string[i];
 
 		if (c == '\n') {
-			w = max(w, lw); // width is based on widest line of text
+			w = std::max(w, lw); // width is based on widest line of text
 			lw = 0;
 			continue;
 		}
@@ -4182,7 +4295,7 @@ int32_t V_SmallSubStringWidth(const char *string, int32_t length, int32_t option
 		else
 			lw += (charwidth ? charwidth : fontv[HU_FONT].font[c]->width / 2);
 	}
-	w = max(w, lw);
+	w = std::max(w, lw);
 
 	return w;
 }
@@ -4220,7 +4333,7 @@ int32_t V_ThinSubStringWidth(const char *string, int32_t length, int32_t option)
 		c = string[i];
 
 		if (c == '\n') {
-			w = max(w, lw); // width is based on widest line of text
+			w = std::max(w, lw); // width is based on widest line of text
 			lw = 0;
 			continue;
 		}
@@ -4240,11 +4353,11 @@ int32_t V_ThinSubStringWidth(const char *string, int32_t length, int32_t option)
 		else
 		{
 			lw += (charwidth ? charwidth
-				: ((option & V_6WIDTHSPACE && i < (ssize_t)strlen(string)-1) ? max(1, fontv[TINY_FONT].font[c]->width-1) // Reuse this flag for the alternate bunched-up spacing
+				: ((option & V_6WIDTHSPACE && i < (ssize_t)strlen(string)-1) ? std::max(1, fontv[TINY_FONT].font[c]->width-1) // Reuse this flag for the alternate bunched-up spacing
 				: fontv[TINY_FONT].font[c]->width));
 		}
 	}
-	w = max(w, lw);
+	w = std::max(w, lw);
 
 	return w;
 }
@@ -4302,7 +4415,7 @@ int32_t V_SubStringLengthToFit(const char *string, int32_t width, int32_t option
 			w += (charwidth ? charwidth : fontv[HU_FONT].font[c]->width);
 	}
 
-	return max(i-1, 0);
+	return std::max(i-1, 0);
 }
 
 dboolean *heatshifter = NULL;
@@ -4418,7 +4531,7 @@ void V_DoPostProcessor(int32_t view, int32_t param)
 		if (heatshifter == NULL || lastheight != viewheight)
 		{
 			Z_Free(heatshifter);
-			heatshifter = Z_Calloc(viewheight * sizeof(dboolean), PU_STATIC, NULL);
+			heatshifter = static_cast<dboolean *>(Z_Calloc(viewheight * sizeof(dboolean), PU_STATIC, NULL));
 
 			for (y = 0; y < viewheight; y++)
 			{
@@ -4588,7 +4701,7 @@ void V_Init(void)
 #if defined(__SSE__)
 			while (screensize & 15)
 				screensize++;
-			vid.screens[i] = aligned_alloc(16, screensize);
+			vid.screens[i] = static_cast<uint8_t *>(aligned_alloc(16, screensize));
 #else
 			vid.screens[i] = malloc(screensize);
 #endif
@@ -4611,12 +4724,12 @@ void V_Recalc(void)
 	// Set dup based on width or height, whichever is less
 	if (((vid.width*FRACUNIT) / BASEVIDWIDTH) < ((vid.height*FRACUNIT) / BASEVIDHEIGHT))
 	{
-		vid.dup = max(vid.width / BASEVIDWIDTH, 1);
+		vid.dup = std::max(vid.width / BASEVIDWIDTH, 1);
 		vid.fdup = (vid.width*FRACUNIT) / BASEVIDWIDTH;
 	}
 	else
 	{
-		vid.dup = max(vid.height / BASEVIDHEIGHT, 1);
+		vid.dup = std::max(vid.height / BASEVIDHEIGHT, 1);
 		vid.fdup = (vid.height*FRACUNIT) / BASEVIDHEIGHT;
 	}
 

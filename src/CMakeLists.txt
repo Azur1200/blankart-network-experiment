@@ -92,7 +92,7 @@ add_executable(BLANKART MACOSX_BUNDLE WIN32
 	r_debug_parser.cpp
 	screen.c
 	taglist.c
-	v_video.c
+	v_video.cpp
 	v_draw.cpp
 	s_sound.c
 	sounds.c
