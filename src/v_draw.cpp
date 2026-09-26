@@ -182,146 +182,75 @@ void Chain::string(const char* str, int32_t flags, Font font) const
 
 namespace
 {
-
-static const char *find_button_from_gamecontrol(gamecontrols_e type)
-{
-	int32_t i;
-	for (i = 0; i < MAXINPUTMAPPING; i++)
-	{
-		if (gamecontrol[0][type][i] == 0)
-			continue;
-
-		if (gamecontrol[0][type][i] < KEY_JOY1 || gamecontrol[0][type][i] >= JOYINPUTEND)
-			continue;
-
-		return G_KeynumToString(gamecontrol[0][type][i]);
-
-	}
-
-	return NULL;
-}
-
+// Keep up to date with G_SupportedButtonDrawing in g_input.c
 patch_t** get_button_patch(gamecontrols_e type)
 {
-	int32_t i, j;
-	for (i = 0; i < MAXINPUTMAPPING; i++)
+	int32_t keynum = G_KeynumFromGamecontrol(type);
+
+	if (keynum == 0)
+		return kp_buttons_keyboardback;
+
+	switch (keynum)
 	{
-		if (gamecontrol[0][type][i] == 0)
-			continue;
-
-		if (gamecontrol[0][type][i] < KEY_JOY1 || gamecontrol[0][type][i] >= JOYINPUTEND)
-			continue;
-
-		const char *button = G_KeynumToString(gamecontrol[0][type][i]);
-
-		if (fasticmp(button, "A BUTTON"))
-		{
+		case KEY_JOY1+0:
 			return kp_buttons_a;
-		}
-		else if (fasticmp(button, "B BUTTON"))
-		{
-			return kp_buttons_b;
-		}
-		else if (fasticmp(button, "X BUTTON"))
-		{
+		case KEY_JOY1+1:
+				return kp_buttons_b;
+		case KEY_JOY1+2:
 			return kp_buttons_x;
-		}
-		else if (fasticmp(button, "Y BUTTON"))
-		{
+		case KEY_JOY1+3:
 			return kp_buttons_y;
-		}
-		else if (fasticmp(button, "START BUTTON"))
-		{
+		case KEY_JOY1+6:
 			return kp_buttons_start;
-		}
-		else if (fasticmp(button, "D-PAD LEFT"))
-		{
-			return kp_buttons_dpadleft;
-		}
-		else if (fasticmp(button, "D-PAD RIGHT"))
-		{
-			return kp_buttons_dpadright;
-		}
-		else if (fasticmp(button, "D-PAD UP"))
-		{
-			return kp_buttons_dpadup;
-		}
-		else if (fasticmp(button, "D-PAD DOWN"))
-		{
-			return kp_buttons_dpaddown;
-		}
-		else if (fasticmp(button, "L-STICK CLICK"))
-		{
+		case KEY_JOY1+7:
 			return kp_buttons_lstickclick;
-		}
-		else if (fasticmp(button, "R-STICK CLICK"))
-		{
+		case KEY_JOY1+8:
 			return kp_buttons_rstickclick;
-		}
-		else if (fasticmp(button, "L-STICK LEFT"))
-		{
-			return kp_buttons_lstickleft;
-		}
-		else if (fasticmp(button, "L-STICK RIGHT"))
-		{
-			return kp_buttons_lstickright;
-		}
-		else if (fasticmp(button, "L-STICK UP"))
-		{
-			return kp_buttons_lstickup;
-		}
-		else if (fasticmp(button, "L-STICK DOWN"))
-		{
-			return kp_buttons_lstickdown;
-		}
-		else if (fasticmp(button, "R-STICK LEFT"))
-		{
-			return kp_buttons_rstickleft;
-		}
-		else if (fasticmp(button, "R-STICK RIGHT"))
-		{
-			return kp_buttons_rstickright;
-		}
-		else if (fasticmp(button, "R-STICK UP"))
-		{
-			return kp_buttons_lstickup;
-		}
-		else if (fasticmp(button, "R-STICK DOWN"))
-		{
-			return kp_buttons_rstickdown;
-		}
-		else if (fasticmp(button, "L BUMPER"))
-		{
+		case KEY_JOY1+9:
 			return kp_buttons_lbumper;
-		}
-		else if (fasticmp(button, "R BUMPER"))
-		{
+		case KEY_JOY1+10:
 			return kp_buttons_rbumper;
-		}
-		else if (fasticmp(button, "L TRIGGER"))
-		{
-			return kp_buttons_ltrigger;
-		}
-		else if (fasticmp(button, "R TRIGGER"))
-		{
-			return kp_buttons_rtrigger;
-		}
-		else if (fasticmp(button, "PADDLE BUTTON 1"))
-		{
+		case KEY_JOY1+11:
+			return kp_buttons_dpadup;
+		case KEY_JOY1+12:
+			return kp_buttons_dpaddown;
+		case KEY_JOY1+13:
+			return kp_buttons_dpadleft;
+		case KEY_JOY1+14:
+			return kp_buttons_dpadright;
+		case KEY_JOY1+16:
 			return kp_buttons_paddle1;
-		}
-		else if (fasticmp(button, "PADDLE BUTTON 2"))
-		{
+		case KEY_JOY1+17:
 			return kp_buttons_paddle2;
-		}
-		else if (fasticmp(button, "PADDLE BUTTON 3"))
-		{
+		case KEY_JOY1+18:
 			return kp_buttons_paddle3;
-		}
-		else if (fasticmp(button, "PADDLE BUTTON 4"))
-		{
+		case KEY_JOY1+19:
 			return kp_buttons_paddle4;
-		}
+		case KEY_JOY1+20:
+			return kp_buttons_touchpad;
+		case KEY_AXIS1+0:
+			return kp_buttons_lstickleft;
+		case KEY_AXIS1+1:
+			return kp_buttons_lstickright;
+		case KEY_AXIS1+2:
+			return kp_buttons_lstickup;
+		case KEY_AXIS1+3:
+			return kp_buttons_lstickdown;
+		case KEY_AXIS1+4:
+			return kp_buttons_rstickleft;
+		case KEY_AXIS1+5:
+			return kp_buttons_rstickright;
+		case KEY_AXIS1+6:
+			return kp_buttons_rstickup;
+		case KEY_AXIS1+7:
+			return kp_buttons_rstickdown;
+		case KEY_AXIS1+8:
+			return kp_buttons_ltrigger;
+		case KEY_AXIS1+9:
+			return kp_buttons_rtrigger;
+		default:
+				return kp_buttons_keyboardback;
+			break;
 	}
 
 	return nullptr;
@@ -335,11 +264,11 @@ void Chain::button_(gamecontrols_e type, std::optional<bool> press) const
 
 	if (press)
 	{
-		K_drawButton(FloatToFixed(x_), FloatToFixed(y_), flags_, get_button_patch(type), *press);
+		K_drawButton(FloatToFixed(x_), FloatToFixed(y_), flags_, get_button_patch(type), *press, type);
 	}
 	else
 	{
-		K_drawButtonAnim(x_, y_, flags_, get_button_patch(type), I_GetTime());
+		K_drawButtonAnim(x_, y_, flags_, get_button_patch(type), I_GetTime(), type);
 	}
 }
 

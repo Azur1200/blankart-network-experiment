@@ -16,6 +16,7 @@
 #include "doomstat.h"
 #include "hu_stuff.h"
 #include "k_items.h"
+#include "g_input.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -207,8 +208,8 @@ extern consvar_t cv_show_riders_finish_ticker;
 
 void K_DrawSticker(int32_t x, int32_t y, int32_t width, int32_t flags, dboolean isSmall);
 
-void K_drawButton(fixed_t x, fixed_t y, int32_t flags, patch_t *button[2], dboolean pressed);
-void K_drawButtonAnim(int32_t x, int32_t y, int32_t flags, patch_t *button[2], tic_t animtic);
+void K_drawButton(fixed_t x, fixed_t y, int32_t flags, patch_t *button[2], dboolean pressed, gamecontrols_e type);
+void K_drawButtonAnim(int32_t x, int32_t y, int32_t flags, patch_t *button[2], tic_t animtic, gamecontrols_e type);
 
 // BUTTONS AAAAAA
 extern patch_t *kp_buttons_a[3];
@@ -245,6 +246,10 @@ extern patch_t *kp_buttons_paddle1[3];
 extern patch_t *kp_buttons_paddle2[3];
 extern patch_t *kp_buttons_paddle3[3];
 extern patch_t *kp_buttons_paddle4[3];
+
+extern patch_t *kp_buttons_touchpad[3];
+
+extern patch_t *kp_buttons_keyboardback[3];
 
 #ifdef __cplusplus
 } // extern "C"

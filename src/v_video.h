@@ -352,6 +352,7 @@ void V_DrawRightAlignedStringAtFixed(fixed_t x, fixed_t y, int32_t option, const
 void V_DrawCenteredSmallString(int32_t x, int32_t y, int32_t option, const char *string);
 void V_DrawCenteredSmallStringAtFixed(fixed_t x, fixed_t y, int32_t option, const char *string);
 void V_DrawRightAlignedSmallString(int32_t x, int32_t y, int32_t option, const char *string);
+void V_DrawRightAlignedSmallStringAtFixed(fixed_t x, fixed_t y, int32_t option, const char *string);
 
 // Draw a centered string.
 void V_DrawCenteredStringAtFixed(fixed_t x, fixed_t y, int32_t option, const char *string);

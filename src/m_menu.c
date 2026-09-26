@@ -5236,19 +5236,9 @@ const char *M_ButtonName(uint8_t p, gamecontrols_e gc, const char *fallback, dbo
 	else
 fallback:
 	{
-		for (i = 0; i < MAXINPUTMAPPING; i++)
-		{
-			if (gamecontrol[p][gc][i] == 0)
-				continue;
+		int32_t keynum = G_KeynumFromGamecontrol(gc);
 
-			if (gamecontrol[p][gc][i] < KEY_JOY1 || gamecontrol[p][gc][i] >= JOYINPUTEND)
-				continue;
-
-			return G_KeynumToString(gamecontrol[p][gc][i]);
-
-		}
-
-		return fallback;
+		return G_KeynumToString(keynum);
 	}
 }
 

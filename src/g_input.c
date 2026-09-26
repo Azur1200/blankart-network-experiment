@@ -270,13 +270,13 @@ void G_MapEventsToControls(event_t *ev)
 
 				if (ev->data1 > 0)
 				{
-					if (ev->data1 >= NUMKEYS)
+					if (ev->data1 < NUMKEYS)
 					{
-						keyboardcontrolled = false;
+						keyboardcontrolled = true;
 					}
 					else
 					{
-						keyboardcontrolled = true;
+						keyboardcontrolled = false;
 					}
 				}
 
@@ -973,6 +973,9 @@ const char *G_KeynumToString(int32_t keynum)
 
 	uint32_t j;
 
+	if (keynum == 0)
+		return "UBND";
+
 	// return a string with the ascii char if displayable
 	if (keynum > ' ' && keynum <= 'z' && keynum != KEY_CONSOLE)
 	{
@@ -1015,6 +1018,82 @@ int32_t G_KeyStringtoNum(const char *keystr)
 			return keynames[j].keynum;
 
 	return 0;
+}
+
+// returns 0 on unbound
+int32_t G_KeynumFromGamecontrol(gamecontrols_e type)
+{
+	int32_t i;
+	dboolean failedkbsearch = false;
+	for (i = 0; i < MAXINPUTMAPPING; i++)
+	{
+		int32_t keynum = gamecontrol[0][type][i];
+
+		if (keynum == 0)
+			continue;
+
+		if (keynum >= NUMINPUTS)
+			continue;
+
+		if (keyboardcontrolled && keynum >= NUMKEYS && !failedkbsearch)
+		{
+			if (i == MAXINPUTMAPPING-1)
+			{
+				i = -1;
+				failedkbsearch = true;
+			}
+
+			continue;
+		}
+
+		return keynum;
+	}
+
+	return 0;
+}
+
+// Keep up to date with get_button_patch in v_draw.cpp
+dboolean G_SupportedGamePadButtonDrawing(int32_t keynum)
+{
+	if (keynum == 0)
+		return false;
+
+	switch (keynum)
+	{
+		case KEY_JOY1+0:
+		case KEY_JOY1+1:
+		case KEY_JOY1+2:
+		case KEY_JOY1+3:
+		case KEY_JOY1+6:
+		case KEY_JOY1+7:
+		case KEY_JOY1+8:
+		case KEY_JOY1+9:
+		case KEY_JOY1+10:
+		case KEY_JOY1+11:
+		case KEY_JOY1+12:
+		case KEY_JOY1+13:
+		case KEY_JOY1+14:
+		case KEY_JOY1+16:
+		case KEY_JOY1+17:
+		case KEY_JOY1+18:
+		case KEY_JOY1+19:
+		case KEY_JOY1+20:
+		case KEY_AXIS1+0:
+		case KEY_AXIS1+1:
+		case KEY_AXIS1+2:
+		case KEY_AXIS1+3:
+		case KEY_AXIS1+4:
+		case KEY_AXIS1+5:
+		case KEY_AXIS1+6:
+		case KEY_AXIS1+7:
+		case KEY_AXIS1+8:
+		case KEY_AXIS1+9:
+			return true;
+		default:
+			break;
+	}
+
+	return false;
 }
 
 void G_ResetControls(uint8_t p)

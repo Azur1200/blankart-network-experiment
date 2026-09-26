@@ -304,6 +304,9 @@ patch_t *kp_buttons_paddle2[3] = {NULL};
 patch_t *kp_buttons_paddle3[3] = {NULL};
 patch_t *kp_buttons_paddle4[3] = {NULL};
 
+patch_t *kp_buttons_touchpad[3];
+
+patch_t *kp_buttons_keyboardback[3] = {NULL};
 
 void K_RegisterKartHUDStuff(void)
 {
@@ -988,6 +991,12 @@ void K_LoadKartHUDGraphics(void)
 
 	HU_UpdatePatch(&kp_buttons_paddle4[0], "BKB_P4");
 	HU_UpdatePatch(&kp_buttons_paddle4[1], "BKB_P4_P");
+
+	HU_UpdatePatch(&kp_buttons_touchpad[0], "BKB_TP");
+	HU_UpdatePatch(&kp_buttons_touchpad[1], "BKB_TP_P");
+
+	HU_UpdatePatch(&kp_buttons_keyboardback[0], "BKB_KB");
+	HU_UpdatePatch(&kp_buttons_keyboardback[1], "BKB_KB_P");
 
 }
 
@@ -6714,16 +6723,30 @@ K_drawMiniPing (void)
 	}
 }
 
-void K_drawButton(fixed_t x, fixed_t y, int32_t flags, patch_t *button[2], dboolean pressed)
+void K_drawButton(fixed_t x, fixed_t y, int32_t flags, patch_t *button[2], dboolean pressed, gamecontrols_e type)
 {
 	V_DrawFixedPatch(x, y, FRACUNIT, flags, button[(pressed == true) ? 1 : 0], NULL);
+
+	int32_t keynum = G_KeynumFromGamecontrol(type);
+	const char *teststring = G_KeynumToString(keynum);
+
+	if (!G_SupportedGamePadButtonDrawing(keynum))
+	{
+		int32_t colorflag = pressed ? V_GRAYMAP : 0;
+		int8_t length = strlen(teststring);
+
+		if (length > 1)
+			V_DrawSmallStringAtFixed(x+8*FRACUNIT, y+5*FRACUNIT, flags|colorflag, teststring);
+		else
+			V_DrawThinStringAtFixed(x+5*FRACUNIT, y+3*FRACUNIT, flags|colorflag, teststring);
+	}
 }
 
-void K_drawButtonAnim(int32_t x, int32_t y, int32_t flags, patch_t *button[2], tic_t animtic)
+void K_drawButtonAnim(int32_t x, int32_t y, int32_t flags, patch_t *button[2], tic_t animtic, gamecontrols_e type)
 {
 	const uint16_t anim_duration = 16;
 	const dboolean anim = ((animtic % (anim_duration * 2)) < anim_duration);
-	K_drawButton(x << FRACBITS, y << FRACBITS, flags, button, anim);
+	K_drawButton(x << FRACBITS, y << FRACBITS, flags, button, anim, type);
 }
 
 static void K_drawDistributionDebugger(void)

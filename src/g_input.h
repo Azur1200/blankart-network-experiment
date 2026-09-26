@@ -190,6 +190,8 @@ void G_MapEventsToControls(event_t *ev);
 // returns the name of a key
 const char *G_KeynumToString(int32_t keynum);
 int32_t G_KeyStringtoNum(const char *keystr);
+int32_t G_KeynumFromGamecontrol(gamecontrols_e type);
+dboolean G_SupportedGamePadButtonDrawing(int32_t keynum);
 
 dboolean G_KeyBindIsNecessary(int32_t gc);
 dboolean G_KeyIsAvailable(int32_t key, int32_t deviceID, dboolean digital);

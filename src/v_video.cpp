@@ -3345,42 +3345,64 @@ static void V_GetFontSpecification(int fontno, int32_t flags, fontspec_t *result
 
 static uint8_t V_GetButtonCodeWidth(uint8_t c)
 {
-	uint8_t x = 0;
+	uint8_t x = 16;
+	int32_t keynum = 0;
 
 	switch (c & 0x0F)
 	{
 	case 0x00:
+		keynum = G_KeynumFromGamecontrol(gc_aimforward);
+		break;
 	case 0x01:
+		keynum = G_KeynumFromGamecontrol(gc_aimbackward);
+		break;
 	case 0x02:
+		keynum = G_KeynumFromGamecontrol(gc_turnleft);
+		break;
 	case 0x03:
-		// arrows
-		x = 12;
+		keynum = G_KeynumFromGamecontrol(gc_turnright);
 		break;
 
 	case 0x07:
+		keynum = G_KeynumFromGamecontrol(gc_drift);
+		break;
 	case 0x08:
+		keynum = G_KeynumFromGamecontrol(gc_fire);
+		break;
 	case 0x09:
-		// shoulders, start
-		x = 14;
+		keynum = G_KeynumFromGamecontrol(gc_systemmenu);
 		break;
 
-	case 0x04:
+	/*case 0x04:
 		// dpad
 		x = 14;
-		break;
+		break;*/
 
 	case 0x0A:
+		keynum = G_KeynumFromGamecontrol(gc_accelerate);
+		break;
 	case 0x0B:
+		keynum = G_KeynumFromGamecontrol(gc_brake);
+		break;
 	case 0x0C:
+		keynum = G_KeynumFromGamecontrol(gc_horncode);
+		break;
 	case 0x0D:
+		keynum = G_KeynumFromGamecontrol(gc_custom1);
+		break;
 	case 0x0E:
+		keynum = G_KeynumFromGamecontrol(gc_custom2);
+		break;
 	case 0x0F:
-		// faces
-		x = 10;
+		keynum = G_KeynumFromGamecontrol(gc_custom3);
 		break;
 	}
 
-	return x;
+	int32_t length = V_SmallStringWidth(G_KeynumToString(keynum), 0);
+
+	int32_t finalsize = std::max<int32_t>(x, length / 2);
+
+	return finalsize;
 }
 
 void V_DrawStringScaledEx(
@@ -3603,7 +3625,7 @@ void V_DrawStringScaledEx(
 							cxoff = (*fontspec.dim_fn)(scale, fontspec.chw, hchw, dup, &cw);
 							Draw(
 								FixedToFloat(cx + cxoff) - (bt_inst->x * dup),
-								 FixedToFloat(cy + cyoff) - ((bt_inst->y + fontspec.button_yofs) * dup))
+								FixedToFloat(cy + cyoff) - ((bt_inst->y + fontspec.button_yofs) * dup))
 							.flags(flags)
 							.button(bt_inst->type, bt_translate_press());
 							cx += cw;
@@ -3948,6 +3970,12 @@ void V_DrawRightAlignedSmallString(int32_t x, int32_t y, int32_t option, const c
 {
 	x -= V_SmallStringWidth(string, option);
 	V_DrawSmallString(x, y, option, string);
+}
+
+void V_DrawRightAlignedSmallStringAtFixed(fixed_t x, fixed_t y, int32_t option, const char *string)
+{
+	x -= V_SmallStringWidth(string, option)<<FRACBITS;
+	V_DrawSmallStringAtFixed(x, y, option, string);
 }
 
 void V_DrawCenteredThinString(int32_t x, int32_t y, int32_t option, const char *string)

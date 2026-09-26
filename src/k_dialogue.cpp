@@ -477,8 +477,11 @@ void Dialogue::Draw(void)
 			return false;
 		};
 
+		int32_t length = static_cast<int32_t>(strnlen(G_KeynumToString(G_KeynumFromGamecontrol(gc_horncode)), 8));
+		int32_t offsetx = keyboardcontrolled && length > 4 ? length: 0;
+
 		drawer
-			.xy(17-14 - BASEVIDWIDTH, -39-16)
+			.xy(17-12 + offsetx - BASEVIDWIDTH, -39-16)
 			.button(gc_horncode, bt_translate_press());
 	}
 }

@@ -491,6 +491,7 @@ target_compile_options(BLANKART PRIVATE -fwrapv)
 
 if (${CMAKE_BUILD_TYPE} MATCHES Debug)
 	target_compile_options(BLANKART PRIVATE -O0)
+	target_compile_options(BLANKART PRIVATE -g)
 else()
 	target_compile_options(BLANKART PRIVATE -O3)
 endif()
