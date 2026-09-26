@@ -1765,6 +1765,12 @@ int32_t KO_SPBRaceOdds(int32_t odds, const kartroulette_t *roulette, const kartr
 		raceforce_pdis = FixedMul(raceforce_pdis, 3 * FRACUNIT / 2);
 	}
 
+	if (roulette->is_shrunk == true && cv_kartaltshrink_runneranger.value)
+	{
+		// Mini with runner-anger cuts the SPB threshold in half
+		raceforce_pdis *= 2;
+	}
+
 	// No forced SPB in 1v1s, it has to be randomly rolled
 	if (roulette->pingame <= 2)
 	{
