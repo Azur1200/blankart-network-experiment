@@ -2213,10 +2213,13 @@ static void P_3dMovement(player_t *player)
 	// Sideways movement
 	if (cmd->sidemove != 0 && !((player->exiting || mapreset) || K_IsPlayerDamaged(player)))
 	{
+		// Can we not use FRACUNIT on something that varies by scale
+		fixed_t strafepower = FixedMul(FRACUNIT/128, mapobjectscale);
+
 		if (cmd->sidemove > 0)
-			movepushside = (cmd->sidemove * FRACUNIT/128) + FixedDiv(player->speed, K_GetKartSpeed(player, true, true));
+			movepushside = (cmd->sidemove * strafepower) + FixedDiv(player->speed, K_GetKartSpeed(player, true, true));
 		else
-			movepushside = (cmd->sidemove * FRACUNIT/128) - FixedDiv(player->speed, K_GetKartSpeed(player, true, true));
+			movepushside = (cmd->sidemove * strafepower) - FixedDiv(player->speed, K_GetKartSpeed(player, true, true));
 
 		totalthrust.x += P_ReturnThrustX(player->mo, movepushsideangle, movepushside);
 		totalthrust.y += P_ReturnThrustY(player->mo, movepushsideangle, movepushside);
