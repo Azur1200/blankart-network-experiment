@@ -1621,13 +1621,13 @@ void G_BuildTiccmd(ticcmd_t *cmd, int32_t realtics, uint8_t ssplayer)
 	{
 		cmd->turning -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
 		cmd->angle -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
-		side += (accelerometertilt * 4) / JOYAXISRANGE;
+		side += (accelerometertilt * 2) / JOYAXISRANGE;
 	}
 	else if (joystickvector.xaxis != 0)
 	{
 		cmd->turning -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
 		cmd->angle -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
-		side += (joystickvector.xaxis * 4) / JOYAXISRANGE;
+		side += (joystickvector.xaxis * 2) / JOYAXISRANGE;
 	}
 
 	// Specator mouse turning
@@ -1787,8 +1787,18 @@ void G_BuildTiccmd(ticcmd_t *cmd, int32_t realtics, uint8_t ssplayer)
 			cmd->aiming = 0;
 	}
 
-	cmd->forwardmove += (int8_t)forward;
-	cmd->sidemove	 += (int8_t)side;
+	if (forward > MAXPLMOVE)
+		forward = MAXPLMOVE;
+	else if (forward < -MAXPLMOVE)
+		forward = -MAXPLMOVE;
+
+	if (side > MAXPLMOVE)
+		side = MAXPLMOVE;
+	else if (side < -MAXPLMOVE)
+		side = -MAXPLMOVE;
+
+	if (forward) cmd->forwardmove = (int8_t)(cmd->forwardmove + forward);
+	if (side) cmd->sidemove = (int8_t)(cmd->sidemove + side);
 	cmd->flags = 0;
 
 	/* 	Lua: Allow this hook to overwrite ticcmd.

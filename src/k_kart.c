@@ -3700,15 +3700,15 @@ int8_t K_GetSideMove(const player_t *player)
 		player->spinouttimer ||
 		player->flipovertimer || player->crash_state) // pw_introcam?
 	{
-		sidemove = 0;
+		return 0;
 	}
 
-	if (!player->pogospring)
+	if (player->pogospring)
 	{
-		sidemove = 0;
+		return sidemove;
 	}
 
-	return sidemove;
+	return 0;
 }
 
 fixed_t K_GetNewSpeed(const player_t *player)
@@ -3766,10 +3766,13 @@ fixed_t K_3dKartMovement(const player_t *player, dboolean onground, int8_t forwa
 	finalspeed *= forwardmove/25;
 	finalspeed /= 2;
 
-	if (forwardmove < 0 && finalspeed > mapobjectscale*2)
-		return finalspeed/2;
-	else if (forwardmove < 0)
+	if (forwardmove < 0)
+	{
+		if (finalspeed > mapobjectscale*2)
+			return finalspeed/2;
+
 		return -mapobjectscale/2;
+	}
 
 	if (finalspeed < 0)
 		finalspeed = 0;
@@ -10361,7 +10364,7 @@ int16_t K_GetKartTurnValue(const player_t *player, int16_t turnvalue)
 	fixed_t p_topspeed = K_GetKartSpeed(player, false, false);
 	fixed_t p_curspeed = min(player->speed, p_topspeed * 2);
 	fixed_t p_maxspeed = p_topspeed * 3;
-	fixed_t adjustangle = FixedDiv((p_maxspeed>>16) - (p_curspeed>>16), (p_maxspeed>>16) + player->kartweight);
+	fixed_t adjustangle = FixedDiv(p_maxspeed - p_curspeed, p_maxspeed + (player->kartweight<<FRACBITS));
 
 	if (player->spectator)
 		return turnvalue;

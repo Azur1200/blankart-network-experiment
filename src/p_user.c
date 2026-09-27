@@ -2105,7 +2105,6 @@ static void P_3dMovement(player_t *player)
 	ticcmd_t *cmd;
 	angle_t movepushangle, movepushsideangle; // Analog
 	fixed_t movepushforward = 0, movepushside = 0;
-	angle_t dangle; // replaces old quadrants bits
 	fixed_t oldMagnitude, newMagnitude;
 	vector3_t totalthrust;
 	uint16_t buttons = K_GetKartButtons(player);
@@ -2159,15 +2158,6 @@ static void P_3dMovement(player_t *player)
 	// Calculates player's speed based on distance-of-a-line formula
 	player->speed = R_PointToDist2(0, 0, player->rmomx, player->rmomy);
 
-	// Monster Iestyn - 04-11-13
-	// Quadrants are stupid, excessive and broken, let's do this a much simpler way!
-	// Get delta angle from rmom angle and player angle first
-	dangle = R_PointToAngle2(0,0, player->rmomx, player->rmomy) - player->mo->angle;
-	if (dangle > ANGLE_180) //flip to keep to one side
-	{
-		dangle = InvAngle(dangle);
-	}
-
 	// When sliding, don't allow forward/back
 	if (player->carry == CR_SLIDING)
 		cmd->forwardmove = 0;
@@ -2209,17 +2199,16 @@ static void P_3dMovement(player_t *player)
 	{
 		K_MomentumToFacing(player);
 	}
-	
+
+	const fixed_t kartspd = K_GetKartSpeed(player, true, true);
+
 	// Sideways movement
 	if (cmd->sidemove != 0 && !((player->exiting || mapreset) || K_IsPlayerDamaged(player)))
 	{
-		// Can we not use FRACUNIT on something that varies by scale
-		fixed_t strafepower = FixedMul(FRACUNIT/128, mapobjectscale);
-
 		if (cmd->sidemove > 0)
-			movepushside = (cmd->sidemove * strafepower) + FixedDiv(player->speed, K_GetKartSpeed(player, true, true));
+			movepushside = FixedMul((cmd->sidemove * FRACUNIT/128) + FixedDiv(player->speed, kartspd), mapobjectscale);
 		else
-			movepushside = (cmd->sidemove * strafepower) - FixedDiv(player->speed, K_GetKartSpeed(player, true, true));
+			movepushside = FixedMul((cmd->sidemove * FRACUNIT/128) - FixedDiv(player->speed, kartspd), mapobjectscale);
 
 		totalthrust.x += P_ReturnThrustX(player->mo, movepushsideangle, movepushside);
 		totalthrust.y += P_ReturnThrustY(player->mo, movepushsideangle, movepushside);
@@ -2271,12 +2260,13 @@ static void P_3dMovement(player_t *player)
 	// If "no" to 1, we're not reaching any limits yet, so ignore this entirely!
 	// -Shadow Hog
 	newMagnitude = R_PointToDist2(player->mo->momx - player->cmomx, player->mo->momy - player->cmomy, 0, 0);
-	if (player->offroad > 0 || (player->loop.radius == 0 && player->outruntime == 0))
+
+	if (player->loop.radius == 0 && player->outruntime == 0)
 	{
-		if (newMagnitude > K_GetKartSpeed(player, true, true)) //topspeed)
+		if (newMagnitude > kartspd) //topspeed)
 		{
 			fixed_t tempmomx, tempmomy;
-			if (oldMagnitude > K_GetKartSpeed(player, true, true) && onground) // SRB2Kart: onground check for air speed cap
+			if (oldMagnitude > kartspd && onground) // SRB2Kart: onground check for air speed cap
 			{
 				if (newMagnitude > oldMagnitude)
 				{
@@ -2289,8 +2279,8 @@ static void P_3dMovement(player_t *player)
 			}
 			else if (player->airdriftspeed == 0)
 			{
-				tempmomx = FixedMul(FixedDiv(player->mo->momx - player->cmomx, newMagnitude), K_GetKartSpeed(player, true, true)); //topspeed)
-				tempmomy = FixedMul(FixedDiv(player->mo->momy - player->cmomy, newMagnitude), K_GetKartSpeed(player, true, true)); //topspeed)
+				tempmomx = FixedMul(FixedDiv(player->mo->momx - player->cmomx, newMagnitude), kartspd); //topspeed)
+				tempmomy = FixedMul(FixedDiv(player->mo->momy - player->cmomy, newMagnitude), kartspd); //topspeed)
 				player->mo->momx = tempmomx + player->cmomx;
 				player->mo->momy = tempmomy + player->cmomy;
 			}
@@ -2372,7 +2362,7 @@ static void P_UpdatePlayerAngle(player_t *player)
 	int16_t angle_diff, max_left_turn, max_right_turn;
 	dboolean add_delta = true;
 	ticcmd_t *cmd = &player->cmd;
-	angle_t anglechange = player->angleturn;
+	angle_t anglechange = player->mo->angle;
 
 	// Kart: store the current turn range for later use
 	if (P_CanPlayerTurn(player, cmd))
@@ -2383,7 +2373,7 @@ static void P_UpdatePlayerAngle(player_t *player)
 		player->lturn_max[leveltime%MAXPREDICTTICS] = player->rturn_max[leveltime%MAXPREDICTTICS] = 0;
 	}
 	
-	if ((gametypes[gametype]->rules & GTR_NOCOUNTDOWN) || leveltime >= starttime)
+	if ((gametypes[gametype]->rules & GTR_NOCOUNTDOWN) || LIKELY(leveltime >= starttime))
 	{
 		// KART: Don't directly apply angleturn! It may have been either A) forged by a malicious client, or B) not be a smooth turn due to a player dropping frames.
 		// Instead, turn the player only up to the amount they're supposed to turn accounting for latency. Allow exactly 1 extra turn unit to try to keep old replays synced.
@@ -4991,6 +4981,7 @@ void P_SetPlayerAngle(player_t *player, angle_t angle)
 {
 	P_ForceLocalAngle(player, angle, true);
 	player->angleturn = angle;
+	player->mo->angle = angle;
 }
 
 angle_t P_GetLocalAngle(player_t *player)
