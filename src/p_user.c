@@ -2362,7 +2362,7 @@ static void P_UpdatePlayerAngle(player_t *player)
 	int16_t angle_diff, max_left_turn, max_right_turn;
 	dboolean add_delta = true;
 	ticcmd_t *cmd = &player->cmd;
-	angle_t anglechange = player->mo->angle;
+	angle_t anglechange = player->angleturn;
 
 	// Kart: store the current turn range for later use
 	if (P_CanPlayerTurn(player, cmd))
@@ -4981,7 +4981,6 @@ void P_SetPlayerAngle(player_t *player, angle_t angle)
 {
 	P_ForceLocalAngle(player, angle, true);
 	player->angleturn = angle;
-	player->mo->angle = angle;
 }
 
 angle_t P_GetLocalAngle(player_t *player)
