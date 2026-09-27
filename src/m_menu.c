@@ -2621,7 +2621,7 @@ void M_UpdateMenuCMD(uint8_t i, dboolean bailrequired)
 				break;
 		}
 	}
-	else if (!keyboardcontrolled && (menustack[0] || messagebox.active))
+	else
 	{
 		if (G_PlayerInputDown(i, gc_aimforward, false, DEADZONE_Y)) { menucmd[i].dpad_ud--; }
 		else if (menustack[0] && menucmd[i].ev_dpad_ud < 0) { menucmd[i].dpad_ud--; }
