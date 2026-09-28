@@ -10364,7 +10364,7 @@ int16_t K_GetKartTurnValue(const player_t *player, int16_t turnvalue)
 	fixed_t p_topspeed = K_GetKartSpeed(player, false, false);
 	fixed_t p_curspeed = min(player->speed, p_topspeed * 2);
 	fixed_t p_maxspeed = p_topspeed * 3;
-	fixed_t adjustangle = FixedDiv(p_maxspeed - p_curspeed, p_maxspeed + (player->kartweight<<FRACBITS));
+	fixed_t adjustangle = FixedDiv((p_maxspeed>>16) - (p_curspeed>>16), (p_maxspeed>>16) + player->kartweight);
 
 	if (player->spectator)
 		return turnvalue;
