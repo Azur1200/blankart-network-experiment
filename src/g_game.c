@@ -1621,13 +1621,13 @@ void G_BuildTiccmd(ticcmd_t *cmd, int32_t realtics, uint8_t ssplayer)
 	{
 		cmd->turning -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
 		cmd->angle -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
-		side += (accelerometertilt * 2) / JOYAXISRANGE;
+		side += (accelerometertilt * 4) / JOYAXISRANGE;
 	}
 	else if (joystickvector.xaxis != 0)
 	{
 		cmd->turning -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
 		cmd->angle -= (tspeed * KART_FULLTURN) / JOYAXISRANGE;
-		side += (joystickvector.xaxis * 2) / JOYAXISRANGE;
+		side += (joystickvector.xaxis * 4) / JOYAXISRANGE;
 	}
 
 	// Specator mouse turning
