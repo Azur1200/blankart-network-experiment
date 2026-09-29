@@ -2308,9 +2308,9 @@ static waypoint_t *K_SetupWaypoint(mobj_t *const mobj)
 			}
 
 			// Set drift settings.
-			if (mobj->watertop)
+			if (mobj->extravalue3)
 			{
-				thiswaypoint->driftsettings = (driftSetting_e)mobj->watertop;
+				thiswaypoint->driftsettings = (driftSetting_e)mobj->extravalue3;
 			}
 
 			if (thiswaypoint->numnextwaypoints > 0)
@@ -3078,8 +3078,8 @@ static dboolean K_AnchorWaypointRadius(
 
 		if (anchor->extravalue1)
 		{
-			waypointmobj->watertop = anchor->extravalue1;
-			waypointmobj->spawnpoint->args[3] = waypointmobj->watertop;
+			waypointmobj->extravalue3 = anchor->extravalue1;
+			waypointmobj->spawnpoint->args[3] = waypointmobj->extravalue3;
 		}
 		else
 		{

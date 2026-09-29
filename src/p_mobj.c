@@ -13872,7 +13872,7 @@ static dboolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, dboolea
 		// lastlook is used for indicating the waypoint is a shortcut
 		// extravalue1 is used for indicating the waypoint is disabled
 		// extravalue2 is used for indicating the waypoint is the finishline
-		// watertop is the waypoint's drift settings
+		// extravalue3 is the waypoint's drift settings
 		mobj->threshold = mthing->args[0];
 
 		mobj->movecount = tag;
@@ -13931,7 +13931,7 @@ static dboolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, dboolea
 			mobj->extravalue2 = 0;
 		}
 
-		mobj->watertop = mthing->args[3];
+		mobj->extravalue3 = mthing->args[3];
 
 		// Sryder 2018-12-7: Grabbed this from the old MT_BOSS3WAYPOINT section so they'll be in the waypointcap instead
 		P_SetTarget(&mobj->tracer, waypointcap);
