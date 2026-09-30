@@ -29,6 +29,8 @@
 #include "../dehacked.h"
 
 char *glsl_version = nullptr;
+static bool imgui_opengl_init = false;
+static bool imgui_software_init = false;
 static bool imgui_setup= false;
 static bool imgui_frame_active = false;
 static bool imgui_active = false;
@@ -44,27 +46,29 @@ void Impl_ImGui_CreateContext(void)
 
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
-	//ImGui::StyleColorsLight();
 }
 
 void Impl_ImGui_DestroyContext(void)
 {
-	imgui_frame_active = false;
-
 	if (imgui_setup == true)
 	{
-		if (rendermode == render_soft)
+
+		if (imgui_software_init == true)
 		{
 			ImGui_ImplSDLRenderer3_Shutdown();
+			imgui_software_init = false;
 		}
-		else if (rendermode == render_opengl)
+
+		if (imgui_opengl_init == true)
 		{
 			ImGui_ImplOpenGL3_Shutdown();
+			imgui_opengl_init = false;
 		}
 
 		ImGui_ImplSDL3_Shutdown();
 		ImGui::DestroyContext();
 		imgui_setup = false;
+		imgui_frame_active = false;
 	}
 }
 
@@ -84,7 +88,7 @@ void Impl_ImGui_Frame(void)
 	io.DisplaySize.y = vid.height;
 	if (rendermode == render_soft)
 		ImGui_ImplSDLRenderer3_NewFrame();
-	else
+	else if (rendermode == render_opengl)
 		ImGui_ImplOpenGL3_NewFrame();
 
 	ImGui_ImplSDL3_NewFrame();
@@ -96,17 +100,19 @@ void Impl_ImGui_InitSoftware(SDL_Window *window, SDL_Renderer *renderer)
 {
 	imgui_setup = ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
 	ImGui_ImplSDLRenderer3_Init(renderer);
+	imgui_software_init = true;
 }
 
 void Impl_ImGui_InitOpenGL(SDL_Window *window, SDL_GLContext *sdlglcontext)
 {
 	imgui_setup = ImGui_ImplSDL3_InitForOpenGL(window, sdlglcontext);
 	ImGui_ImplOpenGL3_Init(glsl_version);
+	imgui_opengl_init = true;
 }
 
 void Impl_ImGui_SoftwareRenderDrawData(SDL_Renderer *renderer)
 {
-	if (imgui_setup == false || imgui_frame_active == false)
+	if (imgui_setup == false || imgui_frame_active == false || imgui_software_init == false)
 		return;
 
 	ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
@@ -114,7 +120,7 @@ void Impl_ImGui_SoftwareRenderDrawData(SDL_Renderer *renderer)
 
 void Impl_ImGui_OpenGLRenderDrawData(void)
 {
-	if (imgui_setup == false || imgui_frame_active == false)
+	if (imgui_setup == false || imgui_frame_active == false || imgui_opengl_init == false)
 		return;
 
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -157,7 +163,7 @@ static void generic_mobj(mobj_t *mobj, const char* name, int32_t recursive_mobj,
 
 	char nameid[512];
 
-	snprintf(nameid, sizeof(nameid), "%s###%d_%d", name, recursive_mobj, recursive_player);
+	snprintf(nameid, sizeof(nameid), "%s###%s%d_%d", name, name, recursive_mobj, recursive_player);
 
 	if (ImGui::CollapsingHeader(nameid))
 	{
@@ -208,8 +214,11 @@ static void MobjDisplay(mobj_t *mobj, int32_t recursive_mobj, int32_t recursive_
 	ImGui::Text("Type: %s (%d)", DEH_MobjtypeName(mobj->type), mobj->type);
 	//mobjinfo
 
-	//generic_mobj(mobj->bnext, "bnext", recursive_mobj, recursive_player);
-	//generic_mobj(*mobj->bprev, "bprev", recursive_mobj, recursive_player);
+	generic_mobj(mobj->bnext, "bnext", recursive_mobj, recursive_player);
+	if (mobj->bprev)
+	{
+		generic_mobj(*mobj->bprev, "bprev", recursive_mobj, recursive_player);
+	}
 
 	ImGui::Text("angle pitch roll: %d %d %d", mobj->angle, mobj->pitch, mobj->roll);
 	ImGui::Text("slopepitch sloperoll: %d %d", mobj->slopepitch, mobj->sloperoll);
@@ -260,13 +269,21 @@ static void MobjDisplay(mobj_t *mobj, int32_t recursive_mobj, int32_t recursive_
 	ImGui::Text("eflags: %d", mobj->eflags);
 
 	ImGui::Text("tid: %d", mobj->tid);
-	//generic_mobj(*mobj->tid_prev, "tid_prev", recursive_mobj, recursive_player);
+
+	if (mobj->tid_prev)
+	{
+		generic_mobj(*mobj->tid_prev, "tid_prev", recursive_mobj, recursive_player);
+	}
 	generic_mobj(mobj->tid_next, "tid_next", recursive_mobj, recursive_player);
 
 	ImGui::Text("Color: %s", skincolors[mobj->color].name);
 
-	//generic_mobj(*mobj->sprev, "sprev", recursive_mobj, recursive_player);
-	//generic_mobj(mobj->snext, "snext", recursive_mobj, recursive_player);
+
+	if (mobj->sprev)
+	{
+		generic_mobj(*mobj->sprev, "sprev", recursive_mobj, recursive_player);
+	}
+	generic_mobj(mobj->snext, "snext", recursive_mobj, recursive_player);
 
 	generic_mobj(mobj->hprev, "hprev", recursive_mobj, recursive_player);
 	generic_mobj(mobj->hnext, "hnext", recursive_mobj, recursive_player);
@@ -287,7 +304,7 @@ static void MobjDisplay(mobj_t *mobj, int32_t recursive_mobj, int32_t recursive_
 	if (mobj->player)
 	{
 		char nameid[512];
-		snprintf(nameid, sizeof(nameid), "Player###%d_%d", recursive_mobj, recursive_player);
+		snprintf(nameid, sizeof(nameid), "Player###Player%d_%d", recursive_mobj, recursive_player);
 		if (ImGui::CollapsingHeader(nameid))
 		{
 			if (recursive_player >= recursive_max)
@@ -351,11 +368,11 @@ static void MobjDisplay(mobj_t *mobj, int32_t recursive_mobj, int32_t recursive_
 	ImGui::Text("dispoffset: %d", mobj->dispoffset);
 
 	ImGui::Text("args: %d %d %d %d %d %d %d %d %d %d", mobj->args[0], mobj->args[1], mobj->args[2], mobj->args[3], mobj->args[4], mobj->args[5], mobj->args[6], mobj->args[7], mobj->args[8], mobj->args[9]);
-	//stringargs
+	ImGui::Text("stringargs: %s %s", mobj->stringargs[0] ? mobj->stringargs[0] : "NULL", mobj->stringargs[1] ? mobj->stringargs[1] : "NULL" );
 
 	ImGui::Text("special: %d", mobj->special);
-	ImGui::Text("script_args: %d %d %d %d %d %d %d %d %d %d", mobj->args[0], mobj->args[1], mobj->args[2], mobj->args[3], mobj->args[4], mobj->args[5], mobj->args[6], mobj->args[7], mobj->args[8], mobj->args[9]);
-	//script_stringargs
+	ImGui::Text("script_args: %d %d %d %d %d %d %d %d %d %d", mobj->script_args[0], mobj->script_args[1], mobj->script_args[2], mobj->script_args[3], mobj->script_args[4], mobj->script_args[5], mobj->script_args[6], mobj->script_args[7], mobj->args[8], mobj->args[9]);
+	ImGui::Text("script_stringargs: %s %s", mobj->script_stringargs[0] ? mobj->script_stringargs[0] : "NULL", mobj->script_stringargs[1] ? mobj->script_stringargs[1] : "NULL" );
 
 	ImGui::Text("po_movecount: %d", mobj->po_movecount);
 }
