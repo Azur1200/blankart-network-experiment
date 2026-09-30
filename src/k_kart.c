@@ -5260,8 +5260,8 @@ mobj_t *K_SpawnWipeoutTrail(mobj_t *mo, dboolean translucent)
 	fixed_t rand_x;
 	fixed_t rand_y;
 
-	rand_y = mo->y + FixedMul(24*mo->scale, FINESINE(aoff>>ANGLETOFINESHIFT)) + (P_RandomRange(PR_DECORATION,-8,8)*mo->scale);
-	rand_x = mo->x + FixedMul(24*mo->scale, FINECOSINE(aoff>>ANGLETOFINESHIFT)) + (P_RandomRange(PR_DECORATION,-8,8)*mo->scale);
+	rand_y = mo->y + FixedMul(24*FINESINE(aoff>>ANGLETOFINESHIFT) + (P_RandomRange(PR_DECORATION,-8,8)*FRACUNIT), mo->scale);
+	rand_x = mo->x + FixedMul(24*FINECOSINE(aoff>>ANGLETOFINESHIFT) + (P_RandomRange(PR_DECORATION,-8,8)*FRACUNIT), mo->scale);
 
 	dust = P_SpawnMobj(rand_x, rand_y, mo->z, MT_WIPEOUTTRAIL);
 
