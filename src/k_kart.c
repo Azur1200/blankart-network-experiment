@@ -5260,8 +5260,8 @@ mobj_t *K_SpawnWipeoutTrail(mobj_t *mo, dboolean translucent)
 	fixed_t rand_x;
 	fixed_t rand_y;
 
-	rand_y = mo->y + FixedMul(24*mo->scale, FINESINE(aoff>>ANGLETOFINESHIFT)) + (P_RandomRange(PR_DECORATION,-8,8) << FRACBITS);
-	rand_x = mo->x + FixedMul(24*mo->scale, FINECOSINE(aoff>>ANGLETOFINESHIFT)) + (P_RandomRange(PR_DECORATION,-8,8) << FRACBITS);
+	rand_y = mo->y + FixedMul(24*mo->scale, FINESINE(aoff>>ANGLETOFINESHIFT)) + (P_RandomRange(PR_DECORATION,-8,8)*mo->scale);
+	rand_x = mo->x + FixedMul(24*mo->scale, FINECOSINE(aoff>>ANGLETOFINESHIFT)) + (P_RandomRange(PR_DECORATION,-8,8)*mo->scale);
 
 	dust = P_SpawnMobj(rand_x, rand_y, mo->z, MT_WIPEOUTTRAIL);
 
@@ -11308,16 +11308,19 @@ static void K_RecoveryDash(player_t *player)
 				travelangle = player->mo->angle;
 				for (int32_t i = 0; i < 2; i++)
 				{
+					// don't spawn vfx if this side isn't grounded visually
 					if (player->karttilt && ((player->karttilt < 0 && !(i & 1)) || (player->karttilt > 0 && (i & 1))))
 					{
 						continue;
 					}
-					newx = P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(28*FRACUNIT, player->mo->scale));
-					newy = P_ReturnThrustY(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(28*FRACUNIT, player->mo->scale));
-					skid = P_SpawnMobjFromMobj(player->mo, newx, newy, (10*player->mo->scale), MT_OVERLAY);
+					// P_SpawnMobjFromMobj will scale these to match the player's scale
+					newx = P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, 28*FRACUNIT);
+					newy = P_ReturnThrustY(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, 28*FRACUNIT);
+					skid = P_SpawnMobjFromMobj(player->mo, newx, newy, (10*FRACUNIT), MT_OVERLAY);
 					P_SetTarget(&skid->target, player->mo);
-					skid->sprxoff = newx;
-					skid->spryoff = newy;
+					// not these tho
+					skid->sprxoff = FixedMul(newx, player->mo->scale);
+					skid->spryoff = FixedMul(newy, player->mo->scale);
 					skid->sprzoff = (10*player->mo->scale);
 
 					P_SetScale(skid, player->mo->scale);
@@ -11361,8 +11364,8 @@ static void K_RecoveryDash(player_t *player)
 						// player has to be grounded in general for this to make sense, so never skip spawning sparks if player is airborne
 						continue;
 					}
-					newx = player->mo->x + P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(32*FRACUNIT, player->mo->scale));
-					newy = player->mo->y + P_ReturnThrustY(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, FixedMul(32*FRACUNIT, player->mo->scale));
+					newx = player->mo->x + P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, 32*player->mo->scale);
+					newy = player->mo->y + P_ReturnThrustY(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, 32*player->mo->scale);
 					spark = P_SpawnMobj(newx, newy, player->mo->z, MT_DRIFTSPARK);
 					spark->momx = player->mo->momx/2;
 					spark->momy = player->mo->momy/2;
