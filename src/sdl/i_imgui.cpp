@@ -135,11 +135,6 @@ bool Impl_ImGui_HandleEvent(SDL_Event *event)
 
 	ImGuiIO& io = ImGui::GetIO();
 
-	if (renderer)
-	{
-		SDL_ConvertEventToRenderCoordinates(renderer, event);
-	}
-
 	ImGui_ImplSDL3_ProcessEvent(event);
 
 	if (io.WantCaptureMouse || io.WantCaptureKeyboard)

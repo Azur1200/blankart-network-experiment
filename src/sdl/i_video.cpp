@@ -1151,6 +1151,11 @@ void I_GetEvent(void)
 
 	while (SDL_PollEvent(&evt))
 	{
+		if (renderer)
+		{
+			SDL_ConvertEventToRenderCoordinates(renderer, &evt);
+		}
+
 		if (Impl_ImGui_HandleEvent(&evt))
 			continue;
 
