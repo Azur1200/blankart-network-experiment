@@ -3631,14 +3631,20 @@ dboolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, dboolean resetca
 
 	// point viewed by the camera
 	// this point is just 64 unit forward the player
-	dist = 64*mapobjectscale;
-	viewpointx = mo->x + FixedMul(FINECOSINE((angle>>ANGLETOFINESHIFT) & FINEMASK), dist) + xpan;
-	viewpointy = mo->y + FixedMul(FINESINE((angle>>ANGLETOFINESHIFT) & FINEMASK), dist) + ypan;
+	dist = 64;
+	viewpointx = mo->x + FixedMul(dist * FINECOSINE((angle>>ANGLETOFINESHIFT) & FINEMASK), mapobjectscale) + xpan;
+	viewpointy = mo->y + FixedMul(dist * FINESINE((angle>>ANGLETOFINESHIFT) & FINEMASK), mapobjectscale) + ypan;
 
 	if (timeover)
 		thiscam->angle = angle;
 	else if (!camstill && !resetcalled && !paused && timeover != 1)
-		thiscam->angle = R_PointToAngle2(thiscam->x, thiscam->y, viewpointx, viewpointy);
+	{
+		fixed_t vpdx, vpdy, magnitude;
+		vpdx = viewpointx - thiscam->x;
+		vpdy = viewpointy - thiscam->y;
+		magnitude = FixedHypot(vpdx, vpdy);
+		thiscam->angle = R_PointToAngle2(0, 0, FixedDiv(vpdx, magnitude), FixedDiv(vpdy, magnitude));
+	}
 
 	if (timeover == 1)
 	{
