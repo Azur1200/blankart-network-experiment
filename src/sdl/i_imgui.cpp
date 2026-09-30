@@ -152,11 +152,10 @@ typedef struct
 } imgui_state_t;
 
 imgui_state_t windowstate = {0};
+int32_t recursive_max = 25;
 
 static void PlayerDisplay(player_t *player, int32_t recursive_mobj, int32_t recursive_player);
 static void MobjDisplay(mobj_t *mobj, int32_t recursive_mobj, int32_t recursive_player);
-
-#define recursive_max 5
 
 static void generic_mobj(mobj_t *mobj, const char* name, int32_t recursive_mobj, int32_t recursive_player)
 {
@@ -179,6 +178,7 @@ static void generic_mobj(mobj_t *mobj, const char* name, int32_t recursive_mobj,
 		{
 			recursive_mobj++;
 			MobjDisplay(mobj, recursive_mobj, recursive_player);
+			ImGui::Text("");
 		}
 	}
 }
@@ -190,6 +190,7 @@ static void PlayerDisplay(player_t *player, int32_t recursive_mobj, int32_t recu
 	ImGui::Text("BKID: %s", GetPrettyRRID(player->public_key, true));
 	ImGui::Text("Name: %s", player_names[player-players]);
 	ImGui::Text("Color: %s", skincolors[player->skincolor].name);
+	ImGui::Text("Bot: %s", player->bot ? "True" : "False");
 
 	ImGui::Text("Laps: %d", player->laps);
 	ImGui::Text("Rings: %d", player->rings);
@@ -409,6 +410,7 @@ void Impl_ImGui_HandleWindow(void)
 	if (windowstate.player_display)
 	{
 		ImGui::Begin("Players", &windowstate.player_display);
+		ImGui::SliderInt("Recursion limit", &recursive_max, 0, 255);
 
 		if (ImGui::BeginTabBar("PlayerList"))
 		{
