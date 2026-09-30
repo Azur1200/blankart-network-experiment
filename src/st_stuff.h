@@ -69,6 +69,8 @@ extern tic_t lt_exitticker, lt_endtime;
 
 void ST_DrawServerSplash(dboolean timelimited);
 
+int32_t ST_FixedToPercent(fixed_t value);
+
 // return if player a is in the same team as player b
 dboolean ST_SameTeam(player_t *a, player_t *b);
 

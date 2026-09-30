@@ -30,7 +30,7 @@ extern void *GLUhandle;
 
 dboolean OglSdlSurface(int32_t w, int32_t h);
 
-void OglSdlFinishUpdate(dboolean vidwait);
+void OglSdlFinishUpdate(dboolean waitvbl);
 
 extern SDL_Renderer *renderer;
 extern SDL_GLContext sdlglcontext;

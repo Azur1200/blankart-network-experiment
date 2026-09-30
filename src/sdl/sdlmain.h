@@ -96,6 +96,18 @@ void SDLforceUngrabMouse(void);
 // Needed for some WIN32 functions
 extern SDL_Window *window;
 
+// Imgui stuff
+void Impl_ImGui_CreateContext(void);
+void Impl_ImGui_DestroyContext(void);
+void Impl_ImGui_Frame(void);
+void Impl_ImGui_InitSoftware(SDL_Window *window, SDL_Renderer *renderer);
+void Impl_ImGui_InitOpenGL(SDL_Window *window, SDL_GLContext *sdlglcontext);
+void Impl_ImGui_SoftwareRenderDrawData(SDL_Renderer *renderer);
+void Impl_ImGui_OpenGLRenderDrawData(void);
+bool Impl_ImGui_HandleEvent(SDL_Event *event);
+void Impl_ImGui_HandleWindow(void);
+void Impl_ImGui_HandleRender(void);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

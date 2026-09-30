@@ -551,7 +551,7 @@ static void ST_drawDemoDebug(int32_t *height)
 	ST_pushDebugString(height, va("Demo (%s)", demo.recording ? "recording" : "playback"));
 }
 
-static int32_t ST_FixedToPercent(fixed_t value)
+int32_t ST_FixedToPercent(fixed_t value)
 {
 	return (value >> 14) + (value >> 11) + (value >> 10);
 }

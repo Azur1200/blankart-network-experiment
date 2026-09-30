@@ -357,7 +357,9 @@ target_compile_definitions(BLANKART PRIVATE -DHAVE_ZLIB -DHAVE_PNG -DHAVE_CURL -
 target_sources(BLANKART PRIVATE apng.c)
 
 target_link_libraries(BLANKART PRIVATE tcbrindle::span)
+target_link_libraries(BLANKART PRIVATE stb_rect_pack)
 target_link_libraries(BLANKART PRIVATE fmt::fmt-header-only)
+target_link_libraries(BLANKART PRIVATE imgui::imgui)
 target_link_libraries(BLANKART PRIVATE Tracy::TracyClient)
 
 if(NOT "${SRB2_CONFIG_SYSTEM_LIBRARIES}" AND NOT SRB2_CONFIG_DEDICATED)
