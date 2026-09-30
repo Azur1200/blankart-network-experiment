@@ -13,6 +13,7 @@
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_gamepad.h>
 #include <SDL3/SDL_video.h>
+#include <SDL3/SDL_render.h>
 
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
@@ -83,9 +84,10 @@ void Impl_ImGui_Frame(void)
 		imgui_frame_active = false;
 	}
 
+	if (cht_debug == 0)
+		return;
+
 	ImGuiIO& io = ImGui::GetIO();
-	io.DisplaySize.x = vid.width;
-	io.DisplaySize.y = vid.height;
 	if (rendermode == render_soft)
 		ImGui_ImplSDLRenderer3_NewFrame();
 	else if (rendermode == render_opengl)
@@ -132,6 +134,11 @@ bool Impl_ImGui_HandleEvent(SDL_Event *event)
 		return false;
 
 	ImGuiIO& io = ImGui::GetIO();
+
+	if (renderer)
+	{
+		SDL_ConvertEventToRenderCoordinates(renderer, event);
+	}
 
 	ImGui_ImplSDL3_ProcessEvent(event);
 
