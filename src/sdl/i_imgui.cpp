@@ -29,6 +29,8 @@
 #include "../st_stuff.h"
 #include "../deh_tables.h"
 #include "../dehacked.h"
+#include "../z_zone.h"
+#include "../command.h"
 
 char *glsl_version = nullptr;
 static bool imgui_opengl_init = false;
@@ -153,6 +155,8 @@ typedef struct
 	bool mobj_display;
 	char mobj_search[255];
 	bool music_display;
+	int32_t music_selected;
+	musicdef_t *music_def;
 } imgui_state_t;
 
 imgui_state_t windowstate = {0};
@@ -406,6 +410,35 @@ static void MobjDisplay(mobj_t *mobj, int32_t recursive_mobj, int32_t recursive_
 	ImGui::Text("po_movecount: %d", mobj->po_movecount);
 }
 
+static void MusicDisplay(const musicdef_t *def, char *filename)
+{
+	if (def == NULL || filename == NULL)
+		return;
+
+	ImGui::Text("Volume: %4d/100", def->volume);
+
+	ImGui::Text("File Name: %8s", filename);
+
+	if (def->title)
+		ImGui::Text("Title: %s", def->title);
+
+	if (def->source)
+		ImGui::Text("Source: %s", def->source);
+
+	if (def->author)
+		ImGui::Text("Author: %s", def->author);
+
+	if (def->composers)
+		ImGui::Text(" Composers: %s", def->composers);
+
+	if (def->usage)
+		ImGui::Text("Usage: %s", def->usage);
+
+	ImGui::Text("Content-id unsafe: %s", def->contentidunsafe ? "True" : "False");
+
+	ImGui::Text("Legacy: %s", def->legacy ? "True" : "False");
+}
+
 void Impl_ImGui_HandleWindow(void)
 {
 	if (imgui_setup == false || imgui_frame_active == false)
@@ -519,62 +552,106 @@ void Impl_ImGui_HandleWindow(void)
 	{
 		ImGui::Begin("Music", &windowstate.music_display);
 
-		char mname[7];
-		uint16_t mflags; // unused
-		dboolean looping;
-		uint8_t i = 0;
-
-		const musicdef_t *def;
-		musictype_t format;
-
-		if (!S_MusicInfo(mname, &mflags, &looping))
+		if (ImGui::BeginTabBar("Music"))
 		{
-			ImGui::Text("Song: <NOTHING>");
-		}
-		else
-		{
-			def = S_FindMusicDef(mname, &i);
-			format = S_MusicType();
+			if (ImGui::BeginTabItem("Current"))
+			{
+				char mname[7];
+				uint16_t mflags; // unused
+				dboolean looping;
+				uint8_t i = 0;
+
+				const musicdef_t *def;
+				musictype_t format;
+
+				if (!S_MusicInfo(mname, &mflags, &looping))
+				{
+					ImGui::Text("Song: <NOTHING>");
+				}
+				else
+				{
+					def = S_FindMusicDef(mname, &i);
+					format = S_MusicType();
 
 #define TEXTMS(label, ms) \
-			ImGui::Text("%s%02d:%05.2f", label, ms / 60000, ms % 60000 / 1000.f)
+	ImGui::Text("%s%02d:%05.2f", label, ms / 60000, ms % 60000 / 1000.f)
 
-			TEXTMS("Elapsed: ", S_GetMusicPosition());
-			TEXTMS(looping ? "Loop B: " : "Duration: ", S_GetMusicLength());
+					TEXTMS("Elapsed: ", S_GetMusicPosition());
+					TEXTMS(looping ? "Loop B: " : "Duration: ", S_GetMusicLength());
 
-			if (looping)
+					if (looping)
+					{
+						TEXTMS("Loop A: ", S_GetMusicLoopPoint());
+					}
+
+					if (format)
+					{
+						musictype_t mustype = S_MusicType();
+						ImGui::Text("Format: %s", S_MusicTypeName(mustype));
+					}
+
+					MusicDisplay(def, mname);
+				}
+
+				ImGui::EndTabItem();
+			}
+			if (ImGui::BeginTabItem("List"))
 			{
-				TEXTMS("Loop A: ", S_GetMusicLoopPoint());
+				musicdef_t *def;
+				int32_t j;
+				char **songs = NULL;
+				int32_t size = 0;
+
+				for (def = musicdefstart; def; def = def->next)
+				{
+					for (i = 0; i < def->numtracks; i++)
+					{
+						// Wow I hate these... Thanks skin code for reference I guess?
+						int32_t len = strlen(def->name[i])+1;
+						songs = static_cast<char **>(Z_Realloc(songs, sizeof(*songs) * (size + 1), PU_STATIC, NULL));
+						songs[size] = static_cast<char *>(Z_Calloc(len, PU_STATIC, NULL));
+						strncpy(songs[size], def->name[i], len);
+						size++;
+					}
+				}
+
+				if (ImGui::Combo("SongList", &windowstate.music_selected, songs, size) || windowstate.music_def == NULL)
+				{
+					uint8_t j;
+					windowstate.music_def = S_FindMusicDef(songs[windowstate.music_selected], &j);
+				}
+
+				if (windowstate.music_def)
+				{
+					const musicdef_t *def = windowstate.music_def;
+
+					MusicDisplay(def, songs[windowstate.music_selected]);
+
+					if (ImGui::Button("Play"))
+					{
+						COM_ImmedExecute("tunes -none");
+						COM_ImmedExecute(va("tunes %s", songs[windowstate.music_selected]));
+						S_ShowMusicCredit(0, 5*TICRATE, 0);
+					}
+
+					if (ImGui::Button("Stop"))
+					{
+						COM_ImmedExecute("tunes -none");
+					}
+				}
+
+				for (i = 0; i < size; i++)
+				{
+					Z_Free(songs[i]);
+				}
+
+				Z_Free(songs);
+				songs = NULL;
+
+				ImGui::EndTabItem();
 			}
 
-			if (def)
-			{
-				ImGui::Text("Volume: %4d/100", def->volume);
-			}
-
-			if (format)
-			{
-				musictype_t mustype = S_MusicType();
-				ImGui::Text("Format: %s", S_MusicTypeName(mustype));
-			}
-
-			ImGui::Text("File Name: %8s", mname);
-
-			if (def->source)
-				ImGui::Text("Source: %s", def->source);
-
-			if (def->author)
-				ImGui::Text("Author: %s", def->author);
-
-			if (def->composers)
-				ImGui::Text(" Composers: %s", def->composers);
-
-			if (def->usage)
-				ImGui::Text("Usage: %s", def->usage);
-
-			ImGui::Text("Content-id unsafe: %s", def->contentidunsafe ? "True" : "False");
-
-			ImGui::Text("Legacy: %s", def->legacy ? "True" : "False");
+			ImGui::EndTabBar();
 		}
 
 		ImGui::End();
