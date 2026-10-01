@@ -148,7 +148,9 @@ bool Impl_ImGui_HandleEvent(SDL_Event *event)
 typedef struct
 {
 	bool player_display;
+	char player_search[255];
 	bool mobj_display;
+	char mobj_search[255];
 } imgui_state_t;
 
 imgui_state_t windowstate = {0};
@@ -392,24 +394,25 @@ void Impl_ImGui_HandleWindow(void)
 
 	if (ImGui::BeginMainMenuBar())
 	{
-		if (cht_debug != 0 && ImGui::BeginMenu("Players"))
+		if (ImGui::BeginMenu("Players"))
 		{
 			windowstate.player_display = true;
+			ImGui::EndMenu();
+		}
+
+		if (ImGui::BeginMenu("Mobjs"))
+		{
+			windowstate.mobj_display = true;
 			ImGui::EndMenu();
 		}
 
 		ImGui::EndMainMenuBar();
 	}
 
-	if (cht_debug == 0)
-	{
-		windowstate.player_display = false;
-		windowstate.mobj_display = false;
-	}
-
 	if (windowstate.player_display)
 	{
 		ImGui::Begin("Players", &windowstate.player_display);
+		ImGui::InputText("Search", windowstate.player_search, IM_COUNTOF(windowstate.player_search));
 		ImGui::SliderInt("Recursion limit", &recursive_max, 0, 255);
 
 		if (ImGui::BeginTabBar("PlayerList"))
@@ -419,11 +422,58 @@ void Impl_ImGui_HandleWindow(void)
 				if (!playeringame[i])
 					continue;
 
+				if (windowstate.player_search[0] != 0 && !strcasestr(player_names[i], windowstate.player_search))
+					continue;
+
 				player_t *player = &players[i];
 
 				if (ImGui::BeginTabItem(player_names[i]))
 				{
 					PlayerDisplay(player, 0, 0);
+
+					ImGui::EndTabItem();
+				}
+			}
+
+			ImGui::EndTabBar();
+		}
+
+		ImGui::End();
+	}
+
+	if (windowstate.mobj_display)
+	{
+		ImGui::Begin("Mobjs", &windowstate.mobj_display);
+		ImGui::InputText("Search", windowstate.mobj_search, IM_COUNTOF(windowstate.mobj_search));
+		ImGui::SliderInt("Recursion limit", &recursive_max, 0, 255);
+
+		if (ImGui::BeginTabBar("MobjList"))
+		{
+			thinker_t *th = NULL;
+			mobj_t *mobj = NULL;
+			i = 0;
+			for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+			{
+					if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
+						continue;
+
+				mobj = (mobj_t *)th;
+
+				if (!mobj)
+					continue;
+
+				if (windowstate.mobj_search[0] != 0 && !strcasestr(DEH_MobjtypeName(mobj->type), windowstate.mobj_search))
+					continue;
+
+				i++;
+
+				char nameid[512];
+
+				snprintf(nameid, sizeof(nameid), "%s###%s%d", DEH_MobjtypeName(mobj->type), DEH_MobjtypeName(mobj->type), i);
+
+				if (ImGui::BeginTabItem(nameid))
+				{
+					MobjDisplay(mobj, 0, 0);
 
 					ImGui::EndTabItem();
 				}
