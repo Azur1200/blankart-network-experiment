@@ -25,6 +25,7 @@
 #include "../v_video.h"
 #include "../m_misc.h"
 #include "../k_kart.h"
+#include "../k_follower.h"
 #include "../st_stuff.h"
 #include "../deh_tables.h"
 #include "../dehacked.h"
@@ -151,6 +152,7 @@ typedef struct
 	char player_search[255];
 	bool mobj_display;
 	char mobj_search[255];
+	bool music_display;
 } imgui_state_t;
 
 imgui_state_t windowstate = {0};
@@ -191,11 +193,12 @@ static void PlayerDisplay(player_t *player, int32_t recursive_mobj, int32_t recu
 
 	ImGui::Text("BKID: %s", GetPrettyRRID(player->public_key, true));
 	ImGui::Text("Name: %s", player_names[player-players]);
+	ImGui::Text("Skin: %s (%s)", skins[player->skin]->name, skins[player->skin]->realname);
 	ImGui::Text("Color: %s", skincolors[player->skincolor].name);
 	ImGui::Text("Bot: %s", player->bot ? "True" : "False");
-
-	ImGui::Text("Laps: %d", player->laps);
-	ImGui::Text("Rings: %d", player->rings);
+	ImGui::Text("Speed Weight: %d %d", player->kartspeed, player->kartweight);
+	ImGui::Text("Req.Speed Req.Weight: %d %d", player->kartspeedrestat, player->kartspeedrestat);
+	ImGui::Text("Random Restat: %s", player->randomrestat ? "True" : "False");
 
 	ImGui::Text("Speed: %d (%d%%)", player->speed, totalspeed);
 
@@ -206,6 +209,27 @@ static void PlayerDisplay(player_t *player, int32_t recursive_mobj, int32_t recu
 	ImGui::Text("NumBoosts: %d", player->numboosts);
 
 	ImGui::Text("Item: %s (%d)", DEH_KartItemName(static_cast<kartitemtype_e>(player->itemtype)), player->itemtype);
+
+	ImGui::Text("Position: %d", player->position);
+	ImGui::Text("Distance to FInish: %d", player->distancetofinish);
+	ImGui::Text("Laps: %d", player->laps);
+	ImGui::Text("Rings: %d", player->rings);
+
+	ImGui::Text("Follower Skin: %s", player->followerskin == -1 ? "NONE" : followers[player->followerskin].name);
+	ImGui::Text("Follower Ready: %s", player->followerready ? "True" : "False");
+	ImGui::Text("Follower Color: %s", skincolors[player->followercolor].name);
+	generic_mobj(player->follower, "Follower", recursive_mobj, recursive_player);
+
+	ImGui::Text("Char Flags: %d", player->charflags);
+
+	ImGui::Text("Follow Item: %s", DEH_MobjtypeName(player->followitem));
+	generic_mobj(player->followmobj, "followmobj", recursive_mobj, recursive_player);
+
+	ImGui::Text("Score: %d", player->charflags);
+
+	ImGui::Text("No Control: %d", player->nocontrol);
+	ImGui::Text("Carry: %d", player->carry);
+	ImGui::Text("Dye: %d", player->dye);
 
 	generic_mobj(player->mo, "Mobj", recursive_mobj, recursive_player);
 }
@@ -406,6 +430,12 @@ void Impl_ImGui_HandleWindow(void)
 			ImGui::EndMenu();
 		}
 
+		if (ImGui::BeginMenu("Music"))
+		{
+			windowstate.music_display = true;
+			ImGui::EndMenu();
+		}
+
 		ImGui::EndMainMenuBar();
 	}
 
@@ -480,6 +510,71 @@ void Impl_ImGui_HandleWindow(void)
 			}
 
 			ImGui::EndTabBar();
+		}
+
+		ImGui::End();
+	}
+
+	if (windowstate.music_display)
+	{
+		ImGui::Begin("Music", &windowstate.music_display);
+
+		char mname[7];
+		uint16_t mflags; // unused
+		dboolean looping;
+		uint8_t i = 0;
+
+		const musicdef_t *def;
+		musictype_t format;
+
+		if (!S_MusicInfo(mname, &mflags, &looping))
+		{
+			ImGui::Text("Song: <NOTHING>");
+		}
+		else
+		{
+			def = S_FindMusicDef(mname, &i);
+			format = S_MusicType();
+
+#define TEXTMS(label, ms) \
+			ImGui::Text("%s%02d:%05.2f", label, ms / 60000, ms % 60000 / 1000.f)
+
+			TEXTMS("Elapsed: ", S_GetMusicPosition());
+			TEXTMS(looping ? "Loop B: " : "Duration: ", S_GetMusicLength());
+
+			if (looping)
+			{
+				TEXTMS("Loop A: ", S_GetMusicLoopPoint());
+			}
+
+			if (def)
+			{
+				ImGui::Text("Volume: %4d/100", def->volume);
+			}
+
+			if (format)
+			{
+				musictype_t mustype = S_MusicType();
+				ImGui::Text("Format: %s", S_MusicTypeName(mustype));
+			}
+
+			ImGui::Text("File Name: %8s", mname);
+
+			if (def->source)
+				ImGui::Text("Source: %s", def->source);
+
+			if (def->author)
+				ImGui::Text("Author: %s", def->author);
+
+			if (def->composers)
+				ImGui::Text(" Composers: %s", def->composers);
+
+			if (def->usage)
+				ImGui::Text("Usage: %s", def->usage);
+
+			ImGui::Text("Content-id unsafe: %s", def->contentidunsafe ? "True" : "False");
+
+			ImGui::Text("Legacy: %s", def->legacy ? "True" : "False");
 		}
 
 		ImGui::End();
