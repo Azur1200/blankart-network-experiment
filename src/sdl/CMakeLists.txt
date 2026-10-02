@@ -1,13 +1,14 @@
 # Declare SDL3 interface sources
 
 target_sources(BLANKART PRIVATE
-	ogl_sdl.c
+	ogl_sdl.cpp
 	i_threads.c
 	i_net.c
 	i_gamepad.c
 	i_system.cpp
 	i_main.c
 	i_video.cpp
+	i_imgui.cpp
 	dosstr.c
 	endtxt.c
 	hwsym_sdl.c

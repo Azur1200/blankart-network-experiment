@@ -26,8 +26,11 @@ if(SRB2_CONFIG_ENABLE_DISCORDRPC)
 	add_subdirectory(discord-rpc)
 endif()
 
+include("cpm-imgui.cmake")
+
 add_subdirectory(tracy)
 add_subdirectory(tcbrindle_span)
+add_subdirectory(stb_rect_pack)
 add_subdirectory(fmt)
 add_subdirectory(xxhash)
 

@@ -88,7 +88,6 @@ consvar_t cv_keyboardlayout = CVAR_INIT ("keyboardlayout", "Default US", CV_SAVE
 
 dboolean highcolor = false;
 
-
 // synchronize page flipping with screen refresh
 consvar_t cv_vidwait = CVAR_INIT ("vid_wait", "On", CV_SAVE, CV_OnOff, NULL);
 static consvar_t cv_stretch = CVAR_INIT ("stretch", "Off", CV_SAVE|CV_NOSHOWHELP, CV_OnOff, NULL);
@@ -190,6 +189,8 @@ static bool Impl_RenderContextCreate(void)
 	SDL_GL_ResetAttributes();
 	SDL_SetHint("SDL_HINT_OPENGL_FORCE_SRGB_FRAMEBUFFER", "0");
 
+	Impl_ImGui_CreateContext();
+
 	if (rendermode != render_opengl)
 	{
 		if (!renderer)
@@ -216,6 +217,8 @@ static bool Impl_RenderContextCreate(void)
 			VIDEO_INIT_ERROR("Couldn't create rendering context: %s");
 			return false;
 		}
+
+		Impl_ImGui_InitSoftware(window, renderer);
 	}
 
 #ifdef HWRENDER
@@ -230,6 +233,8 @@ static bool Impl_RenderContextCreate(void)
 				VIDEO_INIT_ERROR("Couldn't create OpenGL context: %s");
 				return false;
 			}
+
+			// Impl_ImGui_InitOpenGL Moved from here to Impl_RenderContextReset to fix issues during render switch....
 		}
 	}
 #endif
@@ -239,6 +244,8 @@ static bool Impl_RenderContextCreate(void)
 
 static bool Impl_RenderContextReset(void)
 {
+	Impl_ImGui_DestroyContext();
+
 	if (renderer)
 	{
 		SDL_DestroyRenderer(renderer);
@@ -258,6 +265,7 @@ static bool Impl_RenderContextReset(void)
 
 		OglSdlSurface(vid.width, vid.height);
 		HWR_Startup();
+		Impl_ImGui_InitOpenGL(window, &sdlglcontext);
 	}
 	else
 #endif
@@ -1144,6 +1152,14 @@ void I_GetEvent(void)
 
 	while (SDL_PollEvent(&evt))
 	{
+		if (renderer)
+		{
+			SDL_ConvertEventToRenderCoordinates(renderer, &evt);
+		}
+
+		if (Impl_ImGui_HandleEvent(&evt))
+			continue;
+
 		switch (evt.type)
 		{
 			// TODO: Move input code out of this file, desperately
@@ -1361,8 +1377,14 @@ void I_FinishUpdate(void)
 		ST_AskToJoinEnvelope();
 #endif
 
+	// Process Imgui Frame
+	Impl_ImGui_Frame();
+
+	Impl_ImGui_HandleWindow();
+
 	if (rendermode == render_soft && vid.screens[0])
 	{
+		Impl_ImGui_HandleRender();
 		void *pixels;
 		int pitch;
 		SDL_LockTexture(texture, NULL, &pixels, &pitch);
@@ -1381,12 +1403,15 @@ void I_FinishUpdate(void)
 
 		SDL_RenderClear(renderer);
 		SDL_RenderTexture(renderer, texture, &src_rect, NULL);
+		Impl_ImGui_SoftwareRenderDrawData(renderer);
 		SDL_RenderPresent(renderer);
 		Impl_SetSoftwareVsync(cv_vidwait.value);
 	}
 #ifdef HWRENDER
 	else if (rendermode == render_opengl)
 	{
+		Impl_ImGui_HandleRender();
+
 		// Final postprocess step of palette rendering, after everything else has been drawn.
 		if (HWR_ShouldUsePaletteRendering())
 		{
@@ -1855,6 +1880,8 @@ static void Impl_InitOpenGL(void)
 
 void I_ShutdownGraphics(void)
 {
+	Impl_ImGui_DestroyContext();
+
 #ifdef USE_WINDOW_ICON
 	if (icoSurface)
 		SDL_DestroySurface(icoSurface);
@@ -1883,6 +1910,8 @@ void I_ShutdownGraphics(void)
 	if (SDL_WasInit(SDL_INIT_VIDEO) == SDL_INIT_VIDEO)
 		SDL_QuitSubSystem(SDL_INIT_VIDEO);
 	framebuffer = false;
+
+
 }
 
 uint32_t I_GetRefreshRate(void)

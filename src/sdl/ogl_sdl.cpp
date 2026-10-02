@@ -60,6 +60,11 @@ PFNglGetIntegerv pglGetIntegerv;
 PFNglGetString pglGetString;
 #endif
 
+#include <imgui.h>
+#include <imgui_impl_sdl3.h>
+#include <imgui_impl_opengl3.h>
+#include <imgui_impl_sdlrenderer3.h>
+
 /**	\brief SDL video display surface
 */
 int32_t oglflags = 0;
@@ -67,7 +72,7 @@ SDL_GLContext sdlglcontext = 0;
 
 void *GetGLFunc(const char *proc)
 {
-	return SDL_GL_GetProcAddress(proc);
+	return reinterpret_cast<void *>(SDL_GL_GetProcAddress(proc));
 }
 
 dboolean LoadGL(void)
@@ -190,6 +195,7 @@ void OglSdlFinishUpdate(dboolean waitvbl)
 	HWR_DrawScreenFinalTexture(sdlw, sdlh);
 	if (gl_shadersavailable)
 		GL_UnSetShader();
+	Impl_ImGui_OpenGLRenderDrawData();
 	SDL_GL_SwapWindow(window);
 
 	GL_GClipRect(0, 0, vid.width, vid.height, NZCLIP_PLANE);
