@@ -234,7 +234,7 @@ static bool Impl_RenderContextCreate(void)
 				return false;
 			}
 
-			Impl_ImGui_InitOpenGL(window, &sdlglcontext);
+			// Impl_ImGui_InitOpenGL Moved from here to Impl_RenderContextReset to fix issues during render switch....
 		}
 	}
 #endif
@@ -265,6 +265,7 @@ static bool Impl_RenderContextReset(void)
 
 		OglSdlSurface(vid.width, vid.height);
 		HWR_Startup();
+		Impl_ImGui_InitOpenGL(window, &sdlglcontext);
 	}
 	else
 #endif
