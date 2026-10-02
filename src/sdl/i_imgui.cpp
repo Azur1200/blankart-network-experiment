@@ -721,7 +721,7 @@ void Impl_ImGui_HandleWindow(void)
 
 				if (windowstate.music_def)
 				{
-					MusicDisplay(def, songs[windowstate.music_selected]);
+					MusicDisplay(windowstate.music_def, songs[windowstate.music_selected]);
 
 					if (ImGui::Button("Play"))
 					{
