@@ -157,6 +157,9 @@ typedef struct
 	bool music_display;
 	int32_t music_selected;
 	musicdef_t *music_def;
+	bool map_display;
+	int32_t map_selected;
+	mapheader_t *mapheader;
 } imgui_state_t;
 
 imgui_state_t windowstate = {0};
@@ -439,6 +442,96 @@ static void MusicDisplay(const musicdef_t *def, char *filename)
 	ImGui::Text("Legacy: %s", def->legacy ? "True" : "False");
 }
 
+static void MapDisplay(const mapheader_t *map)
+{
+	int32_t i;
+
+	ImGui::Text("Map ID: %s", map->lumpname);
+
+	ImGui::Text("Map ID Hash: %d", map->lumpnamehash);
+
+	ImGui::Text("Map ID Lump Number: %d", map->lumpnum);
+
+	ImGui::Text("Just Played: %lu", map->justPlayed);
+
+	if (map->lvlttl[0] != 0)
+		ImGui::Text("Level Title: %s", map->lvlttl);
+
+	if (map->subttl[0] != 0)
+		ImGui::Text("Subtitle: %s", map->subttl);
+
+	if (map->zonttl[0] != 0)
+		ImGui::Text("Zone Title: %s", map->zonttl);
+
+	if (map->actnum[0] != 0)
+		ImGui::Text("Actnum: %s", map->actnum);
+
+	if (map->keywords[0] != 0)
+		ImGui::Text("Keywords: %s", map->keywords);
+
+	ImGui::Text("Unlock Required: %d", map->unlockrequired);
+
+	ImGui::Text("Level Select: %d", map->levelselect);
+
+	ImGui::Text("Menu Flags: %d", map->menuflags);
+
+	ImGui::Text("Level Flags: %d", map->levelflags);
+
+	ImGui::Text("Type of Level: %d", map->typeoflevel);
+
+	ImGui::Text("Laps: %d", map->numlaps);
+
+	ImGui::Text("Laps Per Section: %d", map->lapspersection);
+
+	ImGui::Text("Gravity: %d", map->gravity);
+
+	for (i = 0; i < map->musname_size; i++)
+	{
+		if (map->musname[i][0] == 0)
+			continue;
+
+		ImGui::Text("Song Filename: %s", map->musname[i]);
+	}
+
+	for (i = 0; i < map->encoremusname_size; i++)
+	{
+		if (map->encoremusname[i][0] == 0)
+			continue;
+
+		ImGui::Text("Encore Song Filename: %s", map->encoremusname[i]);
+	}
+
+	ImGui::Text("Music Track: %d", map->mustrack);
+
+	ImGui::Text("Music Position: %d", map->mustrack);
+
+	ImGui::Text("Number of Songs: %d", map->musname_size);
+
+	ImGui::Text("Number of Encore Songs: %d", map->encoremusname_size);
+
+	ImGui::Text("Weather: %d", map->weather);
+
+	ImGui::Text("Sky Texture: %s", map->skytexture);
+
+	ImGui::Text("Skybox Scale X: %d", map->skybox_scalex);
+
+	ImGui::Text("Skybox Scale Y: %d", map->skybox_scaley);
+
+	ImGui::Text("Skybox Scale Z: %d", map->skybox_scalez);
+
+	ImGui::Text("Mobj Scale: %d", map->mobj_scale);
+
+	ImGui::Text("Default Waypoint Radius: %d", map->default_waypoint_radius);
+
+	ImGui::Text("Force Wall Transfer: %d", map->use_walltransfer);
+
+	ImGui::Text("Use Terrain: %d", map->use_terrain);
+
+	ImGui::Text("Base Track Complexity: %d", map->base_track_complexity);
+
+	ImGui::Text("Track Modifier Max: %d", map->track_modifier_max);
+}
+
 void Impl_ImGui_HandleWindow(void)
 {
 	if (imgui_setup == false || imgui_frame_active == false)
@@ -466,6 +559,12 @@ void Impl_ImGui_HandleWindow(void)
 		if (ImGui::BeginMenu("Music"))
 		{
 			windowstate.music_display = true;
+			ImGui::EndMenu();
+		}
+
+		if (ImGui::BeginMenu("Maps"))
+		{
+			windowstate.map_display = true;
 			ImGui::EndMenu();
 		}
 
@@ -598,7 +697,6 @@ void Impl_ImGui_HandleWindow(void)
 			if (ImGui::BeginTabItem("List"))
 			{
 				musicdef_t *def;
-				int32_t j;
 				char **songs = NULL;
 				int32_t size = 0;
 
@@ -623,8 +721,6 @@ void Impl_ImGui_HandleWindow(void)
 
 				if (windowstate.music_def)
 				{
-					const musicdef_t *def = windowstate.music_def;
-
 					MusicDisplay(def, songs[windowstate.music_selected]);
 
 					if (ImGui::Button("Play"))
@@ -647,6 +743,71 @@ void Impl_ImGui_HandleWindow(void)
 
 				Z_Free(songs);
 				songs = NULL;
+
+				ImGui::EndTabItem();
+			}
+
+			ImGui::EndTabBar();
+		}
+
+		ImGui::End();
+	}
+
+	if (windowstate.map_display)
+	{
+		ImGui::Begin("Maps", &windowstate.map_display);
+
+
+		if (ImGui::BeginTabBar("Maps"))
+		{
+			if (ImGui::BeginTabItem("Current"))
+			{
+				MapDisplay(mapheaderinfo[gamemap-1]);
+
+				ImGui::EndTabItem();
+			}
+			if (ImGui::BeginTabItem("List"))
+			{
+				char **maps = NULL;
+				int32_t size = 0;
+
+				for (i = 0; i < nummapheaders; i++)
+				{
+					if (!mapheaderinfo[i])
+						continue;
+					if (mapheaderinfo[i]->lumpnum == LUMPERROR)
+						continue;
+
+					// Wow I hate these... Thanks skin code for reference I guess?
+					int32_t len = strlen(mapheaderinfo[i]->lumpname)+1;
+					maps = static_cast<char **>(Z_Realloc(maps, sizeof(*maps) * (size + 1), PU_STATIC, NULL));
+					maps[size] = static_cast<char *>(Z_Calloc(len, PU_STATIC, NULL));
+					strncpy(maps[size], mapheaderinfo[i]->lumpname, len);
+					size++;
+				}
+
+				if (ImGui::Combo("MapList", &windowstate.map_selected, maps, size) || windowstate.mapheader == NULL)
+				{
+					windowstate.mapheader = mapheaderinfo[windowstate.map_selected];
+				}
+
+				if (windowstate.mapheader)
+				{
+					MapDisplay(windowstate.mapheader);
+				}
+
+				if (ImGui::Button("Warp"))
+				{
+					COM_ImmedExecute(va("map %s -f", maps[windowstate.map_selected]));
+				}
+
+				for (i = 0; i < size; i++)
+				{
+					Z_Free(maps[i]);
+				}
+
+				Z_Free(maps);
+				maps = NULL;
 
 				ImGui::EndTabItem();
 			}
