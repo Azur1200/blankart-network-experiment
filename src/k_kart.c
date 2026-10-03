@@ -4095,10 +4095,12 @@ void K_TumblePlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 		if (momentum < min_spd)
 		{
 			P_InstaThrust(player->mo, momentum_angle, FixedMul(min_spd, player->mo->scale));
+			player->crash_speed = FixedMul(min_spd, player->mo->scale);
 		}
 		else
 		{
 			P_InstaThrust(player->mo, momentum_angle, FixedMul(momentum, TUMBLESTART_DIV));
+			player->crash_speed = FixedMul(momentum, TUMBLESTART_DIV);
 		}
 
 		fixed_t my_gravity = abs(P_GetMobjGravity(player->mo));
@@ -4164,6 +4166,7 @@ void K_ResetCrashData(player_t *player)
 	player->crash_yaw = 0;
 
 	player->crash_bumpme = false;
+	player->crash_speed = 0;
 }
 
 void K_Player_CrashThinker(player_t *player)
@@ -4196,6 +4199,7 @@ void K_Player_CrashThinker(player_t *player)
 	if (player->crash_state == 0)
 	{
 		player->crash_bumpme = false;
+		player->crash_speed = 0;
 
 		if (P_IsObjectOnGround(player->mo))
 			player->crash_zoffset = ApproachOneWayFixed(player->crash_zoffset, 0, 4*mapobjectscale);
@@ -4220,6 +4224,8 @@ void K_Player_CrashThinker(player_t *player)
 	player->flipovertimer = 0;
 	player->spinouttimer = 0;
 	// but doesn't override wipeout (used by recovery dash for example to give extra friction)
+
+	player->boostangle = player->mo->angle;
 
 	// Update time spent crashing
 	player->crash_elapsed++;
@@ -4281,6 +4287,19 @@ void K_Player_CrashThinker(player_t *player)
 	
 					S_StartSoundAtVolume(player->mo, sfx_s3kae, 192);
 					player->crash_rot += player->crashtimer * CRASH_TUMBLE_ROTBOUNCEDELTA * player->crash_side;
+
+					// Allow you to have some control over crash damage via DI
+					fixed_t di = player->mo->angle;
+					if (player->cmd.turning > 0)
+					{
+						di += ANG2;
+					}
+					else if (player->cmd.turning < 0)
+					{
+						di -= ANG2;
+					}
+
+					P_InstaThrust(player->mo, di, player->crash_speed);
 
 					if (player->crashtimer)
 					{
@@ -10402,6 +10421,12 @@ int16_t K_GetKartTurnValue(const player_t *player, int16_t turnvalue)
 	}
 
 	turnvalue = FixedMul(turnvalue, adjustangle); // Weight has a small effect on turning
+
+	if (player->crash_state != 0)
+	{
+		turnvalue /= 2;
+		return turnvalue;
+	}
 
 	if (K_SlipdashActive() && K_Sliptiding(player)) // slight handling boost based on weight
 		turnvalue = FixedMul(turnvalue, FRACUNIT + (10 - player->kartweight)*FRACUNIT/48);
