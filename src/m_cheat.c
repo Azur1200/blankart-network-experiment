@@ -326,7 +326,10 @@ void Command_Hurtme_f(void)
 
 	if (COM_Argc() < 2)
 	{
-		CONS_Printf(M_GetText("hurtme <damage>: Damage yourself by a specific amount\n"));
+		CONS_Printf(M_GetText("hurtme <damage>: Damage yourself with specific flags\n"));
+		CONS_Printf(M_GetText("Norm 0    Wipe 1    Expl 2    Squs 3    Volt 4\n"));
+		CONS_Printf(M_GetText("Krma 5    Flip 6    Crash 7\n"));
+		CONS_Printf(M_GetText("Ikll 128  Dpit 129  Crsh 130  Spec 131  Time 132\n"));
 		return;
 	}
 

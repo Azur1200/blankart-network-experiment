@@ -7712,10 +7712,13 @@ static void Got_Cheat(uint8_t **cp, int32_t playernum)
 
 			if (!P_MobjWasRemoved(player->mo))
 			{
-				P_DamageMobj(player->mo, NULL, NULL, damage, DMG_NORMAL);
+				if (damage >= DMG_INSTAKILL)
+					P_KillMobj(player->mo, NULL, NULL, (uint8_t)damage);
+				else
+					P_DamageMobj(player->mo, NULL, NULL, 1, (uint8_t)damage);
 			}
 
-			CV_CheaterWarning(targetPlayer, va("%d damage to me", damage));
+			CV_CheaterWarning(targetPlayer, va("damage (flags=%d) to me", damage));
 			break;
 		}
 

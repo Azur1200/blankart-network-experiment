@@ -793,6 +793,7 @@ struct player_t
 	fixed_t crash_zoffset_lerp;		// When reorienting, play a fancy animation of our offset "fixing" itself
 	int8_t crash_side;		// Side from which the crash victim was attacked from
 	dboolean crash_bumpme;	// "Bump me!" This crashing player should bump for this interaction only
+	fixed_t crash_speed; // Intended speed to be at during a crash.
 
 	uint8_t instashield;		// Instashield no-damage animation timer
 	uint8_t wipeoutslow;		// Timer before you slowdown when getting wiped out
