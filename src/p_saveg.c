@@ -747,6 +747,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].crash_zoffset_lerp);
 		SYNC(players[i].crash_side);
 		SYNCBOOLEAN(players[i].crash_bumpme);
+		SYNC(players[i].crash_speed);
 		SYNC(players[i].crashtimer);
 		SYNC(players[i].instashield);
 		SYNC(players[i].wipeoutslow);
