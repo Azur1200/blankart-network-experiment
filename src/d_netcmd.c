@@ -838,7 +838,7 @@ consvar_t cv_kartinvindamage = CVAR_INIT ("kartinvindamage", "Wipe-out", CV_NETV
 
 // Orbi/Jawz damage type setting; "Auto" chooses between the two types by playercount
 static CV_PossibleValue_t kartorbidmg_cons_t[] = {{0, "Auto"}, {DMG_WIPEOUT, "Wipe-out"}, {DMG_CRASH, "Crash"}, {0, NULL}};
-consvar_t cv_kartorbijawzdmg = CVAR_INIT ("orbijawzdamage", "Wipe-out", CV_NETVAR|CV_CHEAT|CV_GUARD, kartorbidmg_cons_t, NULL);
+consvar_t cv_kartorbijawzdmg = CVAR_INIT ("orbijawzdamage", "Auto", CV_NETVAR|CV_CHEAT|CV_GUARD, kartorbidmg_cons_t, NULL);
 
 // How far the player must be from the cluster to roll an S-Monitor.
 static CV_PossibleValue_t smonitordist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
