@@ -774,7 +774,10 @@ void K_ProcessTerrainEffect(mobj_t *mo)
 	{
 		// I'm not including the "minimum scale" rant here again. Look at P_DoSpring for that.
 		// Just know this fixes things with Alt. Shrink.
-		const fixed_t objscale = max(player->mo->scale, mapobjectscale);
+		fixed_t objscale = player->mo->scale;
+
+		if (K_IsAltShrunk(player))
+			objscale = max(player->mo->scale, mapobjectscale);
 
 		const fixed_t hscale = mapobjectscale + (mapobjectscale - objscale);
 		fixed_t minspeed = terrain->pogoSpringMin*hscale;

@@ -5828,7 +5828,8 @@ void K_DoPogoSpring(mobj_t *mo, fixed_t vertispeed, uint8_t sound)
 		// In certain cases, the game will pretend they're bigger than they actually are,
 		// so the game handles springs as such.
 		// Alt. Shrink *especially* needs this change!
-		objscale = max(mo->scale, mapobjectscale);
+		if (K_IsAltShrunk(mo->player))
+			objscale = max(mo->scale, mapobjectscale);
 
 		// sproing!
 		airdropbounce = mo->player->airdropflags & PAF_AIRDROP_HEAVY;

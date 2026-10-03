@@ -372,7 +372,8 @@ dboolean P_DoSpring(mobj_t *spring, mobj_t *object)
 		// In certain cases, the game will pretend they're bigger than they actually are,
 		// so the game handles springs as such.
 		// Alt. Shrink *especially* needs this change!
-		objscale = max(object->scale, mapobjectscale);
+		if (K_IsAltShrunk(object->player))
+			objscale = max(object->scale, mapobjectscale);
 	}
 	
 	fixed_t vertispeed = spring->info->mass;

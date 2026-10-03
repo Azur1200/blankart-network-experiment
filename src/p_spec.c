@@ -5389,7 +5389,11 @@ static void P_ProcessPogoSpring(player_t *player, dboolean isTouching, int type)
 		return;
 	}
 
-	const fixed_t playerscale = max(mapobjectscale, player->mo->scale);
+	fixed_t playerscale = player->mo->scale;
+
+	if (K_IsAltShrunk(player))
+		playerscale = max(player->mo->scale, mapobjectscale);
+
 	const fixed_t hscale = mapobjectscale + (mapobjectscale - playerscale);
 	const fixed_t minspeed = 24*hscale;
 	const fixed_t maxspeed = 28*hscale;
