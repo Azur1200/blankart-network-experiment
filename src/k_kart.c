@@ -4110,7 +4110,9 @@ void K_TumblePlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 		int8_t direction = 1;
 		{
 			vector3_t fwd = {P_ReturnThrustX(player->mo, player->mo->angle, FRACUNIT), P_ReturnThrustY(player->mo, player->mo->angle, FRACUNIT), 0};
-			vector3_t side = {inflictor->x - player->mo->x, inflictor->y - player->mo->y, 0};
+			fixed_t infx = inflictor ? inflictor->x : player->mo->x;
+			fixed_t infy = inflictor ? inflictor->y : player->mo->y;
+			vector3_t side = {infx - player->mo->x, infy - player->mo->y, 0};
 			vector3_t cross = {0};
 
 			FV3_Cross(&fwd, &side, &cross);
