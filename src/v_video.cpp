@@ -958,12 +958,12 @@ affine_bounding_t* V_GetAffineBounds(const affine_t* transform,
 	// "sorry, unimplemented: non-trivial designated initializers not supported"
 	// THANK YOU VERY MUCH CEEPEEPEE!!!
 	// The thing that works in C suddenly doesn't in the NEAR-IDENTICAL language becuse uhhhhhhhhhhhhhh
-	vector2_t v[4] = {0};
+	vector2_t v[4] = {};
 
-	v[3] = {x : (FixedMul(ba, -fx) - FixedMul(bb, fy)) + fx, y : (FixedMul(bc, -fx) - FixedMul(bd, fy)) + fy };
-	v[2] = {x : (FixedMul(ba, (pw - fx)) - FixedMul(bb, fy)) + fx, y : (FixedMul(bc, (pw - fx)) - FixedMul(bd, fy)) + fy };
-	v[0] = {x : (FixedMul(ba, -fx) + FixedMul(bb, (ph - fy))) + fx, y : (FixedMul(bc, -fx) + FixedMul(bd, (ph - fy))) + fy };
-	v[1] = {x : (FixedMul(ba, (pw - fx)) + FixedMul(bb, (ph - fy))) + fx, y : (FixedMul(bc, (pw - fx)) + FixedMul(bd, (ph - fy))) + fy };
+	v[3] = {.x = (FixedMul(ba, -fx) - FixedMul(bb, fy)) + fx, .y = (FixedMul(bc, -fx) - FixedMul(bd, fy)) + fy };
+	v[2] = {.x = (FixedMul(ba, (pw - fx)) - FixedMul(bb, fy)) + fx, .y = (FixedMul(bc, (pw - fx)) - FixedMul(bd, fy)) + fy };
+	v[0] = {.x = (FixedMul(ba, -fx) + FixedMul(bb, (ph - fy))) + fx, .y = (FixedMul(bc, -fx) + FixedMul(bd, (ph - fy))) + fy };
+	v[1] = {.x = (FixedMul(ba, (pw - fx)) + FixedMul(bb, (ph - fy))) + fx, .y = (FixedMul(bc, (pw - fx)) + FixedMul(bd, (ph - fy))) + fy };
 
 	// Get the leftmost and uppermost bounds of the current resolution.
 	int32_t vw = vid.width, vh = vid.height;

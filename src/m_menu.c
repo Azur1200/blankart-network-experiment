@@ -5210,10 +5210,8 @@ dboolean M_CanShowLevelInList(mapnum_t mapnum)
 	return M_CanShowLevelOnPlatter(mapnum) && M_LevelAvailableOnPlatter(mapnum);
 }
 
-const char *M_ButtonName(uint8_t p, gamecontrols_e gc, const char *fallback, dboolean forcekeyboard)
+const char *M_ButtonName(uint8_t p, gamecontrols_e gc, dboolean forcekeyboard)
 {
-	int32_t i;
-
 	if (forcekeyboard || (p == 0 && keyboardcontrolled && (messagebox.active || menustack[0])))
 	{
 		switch (gc)
@@ -5248,7 +5246,7 @@ char DeclineString[25];
 
 char *M_MessageConfirmText(dboolean gamequit, dboolean forcekeyboard)
 {
-	const char *item1 = M_ButtonName(0, gc_accelerate, "ACCEL", forcekeyboard);
+	const char *item1 = M_ButtonName(0, gc_accelerate, forcekeyboard);
 
 	memset(&ConfirmString, 0, sizeof(ConfirmString));
 
@@ -5262,7 +5260,7 @@ char *M_MessageConfirmText(dboolean gamequit, dboolean forcekeyboard)
 
 char *M_MessageCancelText(dboolean gamequit, dboolean forcekeyboard)
 {
-	const char *item1 = M_ButtonName(0, gc_brake, "BRAKE", forcekeyboard);
+	const char *item1 = M_ButtonName(0, gc_brake, forcekeyboard);
 
 	memset(&DeclineString, 0, sizeof(DeclineString));
 
@@ -5940,7 +5938,7 @@ void MP_TickAddonsBackground(menupanelinst_t *pi)
 		M_SetItemDisabled(pi, "SEARCHTEXT", *cv_dummyaddonsearch.string == 0);
 		if (*cv_dummyaddonsearch.string == 0)
 		{
-			const char *button = M_ButtonName(0, gc_drift, "DRIFT", false);
+			const char *button = M_ButtonName(0, gc_drift, false);
 			M_SetItemText(pi, "SEARCHTEXT", va("Press %s to Search", button));
 		}
 		else
@@ -6797,7 +6795,7 @@ void MP_TickReplayHutInfoBackground(menupanelinst_t *pi)
 			M_SetItemDisabled(pi, "SEARCHTEXT", *cv_dummyreplaysearch.string == 0);
 			if (*cv_dummyreplaysearch.string == 0)
 			{
-				const char *button = M_ButtonName(0, gc_drift, "DRIFT", false);
+				const char *button = M_ButtonName(0, gc_drift, false);
 				M_SetItemText(pi, "SEARCHTEXT", va("Press %s to Search", button));
 			}
 			else
@@ -10986,7 +10984,7 @@ void MP_SetupMonitorToggles(menupanelinst_t *pi)
 		}
 		else
 		{
-			const char *button = M_ButtonName(0, gc_drift, "DRIFT", false);
+			const char *button = M_ButtonName(0, gc_drift,false);
 
 			item->argument = 0;
 			M_SetItemPatchRaw(item, result->cvar->name);
@@ -11297,9 +11295,9 @@ void MP_SetupViewServer(menupanelinst_t *pi)
 	M_SetItemVisible(pi, "ADDONSHEADING", viewserver_showaddons);
 	M_SetItemVisible(pi, "ADDONSCOUNT", viewserver_showaddons);
 
-	const char *item1 = M_ButtonName(0, gc_accelerate, "ACCEL", keyboardcontrolled);
-	const char *item2 = M_ButtonName(0, gc_brake, "BRAKE", keyboardcontrolled);
-	const char *item3 = M_ButtonName(0, gc_fire, "ITEM", keyboardcontrolled);
+	const char *item1 = M_ButtonName(0, gc_accelerate, keyboardcontrolled);
+	const char *item2 = M_ButtonName(0, gc_brake, keyboardcontrolled);
+	const char *item3 = M_ButtonName(0, gc_fire, keyboardcontrolled);
 
 	M_SetItemText(pi, "TOGGLEBUTTON1", va("[%s] = Players", item3));
 	M_SetItemText(pi, "TOGGLEBUTTON2", va("[%s] = Addons", item3));
@@ -11578,9 +11576,9 @@ int32_t MR_TickViewServer(int32_t choice)
 	M_SetItemVisible(pi, "ADDONSHEADING", viewserver_showaddons);
 	M_SetItemVisible(pi, "ADDONSCOUNT", viewserver_showaddons);
 
-	const char *item1 = M_ButtonName(0, gc_accelerate, "ACCEL", keyboardcontrolled);
-	const char *item2 = M_ButtonName(0, gc_brake, "BRAKE", keyboardcontrolled);
-	const char *item3 = M_ButtonName(0, gc_fire, "ITEM", keyboardcontrolled);
+	const char *item1 = M_ButtonName(0, gc_accelerate, keyboardcontrolled);
+	const char *item2 = M_ButtonName(0, gc_brake,  keyboardcontrolled);
+	const char *item3 = M_ButtonName(0, gc_fire, keyboardcontrolled);
 
 	M_SetItemText(pi, "TOGGLEBUTTON1", va("[%s] = Players", item3));
 	M_SetItemText(pi, "TOGGLEBUTTON2", va("[%s] = Addons", item3));

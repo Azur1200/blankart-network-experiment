@@ -37,7 +37,6 @@ static bool imgui_opengl_init = false;
 static bool imgui_software_init = false;
 static bool imgui_setup= false;
 static bool imgui_frame_active = false;
-static bool imgui_active = false;
 
 void Impl_ImGui_CreateContext(void)
 {
@@ -90,7 +89,6 @@ void Impl_ImGui_Frame(void)
 	if (cht_debug == 0)
 		return;
 
-	ImGuiIO& io = ImGui::GetIO();
 	if (rendermode == render_soft)
 		ImGui_ImplSDLRenderer3_NewFrame();
 	else if (rendermode == render_opengl)
@@ -218,7 +216,7 @@ static void PlayerDisplay(player_t *player, int32_t recursive_mobj, int32_t recu
 	ImGui::Text("Item: %s (%d)", DEH_KartItemName(static_cast<kartitemtype_e>(player->itemtype)), player->itemtype);
 
 	ImGui::Text("Position: %d", player->position);
-	ImGui::Text("Distance to FInish: %d", player->distancetofinish);
+	ImGui::Text("Distance to FInish: %u", player->distancetofinish);
 	ImGui::Text("Laps: %d", player->laps);
 	ImGui::Text("Rings: %d", player->rings);
 
@@ -227,12 +225,12 @@ static void PlayerDisplay(player_t *player, int32_t recursive_mobj, int32_t recu
 	ImGui::Text("Follower Color: %s", skincolors[player->followercolor].name);
 	generic_mobj(player->follower, "Follower", recursive_mobj, recursive_player);
 
-	ImGui::Text("Char Flags: %d", player->charflags);
+	ImGui::Text("Char Flags: %u", player->charflags);
 
 	ImGui::Text("Follow Item: %s", DEH_MobjtypeName(player->followitem));
 	generic_mobj(player->followmobj, "followmobj", recursive_mobj, recursive_player);
 
-	ImGui::Text("Score: %d", player->charflags);
+	ImGui::Text("Score: %u", player->score);
 
 	ImGui::Text("No Control: %d", player->nocontrol);
 	ImGui::Text("Carry: %d", player->carry);
@@ -256,21 +254,21 @@ static void MobjDisplay(mobj_t *mobj, int32_t recursive_mobj, int32_t recursive_
 		generic_mobj(*mobj->bprev, "bprev", recursive_mobj, recursive_player);
 	}
 
-	ImGui::Text("angle pitch roll: %d %d %d", mobj->angle, mobj->pitch, mobj->roll);
-	ImGui::Text("slopepitch sloperoll: %d %d", mobj->slopepitch, mobj->sloperoll);
-	ImGui::Text("old_slopepitch old_sloperoll: %d %d", mobj->old_slopepitch, mobj->old_sloperoll);
-	ImGui::Text("old_slopepitch2 old_sloperol2l: %d %d", mobj->old_slopepitch2, mobj->old_sloperoll2);
-	ImGui::Text("old_angle old_pitch old_roll: %d %d %d", mobj->old_angle, mobj->old_pitch, mobj->old_roll);
-	ImGui::Text("old_angle2 old_pitch2 old_roll2: %d %d %d", mobj->old_angle2, mobj->old_pitch2, mobj->old_roll2);
+	ImGui::Text("angle pitch roll: %u %u %u", mobj->angle, mobj->pitch, mobj->roll);
+	ImGui::Text("slopepitch sloperoll: %u %u", mobj->slopepitch, mobj->sloperoll);
+	ImGui::Text("old_slopepitch old_sloperoll: %u %u", mobj->old_slopepitch, mobj->old_sloperoll);
+	ImGui::Text("old_slopepitch2 old_sloperol2l: %u %u", mobj->old_slopepitch2, mobj->old_sloperoll2);
+	ImGui::Text("old_angle old_pitch old_roll: %u %u %u", mobj->old_angle, mobj->old_pitch, mobj->old_roll);
+	ImGui::Text("old_angle2 old_pitch2 old_roll2: %u %u %u", mobj->old_angle2, mobj->old_pitch2, mobj->old_roll2);
 
-	ImGui::Text("rollangle: %d", mobj->frame);
+	ImGui::Text("rollangle: %u", mobj->rollangle);
 	//sprite
-	ImGui::Text("frame: %d", mobj->frame);
+	ImGui::Text("frame: %u", mobj->frame);
 	ImGui::Text("sprite2: %d", mobj->sprite2);
 	ImGui::Text("anim_duration: %d", mobj->anim_duration);
 
-	ImGui::Text("renderflags: %d", mobj->renderflags);
-	ImGui::Text("renderflags2: %d", mobj->renderflags2);
+	ImGui::Text("renderflags: %u", mobj->renderflags);
+	ImGui::Text("renderflags2: %u", mobj->renderflags2);
 	ImGui::Text("spritexscale spriteyscale: %d %d", mobj->spritexscale, mobj->spriteyscale);
 	ImGui::Text("spritexoffset spriteyoffset: %d %d", mobj->spritexoffset, mobj->spriteyoffset);
 	ImGui::Text("old_spritexscale old_spriteyscale: %d %d", mobj->old_spritexscale, mobj->old_spriteyscale);
@@ -300,9 +298,9 @@ static void MobjDisplay(mobj_t *mobj, int32_t recursive_mobj, int32_t recursive_
 
 	ImGui::Text("tics: %d", mobj->tics);
 
-	ImGui::Text("flags: %d", mobj->flags);
-	ImGui::Text("flags2: %d", mobj->flags2);
-	ImGui::Text("eflags: %d", mobj->eflags);
+	ImGui::Text("flags: %u", mobj->flags);
+	ImGui::Text("flags2: %u", mobj->flags2);
+	ImGui::Text("eflags: %u", mobj->eflags);
 
 	ImGui::Text("tid: %d", mobj->tid);
 
@@ -328,7 +326,7 @@ static void MobjDisplay(mobj_t *mobj, int32_t recursive_mobj, int32_t recursive_
 
 	ImGui::Text("health: %d", mobj->health);
 
-	ImGui::Text("movedir: %d", mobj->movedir);
+	ImGui::Text("movedir: %u", mobj->movedir);
 	ImGui::Text("movecount: %d", mobj->movecount);
 
 	generic_mobj(mobj->target, "target", recursive_mobj, recursive_player);
@@ -371,7 +369,7 @@ static void MobjDisplay(mobj_t *mobj, int32_t recursive_mobj, int32_t recursive_
 	ImGui::Text("watertop: %d", mobj->watertop);
 	ImGui::Text("waterbottom: %d", mobj->waterbottom);
 
-	ImGui::Text("mobjnum: %d", mobj->mobjnum);
+	ImGui::Text("mobjnum: %u", mobj->mobjnum);
 
 	ImGui::Text("scale: %d", mobj->scale);
 	ImGui::Text("old_scale: %d", mobj->old_scale);
@@ -386,7 +384,7 @@ static void MobjDisplay(mobj_t *mobj, int32_t recursive_mobj, int32_t recursive_
 	ImGui::Text("cusval: %d", mobj->cusval);
 	ImGui::Text("cusmem: %d", mobj->cvmem);
 
-	ImGui::Text("mobjlifetime: %d", mobj->mobjlifetime);
+	ImGui::Text("mobjlifetime: %u", mobj->mobjlifetime);
 
 	//standingslope
 
@@ -448,9 +446,9 @@ static void MapDisplay(const mapheader_t *map)
 
 	ImGui::Text("Map ID: %s", map->lumpname);
 
-	ImGui::Text("Map ID Hash: %d", map->lumpnamehash);
+	ImGui::Text("Map ID Hash: %u", map->lumpnamehash);
 
-	ImGui::Text("Map ID Lump Number: %d", map->lumpnum);
+	ImGui::Text("Map ID Lump Number: %u", map->lumpnum);
 
 	ImGui::Text("Just Played: %lu", map->justPlayed);
 
@@ -477,7 +475,7 @@ static void MapDisplay(const mapheader_t *map)
 
 	ImGui::Text("Level Flags: %d", map->levelflags);
 
-	ImGui::Text("Type of Level: %d", map->typeoflevel);
+	ImGui::Text("Type of Level: %u", map->typeoflevel);
 
 	ImGui::Text("Laps: %d", map->numlaps);
 

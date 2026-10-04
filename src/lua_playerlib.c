@@ -2222,6 +2222,7 @@ static int player_set(lua_State *L)
 		return NOSET; // At least, not for now. No, this isn't consistent with player.position...
 		break;
 	case player_ranktier:
+	{
 		const ranktier_e luatier = lua_tointeger(L, 3);
 		if (luatier < RTIER_E || luatier >= NUMRANKTIERS)
 			return luaL_error(L, "ranktier index %d out of range (%d - %d)", luatier, RTIER_E, NUMRANKTIERS-1);
@@ -2229,6 +2230,7 @@ static int player_set(lua_State *L)
 		// Likely impossible after that safety check, but better safe than sorry...
 		plr->ranktier = (ranktier_e)(CLAMP(luatier, RTIER_E, NUMRANKTIERS - 1));
 		break;
+	}
 	case player_ranklog:
 		return NOSET;
 		break;

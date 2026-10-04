@@ -1312,7 +1312,7 @@ void ST_Drawer(void)
 		{
 			char replaytext[100] = {0};
 			int32_t flags = 0;
-			const char *button = M_ButtonName(0, gc_lookback, "Look Backwards", false);
+			const char *button = M_ButtonName(0, gc_lookback, false);
 
 			snprintf(replaytext, 100, "Replay will be saved. (%s: Change title)", button);
 

@@ -1323,6 +1323,7 @@ mobj_t *P_SpawnGhostMobjEX(mobj_t *mobj, dboolean legacy)
 
 static void P_DoRankedRaceFinish(player_t* player, dboolean losing)
 {
+	(void)losing;
 	const int32_t scoretiergap = K_GetScoreForRankTier(RTIER_A) - K_GetScoreForRankTier(RTIER_B);
 	const size_t pid = (player - players);
 	const fixed_t leadermul =

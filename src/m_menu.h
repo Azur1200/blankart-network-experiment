@@ -223,7 +223,7 @@ extern messagebox_t messageboxqueue[NUMMENULEVELS];
 #define MB_HANDLER(func) (messagebox_callback){.handler = func}
 #define MB_NONE (messagebox_callback){0}
 
-const char *M_ButtonName(uint8_t p, gamecontrols_e gc, const char *fallback, dboolean forcekeyboard);
+const char *M_ButtonName(uint8_t p, gamecontrols_e gc, dboolean forcekeyboard);
 char *M_MessageConfirmText(dboolean gamequit, dboolean forcekeyboard);
 char *M_MessageCancelText(dboolean gamequit, dboolean forcekeyboard);
 

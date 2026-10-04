@@ -12565,7 +12565,7 @@ void K_UpdateAllPlayerPositions(void)
 						{
 							player->currentwaypoint->playergradelap[i] = checklap;
 
-							if (player->progressthrumap >= ((RANK_MINPROGRESS << BIGTOSTDBITS) / 100))
+							if (player->progressthrumap >= (uint32_t)((RANK_MINPROGRESS << BIGTOSTDBITS) / 100))
 							{
 								// Progress updated; update leaderscore
 								const fixed_t leadermul = (K_GetPositionMultiplier(player->position) >> BIGTOSTDBITS);
@@ -12603,7 +12603,7 @@ void K_UpdateAllPlayerPositions(void)
 						{
 							legacygradelap[idx] = player->laps;
 
-							if (player->progressthrumap >= ((RANK_MINPROGRESS << BIGTOSTDBITS) / 100))
+							if (player->progressthrumap >= (uint32_t)((RANK_MINPROGRESS << BIGTOSTDBITS) / 100))
 							{
 								// Progress updated; update leaderscore
 								const fixed_t leadermul = (K_GetPositionMultiplier(player->position) >> BIGTOSTDBITS);
