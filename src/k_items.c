@@ -562,6 +562,14 @@ static fixed_t K_ItemOddsScale(uint8_t numPlayers, dboolean spbrush)
 	uint8_t playerCount = (spbrush ? 2 : numPlayers);
 	fixed_t playerScaling = 0;
 
+	if (cv_kartoddscale.value == KODDSCALE_CUSTOM)
+	{
+		if (spbrush)
+			return cv_kartoddscale_spb.value;
+		else
+			return cv_kartoddscale_regular.value;
+	}
+
 	// Then, it multiplies it further if the player count isn't equal to basePlayer.
 	// This is done to make low player count races more interesting and high player count rates more fair.
 	// (If you're in SPB mode and in 2nd place, it acts like it's a 1v1, so the catch-up game is not weakened.)

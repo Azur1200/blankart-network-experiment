@@ -2064,5 +2064,9 @@ struct int_const_s const INT_CONST[] = {
 	{"RTIER_P", RTIER_P},
 	{"NUMRANKTIERS", NUMRANKTIERS},
 
+	// kartoddscale_e
+	{"KODDSCALE_REGULAR", KODDSCALE_REGULAR},
+	{"KODDSCALE_CUSTOM", KODDSCALE_CUSTOM},
+
 	{NULL,0}
 };

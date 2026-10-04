@@ -755,6 +755,12 @@ consvar_t cv_kartlegacyoddsdist = CVAR_INIT ("kartlegacyoddsdist", "1500", CV_NE
 // SPB Rush toggle; toggles on/off the more aggressive "pressure" odds when an SPB is active
 consvar_t cv_kartspbrush = CVAR_INIT ("kartspbrush", "On", CV_NETVAR, CV_OnOff, NULL);
 
+// Let people force their own scaling vars via cvars. Maybe someone could write their own calc hooked up via lua?
+static CV_PossibleValue_t kartoddscale_cons_t[] = {{KODDSCALE_REGULAR, "Regular"}, {KODDSCALE_CUSTOM, "Custom"}, {0, NULL}};
+consvar_t cv_kartoddscale = CVAR_INIT ("kartoddscale", "Regular", CV_NETVAR, kartoddscale_cons_t, NULL);
+consvar_t cv_kartoddscale_regular = CVAR_INIT ("kartoddscale_custom_regular", "0.5", CV_NETVAR|CV_FLOAT, CV_Natural, NULL);
+consvar_t cv_kartoddscale_spb = CVAR_INIT ("kartoddscale_custom_spb", "1.4", CV_NETVAR|CV_FLOAT, CV_Natural, NULL);
+
 // Uses the sounds from the general sound library instead of unique sounds for laps and finish
 consvar_t cv_usegenericlapsounds = CVAR_INIT ("usegenericlapsounds", "Off", CV_SAVE, CV_OnOff, NULL);
 

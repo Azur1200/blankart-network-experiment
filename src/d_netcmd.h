@@ -311,6 +311,10 @@ extern consvar_t cv_kartlegacyoddsdist;
 
 extern consvar_t cv_kartspbrush;
 
+extern consvar_t cv_kartoddscale;
+extern consvar_t cv_kartoddscale_regular;
+extern consvar_t cv_kartoddscale_spb;
+
 extern consvar_t cv_usegenericlapsounds;
 
 extern consvar_t cv_itemlist;

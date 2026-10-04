@@ -75,6 +75,12 @@ typedef enum
 	MAXODDSTABLES
 } ATTRPACK kartoddstable_e;
 
+typedef enum
+{
+	KODDSCALE_REGULAR = 0,
+	KODDSCALE_CUSTOM,
+} kartoddscale_e;
+
 // item flags for usage and HUD
 typedef enum
 {
