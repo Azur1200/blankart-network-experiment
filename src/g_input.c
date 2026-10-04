@@ -268,16 +268,13 @@ void G_MapEventsToControls(event_t *ev)
 			{
 				M_MenuTypingInput(ev->data1);
 
-				if (ev->data1 > 0)
+				if (device != KEYBOARD_MOUSE_DEVICE)
 				{
-					if (ev->data1 < NUMKEYS)
-					{
-						keyboardcontrolled = true;
-					}
-					else
-					{
-						keyboardcontrolled = false;
-					}
+					keyboardcontrolled = false;
+				}
+				else
+				{
+					keyboardcontrolled = true;
 				}
 
 				if (ev->data2) // OS repeat? We handle that ourselves
@@ -1025,6 +1022,7 @@ int32_t G_KeynumFromGamecontrol(gamecontrols_e type)
 {
 	int32_t i;
 	dboolean failedkbsearch = false;
+	dboolean failedgpsearch = false;
 	for (i = 0; i < MAXINPUTMAPPING; i++)
 	{
 		int32_t keynum = gamecontrol[0][type][i];
@@ -1035,7 +1033,17 @@ int32_t G_KeynumFromGamecontrol(gamecontrols_e type)
 		if (keynum >= NUMINPUTS)
 			continue;
 
-		if (keyboardcontrolled && keynum >= NUMKEYS && !failedkbsearch)
+		if (!keyboardcontrolled && !(keynum >= KEY_JOY1 && keynum < JOYINPUTEND) && !failedgpsearch)
+		{
+			if (i == MAXINPUTMAPPING-1)
+			{
+				i = -1;
+				failedgpsearch = true;
+			}
+
+			continue;
+		}
+		else if (keyboardcontrolled && (keynum >= KEY_JOY1 && keynum < JOYINPUTEND) && !failedkbsearch)
 		{
 			if (i == MAXINPUTMAPPING-1)
 			{
