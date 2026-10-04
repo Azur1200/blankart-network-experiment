@@ -1356,6 +1356,47 @@ int LUA_HookGPRankPoints(uint8_t position, uint8_t numplayers, int16_t *points)
 	return hook.status;
 }
 
+typedef struct {
+	dboolean override;
+	int8_t spbrush;
+	fixed_t playerScaling;
+} OddScale_State;
+
+static void res_oddscale(Hook_State *hook)
+{
+	OddScale_State *state = (OddScale_State*)hook->userdata;
+
+	if (lua_isdboolean(gL, -3))
+		state->override = lua_todboolean(gL, -3);
+
+	if (lua_isnumber(gL, -2))
+		state->spbrush = lua_tonumber(gL, -2);
+
+	if (lua_isnumber(gL, -1))
+		state->playerScaling = lua_tonumber(gL, -1);
+};
+
+dboolean LUA_HookItemOddsScale(uint8_t numPlayers, int8_t *spbrush, fixed_t *playerScaling)
+{
+	Hook_State hook = {};
+	OddScale_State state = {0};
+
+	if (prepare_hook(&hook, 0, HOOK(ItemOddsScale)))
+	{
+		lua_pushinteger(gL, numPlayers);
+		lua_pushdboolean(gL, (spbrush > 0));
+
+		hook.userdata = &state;
+
+		call_hooks(&hook, 3, res_oddscale);
+	}
+
+	*playerScaling = state.playerScaling;
+	*spbrush = state.spbrush;
+
+	return state.override;
+}
+
 dboolean hook_cmd_running = false;
 
 static void update_music_name(struct MusicChange *musicchange)

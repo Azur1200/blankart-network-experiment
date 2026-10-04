@@ -562,41 +562,52 @@ static fixed_t K_ItemOddsScale(uint8_t numPlayers, dboolean spbrush)
 	uint8_t playerCount = (spbrush ? 2 : numPlayers);
 	fixed_t playerScaling = 0;
 
-	if (cv_kartoddscale.value == KODDSCALE_CUSTOM)
-	{
-		if (spbrush)
-			return cv_kartoddscale_spb.value;
-		else
-			return cv_kartoddscale_regular.value;
-	}
+	int8_t lua_spbrush = spbrush;
+	dboolean override = LUA_HookItemOddsScale(numPlayers, &lua_spbrush, &playerScaling);
 
-	// Then, it multiplies it further if the player count isn't equal to basePlayer.
-	// This is done to make low player count races more interesting and high player count rates more fair.
-	// (If you're in SPB mode and in 2nd place, it acts like it's a 1v1, so the catch-up game is not weakened.)
-	if (playerCount < basePlayer)
-	{
-		// Less than basePlayer: increase odds significantly.
-		// 2P: x1.4
-		playerScaling = (basePlayer - playerCount) * (FRACUNIT / 10);
-	}
-	else if (playerCount > basePlayer)
-	{
-		// More than basePlayer: reduce odds slightly.
+	if (lua_spbrush == 0)
+		spbrush = false;
+	else if (lua_spbrush == 1)
+		spbrush = true;
 
-		// CEP: 17P+ adjustments
-		if (playerCount < vanillaMax)
+	if (!override)
+	{
+		if (cv_kartoddscale.value == KODDSCALE_CUSTOM)
 		{
-			// Less than vanillaMax: Use standard calculations.
-			// 16P: x0.6
-			playerScaling = (basePlayer - playerCount) * (FRACUNIT / 20);
-
+			if (spbrush)
+				return cv_kartoddscale_spb.value;
+			else
+				return cv_kartoddscale_regular.value;
 		}
-		else if (playerCount > vanillaMax)
+
+		// Then, it multiplies it further if the player count isn't equal to basePlayer.
+		// This is done to make low player count races more interesting and high player count rates more fair.
+		// (If you're in SPB mode and in 2nd place, it acts like it's a 1v1, so the catch-up game is not weakened.)
+		if (playerCount < basePlayer)
 		{
-			// More than vanillaMax: Increase odds to fit with the increased playercount
-			// 24P: x0.6
-			// 30P: x0.45
-			playerScaling = (basePlayer - min(extPlayer, playerCount)) * (FRACUNIT / 40); // adding a cap here to be sure
+			// Less than basePlayer: increase odds significantly.
+			// 2P: x1.4
+			playerScaling = (basePlayer - playerCount) * (FRACUNIT / 10);
+		}
+		else if (playerCount > basePlayer)
+		{
+			// More than basePlayer: reduce odds slightly.
+
+			// CEP: 17P+ adjustments
+			if (playerCount < vanillaMax)
+			{
+				// Less than vanillaMax: Use standard calculations.
+				// 16P: x0.6
+				playerScaling = (basePlayer - playerCount) * (FRACUNIT / 20);
+
+			}
+			else if (playerCount > vanillaMax)
+			{
+				// More than vanillaMax: Increase odds to fit with the increased playercount
+				// 24P: x0.6
+				// 30P: x0.45
+				playerScaling = (basePlayer - min(extPlayer, playerCount)) * (FRACUNIT / 40); // adding a cap here to be sure
+			}
 		}
 	}
 

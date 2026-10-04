@@ -86,6 +86,7 @@ automatically.
 	X (PlayerUsesBotMovement),/* K_PlayerUsesBotMovement */\
 	X (BotJoin),\
 	X (GPRankPoints),/* K_CalculateGPRankPoints */\
+	X (ItemOddsScale),/* K_ItemOddsScale */\
 	X (AddonLoaded),\
 	X (CameraThinker),/* P_MoveChaseCamera */\
 	X (PlayerItem),/*SRB2KART*/\
@@ -193,6 +194,7 @@ int  LUA_HookSeenPlayer(player_t *player, player_t *seenfriend);
 int LUA_HookGPRankPoints(uint8_t position, uint8_t numplayers, int16_t *points);
 int  LUA_HookShouldJingleContinue(player_t *, const char *musname);
 int  LUA_HookMusicChange(const char *oldname, struct MusicChange *);
+dboolean LUA_HookItemOddsScale(uint8_t numPlayers, int8_t *spbrush, fixed_t *playerScaling);
 
 // Item shit
 dboolean LUA_HookPlayerItem(player_t *player, uint8_t itemType, dboolean wasHoldingItem, dboolean *force);
