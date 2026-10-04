@@ -214,6 +214,68 @@ static void PlayerDisplay(player_t *player, int32_t recursive_mobj, int32_t recu
 
 	ImGui::Text("Item: %s (%d)", DEH_KartItemName(static_cast<kartitemtype_e>(player->itemtype)), player->itemtype);
 
+	generic_mobj(player->shieldtracer, "Shield Tracer", recursive_mobj, recursive_player);
+
+	ImGui::Text("Attraction Charge: %d", player->attractioncharge);
+	ImGui::Text("Attraction Attack: %d", player->attractionattack);
+	ImGui::Text("Attraction Attack Hipower: %d", player->attractionattack_hipower);
+	ImGui::Text("Attraction Boost: %d", player->attractionboost);
+
+	ImGui::Text("Bubble Cool: %d", player->bubblecool);
+	ImGui::Text("Bubble Blowup: %d", player->bubbleblowup);
+	ImGui::Text("Bubble Health: %d", player->bubblehealth);
+	ImGui::Text("Bubble Boost: %d", player->bubbleboost);
+	ImGui::Text("Bubble Graze: %u", player->bubblegraze);
+	ImGui::Text("Bubble Buffer: %d", player->bubblebuffer);
+
+	ImGui::Text("Flame Dash: %d", player->flamedash);
+	ImGui::Text("Flame Timer: %d", player->flametimer);
+	ImGui::Text("Flame Store: %d", player->flamestore);
+	ImGui::Text("Flame Burn Stop: %d", player->flameburnstop);
+	ImGui::Text("Flame Overheat: %d", player->flameoverheat);
+
+	ImGui::Text("Hyudoro Timer: %d", player->hyudorotimer);
+	ImGui::Text("Stealing Timer: %d", player->stealingtimer);
+	ImGui::Text("Stolen Timer: %d", player->stolentimer);
+
+	ImGui::Text("Sneaker Timer: %d", player->sneakertimer);
+	ImGui::Text("Real Sneaker Timer: %d", player->realsneakertimer);
+	ImGui::Text("Floor boost: %d", player->floorboost);
+
+	ImGui::Text("Chain Timer: %d", player->chaintimer);
+
+	ImGui::Text("Boost Charge: %d", player->boostcharge);
+
+	ImGui::Text("Slope Boost: %d", player->slopeboost);
+	ImGui::Text("Prev Slope Boost: %d", player->prevslopeboost);
+	ImGui::Text("Slope Accel: %d", player->slopeaccel);
+
+	ImGui::Text("Grow Shrink Timer: %d", player->growshrinktimer);
+	ImGui::Text("Grow Cancel: %d", player->growcancel);
+	ImGui::Text("Squished Timer: %d", player->squishedtimer);
+
+	ImGui::Text("Alt Shrink Times Hit: %d", player->altshrinktimeshit);
+	ImGui::Text("In Arrow Bullet: %d", player->inarrowbullet);
+	generic_mobj(player->arrowbullet, "Arrow Bullet", recursive_mobj, recursive_player);
+
+	ImGui::Text("Rocket Sneaker Timer: %d", player->rocketsneakertimer);
+
+	ImGui::Text("Invincibility Timer: %d", player->invincibilitytimer);
+
+	ImGui::Text("S-Monitor Timer: %d", player->smonitortimer);
+	ImGui::Text("Max S-Monitor TIme: %d", player->maxsmonitortime);
+	ImGui::Text("S-Monitor Expiring: %d", player->smonitorexpiring);
+	ImGui::Text("S-Monitor Cancel: %d", player->smonitorcancel);
+	ImGui::Text("S-Monitor Warning: %d", player->smonitorwarning);
+
+	ImGui::Text("Eggman Explode: %d", player->eggmanexplode);
+	ImGui::Text("Eggman Blame: %d", player->eggmanblame);
+
+	ImGui::Text("Banana Drag: %d", player->bananadrag);
+
+	ImGui::Text("Last Item Target: %d", player->lastitemtarget);
+	ImGui::Text("Item Target Delay: %d", player->itemtargetdelay);
+
 	ImGui::Text("Position: %d", player->position);
 	ImGui::Text("Distance to FInish: %u", player->distancetofinish);
 	ImGui::Text("Laps: %d", player->laps);
