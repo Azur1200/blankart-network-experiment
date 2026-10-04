@@ -483,6 +483,7 @@ enum GameType
 {
 	GT_RACE = 0,
 	GT_BATTLE,
+	GT_FREEROAM,
 
 	GT_FIRSTFREESLOT,
 	GT_LASTFREESLOT = 127, // Previously (GT_FIRSTFREESLOT + NUMGAMETYPEFREESLOTS - 1) - it would be necessary to rewrite VOTEMODIFIER_ENCORE to go higher than this.

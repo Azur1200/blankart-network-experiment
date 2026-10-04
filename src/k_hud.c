@@ -1607,6 +1607,9 @@ void K_getRingsDrawinfo(drawinfo_t *out)
 	{
 		fx = RING_X + ((dialspeedometer) ? 31 : 0);
 		fy = RING_Y + ((dialspeedometer) ? 14 : 0);
+
+		if (gametype == GT_FREEROAM && !dialspeedometer)
+			fy += 20;
 		splitflags = V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_HUDTRANS|V_SPLITSCREEN;
 	}
 	else
@@ -3773,6 +3776,7 @@ static void K_drawKartSpeedometer(void)
 	int32_t battleoffset = 0;
 	int32_t ringoffset = 0;
 	int32_t oldringoffset = 0;
+	int32_t freeroamoffset = 0;
 #ifdef ROTSPRITE
 	fixed_t dial_divisor = DIALSPDDIV;
 #endif
@@ -3824,22 +3828,25 @@ static void K_drawKartSpeedometer(void)
 			ringoffset = -16;
 			oldringoffset = 6;
 		}
+
+		if (gametype == GT_FREEROAM)
+			freeroamoffset = 20;
 	}
 
 	if (cv_newspeedometer.value == 0)
 	{
 		switch (cv_kartspeedometer.value) {
 			case 1:
-				V_DrawKartString(SPDM_X + oldringoffset, SPDM_Y-18 + battleoffset + ringoffset, V_HUDTRANS|splitflags, va("%3d km/h", convSpeed[1]));
+				V_DrawKartString(SPDM_X + oldringoffset, SPDM_Y-18 + battleoffset + ringoffset + freeroamoffset, V_HUDTRANS|splitflags, va("%3d km/h", convSpeed[1]));
 				break;
 			case 2:
-				V_DrawKartString(SPDM_X + oldringoffset, SPDM_Y-18 + battleoffset + ringoffset, V_HUDTRANS|splitflags, va("%3d mph", convSpeed[1]));
+				V_DrawKartString(SPDM_X + oldringoffset, SPDM_Y-18 + battleoffset + ringoffset + freeroamoffset, V_HUDTRANS|splitflags, va("%3d mph", convSpeed[1]));
 				break;
 			case 3:
-				V_DrawKartString(SPDM_X + oldringoffset, SPDM_Y-18 + battleoffset + ringoffset, V_HUDTRANS|splitflags, va("%3d fu/t", convSpeed[1]));
+				V_DrawKartString(SPDM_X + oldringoffset, SPDM_Y-18 + battleoffset + ringoffset + freeroamoffset, V_HUDTRANS|splitflags, va("%3d fu/t", convSpeed[1]));
 				break;
 			case 4:
-				V_DrawKartString(SPDM_X + oldringoffset, SPDM_Y-18 + battleoffset + ringoffset, V_HUDTRANS|splitflags, va("%4d %%", convSpeed[1]));
+				V_DrawKartString(SPDM_X + oldringoffset, SPDM_Y-18 + battleoffset + ringoffset + freeroamoffset, V_HUDTRANS|splitflags, va("%4d %%", convSpeed[1]));
 				break;
 			default:
 				break;
@@ -3854,18 +3861,18 @@ static void K_drawKartSpeedometer(void)
 		if (!K_UseColorHud())
 		{
 
-			V_DrawScaledPatch(SPDM_X, SPDM_Y-9 + battleoffset + ringoffset, V_HUDTRANS|splitflags, kp_speedometersticker[0]);
+			V_DrawScaledPatch(SPDM_X, SPDM_Y-9 + battleoffset + ringoffset + freeroamoffset, V_HUDTRANS|splitflags, kp_speedometersticker[0]);
 		}
 		else
 		{
 			uint8_t *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
-			V_DrawMappedPatch(SPDM_X, SPDM_Y-9 + battleoffset + ringoffset, V_HUDTRANS|splitflags, kp_speedometersticker[1], colormap);
+			V_DrawMappedPatch(SPDM_X, SPDM_Y-9 + battleoffset + ringoffset + freeroamoffset, V_HUDTRANS|splitflags, kp_speedometersticker[1], colormap);
 		}
 
-		V_DrawScaledPatch(SPDM_X+7, SPDM_Y-9 + battleoffset + ringoffset, V_HUDTRANS|splitflags, kp_facenum[numbers[0]]);
-		V_DrawScaledPatch(SPDM_X+13, SPDM_Y-9 + battleoffset + ringoffset, V_HUDTRANS|splitflags, kp_facenum[numbers[1]]);
-		V_DrawScaledPatch(SPDM_X+19, SPDM_Y-9 + battleoffset + ringoffset, V_HUDTRANS|splitflags, kp_facenum[numbers[2]]);
-		V_DrawScaledPatch(SPDM_X+29, SPDM_Y-9 + battleoffset + ringoffset, V_HUDTRANS|splitflags, kp_speedometerlabel[labeln]);
+		V_DrawScaledPatch(SPDM_X+7, SPDM_Y-9 + battleoffset + ringoffset + freeroamoffset, V_HUDTRANS|splitflags, kp_facenum[numbers[0]]);
+		V_DrawScaledPatch(SPDM_X+13, SPDM_Y-9 + battleoffset + ringoffset + freeroamoffset, V_HUDTRANS|splitflags, kp_facenum[numbers[1]]);
+		V_DrawScaledPatch(SPDM_X+19, SPDM_Y-9 + battleoffset + ringoffset + freeroamoffset, V_HUDTRANS|splitflags, kp_facenum[numbers[2]]);
+		V_DrawScaledPatch(SPDM_X+29, SPDM_Y-9 + battleoffset + ringoffset + freeroamoffset, V_HUDTRANS|splitflags, kp_speedometerlabel[labeln]);
 	}
 	else if (cv_newspeedometer.value == 2)
 	{
@@ -3891,7 +3898,7 @@ static void K_drawKartSpeedometer(void)
 		else if (((fuspeed < 57 && fuspeed > 54) || (fuspeed < 60 && fuspeed > 56) || (fuspeed > 59)) && !(leveltime & 4))
 			spdpatch = 23;
 
-		V_DrawScaledPatch(SPDM_X, SPDM_Y-yoffset + battleoffset + ringoffset, V_HUDTRANS|splitflags, (!K_RingsActive() ? kp_kartzspeedo : kp_kartzspeedo_smol)[spdpatch]);
+		V_DrawScaledPatch(SPDM_X, SPDM_Y-yoffset + battleoffset + ringoffset + freeroamoffset, V_HUDTRANS|splitflags, (!K_RingsActive() ? kp_kartzspeedo : kp_kartzspeedo_smol)[spdpatch]);
 	}
 #ifdef ROTSPRITE
 	else if (cv_newspeedometer.value == 3)
@@ -3901,7 +3908,7 @@ static void K_drawKartSpeedometer(void)
 							labeln,
 							splitflags,
 							(dboolean)((gametypes[gametype]->rules & GTR_BUMPERS) == GTR_BUMPERS),
-							(LUA_HudEnabled(hud_gametypeinfo)),
+							(LUA_HudEnabled(hud_gametypeinfo)) && gametype != GT_FREEROAM,
 							(K_UseColorHud()));
 	}
 #endif
@@ -7183,7 +7190,7 @@ void K_drawKartHUD(void)
 		K_drawKartItem();
 
 	// If not splitscreen, draw...
-	if (!r_splitscreen && !demo.title)
+	if (!r_splitscreen && !demo.title && gametype != GT_FREEROAM)
 	{
 		// Draw the timestamp
 		// this branching code sucks now gotta fix later :,)

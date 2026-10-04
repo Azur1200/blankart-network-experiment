@@ -3789,7 +3789,7 @@ mapthing_t *G_FindBattleStart(int32_t playernum)
 
 mapthing_t *G_FindRaceStart(int32_t playernum)
 {
-	const dboolean doprints = P_IsLocalPlayer(&players[playernum]);
+	const dboolean doprints = P_IsLocalPlayer(&players[playernum]) && gametype !=  GT_FREEROAM;
 
 	if (numcoopstarts)
 	{
@@ -3936,6 +3936,8 @@ mapthing_t *G_FindMapStart(int32_t playernum)
 		else
 			spawnpoint = G_FindRaceStartOrFallback(playernum);
 	}
+	else if (gametype == GT_FREEROAM)
+		spawnpoint = G_FindRaceStartOrFallback(playernum);
 
 	// -- Grand Prix / Time Attack --
 	// Order: Race->DM->CTF
@@ -4233,12 +4235,23 @@ static gametype_t defaultgametypes[] =
 		2,
 		V_REDMAP,
 	},
+	{
+		"Free Roam",
+		"GT_FREEROAM",
+		GTR_RINGS|GTR_ENCORE|GTR_NOCOUNTDOWN,
+		TOL_RACE|TOL_BATTLE|TOL_SPECIAL,
+		int_none,
+		0,
+		0,
+		V_PURPLEMAP,
+	},
 };
 
 gametype_t *gametypes[MAXGAMETYPES+1] =
 {
 	&defaultgametypes[GT_RACE],
 	&defaultgametypes[GT_BATTLE],
+	&defaultgametypes[GT_FREEROAM],
 };
 
 //

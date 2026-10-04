@@ -10208,7 +10208,7 @@ static void K_UpdatePlayerWaypoints(player_t *const player)
 			CONS_Debug(DBG_GAMELOGIC, debug_args);
 #undef debug_args
 
-		if (!cv_kartdebuglap.value && !player->exiting)
+		if (!cv_kartdebuglap.value && !player->exiting && gametype != GT_FREEROAM)
 		{
 			// Distance jump is too great, keep the old waypoints and old distance.
 			player->currentwaypoint = old_currentwaypoint;

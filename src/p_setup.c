@@ -9393,7 +9393,7 @@ dboolean P_LoadLevel(dboolean fromnetsave, dboolean reloadinggamestate)
 	autopartime = 0;
 
 	// Load the ccheckpoints and waypoints please!
-	if (gametypes[gametype]->rules & GTR_CIRCUIT && gamestate != GS_TITLESCREEN)
+	if ((gametypes[gametype]->rules & GTR_CIRCUIT && gamestate != GS_TITLESCREEN) || (gametype == GT_FREEROAM))
 	{
 		if ((K_SetupWaypointList() == false))
 		{
