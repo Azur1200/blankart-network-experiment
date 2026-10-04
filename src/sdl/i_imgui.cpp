@@ -29,7 +29,6 @@
 #include "../st_stuff.h"
 #include "../deh_tables.h"
 #include "../dehacked.h"
-#include "../z_zone.h"
 #include "../command.h"
 
 char *glsl_version = nullptr;
@@ -704,8 +703,8 @@ void Impl_ImGui_HandleWindow(void)
 					{
 						// Wow I hate these... Thanks skin code for reference I guess?
 						int32_t len = strlen(def->name[i])+1;
-						songs = static_cast<char **>(Z_Realloc(songs, sizeof(*songs) * (size + 1), PU_STATIC, NULL));
-						songs[size] = static_cast<char *>(Z_Calloc(len, PU_STATIC, NULL));
+						songs = static_cast<char **>(realloc(songs, sizeof(*songs) * (size + 1)));
+						songs[size] = static_cast<char *>(calloc(len, sizeof(songs[size])));
 						strncpy(songs[size], def->name[i], len);
 						size++;
 					}
@@ -736,10 +735,10 @@ void Impl_ImGui_HandleWindow(void)
 
 				for (i = 0; i < size; i++)
 				{
-					Z_Free(songs[i]);
+					free(songs[i]);
 				}
 
-				Z_Free(songs);
+				free(songs);
 				songs = NULL;
 
 				ImGui::EndTabItem();
@@ -778,8 +777,8 @@ void Impl_ImGui_HandleWindow(void)
 
 					// Wow I hate these... Thanks skin code for reference I guess?
 					int32_t len = strlen(mapheaderinfo[i]->lumpname)+1;
-					maps = static_cast<char **>(Z_Realloc(maps, sizeof(*maps) * (size + 1), PU_STATIC, NULL));
-					maps[size] = static_cast<char *>(Z_Calloc(len, PU_STATIC, NULL));
+					maps = static_cast<char **>(realloc(maps, sizeof(*maps) * (size + 1)));
+					maps[size] = static_cast<char *>(calloc(len, sizeof(maps[size])));
 					strncpy(maps[size], mapheaderinfo[i]->lumpname, len);
 					size++;
 				}
@@ -801,10 +800,10 @@ void Impl_ImGui_HandleWindow(void)
 
 				for (i = 0; i < size; i++)
 				{
-					Z_Free(maps[i]);
+					free(maps[i]);
 				}
 
-				Z_Free(maps);
+				free(maps);
 				maps = NULL;
 
 				ImGui::EndTabItem();
