@@ -4798,8 +4798,6 @@ void P_PlayerThink(player_t *player)
 		if (!(--player->nocontrol))
 			player->pflags &= ~PF_FAILEDSTART;
 	}
-	else
-		player->nocontrol = 0;
 
 	// Flash player after being hit.
 	if (!(player->hyudorotimer // SRB2kart - fixes Hyudoro not flashing when it should.
