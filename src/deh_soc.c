@@ -1303,7 +1303,10 @@ void readlevelheader(MYFILE *f, char * name)
 			{
 				char namebuf[9];
 
-				snprintf(namebuf, sizeof(namebuf), "SKY%.5s", word2);
+				if (i >= 0 && i < 10)
+					snprintf(namebuf, sizeof(namebuf), "SKY%d", i);
+				else
+					snprintf(namebuf, sizeof(namebuf), "SKY%.5s", word2);
 				deh_strlcpy(mapheaderinfo[num]->skytexture, namebuf,
 					sizeof(mapheaderinfo[num]->skytexture), va("Level header %d: sky texture", num));
 			}
