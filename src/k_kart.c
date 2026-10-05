@@ -12130,10 +12130,9 @@ void K_KartUpdatePosition(player_t *player)
 				}
 				else
 				{
-					// I have less points than but the same bumpers as this player OR
-					// I have less bumpers than this player
-					if ((players[i].bumper == player->bumper && players[i].roundscore > player->roundscore)
-						|| (players[i].bumper > player->bumper))
+					if (players[i].bumper == player->bumper && players[i].roundscore > player->roundscore)
+						position++;
+					else if (players[i].bumper > player->bumper)
 						position++;
 				}
 			}
@@ -12624,7 +12623,7 @@ void K_UpdateAllPlayerPositions(void)
 	{
 		if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))
 		{
-			if (K_UsingLegacyCheckpoints())
+			if (K_UsingLegacyCheckpoints() && !(gametypes[gametype]->rules & (GTR_POINTS|GTR_BUMPERS)))
 				K_KartLegacyUpdatePosition(&players[i]);
 			else
 				K_KartUpdatePosition(&players[i]);
