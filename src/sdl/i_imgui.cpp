@@ -26,6 +26,7 @@
 #include "../m_misc.h"
 #include "../k_kart.h"
 #include "../k_follower.h"
+#include "../k_bot.h"
 #include "../st_stuff.h"
 #include "../deh_tables.h"
 #include "../dehacked.h"
@@ -199,6 +200,42 @@ static void PlayerDisplay(player_t *player, int32_t recursive_mobj, int32_t recu
 	ImGui::Text("Skin: %s (%s)", skins[player->skin]->name, skins[player->skin]->realname);
 	ImGui::Text("Color: %s", skincolors[player->skincolor].name);
 	ImGui::Text("Bot: %s", player->bot ? "True" : "False");
+	if (player->bot)
+	{
+		if (ImGui::CollapsingHeader("botvars"))
+		{
+			botdata_t *botdata = K_GetBotData(player-players);
+			ImGui::Text("Bot Predict X: %d", botdata->predict.x);
+			ImGui::Text("Bot Predict Y: %d", botdata->predict.y);
+			ImGui::Text("Bot Predict Radius: %d", botdata->predict.radius);
+			ImGui::Text("Bot Predict Base Radius: %d", botdata->predict.baseRadius);
+			ImGui::Text("Item Delay: %d", botdata->itemdelay);
+			ImGui::Text("Item Confirm: %d", botdata->itemconfirm);
+			ImGui::Text("Turn Confirm: %d", botdata->turnconfirm);
+			ImGui::Text("Respawn Confirm: %d", botdata->respawnconfirm);
+
+			ImGui::Text("Drift State: %d", botdata->driftstate);
+			ImGui::Text("Drift Turn: %d", botdata->driftturn);
+			ImGui::Text("Drift Time: %d", botdata->drifttime);
+			ImGui::Text("Drift Lockout: %d", botdata->driftlockout);
+			ImGui::Text("Drift Max Distance: %d", botdata->driftmaxdist);
+			ImGui::Text("Drift Power Divisor: %d", botdata->driftpowerdiv);
+			ImGui::Text("Drift State Delay: %d", botdata->driftstatedelay);
+			ImGui::Text("Drift Skill: %d", botdata->driftskill);
+
+			ImGui::Text("Accel Down: %d", botdata->acceldown);
+			ImGui::Text("Brake Down: %d", botdata->brakedown);
+			ImGui::Text("Drift Down: %d", botdata->driftdown);
+			ImGui::Text("Item Down: %d", botdata->itemdown);
+			ImGui::Text("Do Lookback: %d", botdata->dolookback);
+			ImGui::Text("Item Was Down: %d", botdata->dolookback);
+			ImGui::Text("Item Throw: %d", botdata->itemthrow);
+			ImGui::Text("Turn Amount: %d", botdata->turnamt);
+			ImGui::Text("Prediction Error: %d", botdata->predictionerror);
+			ImGui::Text("Grip Lockout: %d", botdata->griplockout);
+			ImGui::Text("");
+		}
+	}
 	ImGui::Text("Speed Weight: %d %d", player->kartspeed, player->kartweight);
 	ImGui::Text("Req.Speed Req.Weight: %d %d", player->kartspeedrestat, player->kartspeedrestat);
 	ImGui::Text("Random Restat: %s", player->randomrestat ? "True" : "False");
