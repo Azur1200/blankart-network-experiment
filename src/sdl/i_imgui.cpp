@@ -85,9 +85,6 @@ void Impl_ImGui_Frame(void)
 		imgui_frame_active = false;
 	}
 
-	if (cht_debug == 0)
-		return;
-
 	if (rendermode == render_soft)
 		ImGui_ImplSDLRenderer3_NewFrame();
 	else if (rendermode == render_opengl)
