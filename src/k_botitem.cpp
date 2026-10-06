@@ -993,8 +993,22 @@ static void K_BotItemFlame(botdata_t *bd, const player_t *player)
 
 	dboolean forceoverheat = ((player->offroad && K_ApplyOffroad(player)) || (K_GetWaypointIsShortcut(player->nextwaypoint) == true));
 
+	// To explain these first two cases:
+	// If I just check like it was before bots would get stuck holding item since bots below first don't tick flametimer
+	// This delays this by a tick so they don't press during a window where it wouldn't work
+	if (player->flametimer == flametime && !bd->itemdelay)
+	{
+		bd->itemdown = false;
+		bd->itemdelay = 2;
+		bd->itemconfirm = UINT8_MAX; // please help
+	}
+	else if (player->flametimer == flametime && bd->itemconfirm == 0)
+	{
+		bd->itemdown = true;
+	}
+
 	// if we're smart enough, allow overheating the flame shield if we want to go off-road
-	if (player->flametimer >= (itemtime*3)-5 && !(forceoverheat && player->botvars.difficulty >= 6))
+	else if (player->flametimer >= flametime-5 && !(forceoverheat && player->botvars.difficulty >= 6))
 	{
 		bd->itemdelay = 5;
 	}
