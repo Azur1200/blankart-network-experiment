@@ -14091,7 +14091,7 @@ void K_QuiteSaltyHop(player_t *player)
 	if (player->mo == NULL || P_MobjWasRemoved(player->mo))
 		return;
 
-	if (cv_saltyhop.value == 0)
+	if (cv_saltyhop.value == 0 || player->spectator)
 	{
 		// reset before we leave
 		player->salty.jump = player->salty.ready = player->salty.tapping = false;
