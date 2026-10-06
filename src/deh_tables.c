@@ -2068,5 +2068,10 @@ struct int_const_s const INT_CONST[] = {
 	{"KODDSCALE_REGULAR", KODDSCALE_REGULAR},
 	{"KODDSCALE_CUSTOM", KODDSCALE_CUSTOM},
 
+	// Pogo Spring panel types
+	// specialspringpaneltype_t
+	{"SSPT_RED", SSPT_RED},
+	{"SSPT_YELLOW", SSPT_YELLOW},
+
 	{NULL,0}
 };

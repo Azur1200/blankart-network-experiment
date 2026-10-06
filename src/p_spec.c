@@ -5381,7 +5381,7 @@ static void P_ProcessSpeedPad(player_t *player, sector_t *sector, sector_t *rove
 	}
 }
 
-static void P_ProcessPogoSpring(player_t *player, dboolean isTouching, int type)
+void P_ProcessPogoSpring(player_t *player, dboolean isTouching, int type)
 {
 	if (player->mo->terrain && player->mo->terrain->pogoSpring > 0 && K_AffectingTerrainActive())
 	{

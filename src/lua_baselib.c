@@ -2461,6 +2461,19 @@ static int lib_evStartCrumble(lua_State *L)
 	return 0;
 }
 
+static int lib_pProcessPogoSpring(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	dboolean isTouching = luaL_checkdboolean(L, 2);
+	specialspringpaneltype_t paneltype = (specialspringpaneltype_t)luaL_checkinteger(L, 3);
+
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+
+	P_ProcessPogoSpring(player, isTouching, paneltype);
+	return 0;
+}
+
 // P_SLOPES
 ////////////
 
@@ -6319,6 +6332,7 @@ static luaL_Reg lib[] = {
 	{"P_StartQuake",lib_pStartQuake},
 	{"EV_CrumbleChain",lib_evCrumbleChain},
 	{"EV_StartCrumble",lib_evStartCrumble},
+	{"P_ProcessPogoSpring", lib_pProcessPogoSpring},
 
 	// p_slopes
 	{"P_GetZAt",lib_pGetZAt},

@@ -622,6 +622,7 @@ struct activator_t
 };
 
 dboolean P_ProcessSpecial(activator_t *activator, int16_t special, int32_t *args, char **stringargs);
+void P_ProcessPogoSpring(player_t *player, dboolean isTouching, int type);
 dboolean P_CanActivateSpecial(int16_t special);
 
 dboolean P_AllowFriction(mobj_t *mobj);
