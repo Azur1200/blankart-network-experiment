@@ -40,8 +40,12 @@ enum mobj_e {
 	mobj_anim_duration,
 	mobj_spritexscale,
 	mobj_spriteyscale,
+	mobj_realxscale,
+	mobj_realyscale,
 	mobj_spritexoffset,
 	mobj_spriteyoffset,
+	mobj_realxoffset,
+	mobj_realyoffset,
 	mobj_floorspriteslope,
 	mobj_lightlevel,
 	mobj_sectors,
@@ -139,8 +143,12 @@ static const char *const mobj_opt[] = {
 	"anim_duration",
 	"spritexscale",
 	"spriteyscale",
+	"realxscale",
+	"realyscale",
 	"spritexoffset",
 	"spriteyoffset",
+	"realxoffset",
+	"realyoffset",
 	"floorspriteslope",
 	"lightlevel",
 	"sectors",
@@ -395,11 +403,23 @@ static int mobj_get(lua_State *L)
 	case mobj_spriteyscale:
 		lua_pushfixed(L, mo->spriteyscale);
 		break;
+	case mobj_realxscale:
+		lua_pushfixed(L, mo->realxscale);
+		break;
+	case mobj_realyscale:
+		lua_pushfixed(L, mo->realyscale);
+		break;
 	case mobj_spritexoffset:
 		lua_pushfixed(L, mo->spritexoffset);
 		break;
 	case mobj_spriteyoffset:
 		lua_pushfixed(L, mo->spriteyoffset);
+		break;
+	case mobj_realxoffset:
+		lua_pushfixed(L, mo->realxoffset);
+		break;
+	case mobj_realyoffset:
+		lua_pushfixed(L, mo->realyoffset);
 		break;
 	case mobj_floorspriteslope:
 		LUA_PushUserdata(L, mo->floorspriteslope, META_SLOPE);
@@ -816,11 +836,23 @@ static int mobj_set(lua_State *L)
 	case mobj_spriteyscale:
 		mo->spriteyscale = luaL_checkfixed(L, 3);
 		break;
+	case mobj_realxscale:
+		mo->realxscale = luaL_checkfixed(L, 3);
+		break;
+	case mobj_realyscale:
+		mo->realyscale = luaL_checkfixed(L, 3);
+		break;
 	case mobj_spritexoffset:
 		mo->spritexoffset = luaL_checkfixed(L, 3);
 		break;
 	case mobj_spriteyoffset:
 		mo->spriteyoffset = luaL_checkfixed(L, 3);
+		break;
+	case mobj_realxoffset:
+		mo->realxoffset = luaL_checkfixed(L, 3);
+		break;
+	case mobj_realyoffset:
+		mo->realyoffset = luaL_checkfixed(L, 3);
 		break;
 	case mobj_floorspriteslope:
 		return NOSET;

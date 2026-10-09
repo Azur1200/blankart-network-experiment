@@ -11478,7 +11478,9 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	}
 
 	// Sprite rendering
-	mobj->spritexscale = mobj->spriteyscale = mobj->scale;
+	mobj->realxscale = mobj->realyscale = mobj->scale;
+	mobj->spritexscale = mobj->realxscale;
+	mobj->spriteyscale = mobj->realyscale;
 	mobj->spritexoffset = mobj->spriteyoffset = 0;
 	mobj->dispoffset = info->dispoffset;
 	mobj->floorspriteslope = NULL;

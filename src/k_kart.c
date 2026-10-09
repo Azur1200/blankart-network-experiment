@@ -83,8 +83,18 @@ static CV_PossibleValue_t splash_cons_t[] = {{0, "Old"}, {1, "New"}, {0, NULL}};
 consvar_t cv_kartsplashefx = CVAR_INIT ("kartsplashefx", "New", CV_SAVE, splash_cons_t, NULL);
 static CV_PossibleValue_t driftsparkpulse_cons_t[] = {{0, "MIN"}, {FRACUNIT*3, "MAX"}, {0, NULL}};
 consvar_t cv_driftsparkpulse = CVAR_INIT ("driftsparkpulse", "1.4", CV_SAVE|CV_FLOAT, driftsparkpulse_cons_t, NULL);
-consvar_t cv_saltyhop = CVAR_INIT ("hardcodehop", "Off", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_karthitemdialog = CVAR_INIT ("karthitemdialog", "On", CV_SAVE, CV_OnOff, NULL);
+
+// funn-E streeetch
+static CV_PossibleValue_t stretchfactor_t[] = {{0, "MIN"}, {FRACUNIT, "MAX"}, {0, NULL}};
+consvar_t cv_gravstretch = CVAR_INIT ("gravstretch", "MIN", CV_SAVE|CV_FLOAT, stretchfactor_t, NULL);
+
+static CV_PossibleValue_t slamsound_t[] = {{0, "Off"}, {1, "On"}, {0, NULL}};
+consvar_t cv_slamsound = CVAR_INIT ("slamsound", "1", CV_SAVE, slamsound_t, NULL);
+
+consvar_t cv_saltyhop = CVAR_INIT ("hardcodehop", "Off", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_saltyhopsfx = CVAR_INIT ("hardcodehopsfx", "On", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_saltysquish = CVAR_INIT ("hardcodehopsquish", "On", CV_SAVE, CV_OnOff, NULL);
 
 
 // SOME IMPORTANT VARIABLES DEFINED IN DOOMDEF.H:
@@ -653,7 +663,13 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartsplashefx);
 	CV_RegisterVar(&cv_hidefollowers);
 	CV_RegisterVar(&cv_driftsparkpulse);
+
+	CV_RegisterVar(&cv_gravstretch);
+	CV_RegisterVar(&cv_slamsound);
+
 	CV_RegisterVar(&cv_saltyhop);
+	CV_RegisterVar(&cv_saltyhopsfx);
+	CV_RegisterVar(&cv_saltysquish);
 
 	CV_RegisterVar(&cv_naturalcamera);
 	CV_RegisterVar(&cv_lookbackinreplays);
@@ -12994,6 +13010,173 @@ dboolean K_SMonitorSlotHogging(player_t *player)
 	return (K_SMonitorGradient(player->smonitortimer) >= FRACUNIT);
 }
 
+#define MAXSTRETCHDIV 17476977
+
+static void K_StretchPlayerGravity(player_t *player)
+{
+	I_Assert(player != NULL);
+	I_Assert(!P_MobjWasRemoved(player->mo));
+
+	mobj_t *pmo = player->mo;
+
+	fixed_t tempxscale = player->mo->realxscale;
+	fixed_t tempyscale =  player->mo->realyscale;
+
+	const fixed_t stretchScaleFactor = min(FixedDiv(FRACUNIT*60, cv_gravstretch.value), MAXSTRETCHDIV);
+
+	if (pmo->slamsoundtimer)
+		pmo->slamsoundtimer--;
+
+	if (!P_IsObjectOnGround(pmo))
+	{
+		fixed_t pzmom = abs(pmo->momz);
+		const fixed_t stretchDiv = FixedDiv(pzmom, stretchScaleFactor);
+
+		if (abs(pzmom/FRACUNIT) != 0)
+		{
+			if (((tempxscale-(stretchDiv))) > (tempxscale/5))
+			{
+				pmo->spritexscale = (tempxscale - stretchDiv);
+				pmo->stretchslam = pzmom;
+			}
+			else
+				pmo->spritexscale = (tempxscale/5);
+
+			pmo->spriteyscale = (tempyscale + ((stretchDiv*2)/3));
+		}
+	}
+	else if (pmo->stretchslam > 0)
+	{
+		// Funni slam sound when landing
+		if (cv_slamsound.value && (pmo->eflags & MFE_JUSTHITFLOOR) && !pmo->slamsoundtimer && (pmo->stretchslam > 4*FRACUNIT))
+		{
+			S_StartSound(pmo, sfx_s3k4c);
+			pmo->slamsoundtimer = TICRATE;
+		}
+
+		const fixed_t slamDiv = FixedDiv(pmo->stretchslam, stretchScaleFactor);
+
+		pmo->spritexscale = (tempxscale + (((slamDiv*2)/3)*2));
+		pmo->spriteyscale = (tempyscale - slamDiv);
+		pmo->stretchslam -= (4*FRACUNIT);
+	}
+	else
+		pmo->stretchslam = 0;
+}
+
+// copy pasted from above
+// but here to allow salty squish to work when gravstretch is disabled
+static void K_SaltySquish(player_t *player)
+{
+	I_Assert(player != NULL);
+	I_Assert(!P_MobjWasRemoved(player->mo));
+
+	mobj_t *pmo = player->mo;
+
+	fixed_t tempxscale =  player->mo->realxscale;
+	fixed_t tempyscale =  player->mo->realyscale;
+
+	if (pmo->stretchslam > 0)
+	{
+		const fixed_t slamDiv = FixedDiv(pmo->stretchslam, 3932160); // stretchScaleFactor = FixedDiv(FRACUNIT*60, FRACUNIT)
+
+		pmo->spritexscale = (tempxscale + (((slamDiv*2)/3)*2));
+		pmo->spriteyscale = (tempyscale - slamDiv);
+		pmo->stretchslam -= (4*FRACUNIT);
+	}
+	else
+		pmo->stretchslam = 0;
+}
+
+void K_QuiteSaltyHop(player_t *player)
+{
+	if (player->mo == NULL || P_MobjWasRemoved(player->mo))
+		return;
+
+	if (cv_saltyhop.value == 0 || player->spectator)
+	{
+		// reset before we leave
+		player->salty.jump = player->salty.ready = player->salty.tapping = false;
+		player->salty.momz = player->salty.zoffset = 0;
+		return;
+	}
+
+	const dboolean onground = P_IsObjectOnGround(player->mo);
+
+	// k_jmp is gone so just check for drift here
+	// TODO: Rework this shit. this is awful
+	if (!(player->pflags & PF_DRIFTINPUT))
+	{
+		player->salty.ready = true;
+		player->salty.tapping = false;
+	}
+	else if (player->salty.ready)
+	{
+		player->salty.ready = false;
+		player->salty.tapping = true;
+	}
+	else
+	{
+		player->salty.tapping = false;
+	}
+
+	if (player->salty.jump)
+	{
+		if (player->mo->eflags & MFE_JUSTHITFLOOR)
+			player->salty.zoffset = 0;
+		else if (onground)
+		{
+			player->salty.zoffset += player->salty.momz;
+			player->salty.momz -= (3*FRACUNIT)/2;
+		}
+		else
+		{
+			// Originally (49/50)*FRACUNIT. tf was i on
+			player->salty.zoffset *= FRACUNIT;
+			player->salty.momz = 0;
+		}
+
+		// zoffset is back to zero...
+		if (player->salty.zoffset <= 0)
+		{
+			// play the sound
+			if (!(player->mo->eflags & MFE_JUSTHITFLOOR) && onground)
+				S_StartSound(player->mo, sfx_s268);
+			player->salty.jump = false;
+			player->salty.zoffset = 0;
+			player->salty.momz = 0;
+			// shlamma damma
+			if (cv_saltysquish.value)
+				player->mo->stretchslam += 8*FRACUNIT;
+		}
+		else if (cv_saltysquish.value && player->salty.zoffset >= 0)
+		{
+			// goofy ahh hack
+			player->mo->spriteyscale += (FRACUNIT/8);
+			player->mo->spritexscale -= (FRACUNIT/8);
+		}
+		// Apply the z offset!
+		player->mo->spriteyoffset += player->salty.zoffset;
+
+		if (cv_saltyhopsfx.value)
+		{
+			// Stop any and all drift sounds when hopping.
+			if (S_SoundPlaying(player->mo, sfx_screec))
+				S_StopSoundByID(player->mo, sfx_screec);
+			if (S_SoundPlaying(player->mo, sfx_drift))
+				S_StopSoundByID(player->mo, sfx_drift);
+		}
+	}
+	else if (player->salty.tapping && onground && !P_PlayerInPain(player))
+	{
+		player->salty.jump = true;
+		player->salty.zoffset = 0;
+		player->salty.momz = 6*FRACUNIT;
+		if (cv_saltyhopsfx.value)
+			S_StartSound(player->mo, sfx_s25a);
+	}
+}
+
 //
 // K_MoveKartPlayer
 //
@@ -13255,6 +13438,12 @@ void K_MoveKartPlayer(player_t *player, dboolean onground)
 	K_HandleKartTilt(player);
 
 	K_RecoveryDash(player);
+
+	// funneh Saturn sprite stuff
+	if (cv_gravstretch.value)
+		K_StretchPlayerGravity(player);
+	else if (cv_saltyhop.value && cv_saltysquish.value)
+		K_SaltySquish(player);
 
 	// Quick Turning
 	// You can't turn your kart when you're not moving.
@@ -14084,91 +14273,6 @@ dboolean K_NotFreePlay(void)
 	}
 
 	return false;
-}
-
-void K_QuiteSaltyHop(player_t *player)
-{
-	if (player->mo == NULL || P_MobjWasRemoved(player->mo))
-		return;
-
-	if (cv_saltyhop.value == 0 || player->spectator)
-	{
-		// reset before we leave
-		player->salty.jump = player->salty.ready = player->salty.tapping = false;
-		player->salty.momz = player->salty.zoffset = 0;
-		return;
-	}
-
-	const dboolean onground = P_IsObjectOnGround(player->mo);
-
-	// k_jmp is gone so just check for drift here
-	// TODO: Rework this shit. this is awful
-	if (!(player->pflags & PF_DRIFTINPUT))
-	{
-		player->salty.ready = true;
-		player->salty.tapping = false;
-	}
-	else if (player->salty.ready)
-	{
-		player->salty.ready = false;
-		player->salty.tapping = true;
-	}
-	else
-	{
-		player->salty.tapping = false;
-	}
-
-	if (player->salty.jump)
-	{
-		if (player->mo->eflags & MFE_JUSTHITFLOOR)
-			player->salty.zoffset = 0;
-		else if (onground)
-		{
-			player->salty.zoffset += player->salty.momz;
-			player->salty.momz -= (3*FRACUNIT)/2;
-		}
-		else
-		{
-			// Originally (49/50)*FRACUNIT. tf was i on
-			player->salty.zoffset *= FRACUNIT;
-			player->salty.momz = 0;
-		}
-
-		// zoffset is back to zero...
-		if (player->salty.zoffset <= 0)
-		{
-			// play the sound
-			if (!(player->mo->eflags & MFE_JUSTHITFLOOR) && onground)
-				S_StartSound(player->mo, sfx_s268);
-			player->salty.jump = false;
-			player->salty.zoffset = 0;
-			player->salty.momz = 0;
-			// small squish upon landing
-			//player->mo->spritexscale = FRACUNIT*14/10;
-			//player->mo->spriteyscale = FRACUNIT*6/10;
-		}
-		else if (player->salty.zoffset > 0)
-		{
-			// stretch the funny
-			//player->mo->spritexscale -= (FRACUNIT/30);
-			//player->mo->spriteyscale += (FRACUNIT/30);
-		}
-		// Apply the z offset!
-		player->mo->spriteyoffset += player->salty.zoffset;
-
-		// Stop any and all drift sounds when hopping.
-		if (S_SoundPlaying(player->mo, sfx_screec))
-			S_StopSoundByID(player->mo, sfx_screec);
-		if (S_SoundPlaying(player->mo, sfx_drift))
-			S_StopSoundByID(player->mo, sfx_drift);
-	}
-	else if (player->salty.tapping && onground && !P_PlayerInPain(player))
-	{
-		player->salty.jump = true;
-		player->salty.zoffset = 0;
-		player->salty.momz = 6*FRACUNIT;
-		S_StartSound(player->mo, sfx_s25a);
-	}
 }
 
 dboolean K_CheckWaterskipLockout(player_t *player)

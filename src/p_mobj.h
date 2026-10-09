@@ -331,6 +331,13 @@ struct mobj_t
 
 	// X and Y offsets that rotate alongside the sprite.
 	int16_t rollingxoffset, rollingyoffset;
+
+	fixed_t realxscale, realyscale; // funn-E streeetch
+	fixed_t realxoffset, realyoffset;
+
+	// squishssss
+	fixed_t stretchslam; // "squish" effect when you land
+	tic_t slamsoundtimer; // Funni slam sound when landing
 	
 	pslope_t *floorspriteslope; // The slope that the floorsprite is rotated by
 	int16_t lightlevel; // Add to sector lightlevel, -255 - 255
@@ -521,6 +528,13 @@ struct precipmobj_t
 
 	// X and Y offsets that rotate alongside the sprite.
 	int16_t rollingxoffset, rollingyoffset;
+
+	fixed_t realxscale, realyscale; // funn-E streeetch
+	fixed_t realxoffset, realyoffset;
+
+	// squishssss
+	fixed_t stretchslam; // "squish" effect when you land
+	tic_t slamsoundtimer; // Funni slam sound when landing
 
 	pslope_t *floorspriteslope; // The slope that the floorsprite is rotated by
 	int16_t lightlevel; // Add to sector lightlevel, -255 - 255

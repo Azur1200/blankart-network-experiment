@@ -890,6 +890,12 @@ static void K_SpawnSplashParticles(mobj_t *mo, t_splash_t *s, fixed_t impact)
 		if (s->sfx != sfx_None)
 		{
 			S_StartSound(mo, s->sfx);
+
+			if (mo->player)
+			{
+				// We already have a landing sound for this surface, don't do gravstrech landing sound
+				mo->slamsoundtimer = TICRATE;
+			}
 		}
 	}
 }

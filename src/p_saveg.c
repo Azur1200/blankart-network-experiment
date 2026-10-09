@@ -2210,8 +2210,8 @@ static void DiffMobj(const mobj_t *mobj, uint32_t diff[])
 	DIFF(mobj->shadowscale, MD2_SHADOWSCALE);
 	DIFF(mobj->renderflags || mobj->renderflags2, MD2_RENDERFLAGS);
 	DIFF(mobj->tid != 0, MD2_TID);
-	DIFF(mobj->spritexscale != FRACUNIT || mobj->spriteyscale != FRACUNIT, MD2_SPRITESCALE);
-	DIFF(mobj->spritexoffset || mobj->spriteyoffset || mobj->rollingxoffset || mobj->rollingyoffset, MD2_SPRITEOFFSET);
+	DIFF(mobj->spritexscale != FRACUNIT || mobj->spriteyscale != FRACUNIT || mobj->realxscale != FRACUNIT || mobj->realyscale != FRACUNIT, MD2_SPRITESCALE);
+	DIFF(mobj->spritexoffset || mobj->spriteyoffset || mobj->realxoffset || mobj->realyoffset || mobj->rollingxoffset || mobj->rollingyoffset, MD2_SPRITEOFFSET);
 	DIFF(mobj->sprxoff || mobj->spryoff || mobj->sprzoff, MD2_WORLDOFFSET);
 	if (mobj->floorspriteslope)
 	{
@@ -2504,8 +2504,12 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 	SYNCF(MD2_TID, mobj->tid);
 	SYNCDEF(MD2_SPRITESCALE, mobj->spritexscale, FRACUNIT);
 	SYNCDEF(MD2_SPRITESCALE, mobj->spriteyscale, FRACUNIT);
+	SYNCDEF(MD2_SPRITESCALE, mobj->realxscale, FRACUNIT);
+	SYNCDEF(MD2_SPRITESCALE, mobj->realyscale, FRACUNIT);
 	SYNCF(MD2_SPRITEOFFSET, mobj->spritexoffset);
 	SYNCF(MD2_SPRITEOFFSET, mobj->spriteyoffset);
+	SYNCF(MD2_SPRITEOFFSET, mobj->realxoffset);
+	SYNCF(MD2_SPRITEOFFSET, mobj->realyoffset);
 	SYNCF(MD2_SPRITEOFFSET, mobj->rollingxoffset);
 	SYNCF(MD2_SPRITEOFFSET, mobj->rollingyoffset);
 	SYNCF(MD2_WORLDOFFSET, mobj->sprxoff);
