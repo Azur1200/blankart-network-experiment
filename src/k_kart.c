@@ -8630,6 +8630,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->justbumped > 0)
 		player->justbumped--;
 
+	if (player->justshoved > 0)
+		player->justshoved--;
+
 	if (player->bubblegraze > 0)
 	{
 		player->bubblegraze = ApproachOneWayUINT32(player->bubblegraze, 0, BUBBLEGRAZE_DECREMENT);
@@ -14466,22 +14469,31 @@ void K_ShoveObject(mobj_t *victim, mobj_t *source, fixed_t force)
 	vector3_t cross = {0};
 	int8_t direction = 0;
 
+	if (victim->player && victim->player->justshoved) 
+	{
+		victim->player->justshoved = min(shovetime, victim->player->justshoved + 1);
+		return;
+	}
+
 	FV3_Cross(&fwd, &side, &cross);
 	// pick using victim's left/right (negative is right of the victim here)
 	direction = -intsign(cross.z);
 	if (direction == 0) direction = 1;
 
 	P_Thrust(victim, victim->angle + (direction * ANGLE_90), force);
-	
-	if (victim->player && (!victim->player->justbumped))
+
+	if (victim->player)
 	{
-		S_StartSound(victim, sfx_vclgna);
+		S_StartSound(victim, (force <= 12 * victim->scale) ? sfx_nchmmw : sfx_nchmms);
+
 		FV3_Load(&fwd, P_ReturnThrustX(victim, victim->angle + (direction * ANGLE_90), FRACUNIT), P_ReturnThrustY(victim, victim->angle + (direction * ANGLE_90), FRACUNIT), 0);
 		// intentionally not normalized, we wanna keep magnitude too
 		FV3_Load(&side, victim->momx, victim->momy, 0);
 		FV3_Load(&cross, source->momx, source->momy, 0);
 		K_AddTiltImpulse(victim->player, victim->radius, CLAMP(abs(FixedMul(FV3_Dot(&side, &fwd), FV3_Magnitude(&cross)))/2, 8*victim->scale, 32*victim->scale)*direction);
 		K_SetPlayerBumped(victim->player, source);
+
+		victim->player->justshoved = shovetime;
 	}
 }
 //}

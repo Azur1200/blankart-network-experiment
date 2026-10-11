@@ -797,7 +797,8 @@ struct player_t
 
 	uint8_t instashield;		// Instashield no-damage animation timer
 	uint8_t wipeoutslow;		// Timer before you slowdown when getting wiped out
-	uint8_t justbumped;		// Prevent players from endlessly bumping into each other
+	uint8_t justbumped;			// Prevent players from endlessly bumping into each other
+	uint8_t justshoved;			// Prevent players from getting shoved frequently in a short amount of time
 	dboolean noclip;			// Fix Grow breaking the "noclip" cheat. Also applies noclip as a bonus.
 
 	ranklog_t ranklog;		// Data relevant to a player's rank.

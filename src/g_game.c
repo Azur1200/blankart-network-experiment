@@ -265,6 +265,7 @@ int32_t itemtime = 8*TICRATE;
 int32_t bubbletime = TICRATE/2;
 int32_t comebacktime = 10*TICRATE;
 int32_t bumptime = 6;
+int32_t shovetime = 4;
 int32_t greasetics = 3*TICRATE;
 int32_t wipeoutslowtime = 20;
 int32_t wantedreduce = 5*TICRATE;

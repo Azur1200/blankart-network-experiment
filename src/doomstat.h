@@ -652,6 +652,7 @@ extern int32_t bubbletime;
 extern int32_t flametime;;
 extern int32_t comebacktime;
 extern int32_t bumptime;
+extern int32_t shovetime;
 extern int32_t greasetics;
 extern int32_t wipeoutslowtime;
 extern int32_t wantedreduce;

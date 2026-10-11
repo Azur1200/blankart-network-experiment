@@ -752,6 +752,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].instashield);
 		SYNC(players[i].wipeoutslow);
 		SYNC(players[i].justbumped);
+		SYNC(players[i].justshoved);
 		SYNCBOOLEAN(players[i].noclip);
 
 		SYNC(players[i].driftmode);
