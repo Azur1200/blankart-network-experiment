@@ -214,6 +214,8 @@ extern vector3_t clusterpoint, clusterdtf;
 #define SMNTRFASTESTSPEED CV_Get(&cv_kartstacking_smonitor_fastestspeed)
 #define SMNTRACCELBOOST CV_Get(&cv_kartstacking_smonitor_accelboost)
 #define SMNTRHANDLEBOOST CV_Get(&cv_kartstacking_smonitor_handleboost)
+#define SMNTRGRIPBOOSTMIN CV_Get(&cv_kartstacking_smonitor_gripboost_min)
+#define SMNTRGRIPBOOSTMAX CV_Get(&cv_kartstacking_smonitor_gripboost_max)
 #define SMNTRSTACKABLE CV_Get(&cv_kartstacking_smonitor_stackable)
 
 #define GROWSPEEDBOOST CV_Get(&cv_kartstacking_grow_speedboost)

@@ -461,6 +461,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartstacking_smonitor_fastestspeed);
 	CV_RegisterVar(&cv_kartstacking_smonitor_accelboost);
 	CV_RegisterVar(&cv_kartstacking_smonitor_handleboost);
+	CV_RegisterVar(&cv_kartstacking_smonitor_gripboost_min);
+	CV_RegisterVar(&cv_kartstacking_smonitor_gripboost_max);
 	CV_RegisterVar(&cv_kartstacking_smonitor_stackable);
 
 	CV_RegisterVar(&cv_kartstacking_grow_speedboost);
@@ -12964,8 +12966,8 @@ static void K_AdjustPlayerFriction(player_t *player)
 		// this makes slipping backwards also treated as moving parallel to your facing direction
 		// maybe use the difference and compare to a threshold instead if we only want to count forwards as forwards?
 		fixed_t sliprate = abs(FV2_Dot(&movedirection, &facingdirection));
-		fixed_t speedrate = CLAMP(FixedDiv(player->speed, K_GetKartSpeed(player, false, false)), FRACUNIT/2, 2*FRACUNIT);
-		player->mo->friction -= Easing_InOutQuad(sliprate, FixedMul(2500, speedrate), 0);
+		fixed_t speedrate = CLAMP(FixedDiv(player->speed, K_GetKartSpeed(player, false, false)), 0, FRACUNIT);
+		player->mo->friction -= FixedMul(Easing_InQuart(sliprate, SMNTRGRIPBOOSTMAX, SMNTRGRIPBOOSTMIN), speedrate);
 
 		K_RecalculateMovefactor(player->mo);
 	}

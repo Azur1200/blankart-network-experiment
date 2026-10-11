@@ -578,6 +578,8 @@ consvar_t cv_kartstacking_smonitor_speedboost = CVAR_INIT ("vanillaboost_smonito
 consvar_t cv_kartstacking_smonitor_fastestspeed = CVAR_INIT ("vanillaboost_smonitor_fastestspeed", "80", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_smonitor_accelboost = CVAR_INIT ("vanillaboost_smonitor_accelboost", "5.0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_smonitor_handleboost = CVAR_INIT ("vanillaboost_smonitor_handleboost", "0", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_smonitor_gripboost_min = CVAR_INIT ("vanillaboost_smonitor_gripboost_min", "0", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
+consvar_t cv_kartstacking_smonitor_gripboost_max = CVAR_INIT ("vanillaboost_smonitor_gripboost_max", "1500", CV_NETVAR|CV_CHEAT|CV_GUARD, CV_Unsigned, NULL);
 consvar_t cv_kartstacking_smonitor_stackable = CVAR_INIT ("vanillaboost_smonitor_stackable", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
 consvar_t cv_kartstacking_grow_speedboost = CVAR_INIT ("vanillaboost_grow_speedboost", "0.2", CV_NETVAR|CV_CHEAT|CV_FLOAT|CV_GUARD, CV_Unsigned, NULL);
