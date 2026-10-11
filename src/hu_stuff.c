@@ -452,8 +452,8 @@ void HU_AddChatText(const char *text, dboolean playsound)
 
 void DoSayCommand(char *message, int8_t target, uint8_t flags, uint8_t source)
 {
-	char buf[2 + HU_MAXMSGLEN + 1];
-	char *msg = &buf[3];
+	char buf[3 + HU_MAXMSGLEN];
+	char *p = buf;
 
 	// Enforce shout for the dedicated server.
 	if (dedicated && source == serverplayer && !(flags & HU_CSAY))
@@ -461,14 +461,12 @@ void DoSayCommand(char *message, int8_t target, uint8_t flags, uint8_t source)
 		flags |= HU_SHOUT;
 	}
 
-	buf[0] = target;
-	buf[1] = flags;
-	buf[2] = source;
-	msg[0] = '\0';
+	WRITEINT8(p, target);
+	WRITEUINT8(p, flags);
+	WRITEUINT8(p, source);
+	WRITESTRINGN(p, message, HU_MAXMSGLEN);
 
-	strcpy(msg, message);
-
-	SendNetXCmd(XD_SAY, buf, strlen(msg) + 1 + msg-buf);
+	SendNetXCmd(XD_SAY, buf, p - buf);
 }
 
 /** Send a message to everyone.
