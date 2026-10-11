@@ -115,7 +115,7 @@ void Obj_DashRingSetup(mobj_t *mobj, mapthing_t *mthing)
 	if (!P_MobjWasRemoved(mobj->tracer))
 		P_SetMobjState(mobj->tracer, overlayState);
 
-	mobj->spriteyoffset = mobj->info->height >> 1; // I think this is to center the sprite within its hitbox regardless of height
+	mobj->spriteyoffset = mobj->realyoffset = mobj->info->height >> 1; // I think this is to center the sprite within its hitbox regardless of height
 	mobj->color = skinColor != SKINCOLOR_NONE ? skinColor : ring_colors[min(additionalThrust, numColors - 1)];
 }
 
