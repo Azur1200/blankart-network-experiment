@@ -2740,8 +2740,9 @@ dboolean K_PlayerCanPunt(const player_t *player)
 	return player->invincibilitytimer > 0 || player->smonitortimer > 0
 		|| player->growshrinktimer > 0
 	    || (player->flamestore > 0 && K_GetShieldFromPlayer(player) == KSHIELD_FLAME)
-	    || (player->bubbleblowup > 0 && K_GetShieldFromPlayer(player) == KSHIELD_BUBBLE)
-	    || K_AltShrinkArrowBulletCondition(player);
+	    || (player->bubbleblowup > 0 && K_GetShieldFromPlayer(player) == KSHIELD_BUBBLE);
+		// mini just dodges
+	    // || K_AltShrinkArrowBulletCondition(player);
 }
 
 dboolean K_ItemMobjAllowedtoWaterRun(mobj_t *item)
@@ -3958,19 +3959,28 @@ void K_DoInstashield(player_t *player)
 		return;
 
 	player->instashield = 15; // length of instashield animation
-	S_StartSound(player->mo, sfx_cdpcm9);
 
-	layera = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_INSTASHIELDA);
-	layera->old_x = player->mo->old_x;
-	layera->old_y = player->mo->old_y;
-	layera->old_z = player->mo->old_z;
-	P_SetTarget(&layera->target, player->mo);
-
-	layerb = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_INSTASHIELDB);
-	layerb->old_x = player->mo->old_x;
-	layerb->old_y = player->mo->old_y;
-	layerb->old_z = player->mo->old_z;
-	P_SetTarget(&layerb->target, player->mo);
+	if (K_AltShrinkArrowBulletCondition(player))
+	{
+		S_StartSound(player->mo, sfx_tcbdod);
+		P_SpawnGhostMobj(player->mo);
+	}
+	else
+	{
+		S_StartSound(player->mo, sfx_cdpcm9);
+		
+		layera = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_INSTASHIELDA);
+		layera->old_x = player->mo->old_x;
+		layera->old_y = player->mo->old_y;
+		layera->old_z = player->mo->old_z;
+		P_SetTarget(&layera->target, player->mo);
+		
+		layerb = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_INSTASHIELDB);
+		layerb->old_x = player->mo->old_x;
+		layerb->old_y = player->mo->old_y;
+		layerb->old_z = player->mo->old_z;
+		P_SetTarget(&layerb->target, player->mo);
+	}
 }
 
 void K_BattleAwardHit(player_t *player, player_t *victim, mobj_t *inflictor, uint8_t bumpersRemoved)
@@ -8662,7 +8672,13 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->waterskip = 0;
 
 	if (player->instashield)
+	{
+		if (K_AltShrinkArrowBulletCondition(player))
+		{
+			player->mo->spritexoffset += ((player->instashield * 2) + 8) * player->mo->scale * (((player->instashield/2) & 1) ? -1 : 1);
+		}
 		player->instashield--;
+	}
 
 	if (player->eggmanexplode)
 	{

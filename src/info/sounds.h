@@ -1056,3 +1056,10 @@ _(gprnf)
 
 // Adventure Spring
 _(advsp)
+
+// Shove
+_(nchmmw)
+_(nchmms)
+
+// Mini Dodges
+_(tcbdod)

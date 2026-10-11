@@ -237,7 +237,7 @@ dboolean K_BananaBallhogCollide(mobj_t *t1, mobj_t *t2)
 		if (t1->type == MT_BANANA && t1->health > 1)
 			S_StartSound(t2, sfx_bsnipe);
 
-		damageitem = true;
+		damageitem = !K_AltShrinkArrowBulletCondition(t2->player);
 
 		if (t2->player->flamestore && (K_GetShieldFromPlayer(t2->player) == KSHIELD_FLAME))
 		{

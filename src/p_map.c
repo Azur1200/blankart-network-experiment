@@ -2472,12 +2472,18 @@ dboolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *r
 		if (mo1->type == MT_ORBINAUT || mo1->type == MT_ORBINAUT_SHIELD
 		 || mo1->type == MT_JAWZ || mo1->type == MT_JAWZ_SHIELD || mo1->type == MT_JAWZ_DUD)
 		{
-			K_ItemDamage(mo1, mo2, false);
+			if ((!mo2->player) || (mo2->player && !K_AltShrinkArrowBulletCondition(mo2->player)))
+			{
+				K_ItemDamage(mo1, mo2, false);
+			}
 		}
 		else if (mo2->type == MT_ORBINAUT || mo2->type == MT_ORBINAUT_SHIELD
 		 || mo2->type == MT_JAWZ || mo2->type == MT_JAWZ_SHIELD || mo2->type == MT_JAWZ_DUD)
 		{
-			K_ItemDamage(mo2, mo1, false);
+			if ((!mo1->player) || (mo1->player && !K_AltShrinkArrowBulletCondition(mo1->player)))
+			{
+				K_ItemDamage(mo2, mo1, false);
+			}
 		}
 	}
 
