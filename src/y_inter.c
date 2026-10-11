@@ -591,7 +591,7 @@ static dboolean RankScreenVis_ShowGrade(void)
 				// Finish Grading
 				yy += 11;
 				Y_DrawThinStringWithBacking(
-				    xx, yy, curwidth, textflags, 0, usecolor, "Finish Grading");
+				    xx, yy, curwidth, textflags, 0, usecolor, "Comeback Grading");
 				V_DrawRightAlignedString(
 				    point_x,
 				    yy,
@@ -726,7 +726,7 @@ static dboolean RankScreenVis_ShowGrade(void)
 				// Finish Grading
 				yy += 11;
 				Y_DrawThinStringWithBacking(
-				    xx, yy, curwidth, textflags, 0, usecolor, "Finish Grading");
+				    xx, yy, curwidth, textflags, 0, usecolor, "Comeback Grading");
 				V_DrawRightAlignedString(
 				    point_x,
 				    yy,
