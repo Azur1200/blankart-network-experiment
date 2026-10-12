@@ -978,6 +978,7 @@ void readlevelheader(MYFILE *f, char * name)
 
 	// convert old map names to MAPxx
 	int32_t exnum = atoi(name);
+	dboolean compat = false;
 	if (exnum > 0 && exnum <= NUMMAPS)
 	{
 		if (exnum < 100)
@@ -985,11 +986,14 @@ void readlevelheader(MYFILE *f, char * name)
 		else
 			// one liner extended names :^)
 			name = va("MAP%c%c", 'A' + (exnum - 100)/36, ((exnum - 100) % 36 < 10 ? '0' : 'A'-10) + (exnum - 100) % 36);
+
+		compat = true;
 	}
 	else if (strlen(name) == 2 && isalpha(name[0]) && isalnum(name[1]))
 	{
 		exnum = (name[0] - 'A')*36 + (isalpha(name[1]) ? name[1] - 'A'+10 : name[1] - '0') + 100;
 		name = va("MAP%s", name);
+		compat = true;
 	}
 
 	mapnum_t num = G_MapNumber(name);
@@ -1020,6 +1024,13 @@ void readlevelheader(MYFILE *f, char * name)
 	{
 		mapheaderinfo[num]->lumpname = Z_StrDup(name);
 		mapheaderinfo[num]->lumpnamehash = FNV1a_QuickCaseHash(mapheaderinfo[num]->lumpname, MAXMAPLUMPNAME);
+	}
+
+	// Old music name failsafe fallback for v1 maps
+	if (compat && mapheaderinfo[num]->musname[0][0] == 0)
+	{
+		snprintf(mapheaderinfo[num]->musname[0], 7, "%.5sM", name);
+		mapheaderinfo[num]->musname_size = 1;
 	}
 
 	do

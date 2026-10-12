@@ -2840,10 +2840,7 @@ void S_InitLevelMusic(dboolean fromnetsave)
 
 		char musicname[7];
 
-		if (!validencore && mapheader->musname[0][0] == 0)
-			snprintf(musicname, sizeof(musicname), "%sM", G_BuildMapName(gamemap));
-		else
-			snprintf(musicname, sizeof(musicname), "%s",(validencore ? mapheader->encoremusname : mapheader->musname)[usemusrng]);
+		snprintf(musicname, sizeof(musicname), "%s",(validencore ? mapheader->encoremusname : mapheader->musname)[usemusrng]);
 
 		strncpy(mapmusname, musicname, 7);
 
