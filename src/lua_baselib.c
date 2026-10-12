@@ -4843,11 +4843,16 @@ static int lib_kDoBoost(lua_State *L)
 	fixed_t handleboost = luaL_checkfixed(L, 4);
 	dboolean stacking = lua_optdboolean(L, 5);
 	dboolean visible = lua_isnoneornil(L, 6) ? true : luaL_checkdboolean(L, 6);
+	dboolean allowsliptide = lua_isnoneornil(L, 7) ? false : luaL_checkdboolean(L, 7);
 
 	//HUDSAFE
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
 	K_DoBoost(player, speedboost, accelboost, handleboost, stacking, visible);
+
+	if (allowsliptide)
+		player->cansliptide = true;
+
 	return 0;
 }
 

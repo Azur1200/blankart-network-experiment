@@ -11100,7 +11100,7 @@ static void K_KartDrift(player_t *player, dboolean onground)
 		}
 	}
 
-	if ( (!(player->sneakertimer || player->flamestore || player->bubbleboost || K_OtherSliptideCondition(player)))
+	if ( (!(player->cansliptide))
 	|| (!player->cmd.turning)
 	|| (!player->aizdriftstrat)
 	|| (player->cmd.turning > 0) != (player->aizdriftstrat > 0))
@@ -11129,7 +11129,9 @@ static void K_KartDrift(player_t *player, dboolean onground)
 		}
 	}
 
-	
+	// Only cull cansliptide AFTER we do the sliptide check, for obvious (Lua) reasons...
+	player->cansliptide = ((player->sneakertimer != 0) || (player->flamestore != 0) || (player->bubbleboost != 0) || K_OtherSliptideCondition(player));
+
 	if (player->nulldrift)
 	{
 		fixed_t dot;

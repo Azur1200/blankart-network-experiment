@@ -837,6 +837,7 @@ struct player_t
 
 	fixed_t spinoutrot;     // When a player spins out, this value increments modulus 360.
 
+	dboolean cansliptide;	// Can we sliptide?
 	int8_t aizdriftstrat;	// (-1 to 1) - Let go of your drift while boosting? Helper for the SICK STRATZ (sliptiding!) you have just unlocked
 	int32_t aizdrifttilt;
 	int32_t aizdriftturn;

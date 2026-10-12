@@ -499,7 +499,8 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(ranktier) \
 	X(ranklog) \
 	X(rankscorefactor) \
-	X(playerid)
+	X(playerid) \
+	X(cansliptide)
 
 enum player_e
 {
@@ -1354,6 +1355,9 @@ static int player_get(lua_State *L)
 		// Doesn't actually exist in hardcode, but this is very useful and relevant
 		// to prototyping nonetheless
 		lua_pushinteger(L, (uint32_t)(plr - players));
+		break;
+	case player_cansliptide:
+		lua_pushdboolean(L, plr->cansliptide);
 		break;
 #ifdef HWRENDER
 	case player_fovadd:
@@ -2239,6 +2243,10 @@ static int player_set(lua_State *L)
 		break;
 	case player_playerid:
 		return NOSET;
+		break;
+	case player_cansliptide:
+		plr->cansliptide = lua_todboolean(L, 3);
+		break;
 #ifdef HWRENDER
 	case player_fovadd:
 		plr->fovadd = luaL_checkfixed(L, 3);
