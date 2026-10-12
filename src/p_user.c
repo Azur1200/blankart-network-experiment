@@ -2130,7 +2130,7 @@ static void P_3dMovement(player_t *player)
 	{
 		movepushangle = player->mo->angle - (ANGLE_45/5) * player->drift;
 	}
-	else if (K_IsPlayerDamaged(player) || player->wipeoutslow) // if spun out, use the boost angle
+	else if (K_DamagePreventSidemove(player) || player->wipeoutslow) // if spun out, use the boost angle
 	{
 		movepushangle = (angle_t)player->boostangle;
 	}
@@ -2204,7 +2204,7 @@ static void P_3dMovement(player_t *player)
 	const fixed_t kartspd = K_GetKartSpeed(player, true, true);
 
 	// Sideways movement
-	if (cmd->sidemove != 0 && !((player->exiting || mapreset) || K_IsPlayerDamaged(player)))
+	if (cmd->sidemove != 0 && !((player->exiting || mapreset) || K_DamagePreventSidemove(player)))
 	{
 		if (cmd->sidemove > 0)
 			movepushside = FixedMul((cmd->sidemove * FRACUNIT/128) + FixedDiv(player->speed, kartspd), mapobjectscale);

@@ -3704,10 +3704,10 @@ int8_t K_GetForwardMove(const player_t *player)
 	if ((player->exiting || mapreset) ||
 		player->pflags & PF_STASIS ||
 		player->spinouttimer ||
-		player->flipovertimer || player->crash_state) // pw_introcam?
+		player->flipovertimer) // pw_introcam?
 	{
 		forwardmove = 0;
-		if (player->sneakertimer)
+		if (player->sneakertimer || player->crash_state) // Maybe move this to a function like K_DamagePreventSidemove?
 			forwardmove = MAXPLMOVE;
 	}
 
@@ -3720,8 +3720,7 @@ int8_t K_GetSideMove(const player_t *player)
 
 	if ((player->exiting || mapreset) ||
 		player->pflags & PF_STASIS ||
-		player->spinouttimer ||
-		player->flipovertimer || player->crash_state) // pw_introcam?
+		K_DamagePreventSidemove(player)) // pw_introcam?
 	{
 		return 0;
 	}
@@ -4320,19 +4319,6 @@ void K_Player_CrashThinker(player_t *player)
 					S_StartSoundAtVolume(player->mo, sfx_s3kae, 192);
 					player->crash_rot += player->crashtimer * CRASH_TUMBLE_ROTBOUNCEDELTA * player->crash_side;
 
-					// Allow you to have some control over crash damage via DI
-					fixed_t di = player->mo->angle;
-					if (player->cmd.turning > 0)
-					{
-						di += ANG2;
-					}
-					else if (player->cmd.turning < 0)
-					{
-						di -= ANG2;
-					}
-
-					P_InstaThrust(player->mo, di, player->crash_speed);
-
 					if (player->crashtimer)
 					{
 						K_SpawnBumpEffect(player->mo);
@@ -4511,6 +4497,18 @@ int32_t K_ExplodePlayer(player_t *player, mobj_t *inflictor, mobj_t *source) // 
 dboolean K_IsPlayerDamaged(const player_t *player)
 {
 	return ((player->spinouttimer > 0) || (player->flipovertimer > 0) || (player->crash_state != 0));
+}
+
+// Should we be unable to steer if taking damage?
+dboolean K_DamagePreventSidemove(const player_t *player)
+{
+	if (!player)
+		return false; // Nonexistent player
+
+	if (!K_IsPlayerDamaged(player))
+		return false; // If the player isn't damaged, don't lock sidemove
+
+	return ((player->spinouttimer > 0) || (player->flipovertimer > 0));
 }
 
 void K_HandleBumperChanges(player_t *player, uint8_t prevBumpers)
@@ -8144,8 +8142,8 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	Obj_DashRingPlayerThink(player);
 
-	// update boost angle if not spun out
-	if (!K_IsPlayerDamaged(player) && !player->wipeoutslow)
+	// update boost angle if the damage doesn't lock our steering
+	if (!K_DamagePreventSidemove(player) && !player->wipeoutslow)
 		player->boostangle = player->mo->angle;
 
 	K_KartMagnetThinker(player);
@@ -10422,12 +10420,29 @@ static int16_t K_GetKartDriftValue(const player_t *player, fixed_t countersteer)
 	return basedrift + FixedMul(driftangle, countersteer);
 }
 
+#define CRASH_TURNWEIGHT (3)
+
+static uint8_t K_GetPlayerTurnWeight(const player_t *player)
+{
+	if (player->crash_state)
+	{
+		// Force the player's turn-weight to always be a specific value
+		return CRASH_TURNWEIGHT;
+	}
+
+	return player->kartweight;
+}
+
 int16_t K_GetKartTurnValue(const player_t *player, int16_t turnvalue)
 {
 	fixed_t p_topspeed = K_GetKartSpeed(player, false, false);
 	fixed_t p_curspeed = min(player->speed, p_topspeed * 2);
 	fixed_t p_maxspeed = p_topspeed * 3;
-	fixed_t adjustangle = FixedDiv((p_maxspeed>>16) - (p_curspeed>>16), (p_maxspeed>>16) + player->kartweight);
+
+	const uint8_t weightval = K_GetPlayerTurnWeight(player);
+	const uint8_t handleval = (10 - min(10, weightval));
+
+	fixed_t adjustangle = FixedDiv((p_maxspeed>>16) - (p_curspeed>>16), (p_maxspeed>>16) + weightval);
 
 	if (player->spectator)
 		return turnvalue;
@@ -10471,7 +10486,7 @@ int16_t K_GetKartTurnValue(const player_t *player, int16_t turnvalue)
 	}
 
 	if (K_SlipdashActive() && K_Sliptiding(player)) // slight handling boost based on weight
-		turnvalue = FixedMul(turnvalue, FRACUNIT + (10 - player->kartweight)*FRACUNIT/48);
+		turnvalue = FixedMul(turnvalue, FRACUNIT + handleval*FRACUNIT/48);
 
 	if (player->invincibilitytimer
 	    || player->sneakertimer || player->bubbleboost ||

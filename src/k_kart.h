@@ -369,6 +369,7 @@ void K_FlipPlayer(player_t *player, mobj_t *inflictor, mobj_t *source);
 void K_TumblePlayer(player_t *player, mobj_t *inflictor, mobj_t *source);
 int32_t K_ExplodePlayer(player_t *player, mobj_t *inflictor, mobj_t *source);
 dboolean K_IsPlayerDamaged(const player_t *player);
+dboolean K_DamagePreventSidemove(const player_t *player);
 void K_ResetCrashOffsetData(player_t *player);
 void K_ResetCrashData(player_t *player);
 void K_Player_CrashThinker(player_t *player);
