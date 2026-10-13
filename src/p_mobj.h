@@ -288,6 +288,23 @@ typedef enum {
 	PCF_FLIP		= 1<<4,		// Spawning from floor, moving upwards.
 } precipflag_t;
 
+// [RH] Like msecnode_t, but for the blockmap
+struct blocknode_t
+{
+	union
+	{
+		mobj_t *mobj;
+		precipmobj_t *precipmobj;
+	} mobj;
+
+	int blockindex;     // index into blocklinks for the block this node is in
+
+	blocknode_t **mprev; // previous actor in this block
+	blocknode_t *mnext;  // next actor in this block
+	blocknode_t **bprev; // previous block this actor is in
+	blocknode_t *bnext;  // next block this actor is in
+};
+
 // Map Object definition.
 struct mobj_t
 {
@@ -304,8 +321,7 @@ struct mobj_t
 
 	// Interaction info, by BLOCKMAP.
 	// Links in blocks (if needed).
-	mobj_t *bnext;
-	mobj_t **bprev; // killough 8/11/98: change to ptr-to-ptr
+	blocknode_t *blocknode;
 
 	// More drawing info: to determine current sprite.
 	angle_t angle, pitch, roll; // orientation
@@ -501,8 +517,7 @@ struct precipmobj_t
 
 	// Links in blocks (if needed).
 	// The blockmap is only used by precip to render.
-	precipmobj_t *bnext;
-	precipmobj_t **bprev; // killough 8/11/98: change to ptr-to-ptr
+	blocknode_t *blocknode;
 
 	// More drawing info: to determine current sprite.
 	angle_t angle, pitch, roll; // orientation

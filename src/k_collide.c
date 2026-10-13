@@ -725,7 +725,7 @@ static inline BlockItReturn_t PIT_ThunderShieldAttack(mobj_t *thing)
 
 void K_ThunderShieldAttack(mobj_t *actor, fixed_t size)
 {
-	int32_t bx, by, xl, xh, yl, yh;
+	int32_t xl, xh, yl, yh;
 
 	lightningDist = FixedMul(size, actor->scale);
 	lightningSource = actor;
@@ -738,9 +738,7 @@ void K_ThunderShieldAttack(mobj_t *actor, fixed_t size)
 
 	BMBOUNDFIX (xl, xh, yl, yh);
 
-	for (by = yl; by <= yh; by++)
-		for (bx = xl; bx <= xh; bx++)
-			P_BlockThingsIterator(bx, by, PIT_ThunderShieldAttack);
+	P_DoBlockThingsIterate(xl, yl, xh, yh, PIT_ThunderShieldAttack);
 }
 
 static inline BlockItReturn_t PIT_AttractionShieldAttack(mobj_t *thing)
@@ -831,7 +829,7 @@ static inline BlockItReturn_t PIT_AttractionShieldAttack(mobj_t *thing)
 
 void K_AttractionShieldAttack(mobj_t *actor, fixed_t size, fixed_t powerrate, dboolean hipower)
 {
-	int32_t bx, by, xl, xh, yl, yh;
+	int32_t xl, xh, yl, yh;
 
 	lightningDist = FixedMul(size, actor->scale);
 	lightningSource = actor;
@@ -846,9 +844,7 @@ void K_AttractionShieldAttack(mobj_t *actor, fixed_t size, fixed_t powerrate, db
 
 	BMBOUNDFIX (xl, xh, yl, yh);
 
-	for (by = yl; by <= yh; by++)
-		for (bx = xl; bx <= xh; bx++)
-			P_BlockThingsIterator(bx, by, PIT_AttractionShieldAttack);
+	P_DoBlockThingsIterate(xl, yl, xh, yh, PIT_AttractionShieldAttack);
 }
 
 static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble, int16_t dmg)

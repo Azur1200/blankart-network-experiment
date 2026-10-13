@@ -4112,7 +4112,7 @@ bool CallFunc_SetThingProperty(ACSVM::Thread *thread, const ACSVM::Word *argV, A
 				sector_list = NULL; \
 			} \
 			mobj->snext = NULL, mobj->sprev = NULL; \
-			mobj->bnext = NULL, mobj->bprev = NULL; \
+			P_UnsetBlockmapEntry(mobj); \
 			P_SetThingPosition(mobj); \
 		} \
 		else \

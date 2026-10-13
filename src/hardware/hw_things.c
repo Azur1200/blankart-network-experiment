@@ -1524,6 +1524,7 @@ void HWR_AddPrecipitationSprites(void)
 	const fixed_t drawdist = cv_drawdist_precip.value * mapobjectscale;
 
 	int32_t xl, xh, yl, yh, bx, by;
+	blocknode_t *block, *next;
 	precipmobj_t *th;
 
 	// no, no infinite draw distance for precipitation. this option at zero is supposed to turn it off
@@ -1544,8 +1545,11 @@ void HWR_AddPrecipitationSprites(void)
 	{
 		for (by = yl; by <= yh; by++)
 		{
-			for (th = precipblocklinks[(by * bmapwidth) + bx]; th; th = th->bnext)
+			for (block = precipblocklinks[(by * bmapwidth) + bx]; block; block = next)
 			{
+				next = block->mnext;
+				th = block->mobj.precipmobj;
+
 				if (R_PrecipThingVisible(th))
 				{
 					HWR_ProjectPrecipitationSprite(th);

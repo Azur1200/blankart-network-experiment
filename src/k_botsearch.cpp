@@ -99,7 +99,7 @@ uint8_t K_EggboxStealth(fixed_t x, fixed_t y)
 {
 	ZoneScoped;
 
-	int32_t xl, xh, yl, yh, bx, by;
+	int32_t xl, xh, yl, yh;
 
 	g_eggboxSearch.eggboxx = x;
 	g_eggboxSearch.eggboxy = y;
@@ -114,13 +114,7 @@ uint8_t K_EggboxStealth(fixed_t x, fixed_t y)
 
 	BMBOUNDFIX(xl, xh, yl, yh);
 
-	for (bx = xl; bx <= xh; bx++)
-	{
-		for (by = yl; by <= yh; by++)
-		{
-			P_BlockThingsIterator(bx, by, K_FindEggboxes);
-		}
-	}
+	P_DoBlockThingsIterate(xl, yl, xh, yh, K_FindEggboxes);
 
 	return (g_eggboxSearch.randomitems * (g_eggboxSearch.eggboxes + 1));
 }
@@ -651,7 +645,7 @@ void K_NudgePredictionTowardsObjects(botdata_t *bd, const player_t *player)
 
 	const precise_t time = I_GetPreciseTime();
 
-	int32_t xl, xh, yl, yh, bx, by;
+	int32_t xl, xh, yl, yh;
 
 	fixed_t distToPredict = 0;
 	fixed_t radToPredict = 0;
@@ -700,13 +694,8 @@ void K_NudgePredictionTowardsObjects(botdata_t *bd, const player_t *player)
 
 	BMBOUNDFIX(xl, xh, yl, yh);
 
-	for (bx = xl; bx <= xh; bx++)
-	{
-		for (by = yl; by <= yh; by++)
-		{
-			P_BlockThingsIterator(bx, by, K_FindObjectsForNudging);
-		}
-	}
+	P_DoBlockThingsIterate(xl, yl, xh, yh, K_FindObjectsForNudging);
+
 
 	// Handle dodge characters
 	if (g_nudgeSearch.avoidObjs[1] > 0 || g_nudgeSearch.avoidObjs[0] > 0)
@@ -929,7 +918,7 @@ int32_t K_PositionBully(const player_t *player)
 {
 	ZoneScoped;
 
-	int32_t xl, xh, yl, yh, bx, by;
+	int32_t xl, xh, yl, yh;
 
 	angle_t ourangle, destangle, angle;
 	int16_t anglediff;
@@ -947,13 +936,8 @@ int32_t K_PositionBully(const player_t *player)
 
 	BMBOUNDFIX(xl, xh, yl, yh);
 
-	for (bx = xl; bx <= xh; bx++)
-	{
-		for (by = yl; by <= yh; by++)
-		{
-			P_BlockThingsIterator(bx, by, K_FindPlayersToBully);
-		}
-	}
+	P_DoBlockThingsIterate(xl, yl, xh, yh, K_FindPlayersToBully);
+
 
 	if (g_bullySearch.annoymo == NULL)
 	{
@@ -1048,7 +1032,7 @@ static inline BlockItReturn_t PIT_ShieldBlock(mobj_t *thing)
 // Searches the blockmap for items to block with Shields
 dboolean K_GetBlockedShieldItem(const player_t *player, fixed_t radius)
 {
-	int32_t bx, by, xl, xh, yl, yh;
+	int32_t xl, xh, yl, yh;
 
 	shieldSource = player->mo;
 	shieldDist = radius;
@@ -1062,9 +1046,7 @@ dboolean K_GetBlockedShieldItem(const player_t *player, fixed_t radius)
 
 	BMBOUNDFIX (xl, xh, yl, yh);
 
-	for (by = yl; by <= yh; by++)
-		for (bx = xl; bx <= xh; bx++)
-			P_BlockThingsIterator(bx, by, PIT_ShieldBlock);
+	P_DoBlockThingsIterate(xl, yl, xh, yh, PIT_ShieldBlock);
 
 	return shieldBlock;
 }

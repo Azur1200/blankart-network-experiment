@@ -284,8 +284,11 @@ TYPEDEF (BasicFF_t);
 TYPEDEF (divline_t);
 TYPEDEF (intercept_t);
 TYPEDEF(opening_t);
+TYPEDEF (bthingit_hash_entry_t);
+TYPEDEF (bthingit_t);
 
 // p_mobj.h
+TYPEDEF (blocknode_t);
 TYPEDEF (mobj_t);
 TYPEDEF (precipmobj_t);
 TYPEDEF (actioncache_t);
