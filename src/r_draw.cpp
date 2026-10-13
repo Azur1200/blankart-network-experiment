@@ -370,7 +370,7 @@ uint8_t* R_GetTranslationColormap(int32_t skinnum, skincolornum_t color, uint8_t
 	// Generate the colormap if necessary
 	if (!ret)
 	{
-		ret = static_cast<uint8_t *>(Z_MallocAlign(NUM_PALETTE_ENTRIES, (flags & GTC_CACHE) ? PU_LEVEL : PU_STATIC, NULL, 8));
+		ret = static_cast<uint8_t *>(Z_MallocAlign(NUM_PALETTE_ENTRIES, PU_STATIC, NULL, 8));
 		K_GenerateKartColormap(ret, skinnum, color); //R_GenerateTranslationColormap(ret, skinnum, color); // SRB2kart
 
 		// Cache the colormap if desired
@@ -389,6 +389,10 @@ uint8_t* R_GetTranslationColormap(int32_t skinnum, skincolornum_t color, uint8_t
 
 	\return	void
 */
+
+/* There seems to be no reason to free cached colormaps tho? Not like they can change :ChonkBunckle: */
+
+/*
 void R_FlushTranslationColormapCache(void)
 {
 	int32_t i;
@@ -397,6 +401,7 @@ void R_FlushTranslationColormapCache(void)
 		if (translationtablecache[i])
 			memset(translationtablecache[i], 0, MAXSKINCOLORS * sizeof(uint8_t**));
 }
+*/
 
 uint16_t R_GetColorByName(const char *name)
 {

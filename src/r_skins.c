@@ -1464,7 +1464,7 @@ void R_AddSkins(uint16_t wadnum)
 		R_LoadSkinSprites(wadnum, &lump, &lastlump, skin);
 		//ST_LoadFaceGraphics(numskins); -- nah let's do this elsewhere
 
-		R_FlushTranslationColormapCache();
+		//R_FlushTranslationColormapCache();
 
 		iscompatskin = wadfiles[skin->wadnum]->compatmode;
 
@@ -1632,7 +1632,7 @@ void R_PatchSkins(uint16_t wadnum)
 		R_LoadSkinSprites(wadnum, &lump, &lastlump, skin);
 		//ST_LoadFaceGraphics(skinnum); -- nah let's do this elsewhere
 
-		R_FlushTranslationColormapCache();
+		//R_FlushTranslationColormapCache();
 
 		CONS_Printf(M_GetText("Patched skin '%s'\n"), skin->name);
 	}

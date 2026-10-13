@@ -145,7 +145,7 @@ enum
 // Custom player skin translation
 // Initialize color translation tables, for player rendering etc.
 uint8_t* R_GetTranslationColormap(int32_t skinnum, skincolornum_t color, uint8_t flags);
-void R_FlushTranslationColormapCache(void);
+//void R_FlushTranslationColormapCache(void);
 uint16_t R_GetColorByName(const char *name);
 uint16_t R_GetSuperColorByName(const char *name);
 
