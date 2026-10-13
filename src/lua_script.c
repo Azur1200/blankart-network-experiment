@@ -45,6 +45,10 @@
 #include <tracy/tracy/TracyC.h>
 
 lua_State *gL = NULL;
+
+// Mathlib global state
+static lua_State *mL = NULL;
+
 dboolean lua_compatmode = false;
 
 // List of internal libraries to load from SRB2
@@ -77,14 +81,6 @@ static lua_CFunction liblist[] = {
 	LUA_ItemLib, 		// kartitem_t, kartresult_t, kartitemgraphics_t
 	NULL
 };
-
-// Lua asks for memory using this.
-static void *LUA_Alloc(void *ud, void *ptr, size_t osize, size_t nsize)
-{
-	(void)ud;
-	(void)osize;
-	return Z_Realloc(ptr, nsize, PU_LUA, NULL);
-}
 
 // Panic function Lua calls when there's an unprotected error.
 // This function cannot return. Lua would kill the application anyway if it did.
@@ -972,7 +968,7 @@ void LUA_ClearState(void)
 	CONS_Printf(M_GetText("Pardon me while I initialize the Lua scripting interface...\n"));
 
 	// allocate state
-	L = lua_newstate(LUA_Alloc, NULL);
+	L = luaL_newstate();
 	lua_atpanic(L, LUA_Panic);
 
 	// open base libraries
@@ -1170,25 +1166,25 @@ void LUA_DumpFile(const char *filename)
 }
 #endif
 
+static void createMathLibState(void)
+{
+	mL = luaL_newstate();
+	lua_atpanic(mL, LUA_Panic);
+
+	// open only enum lib
+	lua_pushcfunction(mL, LUA_EnumLib);
+	lua_pushdboolean(mL, true);
+	lua_call(mL, 1, 0);
+}
+
 fixed_t LUA_EvalMathEx(const char *word, const char **error)
 {
-	static lua_State *L = NULL;
 	char buf[1024], *b;
 	const char *p;
 	fixed_t res = 0;
 
-	if (!L)
-	{
-		// make a new state so SOC can't interefere with scripts
-		// allocate state
-		L = lua_newstate(LUA_Alloc, NULL);
-		lua_atpanic(L, LUA_Panic);
-
-		// open only enum lib
-		lua_pushcfunction(L, LUA_EnumLib);
-		lua_pushdboolean(L, true);
-		lua_call(L, 1, 0);
-	}
+	if (mL == NULL)
+		createMathLibState();
 
 	// change ^ into ^^ for Lua.
 	strcpy(buf, "return ");
@@ -1205,10 +1201,10 @@ fixed_t LUA_EvalMathEx(const char *word, const char **error)
 	*b = '\0';
 
 	// eval string.
-	lua_settop(L, 0);
-	if (luaL_dostring(L, buf))
+	lua_settop(mL, 0);
+	if (luaL_dostring(mL, buf))
 	{
-		p = lua_tostring(L, -1);
+		p = lua_tostring(mL, -1);
 
 		// If there is [string "..."]:1: text, skip it
 		if (strstr(p, ":") != NULL)
@@ -1220,7 +1216,7 @@ fixed_t LUA_EvalMathEx(const char *word, const char **error)
 		if (error) *error = p;
 	}
 	else
-		res = lua_tointeger(L, -1);
+		res = lua_tointeger(mL, -1);
 
 	return res;
 }
@@ -2404,6 +2400,19 @@ int Lua_CreateFieldTable(lua_State *L, const char *const lst[])
 	}
 
 	return luaL_ref(L, LUA_REGISTRYINDEX);
+}
+
+size_t LUA_MemoryUsage(void)
+{
+	size_t usage = 0;
+
+	if (gL)
+		usage += lua_gc(gL, LUA_GCCOUNT, 0);
+
+	if (mL)
+		usage += lua_gc(mL, LUA_GCCOUNT, 0);
+
+	return usage;
 }
 
 void LUA_PushTaggableObjectArray

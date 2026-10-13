@@ -121,6 +121,9 @@ void LUA_InvalidateLevel(void);
 void LUA_InvalidateMapthings(void);
 void LUA_InvalidatePlayer(player_t *player);
 
+// Returns lua memory usage in kbytes
+size_t LUA_MemoryUsage(void);
+
 // Console wrapper
 void COM_Lua_f(void);
 
