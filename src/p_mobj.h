@@ -322,6 +322,8 @@ struct mobj_t
 	// Interaction info, by BLOCKMAP.
 	// Links in blocks (if needed).
 	blocknode_t *blocknode;
+	// This is needed to place it in the correct blocklinks as scale or type changes can be run by actions.
+	dboolean precip;
 
 	// More drawing info: to determine current sprite.
 	angle_t angle, pitch, roll; // orientation
@@ -511,13 +513,15 @@ struct precipmobj_t
 
 	fixed_t old_x, old_y, old_z; // position interpolation
 	fixed_t old_x2, old_y2, old_z2;
-	
+
 	mobjtype_t type;
 	const mobjinfo_t *info; // &mobjinfo[mobj->type]
 
 	// Links in blocks (if needed).
 	// The blockmap is only used by precip to render.
 	blocknode_t *blocknode;
+	// This is needed to place it in the correct blocklinks as scale or type changes can be run by actions.
+	dboolean precip;
 
 	// More drawing info: to determine current sprite.
 	angle_t angle, pitch, roll; // orientation
@@ -577,7 +581,7 @@ struct precipmobj_t
 	int32_t tics; // state tic counter
 	state_t *state;
 	uint32_t flags; // flags from mobjinfo tables
-	
+
 	tic_t lastThink;
 };
 

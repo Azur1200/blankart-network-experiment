@@ -1236,7 +1236,7 @@ void P_UnsetPrecipThingPosition(precipmobj_t *thing)
 void P_SetBlockmapEntry(mobj_t *thing, blocknode_t **bmap)
 {
 	// link into blockmap
-	if (!(thing->flags & MF_NOBLOCKMAP))
+	if (thing->precip || !(thing->flags & MF_NOBLOCKMAP))
 	{
 		int32_t x1 = (unsigned)(thing->x - thing->radius - bmaporgx)>>MAPBLOCKSHIFT;
 		int32_t y1 = (unsigned)(thing->y - thing->radius - bmaporgy)>>MAPBLOCKSHIFT;
