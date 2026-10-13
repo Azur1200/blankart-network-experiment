@@ -953,7 +953,7 @@ static void HWR_ProcessSingleSidedSeg(FOutVector *wallVerts, gl_seg_bounds *b,
 			}
 		}
 	}
-	else if (mapnamespace == MNS_SRB2KART)
+	else
 	{
 		//Set textures properly on single sided walls that are sloped
 		wallVerts[3].y = FIXED_TO_FLOAT(b->worldtop);
