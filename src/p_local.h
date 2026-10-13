@@ -490,6 +490,8 @@ extern msecnode_t *sector_list;
 
 extern mprecipsecnode_t *precipsector_list;
 
+void P_UnsetBlockmapEntry(mobj_t *thing);
+void P_SetBlockmapEntry(mobj_t *thing, blocknode_t **bmap);
 void P_UnsetThingPosition(mobj_t *thing);
 void P_SetThingPosition(mobj_t *thing);
 void P_SetUnderlayPosition(mobj_t *thing);
@@ -567,8 +569,8 @@ extern int32_t bmapwidth;
 extern int32_t bmapheight; // in mapblocks
 extern fixed_t bmaporgx;
 extern fixed_t bmaporgy; // origin of block map
-extern mobj_t **blocklinks; // for thing chains
-extern precipmobj_t **precipblocklinks; // special blockmap for precip rendering
+extern blocknode_t **blocklinks; // for thing chains
+extern blocknode_t **precipblocklinks; // special blockmap for precip rendering
 
 extern struct minimapinfo
 {

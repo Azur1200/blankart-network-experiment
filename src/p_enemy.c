@@ -11440,7 +11440,7 @@ static inline BlockItReturn_t PIT_SSMineSearch(mobj_t *thing)
 void A_SSMineSearch(void *thing)
 {
 	mobj_t *actor = thing;
-	int32_t bx, by, xl, xh, yl, yh;
+	int32_t xl, xh, yl, yh;
 	explodedist = FixedMul(actor->info->painchance, mapobjectscale);
 
 	if (LUA_CallAction(A_SSMINESEARCH, actor))
@@ -11463,9 +11463,7 @@ void A_SSMineSearch(void *thing)
 
 	grenade = actor;
 
-	for (by = yl; by <= yh; by++)
-		for (bx = xl; bx <= xh; bx++)
-			P_BlockThingsIterator(bx, by, PIT_SSMineSearch);
+	P_DoBlockThingsIterate(xl, yl, xh, yh, PIT_SSMineSearch);
 }
 
 static inline BlockItReturn_t PIT_MineExplode(mobj_t *thing)
@@ -11505,7 +11503,7 @@ static inline BlockItReturn_t PIT_MineExplode(mobj_t *thing)
 void A_SSMineExplode(void *thing)
 {
 	mobj_t *actor = thing;
-	int32_t bx, by, xl, xh, yl, yh;
+	int32_t xl, xh, yl, yh;
 	int32_t d;
 	int32_t locvar1 = var1;
 	mobjtype_t type;
@@ -11530,9 +11528,7 @@ void A_SSMineExplode(void *thing)
 
 	grenade = actor;
 
-	for (by = yl; by <= yh; by++)
-		for (bx = xl; bx <= xh; bx++)
-			P_BlockThingsIterator(bx, by, PIT_MineExplode);
+	P_DoBlockThingsIterate(xl, yl, xh, yh, PIT_MineExplode);
 
 	for (d = 0; d < 16; d++)
 		K_SpawnKartExplosion(actor->x, actor->y, actor->z, explodedist + 32*mapobjectscale, 32, type, d*(ANGLE_45/4), true, false, actor->target); // 32 <-> 64

@@ -7452,7 +7452,7 @@ static inline BlockItReturn_t PIT_AttractingRings(mobj_t *thing)
   */
 static void K_LookForRings(mobj_t *pmo)
 {
-	int32_t bx, by, xl, xh, yl, yh;
+	int32_t xl, xh, yl, yh;
 
 	attractmo = pmo;
 	attractdist = (400 * pmo->scale);
@@ -7466,9 +7466,7 @@ static void K_LookForRings(mobj_t *pmo)
 
 	BMBOUNDFIX(xl, xh, yl, yh);
 
-	for (by = yl; by <= yh; by++)
-		for (bx = xl; bx <= xh; bx++)
-			P_BlockThingsIterator(bx, by, PIT_AttractingRings);
+	P_DoBlockThingsIterate(xl, yl, xh, yh, PIT_AttractingRings);
 }
 
 static void K_UpdateTripwire(player_t *player)

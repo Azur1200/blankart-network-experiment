@@ -6299,6 +6299,9 @@ void P_SetScale2(mobj_t *mobj, fixed_t newscale, dboolean compat)
 	if (!mobj)
 		return;
 
+	if (mobj->precip || !(mobj->flags & MF_NOBLOCKMAP))
+		P_UnsetBlockmapEntry(mobj);
+
 	oldscale = mobj->scale; //keep for adjusting stuff below
 
 	if (LUA_HookMobjScaleChange(mobj, newscale, oldscale) || P_MobjWasRemoved(mobj))
@@ -6324,6 +6327,8 @@ void P_SetScale2(mobj_t *mobj, fixed_t newscale, dboolean compat)
 		G_GhostAddScale((int32_t) (player - players), newscale);
 		player->viewheight = FixedMul(FixedDiv(player->viewheight, oldscale), newscale); // Nonono don't calculate viewheight elsewhere, this is the best place for it!
 	}
+
+	P_SetBlockmapEntry(mobj, mobj->precip ? precipblocklinks : blocklinks);
 }
 
 void P_Attract(mobj_t *source, mobj_t *dest, dboolean nightsgrab) // Home in on your target
@@ -11438,6 +11443,8 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	mobj->type = type;
 	mobj->info = info;
 
+	mobj->precip = false;
+
 	mobj->x = x;
 	mobj->y = y;
 
@@ -11997,6 +12004,8 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 
 	mobj->type = type;
 	mobj->info = info;
+
+	mobj->precip = true;
 
 	mobj->x = x;
 	mobj->y = y;

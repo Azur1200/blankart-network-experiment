@@ -1122,10 +1122,61 @@ void P_LineOpening(line_t *linedef, mobj_t *mobj, opening_t *open)
 	open->range = (open->ceiling - open->floor);
 }
 
+static blocknode_t *freeblocks;
+
+static blocknode_t *P_CreateBlockNode(mobj_t *thing, int x, int y)
+{
+	blocknode_t *block;
+
+	if (freeblocks != NULL)
+	{
+		block = freeblocks;
+		freeblocks = block->bnext;
+	}
+	else
+		block = Z_Malloc(sizeof(blocknode_t), PU_LEVEL, NULL);
+
+	block->blockindex = x + y*bmapwidth;
+	block->mobj.mobj = thing;
+	block->mnext = NULL;
+	block->mprev = NULL;
+	block->bprev = NULL;
+	block->bnext = NULL;
+
+	return block;
+}
+
+static void P_ReleaseBlockNode(blocknode_t *node)
+{
+	node->bnext = freeblocks;
+	freeblocks = node;
+}
 
 //
 // THING POSITION SETTING
 //
+
+//
+// P_UnsetBlockmapEntry
+// Unlinks a thing from block map and sectors.
+//
+void P_UnsetBlockmapEntry(mobj_t *thing)
+{
+	// [RH] Unlink from all blocks this actor uses
+	blocknode_t *block = thing->blocknode;
+
+	while (block != NULL)
+	{
+		if (block->mnext != NULL)
+			block->mnext->mprev = block->mprev;
+		*(block->mprev) = block->mnext;
+		blocknode_t *next = block->bnext;
+		P_ReleaseBlockNode(block);
+		block = next;
+	}
+
+	thing->blocknode = NULL;
+}
 
 //
 // P_UnsetThingPosition
@@ -1171,62 +1222,63 @@ void P_UnsetThingPosition(mobj_t *thing)
 	}
 
 	if (!(thing->flags & MF_NOBLOCKMAP))
-	{
-		/* inert things don't need to be in blockmap
-		*
-		* killough 8/11/98: simpler scheme using pointers-to-pointers for prev
-		* pointers, allows head node pointers to be treated like everything else
-		*
-		* Also more robust, since it doesn't depend on current position for
-		* unlinking. Old method required computing head node based on position
-		* at time of unlinking, assuming it was the same position as during
-		* linking.
-		*/
-
-		mobj_t *bnext, **bprev = thing->bprev;
-		if (bprev && (*bprev = bnext = thing->bnext) != NULL)  // unlink from block map
-			bnext->bprev = bprev;
-	}
+		P_UnsetBlockmapEntry(thing);
 }
 
 void P_UnsetPrecipThingPosition(precipmobj_t *thing)
 {
-	precipmobj_t **bprev = thing->bprev;
-	precipmobj_t  *bnext = thing->bnext;
-
-	if (bprev && (*bprev = bnext) != NULL)  // unlink from block map
-		bnext->bprev = bprev;
+	P_UnsetBlockmapEntry((mobj_t *)thing);
 
 	precipsector_list = thing->touching_sectorlist;
 	thing->touching_sectorlist = NULL; //to be restored by P_SetPrecipThingPosition
 }
 
-static void P_LinkToBlockMap(mobj_t *thing, mobj_t **bmap)
+void P_SetBlockmapEntry(mobj_t *thing, blocknode_t **bmap)
 {
-	const int32_t blockx = (unsigned)(thing->x - bmaporgx) >> MAPBLOCKSHIFT;
-	const int32_t blocky = (unsigned)(thing->y - bmaporgy) >> MAPBLOCKSHIFT;
-
-	if (blockx >= 0 && blockx < bmapwidth
-		&& blocky >= 0 && blocky < bmapheight)
+	// link into blockmap
+	if (thing->precip || !(thing->flags & MF_NOBLOCKMAP))
 	{
-		// killough 8/11/98: simpler scheme using
-		// pointer-to-pointer prev pointers --
-		// allows head nodes to be treated like everything else
+		int32_t x1 = (unsigned)(thing->x - thing->radius - bmaporgx)>>MAPBLOCKSHIFT;
+		int32_t y1 = (unsigned)(thing->y - thing->radius - bmaporgy)>>MAPBLOCKSHIFT;
+		int32_t x2 = (unsigned)(thing->x + thing->radius - bmaporgx)>>MAPBLOCKSHIFT;
+		int32_t y2 = (unsigned)(thing->y + thing->radius - bmaporgy)>>MAPBLOCKSHIFT;
 
-		mobj_t **link = &bmap[(blocky * bmapwidth) + blockx];
-		mobj_t *bnext = *link;
+		thing->blocknode = NULL;
 
-		thing->bnext = bnext;
+		blocknode_t **alink = &thing->blocknode;
 
-		if (bnext != NULL)
-			bnext->bprev = &thing->bnext;
+		if (!(x1 >= bmapwidth || x2 < 0 || y1 >= bmapheight || y2 < 0))
+		{
+			// [RH] Link into every block this actor touches, not just the center one
+			x1 = max(0, x1);
+			y1 = max(0, y1);
+			x2 = min(bmapwidth - 1, x2);
+			y2 = min(bmapheight - 1, y2);
+			for (int y = y1; y <= y2; ++y)
+			{
+				for (int x = x1; x <= x2; ++x)
+				{
+					blocknode_t **link = &bmap[y*bmapwidth + x];
+					blocknode_t *node = P_CreateBlockNode(thing, x, y);
 
-		thing->bprev = link;
-		*link = thing;
-	}
-	else // thing is off the map
-	{
-		thing->bnext = NULL, thing->bprev = NULL;
+					//node->bnext = bnext; is this necessary?? --Super
+
+					// Link in to block
+					if ((node->mnext = *link) != NULL)
+					{
+						(*link)->mprev = &node->mnext;
+					}
+					node->mprev = link;
+					*link = node;
+
+					// Link in to actor
+					node->bprev = alink;
+					node->bnext = NULL;
+					(*alink) = node;
+					alink = &node->bnext;
+				}
+			}
+		}
 	}
 }
 
@@ -1285,12 +1337,8 @@ void P_SetThingPosition(mobj_t *thing)
 		sector_list = NULL; // clear for next time
 	}
 
-	// link into blockmap
-	if (!(thing->flags & MF_NOBLOCKMAP))
-	{
-		// inert things don't need to be in blockmap
-		P_LinkToBlockMap(thing, blocklinks);
-	}
+	// inert things don't need to be in blockmap
+	P_SetBlockmapEntry(thing, blocklinks);
 
 	// Allows you to 'step' on a new linedef exec when the previous
 	// sector's floor is the same height.
@@ -1356,7 +1404,7 @@ void P_SetPrecipitationThingPosition(precipmobj_t *thing)
 
 	// NOTE: this works because bnext/bprev are at the same
 	// offsets in precipmobj_t and mobj_t
-	P_LinkToBlockMap((mobj_t*)thing, (mobj_t**)precipblocklinks);
+	P_SetBlockmapEntry((mobj_t*)thing, precipblocklinks);
 }
 
 //
@@ -1456,32 +1504,220 @@ dboolean P_BlockLinesIterator(int32_t x, int32_t y, BlockItReturn_t (*func)(line
 //
 dboolean P_BlockThingsIterator(int32_t x, int32_t y, BlockItReturn_t (*func)(mobj_t *))
 {
-	mobj_t *mobj, *bnext = NULL;
+	blocknode_t *block, *next = NULL;
 
 	if (x < 0 || y < 0 || x >= bmapwidth || y >= bmapheight)
 		return true;
 
 	// Check interaction with the objects in the blockmap.
-	for (mobj = blocklinks[y*bmapwidth + x]; mobj != NULL; mobj = bnext)
+	for (block = blocklinks[y*bmapwidth + x]; block != NULL; block = next)
 	{
 		BlockItReturn_t ret = BMIT_CONTINUE;
 
-		bnext = mobj->bnext; // We want to note our reference to bnext here!
-		ret = func(mobj);
+		next = block->mnext; // We want to note our reference to mnext here!
+		ret = func(block->mobj.mobj);
 
 		if (ret == BMIT_ABORT)
 		{
 			return false; // failure
 		}
 
-		if ((ret == BMIT_STOP)
-			|| (bnext && P_MobjWasRemoved(bnext))) // func just broke blockmap chain, cannot continue.
+		if (ret == BMIT_STOP)
 		{
 			return true; // success
 		}
 	}
 
 	return true;
+}
+
+dboolean P_DoBlockThingsIterate(int x1, int y1, int x2, int y2, BlockItReturn_t (*func)(mobj_t *))
+{
+	dboolean status = true;
+
+	for (int32_t bx = x1; bx <= x2; bx++)
+		for (int32_t by = y1; by <= y2; by++)
+			if (!P_BlockThingsIterator(bx, by, func))
+				status = false;
+
+	return status;
+}
+
+static bthingit_hash_entry_t *GetHashEntryForIterator(bthingit_t *it, int i)
+{
+	if (i < NUM_BTHINGIT_FIXEDHASH)
+		return &it->fixedhash[i];
+	else
+		return &it->dynhash[i - NUM_BTHINGIT_FIXEDHASH];
+}
+
+static blocknode_t *GetBlockmapBlock(int x, int y)
+{
+	if (x >= 0 && y >= 0 && x < bmapwidth && y < bmapheight)
+	{
+		return blocklinks[y*bmapwidth + x];
+	}
+	else
+	{
+		// invalid block
+		return NULL;
+	}
+}
+
+static bthingit_t *freeiters;
+
+bthingit_t *P_NewBlockThingsIterator(int x1, int y1, int x2, int y2)
+{
+	bthingit_t *it;
+	blocknode_t *block;
+
+	x1 = max(0, x1);
+	y1 = max(0, y1);
+	x2 = min(bmapwidth - 1, x2);
+	y2 = min(bmapheight - 1, y2);
+
+	if (x1 > x2 || y1 > y2)
+		return NULL;
+
+	block = GetBlockmapBlock(x1, y1);
+
+	if (freeiters != NULL)
+	{
+		it = freeiters;
+		freeiters = it->freechain;
+	}
+	else
+		it = Z_Calloc(sizeof(bthingit_t), PU_LEVEL, NULL);
+
+	it->x1 = x1;
+	it->y1 = y1;
+	it->x2 = x2;
+	it->y2 = y2;
+	it->curx = x1;
+	it->cury = y1;
+	it->block = block;
+	it->freechain = NULL;
+	it->numfixedhash = 0;
+	it->dynhashcount = 0;
+
+	for (size_t i = 0; i < NUM_BTHINGIT_BUCKETS; i++)
+		it->buckets[i] = -1;
+
+	return it;
+}
+
+mobj_t *P_BlockThingsIteratorNext(bthingit_t *it, dboolean centeronly)
+{
+	for (;;)
+	{
+		while (it->block != NULL)
+		{
+			mobj_t *mobj = it->block->mobj.mobj;
+			blocknode_t *node = it->block;
+
+			it->block = it->block->mnext;
+
+			// Don't recheck things that were already checked
+			if (node->bnext == NULL && node->bprev == &mobj->blocknode)
+			{
+				// This actor doesn't span blocks, so we know it can only ever be checked once.
+				return mobj;
+			}
+			else
+			{
+				// Block boundaries for compatibility mode
+				if (centeronly)
+				{
+					fixed_t blockleft = (it->curx * MAPBLOCKUNITS) + bmaporgx;
+					fixed_t blockright = blockleft + MAPBLOCKUNITS;
+					fixed_t blockbottom = (it->cury * MAPBLOCKUNITS) + bmaporgy;
+					fixed_t blocktop = blockbottom + MAPBLOCKUNITS;
+
+					// only return actors with the center in this block
+					if (mobj->x >= blockleft && mobj->x < blockright &&
+						mobj->y >= blockbottom && mobj->y < blocktop)
+					{
+						return mobj;
+					}
+				}
+				else
+				{
+					bthingit_hash_entry_t *entry;
+					int i;
+					size_t hash = ((size_t)mobj >> 3) % NUM_BTHINGIT_BUCKETS;
+
+					for (i = it->buckets[hash]; i >= 0; )
+					{
+						entry = GetHashEntryForIterator(it, i);
+						if (entry->mobj == mobj)
+						{
+							// I've already been checked. Skip to the next mobj.
+							break;
+						}
+						i = entry->next;
+					}
+
+					if (i < 0)
+					{
+						// Add mobj to the hash table and return it.
+						if (it->numfixedhash < NUM_BTHINGIT_FIXEDHASH)
+						{
+							entry = &it->fixedhash[it->numfixedhash];
+							entry->next = it->buckets[hash];
+							it->buckets[hash] = it->numfixedhash++;
+						}
+						else
+						{
+							if (!it->dynhash)
+							{
+								it->dynhashcapacity = 50;
+								Z_Calloc(it->dynhashcapacity * sizeof(*it->dynhash), PU_LEVEL, &it->dynhash);
+							}
+							if (it->dynhashcount == it->dynhashcapacity)
+							{
+								it->dynhashcapacity *= 2;
+								it->dynhash = Z_Realloc(it->dynhash, it->dynhashcapacity * sizeof(*it->dynhash), PU_LEVEL, &it->dynhash);
+							}
+							i = (int)it->dynhashcount;
+							it->dynhashcount++;
+							entry = &it->dynhash[i];
+							entry->next = it->buckets[hash];
+							it->buckets[hash] = i + NUM_BTHINGIT_FIXEDHASH;
+						}
+
+						entry->mobj = mobj;
+						return mobj;
+					}
+				}
+			}
+		}
+
+		if (++it->curx > it->x2)
+		{
+			it->curx = it->x1;
+			if (++it->cury > it->y2)
+				return NULL;
+		}
+
+		it->block = GetBlockmapBlock(it->curx, it->cury);
+	}
+
+	return NULL;
+}
+
+void P_FreeBlockThingsIterator(bthingit_t *it)
+{
+	if (it)
+	{
+		it->freechain = freeiters;
+		freeiters = it;
+	}
+}
+
+void P_ClearBlockNodes(void)
+{
+	freeblocks = NULL;
+	freeiters = NULL;
 }
 
 //

@@ -92,6 +92,39 @@ typedef enum
 dboolean P_BlockLinesIterator(int32_t x, int32_t y, BlockItReturn_t(*func)(line_t *));
 dboolean P_BlockThingsIterator(int32_t x, int32_t y, BlockItReturn_t(*func)(mobj_t *));
 
+void P_ClearBlockNodes(void);
+
+struct bthingit_hash_entry_t
+{
+	mobj_t *mobj;
+	int next;
+};
+
+#define NUM_BTHINGIT_BUCKETS 32
+#define NUM_BTHINGIT_FIXEDHASH 10
+
+struct bthingit_t
+{
+	int x1, y1, x2, y2;
+	int curx, cury;
+	blocknode_t *block;
+
+	int buckets[NUM_BTHINGIT_BUCKETS];
+	bthingit_hash_entry_t fixedhash[NUM_BTHINGIT_FIXEDHASH];
+	int numfixedhash;
+
+	bthingit_hash_entry_t *dynhash;
+	size_t dynhashcount;
+	size_t dynhashcapacity;
+
+	struct bthingit_t *freechain;
+};
+
+bthingit_t *P_NewBlockThingsIterator(int x1, int y1, int x2, int y2);
+mobj_t *P_BlockThingsIteratorNext(bthingit_t *it, dboolean centeronly);
+void P_FreeBlockThingsIterator(bthingit_t *it);
+dboolean P_DoBlockThingsIterate(int x1, int y1, int x2, int y2, BlockItReturn_t(*func)(mobj_t *));
+
 #define PT_ADDLINES		(1)
 #define PT_ADDTHINGS	(2)
 

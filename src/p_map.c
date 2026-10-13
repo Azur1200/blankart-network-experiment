@@ -3179,7 +3179,7 @@ dboolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, dboolean allowdropoff, T
 	// standing on top and move it, too.
 	if (thing->flags & MF_PUSHABLE)
 	{
-		int32_t bx, by, xl, xh, yl, yh;
+		int32_t xl, xh, yl, yh;
 
 		yh = (unsigned)(thing->y + MAXRADIUS - bmaporgy)>>MAPBLOCKSHIFT;
 		yl = (unsigned)(thing->y - MAXRADIUS - bmaporgy)>>MAPBLOCKSHIFT;
@@ -3192,9 +3192,7 @@ dboolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, dboolean allowdropoff, T
 		standx = x;
 		standy = y;
 
-		for (by = yl; by <= yh; by++)
-			for (bx = xl; bx <= xh; bx++)
-				P_BlockThingsIterator(bx, by, PIT_PushableMoved);
+		P_DoBlockThingsIterate(xl, yl, xh, yh, PIT_PushableMoved);
 	}
 
 	// Link the thing into its new position
@@ -4376,7 +4374,6 @@ static BlockItReturn_t PIT_RadiusAttack(mobj_t *thing)
 //
 void P_RadiusAttack(mobj_t *spot, mobj_t *source, fixed_t damagedist, uint8_t damagetype, dboolean sightcheck)
 {
-	int32_t x, y;
 	int32_t xl, xh, yl, yh;
 	fixed_t dist;
 
@@ -4394,9 +4391,7 @@ void P_RadiusAttack(mobj_t *spot, mobj_t *source, fixed_t damagedist, uint8_t da
 	bombdamagetype = damagetype;
 	bombsightcheck = sightcheck;
 
-	for (y = yl; y <= yh; y++)
-		for (x = xl; x <= xh; x++)
-			P_BlockThingsIterator(x, y, PIT_RadiusAttack);
+	P_DoBlockThingsIterate(xl, yl, xh, yh, PIT_RadiusAttack);
 }
 
 //
@@ -4568,16 +4563,18 @@ dboolean P_CheckSector(sector_t *sector, dboolean crunch)
 					for (x = po->blockbox[BOXLEFT]; x <= po->blockbox[BOXRIGHT]; ++x)
 					{
 						mobj_t *mo;
+						blocknode_t *block;
+						blocknode_t *next = NULL;
 
 						if (x < 0 || y < 0 || x >= bmapwidth || y >= bmapheight)
 							continue;
 
-						mo = blocklinks[y * bmapwidth + x];
-
-						for (; mo; mo = mo->bnext)
+						for (block = blocklinks[y * bmapwidth + x]; block != NULL; block = next)
 						{
-							// Monster Iestyn: do we need to check if a mobj has already been checked? ...probably not I suspect
+							mo = block->mobj.mobj;
+							next = block->mnext;
 
+							// Monster Iestyn: do we need to check if a mobj has already been checked? ...probably not I suspect
 							if (!P_MobjInsidePolyobj(po, mo))
 								continue;
 
@@ -4678,16 +4675,18 @@ dboolean P_CheckSector(sector_t *sector, dboolean crunch)
 					for (x = po->blockbox[BOXLEFT]; x <= po->blockbox[BOXRIGHT]; ++x)
 					{
 						mobj_t *mo;
+						blocknode_t *block;
+						blocknode_t *next = NULL;
 
 						if (x < 0 || y < 0 || x >= bmapwidth || y >= bmapheight)
 							continue;
 
-						mo = blocklinks[y * bmapwidth + x];
-
-						for (; mo; mo = mo->bnext)
+						for (block = blocklinks[y * bmapwidth + x]; block != NULL; block = next)
 						{
-							// Monster Iestyn: do we need to check if a mobj has already been checked? ...probably not I suspect
+							mo = block->mobj.mobj;
+							next = block->mnext;
 
+							// Monster Iestyn: do we need to check if a mobj has already been checked? ...probably not I suspect
 							if (!P_MobjInsidePolyobj(po, mo))
 								continue;
 

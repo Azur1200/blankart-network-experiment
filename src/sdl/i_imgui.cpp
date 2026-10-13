@@ -342,11 +342,7 @@ static void MobjDisplay(mobj_t *mobj, int32_t recursive_mobj, int32_t recursive_
 	ImGui::Text("Type: %s (%d)", DEH_MobjtypeName(mobj->type), mobj->type);
 	//mobjinfo
 
-	generic_mobj(mobj->bnext, "bnext", recursive_mobj, recursive_player);
-	if (mobj->bprev)
-	{
-		generic_mobj(*mobj->bprev, "bprev", recursive_mobj, recursive_player);
-	}
+	//blocknode
 
 	ImGui::Text("angle pitch roll: %u %u %u", mobj->angle, mobj->pitch, mobj->roll);
 	ImGui::Text("slopepitch sloperoll: %u %u", mobj->slopepitch, mobj->sloperoll);

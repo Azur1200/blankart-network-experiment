@@ -288,6 +288,23 @@ typedef enum {
 	PCF_FLIP		= 1<<4,		// Spawning from floor, moving upwards.
 } precipflag_t;
 
+// [RH] Like msecnode_t, but for the blockmap
+struct blocknode_t
+{
+	union
+	{
+		mobj_t *mobj;
+		precipmobj_t *precipmobj;
+	} mobj;
+
+	int blockindex;     // index into blocklinks for the block this node is in
+
+	blocknode_t **mprev; // previous actor in this block
+	blocknode_t *mnext;  // next actor in this block
+	blocknode_t **bprev; // previous block this actor is in
+	blocknode_t *bnext;  // next block this actor is in
+};
+
 // Map Object definition.
 struct mobj_t
 {
@@ -304,8 +321,9 @@ struct mobj_t
 
 	// Interaction info, by BLOCKMAP.
 	// Links in blocks (if needed).
-	mobj_t *bnext;
-	mobj_t **bprev; // killough 8/11/98: change to ptr-to-ptr
+	blocknode_t *blocknode;
+	// This is needed to place it in the correct blocklinks as scale or type changes can be run by actions.
+	dboolean precip;
 
 	// More drawing info: to determine current sprite.
 	angle_t angle, pitch, roll; // orientation
@@ -495,14 +513,15 @@ struct precipmobj_t
 
 	fixed_t old_x, old_y, old_z; // position interpolation
 	fixed_t old_x2, old_y2, old_z2;
-	
+
 	mobjtype_t type;
 	const mobjinfo_t *info; // &mobjinfo[mobj->type]
 
 	// Links in blocks (if needed).
 	// The blockmap is only used by precip to render.
-	precipmobj_t *bnext;
-	precipmobj_t **bprev; // killough 8/11/98: change to ptr-to-ptr
+	blocknode_t *blocknode;
+	// This is needed to place it in the correct blocklinks as scale or type changes can be run by actions.
+	dboolean precip;
 
 	// More drawing info: to determine current sprite.
 	angle_t angle, pitch, roll; // orientation
@@ -562,7 +581,7 @@ struct precipmobj_t
 	int32_t tics; // state tic counter
 	state_t *state;
 	uint32_t flags; // flags from mobjinfo tables
-	
+
 	tic_t lastThink;
 };
 

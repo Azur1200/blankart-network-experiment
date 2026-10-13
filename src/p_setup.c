@@ -209,8 +209,9 @@ int32_t *blockmaplump = NULL; // Big blockmap
 // origin of block map
 fixed_t bmaporgx = 0, bmaporgy = 0;
 // for thing chains
-mobj_t **blocklinks = NULL;
-precipmobj_t **precipblocklinks = NULL;
+blocknode_t **blocklinks = NULL;
+blocknode_t **precipblocklinks = NULL;
+
 
 // REJECT
 // For fast sight rejection.
@@ -9065,6 +9066,8 @@ void P_FreeLevelState(void)
 		// of it, less than two in general! ~toast 310525
 		numsectors = 0;
 	}
+
+	P_ClearBlockNodes();
 
 	// Clear pointers that would be left dangling by the purge
 	// Pointers are now PU_STATIC so they won't be freed :)
