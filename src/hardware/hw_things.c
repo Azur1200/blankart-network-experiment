@@ -1547,7 +1547,7 @@ void HWR_AddPrecipitationSprites(void)
 		{
 			for (block = precipblocklinks[(by * bmapwidth) + bx]; block; block = next)
 			{
-				next = block->mnext;
+				next = block->bnext;
 				th = block->mobj.precipmobj;
 
 				if (R_PrecipThingVisible(th))

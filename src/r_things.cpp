@@ -3463,7 +3463,7 @@ void R_AddPrecipitationSprites(void)
 			for (block = precipblocklinks[(by * bmapwidth) + bx]; block; block = next)
 			{
 				// Store this beforehand because R_ProjectPrecipitionSprite may free th (see P_PrecipThinker)
-				next = block->mnext;
+				next = block->bnext;
 				th = block->mobj.precipmobj;
 
 				if (R_PrecipThingVisible(th))
