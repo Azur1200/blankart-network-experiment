@@ -331,6 +331,8 @@ static void PlayerDisplay(player_t *player, int32_t recursive_mobj, int32_t recu
 	ImGui::Text("Dye: %d", player->dye);
 
 	generic_mobj(player->mo, "Mobj", recursive_mobj, recursive_player);
+
+	ImGui::Text("\n");
 }
 
 static void MobjDisplay(mobj_t *mobj, int32_t recursive_mobj, int32_t recursive_player)
@@ -342,7 +344,52 @@ static void MobjDisplay(mobj_t *mobj, int32_t recursive_mobj, int32_t recursive_
 	ImGui::Text("Type: %s (%d)", DEH_MobjtypeName(mobj->type), mobj->type);
 	//mobjinfo
 
-	//blocknode
+	if (mobj->blocknode)
+	{
+		char nameid[512];
+		snprintf(nameid, sizeof(nameid), "BlockNode###BlockNode%d_%d", recursive_mobj, recursive_player);
+		if (ImGui::CollapsingHeader(nameid))
+		{
+			if (mobj->blocknode->mobj.mobj)
+			{
+				generic_mobj(mobj->blocknode->mobj.mobj, "mobj.mobj", recursive_mobj, recursive_player);
+			}
+
+			if (mobj->blocknode->bprev && *mobj->blocknode->bprev)
+			{
+				blocknode_t *prev = *mobj->blocknode->bprev;
+				if (prev->mobj.mobj)
+				{
+					generic_mobj(prev->mobj.mobj, "bprev", recursive_mobj, recursive_player);
+				}
+			}
+
+			if (mobj->blocknode->bnext)
+			{
+				if (mobj->blocknode->bnext->mobj.mobj)
+				{
+					generic_mobj(mobj->blocknode->bnext->mobj.mobj, "bnext", recursive_mobj, recursive_player);
+				}
+			}
+
+			if (mobj->blocknode->mprev && *mobj->blocknode->mprev)
+			{
+				blocknode_t *prev = *mobj->blocknode->mprev;
+				if (prev->mobj.mobj)
+				{
+					generic_mobj(prev->mobj.mobj, "mprev", recursive_mobj, recursive_player);
+				}
+			}
+
+			if (mobj->blocknode->mnext)
+			{
+				if (mobj->blocknode->mnext->mobj.mobj)
+				{
+					generic_mobj(mobj->blocknode->mnext->mobj.mobj, "mnext", recursive_mobj, recursive_player);
+				}
+			}
+		}
+	}
 
 	ImGui::Text("angle pitch roll: %u %u %u", mobj->angle, mobj->pitch, mobj->roll);
 	ImGui::Text("slopepitch sloperoll: %u %u", mobj->slopepitch, mobj->sloperoll);
@@ -499,6 +546,8 @@ static void MobjDisplay(mobj_t *mobj, int32_t recursive_mobj, int32_t recursive_
 	ImGui::Text("script_stringargs: %s %s", mobj->script_stringargs[0] ? mobj->script_stringargs[0] : "NULL", mobj->script_stringargs[1] ? mobj->script_stringargs[1] : "NULL" );
 
 	ImGui::Text("po_movecount: %d", mobj->po_movecount);
+
+	ImGui::Text("\n");
 }
 
 static void MusicDisplay(const musicdef_t *def, char *filename)
