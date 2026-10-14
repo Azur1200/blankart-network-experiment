@@ -664,9 +664,13 @@ void GeneratePolygonNormals(model_t *model, int ztag)
 			mdlframe_t *frame = &mesh->frames[j];
 			const float *vertices = frame->vertices;
 			vector_t *polyNormals;
-			polyNormals = frame->polyNormals;
 
 			frame->polyNormals = (vector_t*)Z_Malloc(sizeof(vector_t) * mesh->numTriangles, ztag, 0);
+
+			if (frame->polyNormals == NULL)
+				I_Error("GeneratePolygonNormals: Failed to allocae polyNormals");
+
+			polyNormals = frame->polyNormals;
 
 			for (k = 0; k < mesh->numTriangles; k++)
 			{
