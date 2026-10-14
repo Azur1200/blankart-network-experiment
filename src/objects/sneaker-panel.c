@@ -42,7 +42,7 @@ void Obj_SneakerPanelSpriteScale(mobj_t *mobj)
 	}
 
 	P_SetMobjState(mobj, newState);
-	mobj->spritexscale = mobj->spriteyscale = spriteScale;
+	mobj->realxscale = mobj->realyscale = mobj->spritexscale = mobj->spriteyscale = spriteScale;
 }
 
 void Obj_SneakerPanelSpawn(mobj_t *mobj)
