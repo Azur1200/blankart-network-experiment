@@ -1039,7 +1039,7 @@ uint8_t K_FindUseodds(const player_t *player, fixed_t mashed, uint32_t pdis, uin
 	fixed_t oddsfac = max(FRACUNIT, (MAXODDS * FRACUNIT) / 8);
 	uint8_t i, j;
 	uint8_t useodds = 0;
-	uint8_t disttable[(MAXODDS - 1) * 2];
+	uint8_t disttable[(MAXODDS - 1) * 2]; // using sizeof() on this to get max size is fine since its uint8_t
 	uint8_t distlen = 0;
 	dboolean oddsvalid[MAXODDS];
 
@@ -1117,7 +1117,7 @@ uint8_t K_FindUseodds(const player_t *player, fixed_t mashed, uint32_t pdis, uin
 		for (i = num; i; --i) \
         { \
 			disttable[distlen++] = odds; \
-			distlen = min(sizeof(disttable) - 1, distlen); \
+			I_Assert(distlen < sizeof(disttable)); \
         }
 
 	if (gametypes[gametype]->rules & GTR_BATTLEODDS) // Battle Mode
@@ -1182,12 +1182,16 @@ uint8_t K_FindUseodds(const player_t *player, fixed_t mashed, uint32_t pdis, uin
 		if (pdis == 0)
 			useodds = disttable[0];
 		else if (pdis > (uint32_t)ACTIVEDISTVAR * ((12 * distlen) / sizeof(disttable)))
-			useodds = disttable[distlen ? distlen - 1 : distlen];
+		{
+			useodds = disttable[distlen - 1];
+			I_Assert(distlen);
+		}
 		else
 		{
 			for (i = 1; i < (sizeof(disttable) - 1); i++)
 			{
 				int32_t distcalc = min(distlen-1u, (i * distlen) / sizeof(disttable));
+				I_Assert(((i * distlen) / sizeof(disttable)) < distlen-1);
 
 				if (pdis <= (uint32_t)usedistvar * distcalc)
 				{
@@ -1200,7 +1204,8 @@ uint8_t K_FindUseodds(const player_t *player, fixed_t mashed, uint32_t pdis, uin
 
 #undef SETUPDISTTABLE
 
-	return min(MAXODDS - 1, useodds);
+	I_Assert(useodds < MAXODDS);
+	return useodds;
 }
 
 uint16_t roulette_size;
