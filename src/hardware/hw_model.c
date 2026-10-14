@@ -648,6 +648,7 @@ void Optimize(model_t *model)
 
 void GeneratePolygonNormals(model_t *model, int ztag)
 {
+#if 0
 	int i;
 	for (i = 0; i < model->numMeshes; i++)
 	{
@@ -663,10 +664,9 @@ void GeneratePolygonNormals(model_t *model, int ztag)
 			mdlframe_t *frame = &mesh->frames[j];
 			const float *vertices = frame->vertices;
 			vector_t *polyNormals;
+			polyNormals = frame->polyNormals;
 
 			frame->polyNormals = (vector_t*)Z_Malloc(sizeof(vector_t) * mesh->numTriangles, ztag, 0);
-
-			polyNormals = frame->polyNormals;
 
 			for (k = 0; k < mesh->numTriangles; k++)
 			{
@@ -676,6 +676,10 @@ void GeneratePolygonNormals(model_t *model, int ztag)
 			}
 		}
 	}
+#else
+	(void)model;
+	(void)ztag;
+#endif
 }
 
 //

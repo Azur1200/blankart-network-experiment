@@ -177,13 +177,13 @@ static void generic_mobj(mobj_t *mobj, const char* name, int32_t recursive_mobj,
 		if (recursive_mobj >= recursive_max)
 		{
 			ImGui::Text("Max mobj recursion reached");
-			ImGui::Text("");
+			ImGui::Text("\n");
 		}
 		else
 		{
 			recursive_mobj++;
 			MobjDisplay(mobj, recursive_mobj, recursive_player);
-			ImGui::Text("");
+			ImGui::Text("\n");
 		}
 	}
 }
@@ -230,7 +230,7 @@ static void PlayerDisplay(player_t *player, int32_t recursive_mobj, int32_t recu
 			ImGui::Text("Turn Amount: %d", botdata->turnamt);
 			ImGui::Text("Prediction Error: %d", botdata->predictionerror);
 			ImGui::Text("Grip Lockout: %d", botdata->griplockout);
-			ImGui::Text("");
+			ImGui::Text("\n");
 		}
 	}
 	ImGui::Text("Speed Weight: %d %d", player->kartspeed, player->kartweight);
@@ -434,7 +434,7 @@ static void MobjDisplay(mobj_t *mobj, int32_t recursive_mobj, int32_t recursive_
 			if (recursive_player >= recursive_max)
 			{
 				ImGui::Text("Max player recursion reached");
-				ImGui::Text("");
+				ImGui::Text("\n");
 			}
 			else
 			{

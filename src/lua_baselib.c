@@ -2465,7 +2465,7 @@ static int lib_pProcessPogoSpring(lua_State *L)
 {
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
 	dboolean isTouching = luaL_checkdboolean(L, 2);
-	specialspringpaneltype_t paneltype = (specialspringpaneltype_t)luaL_checkinteger(L, 3);
+	specialspringpaneltype_t paneltype = luaL_checkinteger(L, 3);
 
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
@@ -5148,11 +5148,12 @@ static int lib_kGetScoreForRankTier(lua_State *L)
 
 	//HUDSAFE
 
-	if (rank_tier < RTIER_E || rank_tier >= NUMRANKTIERS)
+	if (/*rank_tier < RTIER_E || */rank_tier >= NUMRANKTIERS)
 		return luaL_error(L, "ranktier index %d out of range (%d - %d)", rank_tier, RTIER_E, NUMRANKTIERS-1);
 
 	// Likely impossible after that safety check, but better safe than sorry...
-	rank_tier = (ranktier_e)(CLAMP(rank_tier, RTIER_E, NUMRANKTIERS - 1));
+	//rank_tier = (ranktier_e)(CLAMP(rank_tier, RTIER_E, NUMRANKTIERS - 1));
+	rank_tier = (ranktier_e)(min(rank_tier, NUMRANKTIERS - 1));
 
 	lua_pushinteger(L, K_GetScoreForRankTier(rank_tier));
 	return 1;

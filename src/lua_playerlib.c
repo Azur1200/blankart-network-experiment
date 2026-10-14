@@ -2228,11 +2228,12 @@ static int player_set(lua_State *L)
 	case player_ranktier:
 	{
 		const ranktier_e luatier = lua_tointeger(L, 3);
-		if (luatier < RTIER_E || luatier >= NUMRANKTIERS)
+		if (/*luatier < RTIER_E || */luatier >= NUMRANKTIERS)
 			return luaL_error(L, "ranktier index %d out of range (%d - %d)", luatier, RTIER_E, NUMRANKTIERS-1);
 
 		// Likely impossible after that safety check, but better safe than sorry...
-		plr->ranktier = (ranktier_e)(CLAMP(luatier, RTIER_E, NUMRANKTIERS - 1));
+		//plr->ranktier = (ranktier_e)(CLAMP(luatier, RTIER_E, NUMRANKTIERS - 1));
+		plr->ranktier = (ranktier_e)(min(luatier, NUMRANKTIERS - 1));
 		break;
 	}
 	case player_ranklog:

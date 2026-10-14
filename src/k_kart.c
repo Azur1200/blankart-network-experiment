@@ -12553,6 +12553,8 @@ void K_UpdateClusterPoints(void)
 */
 void K_UpdatePlayerPotential(player_t* player, int32_t posfactor, int32_t addend, uint32_t maximum_progress)
 {
+	(void)addend;
+
 	if (!player)
 		return;
 

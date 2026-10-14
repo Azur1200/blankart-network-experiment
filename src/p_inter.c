@@ -1227,7 +1227,7 @@ dboolean P_CheckRacers(void)
 	uint8_t numPlaying = 0;
 	uint8_t numExiting = 0;
 	uint8_t numHumans = 0;
-	uint8_t numBots = 0;
+	//uint8_t numBots = 0;
 
 	uint8_t i;
 
@@ -1244,7 +1244,7 @@ dboolean P_CheckRacers(void)
 
 		if (players[i].bot)
 		{
-			numBots++;
+			//numBots++;
 		}
 		else
 		{

@@ -97,7 +97,7 @@ skincolornum_t Obj_HandleNeoSpringColor(fixed_t speedval)
 #define BOTTOM 5
 #define TOP 6
 
-void Obj_InitNeoSpringParts(mobj_t *spring)
+static void Obj_InitNeoSpringParts(mobj_t *spring)
 {
 	mobj_t *cur = spring, *prev = NULL;
 
@@ -158,7 +158,7 @@ void Obj_InitNeoSpringParts(mobj_t *spring)
 	fixed_t slope_d = -(FixedMul(slope_a, x) + FixedMul(slope_b, y) + FixedMul(slope_c, z));                       \
 	ReconfigureViaConstants(floorspriteslope, slope_a, slope_b, slope_c, slope_d)
 
-void Obj_HandleHorizNeoSpringParts(mobj_t *spring)
+static void Obj_HandleHorizNeoSpringParts(mobj_t *spring)
 {
 	mobj_t *cur = spring;
 
@@ -267,7 +267,7 @@ void Obj_HandleHorizNeoSpringParts(mobj_t *spring)
 	}
 }
 
-void Obj_InitDiagNeoSpringSlopes(mobj_t *spring)
+static void Obj_InitDiagNeoSpringSlopes(mobj_t *spring)
 {
 	mobj_t *cur = spring;
 
@@ -293,7 +293,7 @@ void Obj_InitDiagNeoSpringSlopes(mobj_t *spring)
 }
 
 // I'd much rather calculate offsets from rotation properly but this works for now
-void Obj_HandleVertNeoSpringParts(mobj_t *spring, dboolean diag)
+static void Obj_HandleVertNeoSpringParts(mobj_t *spring, dboolean diag)
 {
 	mobj_t *cur = spring;
 

@@ -8390,7 +8390,7 @@ lumpnum_t lastloadedmaplumpnum = LUMPERROR; // for comparative savegame
 static void P_InitLevelSettings(dboolean reloadinggamestate)
 {
 	int32_t i;
-	uint8_t p = 0;
+	//uint8_t p = 0;
 
 	leveltime = 0;
 	modulothing = 0;
@@ -8538,8 +8538,8 @@ static void P_InitLevelSettings(dboolean reloadinggamestate)
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
-		if (playeringame[i] && !players[i].spectator)
-			p++;
+		//if (playeringame[i] && !players[i].spectator)
+			//p++;
 
 		if (grandprixinfo.gp == false && bossinfo.boss == false)
 			players[i].lives = 3;
@@ -9393,7 +9393,7 @@ dboolean P_LoadLevel(dboolean fromnetsave, dboolean reloadinggamestate)
 	// The waypoint data that's in PU_LEVEL needs to be reset back to 0/NULL now since PU_LEVEL was cleared
 	K_ClearWaypoints();
 
-	dboolean needsautopar = false;
+	//dboolean needsautopar = false;
 	autopartime = 0;
 
 	// Load the ccheckpoints and waypoints please!
@@ -9408,7 +9408,7 @@ dboolean P_LoadLevel(dboolean fromnetsave, dboolean reloadinggamestate)
 		}
 		else
 		{
-			needsautopar = true;
+			;//needsautopar = true;
 		}
 	}
 

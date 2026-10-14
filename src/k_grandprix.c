@@ -689,15 +689,12 @@ void K_FakeBotResults(player_t *bot)
 	const uint32_t distfactor = FixedMul(32 * mapobjectscale, K_GetKartGameSpeedScalar(gamespeed)) / FRACUNIT;
 	uint32_t worstdist = 0;
 	tic_t besttime = UINT32_MAX;
-	uint8_t numplayers = 0;
 	uint8_t i;
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (playeringame[i] && !players[i].spectator)
 		{
-			numplayers++;
-
 			if (players[i].exiting && players[i].realtime < besttime)
 			{
 				besttime = players[i].realtime;

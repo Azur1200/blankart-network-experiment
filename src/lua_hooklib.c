@@ -1384,7 +1384,7 @@ dboolean LUA_HookItemOddsScale(uint8_t numPlayers, int8_t *spbrush, fixed_t *pla
 	if (prepare_hook(&hook, 0, HOOK(ItemOddsScale)))
 	{
 		lua_pushinteger(gL, numPlayers);
-		lua_pushdboolean(gL, (spbrush > 0));
+		lua_pushdboolean(gL, (*spbrush > 0));
 
 		hook.userdata = &state;
 

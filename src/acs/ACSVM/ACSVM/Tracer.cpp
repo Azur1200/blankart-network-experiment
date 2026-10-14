@@ -300,7 +300,7 @@ namespace ACSVM
 
                opTran = env->getCodeData(opFunc->getTransCode(argc));
             }
-
+            /*FALLTHRU*/
          default:
             if(opTran->code == Code::CallFunc_Lit)
                codeC += opData->argc + 1 + 2;

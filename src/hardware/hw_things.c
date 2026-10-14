@@ -816,14 +816,14 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 		float xscale, yscale;
 		float xoffset, yoffset;
 		float leftoffset, topoffset;
-		float scale = spr->scale;
+		//float scale = spr->scale;
 		float zoffset = (P_MobjFlip(spr->mobj) * 0.05f);
 		pslope_t *splatslope = NULL;
 		int32_t i;
 
 		renderflags_t renderflags = spr->renderflags;
-		if (renderflags & RF_SHADOWEFFECTS)
-			scale *= spr->shadowscale;
+		//if (renderflags & RF_SHADOWEFFECTS)
+			//scale *= spr->shadowscale;
 
 		if (spr->rotateflags & SRF_3D || renderflags & RF_NOSPLATBILLBOARD)
 			angle = spr->angle;
@@ -2021,9 +2021,10 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		{
 			x1 = x2 = z1 = z2 = 0.0f;
 
-			float f_offs, f_width, f_height;
+			//float f_offs,
+			float f_width, f_height;
 
-			f_offs = FIXED_TO_FLOAT(spr_offset);
+			//f_offs = FIXED_TO_FLOAT(spr_offset);
 			f_width = FIXED_TO_FLOAT(spr_width);
 			f_height = FIXED_TO_FLOAT(spr_height);
 
@@ -2088,16 +2089,16 @@ static void HWR_ProjectSprite(mobj_t *thing)
 				float f_bottom = 0;
 				float f_right = 0;
 				float f_top = 0;
-				float f_xlen = 0;
-				float f_ylen = 0;
+				//float f_xlen = 0;
+				//float f_ylen = 0;
 #define BOUNDCHECK(i)                                     \
 	{                                                 \
 		f_left = min(affine_point[i].x, f_left); \
 		f_bottom =  max(affine_point[i].y, f_bottom); \
 		f_top =  min(affine_point[i].y, f_top); \
 		f_right =  max(affine_point[i].x, f_right); \
-		f_xlen = (f_right - f_left); \
-		f_ylen = (f_bottom - f_top); \
+		/*f_xlen = (f_right - f_left);*/ \
+		/*f_ylen = (f_bottom - f_top);*/ \
 	}
 
 				BOUNDCHECK(0);

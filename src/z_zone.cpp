@@ -375,7 +375,7 @@ void *Z_Realloc2(void *ptr, size_t size, int32_t tag, void *user, int32_t alignb
 void Z_FreeTags(int32_t lowtag, int32_t hightag)
 {
 	memblock_t *block, *next;
-	size_t i;
+	int32_t i;
 	TracyCZone(__zone, true);
 
 	Z_CheckHeap(420);
@@ -415,7 +415,7 @@ void Z_IterateTags(int32_t lowtag, int32_t hightag, dboolean (*iterfunc)(void *)
 {
 	memblock_t *block, *next;
 	TracyCZone(__zone, true);
-	size_t i;
+	int32_t i;
 
 	if (!iterfunc)
 		I_Error("Z_IterateTags: no iterator function was given");
@@ -474,7 +474,7 @@ void Z_CheckHeap(int32_t i)
 {
 	memblock_t *block;
 	uint32_t blocknumon = 0;
-	size_t j;
+	int32_t j;
 	void *given;
 	TracyCZone(__zone, true);
 
@@ -535,7 +535,7 @@ void Z_CheckHeap(int32_t i)
 			{
 				I_Error("Z_CheckHeap %d: block %u"
 					"(owned by %s:%d)"
-					" block is contained in the wrong headlist (got: %d expected: %zu)", i, blocknumon,
+					" block is contained in the wrong headlist (got: %d expected: %d)", i, blocknumon,
 					block->ownerfile, block->ownerline , block->tag, j
 				);
 			}
@@ -635,7 +635,7 @@ size_t Z_TagsUsage(int32_t lowtag, int32_t hightag)
 {
 	size_t cnt = 0;
 	memblock_t *head; // why was this called rover before?????
-	size_t i;
+	int32_t i;
 
 	for (i = lowtag; i <= hightag; i++)
 	{
