@@ -179,13 +179,29 @@ void K_ResetAfterImageValues(void);
 
 typedef enum
 {
-	PLAYERTAG_NONE,
+	PLAYERTAG_NONE = 0,
 	PLAYERTAG_LOCAL,
 	PLAYERTAG_CPU,
 	PLAYERTAG_RIVAL,
 	PLAYERTAG_NAME,
-}
-playertagtype_t;
+} playertagtype_t;
+
+typedef enum
+{
+	SEENAMES_OFF = 0,
+	SEENAMES_DEFAULT,
+	SEENAMES_SMALL,
+	SEENAMES_TEXT,
+} seename_e;
+
+typedef enum
+{
+	MINIMAPSTYLE_DEFAULT = 0,
+	MINIMAPSTYLE_ARROW,
+	MINIMAPSTYLE_DOTS,
+	MINIMAPSTYLE_PLAYERDOTS,
+	MINIMAPSTYLE_ARROWDOTS,
+} minimapstyle_e;
 
 playertagtype_t K_WhichPlayerTag(player_t *p);
 void K_DrawPlayerTag(fixed_t x, fixed_t y, player_t *p, playertagtype_t type, dboolean foreground);

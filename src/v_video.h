@@ -234,6 +234,8 @@ affine_bounding_t* V_GetAffineBounds(const affine_t* transform,
 					 dboolean unrestrict_bound);
 void V_DrawAffinePatch(fixed_t x, fixed_t y, const affine_t *transform, int32_t scrn, patch_t *patch, const uint8_t *colormap);
 void V_DrawRotatedPatch(fixed_t x, fixed_t y, angle_t angle, fixed_t pscale, fixed_t vscale, int32_t scrn, patch_t *patch, const uint8_t *colormap);
+#define V_DrawRotatedFixedPatch(x, y, angle, scale, flags, patch, colormap) V_DrawRotatedPatch(x, y, angle, scale, scale, flags, patch, colormap)
+#define V_DrawRotatedScaledPatch(x, y, angle, flags, patch) V_DrawRotatedPatch((x)<<FRACBITS, (y)<<FRACBITS, angle, FRACUNIT, FRACUNIT, flags, patch, NULL)
 
 void V_DrawContinueIcon(int32_t x, int32_t y, int32_t flags, int32_t skinnum, uint16_t skincolor);
 
