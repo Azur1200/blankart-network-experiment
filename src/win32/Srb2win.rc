@@ -91,13 +91,13 @@ BEGIN
     BEGIN
         BLOCK "04090000"
         BEGIN
-            VALUE "Comments", "A kart racing mod based on the 3D Sonic the Hedgehog fangame Sonic Robo Blast 2.\0"
-            VALUE "CompanyName", "BlanKart Dev\0"
+            VALUE "Comments", "A mod based on the 3D Kart Racing Sonic the Hedgehog fangame Sonic Robo Blast 2 Kart.\0"
+            VALUE "CompanyName", "Team BlanKart\0"
             VALUE "FileDescription", "BlanKart\0"
             VALUE "FileVersion", VERSIONSTRING_RC
             VALUE "InternalName", "blankart\0"
-            VALUE "LegalCopyright", "Copyright 2025 by BlanKart Dev, SRB2Kart Copyright 2018-2020 by Kart Krew\0"
-            VALUE "LegalTrademarks", "Sonic the Hedgehog and related characters are trademarks of Sega, SRB2Kart Copyright 2018-2020 by Kart Krew\0"
+            VALUE "LegalCopyright", "BlanKart Copyright 2026 by Team BlanKart, SRB2Kart+Ring Racers Copyright 2018-2026 by Kart Krew Dev,  SRB2 Copyright 1998-2026 by STJr\0"
+            VALUE "LegalTrademarks", "Sonic the Hedgehog and related characters are trademarks of Sega, BlanKart Copyright 2026 by Team BlanKart, SRB2Kart+Ring Racers Copyright 2018-2026 by Kart Krew Dev,  SRB2 Copyright 1998-2026 by STJr\0"
             VALUE "OriginalFilename", "blankart.exe\0"
             VALUE "PrivateBuild", "\0"
             VALUE "ProductName", "BlanKart\0"
