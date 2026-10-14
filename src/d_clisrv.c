@@ -2793,12 +2793,17 @@ static void Command_connect(void)
 			CL_Reset();
 		}
 
-		M_ReturnToConnectMenu();
+		D_ClearState();
 	}
 	else
 	{
 		M_ClearMenusEx(true, true);
 	}
+
+	if (!menustack[0])
+		strncpy(curbgname, "SRB2KTTL", 9);
+
+	ChangeServMusic(SERVMUS_1, true,false);
 
 	// modified game check: no longer handled
 	// we don't request a restart unless the filelist differs
