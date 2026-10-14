@@ -1181,7 +1181,7 @@ uint8_t K_FindUseodds(const player_t *player, fixed_t mashed, uint32_t pdis, uin
 
 		if (pdis == 0)
 			useodds = disttable[0];
-		else if (pdis > (uint32_t)ACTIVEDISTVAR * ((12 * distlen) / sizeof(disttable)))
+		else if (pdis > (uint32_t)usedistvar * (((sizeof(disttable) - 2) * distlen) / sizeof(disttable)))
 		{
 			useodds = disttable[distlen - 1];
 			I_Assert(distlen);
@@ -1190,8 +1190,8 @@ uint8_t K_FindUseodds(const player_t *player, fixed_t mashed, uint32_t pdis, uin
 		{
 			for (i = 1; i < (sizeof(disttable) - 1); i++)
 			{
-				int32_t distcalc = min(distlen-1u, (i * distlen) / sizeof(disttable));
-				I_Assert(((i * distlen) / sizeof(disttable)) < distlen-1);
+				int32_t distcalc = (i * distlen) / sizeof(disttable);
+				I_Assert(distcalc < distlen-1);
 
 				if (pdis <= (uint32_t)usedistvar * distcalc)
 				{
