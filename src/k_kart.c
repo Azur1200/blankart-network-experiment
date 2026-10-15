@@ -4319,6 +4319,12 @@ void K_Player_CrashThinker(player_t *player)
 		case CRASH_FINISH:
 			// Clear all datapoints
 			K_ResetCrashData(player);
+
+			// Kill offset delta
+			player->crash_zoffset_delta = 0;
+
+			// Same for lerp
+			player->crash_zoffset_lerp = 0;
 			break;
 		case CRASH_REORIENT:
 			if (P_IsObjectOnGround(player->mo))
