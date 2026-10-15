@@ -132,19 +132,21 @@ consvar_t cv_highresportrait = CVAR_INIT ("highresportrait", "Off", CV_SAVE, CV_
 
 consvar_t cv_racerankperfecttext = CVAR_INIT ("racerankperfecttext", "On", CV_SAVE, CV_OnOff, NULL);
 
-typedef enum
-{
-	NT_OFF = 0,
-	NT_DEFAULT,
-	NT_SMALL,
-	NT_TEXT,
-} nametag_e;
+static CV_PossibleValue_t minimapstyle_cons_t[]= {
+	{MINIMAPSTYLE_DEFAULT, "Default"},
+	{MINIMAPSTYLE_ARROW, "Arrow"},
+	{MINIMAPSTYLE_DOTS, "Dots"},
+	{MINIMAPSTYLE_PLAYERDOTS, "Player+Dots"},
+	{MINIMAPSTYLE_ARROWDOTS, "Arrow+Dots"},
+	{0, NULL}
+};
+consvar_t cv_minimapstyle = CVAR_INIT ("minimapstyle", "Default", CV_SAVE, minimapstyle_cons_t, NULL);
 
 static CV_PossibleValue_t nametag_cons_t[]= {
-	{NT_OFF, "Off"},
-	{NT_DEFAULT, "Default"},
-	{NT_SMALL, "Small"},
-	{NT_TEXT, "Text-Only"},
+	{SEENAMES_OFF, "Off"},
+	{SEENAMES_DEFAULT, "Default"},
+	{SEENAMES_SMALL, "Small"},
+	{SEENAMES_TEXT, "Text-Only"},
 	{0, NULL}
 };
 
@@ -219,6 +221,7 @@ static patch_t *kp_wantedsplit;
 static patch_t *kp_wantedreticle;
 patch_t *kp_minimapdot;
 patch_t *kp_minimaplight;
+patch_t *kp_minimaparrow;
 
 static patch_t *kp_itembg[8];
 static patch_t *kp_itemalt[4];
@@ -366,6 +369,7 @@ void K_RegisterKartHUDStuff(void)
 	CV_RegisterVar(&cv_showstats);
 	CV_RegisterVar(&cv_highresportrait);
 	CV_RegisterVar(&cv_racerankperfecttext);
+	CV_RegisterVar(&cv_minimapstyle);
 
 	// h_timers.cpp
 	CV_RegisterVar(&cv_itemtimers);
@@ -670,14 +674,36 @@ void K_LoadKartHUDGraphics(void)
 	HU_UpdatePatch(&kp_wantedsplit, "4PWANTED");
 
 	// Minimap Patches
-	HU_UpdatePatch(&kp_wantedreticle, "MMAPWANT");
+	HU_UpdatePatch(&kp_wantedreticle, "MMAPWANT");	
+	kp_wantedreticle->pivot.x =
+		(kp_wantedreticle->width / 2) + kp_wantedreticle->leftoffset;
+	kp_wantedreticle->pivot.y =
+		(kp_wantedreticle->height / 2) + kp_wantedreticle->topoffset;
+	kp_wantedreticle->alignflags |=
+		(PATCHALIGN_AUTOCENTER | PATCHALIGN_USEPIVOTS);
+
 	HU_UpdatePatch(&kp_minimapdot, "MMAPDOT");
+	kp_minimapdot->pivot.x =
+		(kp_minimapdot->width / 2) + kp_minimapdot->leftoffset;
+	kp_minimapdot->pivot.y =
+		(kp_minimapdot->height / 2) + kp_minimapdot->topoffset;
+	kp_minimapdot->alignflags |=
+		(PATCHALIGN_AUTOCENTER | PATCHALIGN_USEPIVOTS);
+
 	HU_UpdatePatch(&kp_minimaplight, "MMAPHDLT");
 	kp_minimaplight->pivot.x = 
 		(kp_minimaplight->width / 2) + kp_minimaplight->leftoffset;
 	kp_minimaplight->pivot.y = 
 		(kp_minimaplight->height / 2) + kp_minimaplight->topoffset;
 	kp_minimaplight->alignflags |=
+		(PATCHALIGN_AUTOCENTER | PATCHALIGN_USEPIVOTS);
+
+	HU_UpdatePatch(&kp_minimaparrow, "MINIARRW");
+	kp_minimaparrow->pivot.x =
+		(kp_minimaparrow->width / 2) + kp_minimaparrow->leftoffset;
+	kp_minimaparrow->pivot.y =
+		(kp_minimaparrow->height / 2) + kp_minimaparrow->topoffset;
+	kp_minimaparrow->alignflags |=
 		(PATCHALIGN_AUTOCENTER | PATCHALIGN_USEPIVOTS);
 
 	// Kart Item Windows
@@ -2657,7 +2683,6 @@ static dboolean K_drawKartPositionFaces(void)
 
 #ifdef ROTSPRITE
 	angle_t rollangle = 0;
-	int32_t rot = 0;
 #endif
 
 	offsets.x = offsets.y = 0;
@@ -2743,6 +2768,7 @@ static dboolean K_drawKartPositionFaces(void)
 		if (!players[rankplayer[i]].mo) continue;
 
 		bumperx = FACE_X+19;
+		rollangle = 0;
 
 		if (players[rankplayer[i]].mo->color)
 		{
@@ -2757,31 +2783,33 @@ static dboolean K_drawKartPositionFaces(void)
 
 			patch_t *facerank = faceprefix[players[rankplayer[i]].skin][hires ? FACE_WANTED : FACE_RANK];
 
-			offsets.x = facerank->leftoffset;
-			offsets.y = facerank->topoffset;
+			if (hires)
+			{
+				offsets.x = (-facerank->width/2) * (FRACUNIT/2);
+				offsets.y = (-facerank->height/2) * (FRACUNIT/2);
+			}
+			else
+			{
+				offsets.x = facerank->leftoffset * FRACUNIT;
+				offsets.y = facerank->topoffset * FRACUNIT;
+			}
 
 #ifdef ROTSPRITE
 			if ((K_RankIconCanSpinout()) && (players[rankplayer[i]].spinoutrot))
 			{
 				// Rotate counterclockwise.
 				rollangle = FixedAngle(players[rankplayer[i]].spinoutrot * -1);
-				rot = R_GetRollAngle(rollangle);
-
-				if (rot)
-				{
-					facerank = Patch_GetRotated(facerank, rot, false);
-				}
 			}
 #endif
 
-			V_DrawFixedPatch((FACE_X + offsets.x)<<FRACBITS, (Y + offsets.y)<<FRACBITS, hires ? FRACUNIT / 2 : FRACUNIT, V_HUDTRANS|V_SNAPTOLEFT, facerank, colormap);
+			V_DrawRotatedFixedPatch((FACE_X<<FRACBITS) + offsets.x, (Y<<FRACBITS) + offsets.y, rollangle, hires ? FRACUNIT / 2 : FRACUNIT, V_HUDTRANS|V_SNAPTOLEFT, facerank, colormap);
 
 			if (players[rankplayer[i]].smonitortimer)
 			{
 				colormap = R_GetTranslationColormap(TC_BLINK, K_SMonitorColor(leveltime / 2), GTC_CACHE);
 				smntrhudtrans = K_SMonitorHUDVisibility(players[rankplayer[i]].smonitortimer);
 
-				V_DrawFixedPatch((FACE_X + offsets.x)<<FRACBITS, (Y + offsets.y)<<FRACBITS, hires ? FRACUNIT / 2 : FRACUNIT, smntrhudtrans|V_SNAPTOLEFT|V_ADD, facerank, colormap);
+				V_DrawRotatedFixedPatch((FACE_X + offsets.x)<<FRACBITS, (Y + offsets.y)<<FRACBITS, rollangle, hires ? FRACUNIT / 2 : FRACUNIT, smntrhudtrans|V_SNAPTOLEFT|V_ADD, facerank, colormap);
 			}
 
 			if (LUA_HudEnabled(hud_battlebumpers))
@@ -2802,7 +2830,8 @@ static dboolean K_drawKartPositionFaces(void)
 		{
 			patch_t *highlight = kp_facehighlight[(leveltime / 4) % 8];
 
-			int32_t left, top;
+			int32_t left = 0;
+			int32_t top = 0;
 
 			left = highlight->leftoffset;
 			top = highlight->topoffset;
@@ -2812,16 +2841,10 @@ static dboolean K_drawKartPositionFaces(void)
 			{
 				// Rotate counterclockwise.
 				rollangle = FixedAngle(players[rankplayer[i]].spinoutrot * -1);
-				rot = R_GetRollAngle(rollangle);
-
-				if (rot)
-				{
-					highlight = Patch_GetRotated(highlight, rot, false);
-				}
 			}
 #endif
 
-			V_DrawScaledPatch(FACE_X+left, Y+top, V_HUDTRANS|V_SNAPTOLEFT, highlight);
+			V_DrawRotatedScaledPatch(FACE_X+left, Y+top, rollangle, V_HUDTRANS|V_SNAPTOLEFT, highlight);
 		}
 
 		if ((gametypes[gametype]->rules & GTR_BUMPERS) && players[rankplayer[i]].bumper <= 0)
@@ -4346,7 +4369,7 @@ static void K_drawKartPlayerCheck(void)
 
 static dboolean K_ShowPlayerNametag(player_t *p)
 {
-	if (cv_seenames.value == NT_OFF)
+	if (cv_seenames.value == SEENAMES_OFF)
 	{
 		return false;
 	}
@@ -4450,16 +4473,16 @@ static void K_DrawNameTagForPlayer(fixed_t x, fixed_t y, player_t *p, uint8_t fl
 
 		switch(cv_seenames.value)
 		{
-			case NT_DEFAULT:
+			case SEENAMES_DEFAULT:
 				break;
-			case NT_SMALL:
+			case SEENAMES_SMALL:
 				stemcount = 2;
 				textxoffset = -2*FRACUNIT;
 				textyoffset = flipped ? -2*FRACUNIT : 12*FRACUNIT;
 				barxoffset = -3*FRACUNIT;
 				baryoffset = flipped ? -7*FRACUNIT : 7*FRACUNIT;
 				break;
-			case NT_TEXT:
+			case SEENAMES_TEXT:
 				textxoffset = -9*FRACUNIT;
 				textyoffset = 21*FRACUNIT;
 				stemcount = 0;
@@ -4497,7 +4520,7 @@ static void K_DrawNameTagForPlayer(fixed_t x, fixed_t y, player_t *p, uint8_t fl
 			}
 
 
-			if (cv_seenames.value == NT_SMALL)
+			if (cv_seenames.value == SEENAMES_SMALL)
 			{
 				fixed_t flipoffset = flipped ? 2*FRACUNIT : 0;
 				V_DrawFixedFill(barx + barxoffset - 2*FRACUNIT, bary + baryoffset + flipoffset, 3*FRACUNIT, 1*FRACUNIT, vflags|backcolor);
@@ -4510,7 +4533,7 @@ static void K_DrawNameTagForPlayer(fixed_t x, fixed_t y, player_t *p, uint8_t fl
 	}
 
 	// Draw the name itself
-	if (cv_seenames.value == NT_DEFAULT)
+	if (cv_seenames.value == SEENAMES_DEFAULT)
 	{
 		if (p->clan[0] != 0)
 		{
@@ -4756,7 +4779,7 @@ static void K_drawKartNameTags(void)
 
 #define MINIHEADSCALE (FRACUNIT / 2)
 
-static inline void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, int32_t hudx, int32_t hudy, int32_t flags, patch_t *icon, uint8_t *colormap, vector2_t *origin)
+static inline void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, int32_t hudx, int32_t hudy, int32_t flags, angle_t ang, patch_t *icon, uint8_t *colormap, vector2_t *origin)
 {
 	// amnum xpos & ypos are the icon's speed around the HUD.
 	// The number being divided by is for how fast it moves.
@@ -4810,7 +4833,7 @@ static inline void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, int32_t hud
 		amypos += 2 * FRACUNIT;
 	}
 
-	V_DrawFixedPatch(amxpos, amypos, scale, flags, icon, colormap);
+	V_DrawRotatedPatch(amxpos, amypos, ang, scale, scale, flags, icon, colormap);
 }
 
 static void K_drawKartMinimapHeadlight(fixed_t objx, fixed_t objy, int32_t hudx, int32_t hudy, int32_t flags, angle_t ang, uint8_t *colormap)
@@ -5027,7 +5050,6 @@ static void K_drawKartMinimap(void)
 
 #ifdef ROTSPRITE
 	angle_t rollangle = 0;
-	int32_t rot = 0;
 	int32_t sparkleflags;
 	patch_t *rotsparkle;
 	dboolean halftrans = false;
@@ -5149,6 +5171,8 @@ static void K_drawKartMinimap(void)
 		demoghost *g = ghosts;
 		while (g)
 		{
+			rollangle = 0;
+
 			if (g->mo->skin)
 				skin = ((skin_t*)g->mo->skin)->skinnum;
 			else
@@ -5171,17 +5195,10 @@ static void K_drawKartMinimap(void)
 			widthhalf = ((ghostPic->width) / 2);
 			heighthalf = ((ghostPic->height) / 2);
 
-			if (cv_minihead.value)
-			{
-				adjustx = FixedMul(4, (widthhalf - ghostPic->leftoffset) * FRACUNIT / widthhalf);
-				adjusty = FixedMul(4, (heighthalf - ghostPic->topoffset) *
-						  FRACUNIT / heighthalf);
-			}
+			iconoffsets.x = widthhalf;
+			iconoffsets.y = heighthalf;
 
-			iconoffsets.x = widthhalf - ghostPic->leftoffset - adjustx;
-			iconoffsets.y = heighthalf - ghostPic->topoffset - adjusty;
-
-			K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, ghostPic, colormap, &iconoffsets);
+			K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, rollangle, ghostPic, colormap, &iconoffsets);
 			g = g->next;
 		}
 
@@ -5194,6 +5211,8 @@ static void K_drawKartMinimap(void)
 	{
 		for (i = MAXPLAYERS-1; i >= 0; i--)
 		{
+			rollangle = 0;
+
 			if (!playeringame[i])
 				continue;
 			if (!players[i].mo || players[i].spectator || !players[i].mo->skin || (!cv_showfinishedplayers.value && players[i].exiting))
@@ -5258,31 +5277,24 @@ static void K_drawKartMinimap(void)
 
 				workingPic = faceprefix[skin][FACE_MINIMAP];
 
+				dboolean dots = (cv_minimapstyle.value == MINIMAPSTYLE_DOTS || cv_minimapstyle.value == MINIMAPSTYLE_ARROWDOTS || cv_minimapstyle.value == MINIMAPSTYLE_PLAYERDOTS);
+
+				if (dots)
+				{
+					workingPic = kp_minimapdot;
+				}
+
 				widthhalf = ((workingPic->width) / 2);
 				heighthalf = ((workingPic->height) / 2);
 
-				if (cv_minihead.value)
-				{
-					adjustx = FixedMul(4, (widthhalf - workingPic->leftoffset) *
-							  FRACUNIT / widthhalf);
-					adjusty = FixedMul(4, (heighthalf - workingPic->topoffset) *
-							  FRACUNIT / heighthalf);
-				}
-
-				iconoffsets.x = widthhalf - workingPic->leftoffset - adjustx;
-				iconoffsets.y = heighthalf - workingPic->topoffset - adjusty;
+				iconoffsets.x = widthhalf;
+				iconoffsets.y = heighthalf;
 
 #ifdef ROTSPRITE
 				if ((K_MinimapIconCanSpinout()) && (players[i].spinoutrot))
 				{
 					// Rotate counterclockwise.
 					rollangle = FixedAngle(players[i].spinoutrot * -1);
-					rot = R_GetRollAngle(rollangle);
-
-					if (rot)
-					{
-						workingPic = Patch_GetRotated(workingPic, rot, false);
-					}
 				}
 #endif
 
@@ -5327,7 +5339,7 @@ static void K_drawKartMinimap(void)
 				interpx = R_InterpolateFixed(mobj->old_x, mobj->x);
 				interpy = R_InterpolateFixed(mobj->old_y, mobj->y);
 
-				K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, workingPic, colormap, &iconoffsets);
+				K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, rollangle, workingPic, colormap, &iconoffsets);
 
 #ifdef ROTSPRITE
 				if ((players[i].smonitortimer) && (smntrgradient))
@@ -5362,49 +5374,24 @@ static void K_drawKartMinimap(void)
 
 					if (kp_smonitorsparkle)
 					{
-						rot = R_GetRollAngle(-TICTOANGLE(leveltime));
+						rollangle = -TICTOANGLE(leveltime);
 
-						if (rot)
-						{
-							rotsparkle = Patch_GetRotated(
-							    kp_smonitorsparkle, rot, false);
-						}
-						else
-						{
-							rotsparkle = kp_smonitorsparkle;
-						}
+						rotsparkle = kp_smonitorsparkle;
 
 						if (rotsparkle)
 						{
 							widthhalf = ((kp_smonitorsparkle->width) / 2);
 							heighthalf = ((kp_smonitorsparkle->height) / 2);
 
-							if (cv_minihead.value)
-							{
-								adjustx = FixedMul(
-								    4,
-								    (widthhalf -
-								     kp_smonitorsparkle->leftoffset) *
-									FRACUNIT / widthhalf);
-								adjusty = FixedMul(
-								    4,
-								    (heighthalf -
-								     kp_smonitorsparkle->topoffset) *
-									FRACUNIT / heighthalf);
-							}
-
-							iconoffsets.x = widthhalf -
-									kp_smonitorsparkle->leftoffset -
-									adjustx;
-							iconoffsets.y = heighthalf -
-									kp_smonitorsparkle->topoffset -
-									adjusty;
+							iconoffsets.x = widthhalf;
+							iconoffsets.y = heighthalf;
 
 							K_drawKartMinimapIcon(interpx,
 									      interpy,
 									      x,
 									      y,
 									      sparkleflags | V_ADD,
+										  rollangle,
 									      rotsparkle,
 									      colormap,
 									      &iconoffsets);
@@ -5423,15 +5410,30 @@ static void K_drawKartMinimap(void)
 				if ((gametype == GT_RACE && players[i].position == spbplace)
 					|| ((gametypes[gametype]->rules & GTR_WANTED) && K_IsPlayerWanted(&players[i])))
 				{
-					K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, kp_wantedreticle, NULL, NULL);
+					workingPic = kp_wantedreticle;       
+					widthhalf = ((workingPic->width) / 2);
+					heighthalf = ((workingPic->height) / 2);
+
+					iconoffsets.x = widthhalf;
+					iconoffsets.y = heighthalf;
+
+					K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, rollangle, kp_wantedreticle, NULL, &iconoffsets);
 				}
 			}
 		}
 	}
 
+	// draw our local players and various other things opaque.
+	{
+		splitflags &= ~V_HUDTRANSHALF;
+		splitflags |= V_HUDTRANS;
+	}
+
 	// draw minimap-pertinent objects
 	for (mobj = kitemcap; mobj; mobj = next)
 	{
+		rollangle = 0;
+
 		workingPic = NULL;
 		colormap = NULL;
 		next = mobj->itnext;
@@ -5474,11 +5476,13 @@ static void K_drawKartMinimap(void)
 		interpx = R_InterpolateFixed(mobj->old_x, mobj->x);
 		interpy = R_InterpolateFixed(mobj->old_y, mobj->y);
 
-		K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, workingPic, colormap, NULL);
+		K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, rollangle, workingPic, colormap, NULL);
 	}
 
 	for (mobj = misccap; mobj; mobj = next)
 	{
+		rollangle = 0;
+
 		workingPic = NULL;
 		colormap = NULL;
 		next = mobj->itnext;
@@ -5509,13 +5513,7 @@ static void K_drawKartMinimap(void)
 		interpx = R_InterpolateFixed(mobj->old_x, mobj->x);
 		interpy = R_InterpolateFixed(mobj->old_y, mobj->y);
 
-		K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, workingPic, colormap, NULL);
-	}
-
-	// draw our local players here, opaque.
-	{
-		splitflags &= ~V_HUDTRANSHALF;
-		splitflags |= V_HUDTRANS;
+		K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, rollangle, workingPic, colormap, NULL);
 	}
 
 	// ...but first, any boss targets.
@@ -5523,6 +5521,8 @@ static void K_drawKartMinimap(void)
 	{
 		for (i = 0; i < NUMWEAKSPOTS; i++)
 		{
+			rollangle = 0;
+
 			// exists at all?
 			if (bossinfo.weakspots[i].spot == NULL || P_MobjWasRemoved(bossinfo.weakspots[i].spot))
 				continue;
@@ -5542,13 +5542,15 @@ static void K_drawKartMinimap(void)
 			interpy = R_InterpolateFixed(bossinfo.weakspots[i].spot->old_y, bossinfo.weakspots[i].spot->y);
 
 			// temporary graphic?
-			K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, kp_wantedreticle, colormap, NULL);
+			K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, rollangle, kp_wantedreticle, colormap, NULL);
 		}
 	}
 
 	for (i = 0; i < numlocalplayers; i++)
 	{
 		dboolean nocontest = false;
+
+		rollangle = 0;
 
 		if (localplayers[i] == -1)
 			continue; // this doesn't interest us
@@ -5598,30 +5600,34 @@ static void K_drawKartMinimap(void)
 
 			workingPic = faceprefix[skin][FACE_MINIMAP];
 
+			dboolean arrow = (cv_minimapstyle.value == MINIMAPSTYLE_ARROWDOTS || cv_minimapstyle.value == MINIMAPSTYLE_ARROW);
+			dboolean dots = (cv_minimapstyle.value == MINIMAPSTYLE_DOTS);
+
+			if (arrow)
+			{
+				workingPic = kp_minimaparrow;
+			}
+			else if (dots)
+			{
+				workingPic = kp_minimapdot;
+			}
+
 			widthhalf = ((workingPic->width) / 2);
 			heighthalf = ((workingPic->height) / 2);
 
-			if (cv_minihead.value)
-			{
-				adjustx = FixedMul(4, (widthhalf - workingPic->leftoffset) * FRACUNIT / widthhalf);
-				adjusty = FixedMul(4, (heighthalf - workingPic->topoffset) *
-						  FRACUNIT / heighthalf);
-			}
-
-			iconoffsets.x = widthhalf - workingPic->leftoffset - adjustx;
-			iconoffsets.y = heighthalf - workingPic->topoffset - adjusty;
+			iconoffsets.x = widthhalf;
+			iconoffsets.y = heighthalf;
 
 #ifdef ROTSPRITE
-			if ((K_MinimapIconCanSpinout()) && (players[localplayers[i]].spinoutrot))
+			if (arrow)
+			{
+				// Rotate based on (visual) player angle.
+				rollangle = players[localplayers[i]].drawangle-ANGLE_90;
+			}
+			else if ((K_MinimapIconCanSpinout()) && (players[localplayers[i]].spinoutrot))
 			{
 				// Rotate counterclockwise.
-				rollangle = FixedAngle(players[localplayers[i]].spinoutrot * -1);
-				rot = R_GetRollAngle(rollangle);
-
-				if (rot)
-				{
-					workingPic = Patch_GetRotated(workingPic, rot, false);
-				}
+				rollangle = -FixedAngle(players[localplayers[i]].spinoutrot);
 			}
 #endif
 
@@ -5679,6 +5685,7 @@ static void K_drawKartMinimap(void)
 							x + FixedMul(FCOS(ang), ICON_DOT_RADIUS),
 							y - FixedMul(FSIN(ang), ICON_DOT_RADIUS),
 							splitflags,
+							0,
 							kp_minimapdot,
 							misccolormap,
 							NULL
@@ -5698,7 +5705,7 @@ static void K_drawKartMinimap(void)
 				}
 			}
 
-			K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, workingPic, colormap, &iconoffsets);
+			K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, rollangle, workingPic, colormap, &iconoffsets);
 
 #ifdef ROTSPRITE
 			if ((!nocontest) && (players[localplayers[i]].smonitortimer) && (smntrgradient))
@@ -5730,48 +5737,27 @@ static void K_drawKartMinimap(void)
 
 				if (kp_smonitorsparkle)
 				{
-					rot = R_GetRollAngle(-TICTOANGLE(leveltime));
+					rollangle = -TICTOANGLE(leveltime);
 
-					if (rot)
-					{
-						rotsparkle = Patch_GetRotated(
-						    kp_smonitorsparkle, rot, false);
-					}
-					else
-					{
-						rotsparkle = kp_smonitorsparkle;
-					}
+					rotsparkle = kp_smonitorsparkle;
 
 					if (rotsparkle)
 					{
 						widthhalf = ((kp_smonitorsparkle->width) / 2);
 						heighthalf = ((kp_smonitorsparkle->height) / 2);
 
-						if (cv_minihead.value)
-						{
-							adjustx = FixedMul(
-							    4,
-							    (widthhalf - kp_smonitorsparkle->leftoffset) *
-								FRACUNIT / widthhalf);
-							adjusty = FixedMul(
-							    4,
-							    (heighthalf - kp_smonitorsparkle->topoffset) *
-								FRACUNIT / heighthalf);
-						}
-
-						iconoffsets.x =
-						    widthhalf - kp_smonitorsparkle->leftoffset - adjustx;
-						iconoffsets.y =
-						    heighthalf - kp_smonitorsparkle->topoffset - adjusty;
+						iconoffsets.x = widthhalf;
+						iconoffsets.y = heighthalf;
 
 						K_drawKartMinimapIcon(interpx,
-								      interpy,
-								      x,
-								      y,
-								      sparkleflags | V_ADD,
-								      rotsparkle,
-								      colormap,
-								      &iconoffsets);
+									interpy,
+									x,
+									y,
+									sparkleflags | V_ADD,
+									rollangle,
+									rotsparkle,
+									colormap,
+									&iconoffsets);
 					}
 				}
 			}
@@ -5781,7 +5767,14 @@ static void K_drawKartMinimap(void)
 			if ((gametype == GT_RACE && players[localplayers[i]].position == spbplace)
 				|| ((gametypes[gametype]->rules & GTR_WANTED) && K_IsPlayerWanted(&players[localplayers[i]])))
 			{
-				K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, kp_wantedreticle, NULL, NULL);
+				workingPic = kp_wantedreticle;       
+				widthhalf = ((workingPic->width) / 2);
+				heighthalf = ((workingPic->height) / 2);
+
+				iconoffsets.x = widthhalf;
+				iconoffsets.y = heighthalf;
+
+				K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, 0, kp_wantedreticle, NULL, &iconoffsets);
 			}
 
 			K_drawKartMinimapNametag(interpx, interpy, x, y, splitflags, mobj->player);
