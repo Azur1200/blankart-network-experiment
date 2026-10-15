@@ -457,7 +457,7 @@ static void GIF_headwrite(void)
 	// Image width/height
 	if (gif_downscale)
 	{
-		scrbuf_downscaleamt = vid.dup;
+		scrbuf_downscaleamt = vid.dup/2;
 		scrbuf_width = (vid.width / scrbuf_downscaleamt);
 		scrbuf_height = (vid.height / scrbuf_downscaleamt);
 	}
