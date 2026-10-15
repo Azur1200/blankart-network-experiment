@@ -2761,6 +2761,7 @@ static dboolean K_drawKartPositionFaces(void)
 		if (!players[rankplayer[i]].mo) continue;
 
 		bumperx = FACE_X+19;
+		rollangle = 0;
 
 		if (players[rankplayer[i]].mo->color)
 		{
