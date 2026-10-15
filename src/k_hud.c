@@ -5176,15 +5176,8 @@ static void K_drawKartMinimap(void)
 			widthhalf = ((ghostPic->width) / 2);
 			heighthalf = ((ghostPic->height) / 2);
 
-			if (cv_minihead.value)
-			{
-				adjustx = FixedMul(4, (widthhalf - ghostPic->leftoffset) * FRACUNIT / widthhalf);
-				adjusty = FixedMul(4, (heighthalf - ghostPic->topoffset) *
-						  FRACUNIT / heighthalf);
-			}
-
-			iconoffsets.x = widthhalf - ghostPic->leftoffset - adjustx;
-			iconoffsets.y = heighthalf - ghostPic->topoffset - adjusty;
+			iconoffsets.x = widthhalf;
+			iconoffsets.y = heighthalf;
 
 			K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, rollangle, ghostPic, colormap, &iconoffsets);
 			g = g->next;
@@ -5273,27 +5266,8 @@ static void K_drawKartMinimap(void)
 				widthhalf = ((workingPic->width) / 2);
 				heighthalf = ((workingPic->height) / 2);
 
-				if (cv_minihead.value)
-				{
-
-					if (dots)
-					{
-						adjustx = FixedMul(2, (widthhalf - workingPic->leftoffset) *
-							  FRACUNIT / widthhalf);
-						adjusty = FixedMul(2, (heighthalf - workingPic->topoffset) *
-							  FRACUNIT / heighthalf);
-					}
-					else
-					{
-						adjustx = FixedMul(4, (widthhalf - workingPic->leftoffset) *
-							  FRACUNIT / widthhalf);
-						adjusty = FixedMul(4, (heighthalf - workingPic->topoffset) *
-							  FRACUNIT / heighthalf);
-					}
-				}
-
-				iconoffsets.x = widthhalf - workingPic->leftoffset - adjustx;
-				iconoffsets.y = heighthalf - workingPic->topoffset - adjusty;
+				iconoffsets.x = widthhalf;
+				iconoffsets.y = heighthalf;
 
 #ifdef ROTSPRITE
 				if ((K_MinimapIconCanSpinout()) && (players[i].spinoutrot))
@@ -5388,26 +5362,8 @@ static void K_drawKartMinimap(void)
 							widthhalf = ((kp_smonitorsparkle->width) / 2);
 							heighthalf = ((kp_smonitorsparkle->height) / 2);
 
-							if (cv_minihead.value)
-							{
-								adjustx = FixedMul(
-								    4,
-								    (widthhalf -
-								     kp_smonitorsparkle->leftoffset) *
-									FRACUNIT / widthhalf);
-								adjusty = FixedMul(
-								    4,
-								    (heighthalf -
-								     kp_smonitorsparkle->topoffset) *
-									FRACUNIT / heighthalf);
-							}
-
-							iconoffsets.x = widthhalf -
-									kp_smonitorsparkle->leftoffset -
-									adjustx;
-							iconoffsets.y = heighthalf -
-									kp_smonitorsparkle->topoffset -
-									adjusty;
+							iconoffsets.x = widthhalf;
+							iconoffsets.y = heighthalf;
 
 							K_drawKartMinimapIcon(interpx,
 									      interpy,
@@ -5623,26 +5579,8 @@ static void K_drawKartMinimap(void)
 			widthhalf = ((workingPic->width) / 2);
 			heighthalf = ((workingPic->height) / 2);
 
-			if (cv_minihead.value)
-			{
-				if (dots)
-				{
-					adjustx = FixedMul(2, (widthhalf - workingPic->leftoffset) *
-						FRACUNIT / widthhalf);
-					adjusty = FixedMul(2, (heighthalf - workingPic->topoffset) *
-						FRACUNIT / heighthalf);
-				}
-				else
-				{
-					adjustx = FixedMul(4, (widthhalf - workingPic->leftoffset) *
-						FRACUNIT / widthhalf);
-					adjusty = FixedMul(4, (heighthalf - workingPic->topoffset) *
-						FRACUNIT / heighthalf);
-				}
-			}
-
-			iconoffsets.x = widthhalf - workingPic->leftoffset - adjustx;
-			iconoffsets.y = heighthalf - workingPic->topoffset - adjusty;
+			iconoffsets.x = widthhalf;
+			iconoffsets.y = heighthalf;
 
 #ifdef ROTSPRITE
 			if ((K_MinimapIconCanSpinout()) && (players[localplayers[i]].spinoutrot))
