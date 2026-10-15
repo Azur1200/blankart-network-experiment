@@ -78,7 +78,7 @@
 #endif
 
 // maximum number of windowed modes (see windowedModes[][])
-#define MAXWINMODES (22)
+#define MAXWINMODES (19)
 
 rendermode_t rendermode = render_soft;
 rendermode_t chosenrendermode = render_none; // set by command line arguments
@@ -165,9 +165,6 @@ static int32_t windowedModes[MAXWINMODES][2] =
 	{ 735, 415}, // 1.33,2.50
 	{ 640, 480}, // 1.33,2.00
 	{ 640, 400}, // 1.60,2.00
-	{ 500, 300}, // 1.33
-	{ 320, 240}, // 1.33,1.00
-	{ 320, 200}, // 1.60,1.00
 };
 
 #define CUSTOMMODENUM 9999
@@ -1506,7 +1503,7 @@ int32_t VID_GetModeForSize(int32_t w, int32_t h)
 	// did not find mode from list, make custom resolution if the values somewhat make sense
 	// opengl mode does not mind about max resolution defined in screen.h
 	// if not using opengl, check against the maximum as well
-	if ((w >= BASEVIDWIDTH && h >= BASEVIDHEIGHT) &&
+	if ((w >= MINVIDWIDTH && h >= MINVIDHEIGHT) &&
 		(rendermode != render_none || (w <= MAXVIDWIDTH && h <= MAXVIDHEIGHT)))
 	{
 		custom_width = w;
@@ -1701,7 +1698,7 @@ static SDL_Window *Impl_CreateWindow(void)
 		return NULL;
 	}
 
-	SDL_SetWindowMinimumSize(win, BASEVIDWIDTH, BASEVIDHEIGHT);
+	SDL_SetWindowMinimumSize(win, MINVIDWIDTH, MINVIDHEIGHT);
 	SDL_SetWindowMaximumSize(win, MAXVIDWIDTH, MAXVIDHEIGHT);
 
 #ifdef USE_WINDOW_ICON
@@ -1842,8 +1839,8 @@ void I_StartupGraphics(void)
 
 	// Create window
 	// Default size for startup
-	vid.width = BASEVIDWIDTH;
-	vid.height = BASEVIDHEIGHT;
+	vid.width = MINVIDWIDTH;
+	vid.height = MINVIDHEIGHT;
 
 	VID_SetMode(VID_GetModeForSize(vid.width, vid.height));
 

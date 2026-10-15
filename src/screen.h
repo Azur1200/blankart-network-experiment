@@ -37,6 +37,8 @@ extern "C" {
 // and for all at the maximum size.
 #define MAXVIDWIDTH 8192 // don't set this too high because actually
 #define MAXVIDHEIGHT 8192 // lots of tables are allocated with the MAX size.
+#define MINVIDWIDTH 640	// 320x200 is a bit small
+#define MINVIDHEIGHT  400 // but changing the base breaks litereally everything so this will do.
 #define BASEVIDWIDTH 320 // NEVER CHANGE THIS! This is the original
 #define BASEVIDHEIGHT 200 // resolution of the graphics.
 

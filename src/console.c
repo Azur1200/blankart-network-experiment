@@ -1790,7 +1790,10 @@ void CON_DrawLoadBar(void)
 		return;
 	}
 
-	CON_DrawBackpic();
+	patch_t *start_pic = W_CachePatchName("STARTUP", PU_PATCH);
+
+	V_DrawFill(0,0,vid.width,vid.height, 31);
+	V_DrawPatch(0,0,0, start_pic);
 
 	barwidth = (BASEVIDWIDTH * con_startup_loadprogress) / LOADED_ALLDONE;
 	V_DrawFill(0, BASEVIDHEIGHT - barheight, barwidth, barheight, 0);
