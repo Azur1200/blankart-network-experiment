@@ -1085,7 +1085,7 @@ dboolean K_KitchenSinkCollide(mobj_t *t1, mobj_t *t2)
 		//HU_SetCEchoFlags(0);
 		//HU_SetCEchoDuration(5);
 		//HU_DoCEcho(va("%s\\was hit by a kitchen sink.\\\\\\\\", player_names[t2->player-players]));
-		K_AddCEchoMessage(va("%s was hit by a kitchen sink.", player_names[t2->player-players]));
+		K_AddMessage(va("%s was hit by a kitchen sink.", player_names[t2->player-players]), true, false, false);
 		I_OutputMsg("%s was hit by a kitchen sink.\n", player_names[t2->player-players]);
 
 		P_PlayerRingBurst(t2->player, t2->player->rings);
