@@ -284,6 +284,26 @@ static int32_t getLuaTimer(itimer_t *itimer)
 	return itimer->timer;
 }
 
+static uint16_t handledamagetime(void)
+{
+	uint16_t spinouttime = std::max<uint16_t>(stplyr->spinouttimer, stplyr->wipeoutslow);
+	uint16_t flipovertime = stplyr->flipovertimer;
+	uint16_t crashtime = 0;
+
+	if (stplyr->crash_state == CRASH_REORIENT)
+	{
+		crashtime += (abs(stplyr->crash_rot - (180 * FRACUNIT)) / CRASH_TUMBLE_ROTRETURNDELTA);
+	}
+	else if (stplyr->crash_state == CRASH_TURNTOSIDE)
+	{
+		crashtime += ((CRASH_TUMBLE_STARTYAW - stplyr->crash_yaw) / ANG1) + stplyr->crashtimer;
+	}
+
+	crashtime = std::max(stplyr->crashtimer, crashtime);
+
+	return std::max(std::max(spinouttime, crashtime), flipovertime);
+}
+
 void K_DisplayItemTimers(void)
 {
 	if (!cv_itemtimers.value) return;
@@ -379,7 +399,7 @@ void K_DisplayItemTimers(void)
 	timers.push_back(
 		{ // spinout
 			"spinout",
-			std::max<uint16_t>(stplyr->spinouttimer, stplyr->wipeoutslow),
+			handledamagetime(),
 			{qche("K_TISPN1"), qche("K_TISPN2"), qche("K_TISPN3"), qche("K_TISPN4")},
 			3,
 			TIMER_RED,

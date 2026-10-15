@@ -199,7 +199,9 @@ static void PlayerDisplay(player_t *player, int32_t recursive_mobj, int32_t recu
 	ImGui::Text("Bot: %s", player->bot ? "True" : "False");
 	if (player->bot)
 	{
-		if (ImGui::CollapsingHeader("botvars"))
+		char nameid[512];
+		snprintf(nameid, sizeof(nameid), "BotVars###BotVars%d_%d", recursive_mobj, recursive_player);
+		if (ImGui::CollapsingHeader(nameid))
 		{
 			botdata_t *botdata = K_GetBotData(player-players);
 			ImGui::Text("Bot Predict X: %d", botdata->predict.x);
@@ -329,6 +331,36 @@ static void PlayerDisplay(player_t *player, int32_t recursive_mobj, int32_t recu
 	ImGui::Text("No Control: %d", player->nocontrol);
 	ImGui::Text("Carry: %d", player->carry);
 	ImGui::Text("Dye: %d", player->dye);
+
+	ImGui::Text("Drop Dash: %d", player->dropdash);
+	ImGui::Text("Respawn: %d", player->respawn);
+
+	ImGui::Text("Flashing: %d", player->flashing);
+
+	ImGui::Text("Spinout Timer: %d", player->spinouttimer);
+	ImGui::Text("Spinout Type: %d", player->spinouttype);
+	ImGui::Text("Wipeout Slow: %d", player->wipeoutslow);
+
+	ImGui::Text("Flipover Timer: %d", player->flipovertimer);
+	ImGui::Text("Flipover Angle: %u", player->flipoverangle);
+
+	ImGui::Text("Crash State: %d", player->crash_state);
+	ImGui::Text("Crash Timer: %d", player->crashtimer);
+	ImGui::Text("Crash Elapsed: %d", player->crash_elapsed);
+	ImGui::Text("Crash Reorient Start: %d", player->crash_reorient_start);
+	ImGui::Text("Crash Rot: %d", player->crash_rot);
+	ImGui::Text("Crash Yaw: %d", player->crash_yaw);
+	ImGui::Text("Crash Z Offset: %d", player->crash_zoffset);
+	ImGui::Text("Crash Z Offset Delta: %d", player->crash_zoffset_delta);
+	ImGui::Text("Crash Z Offset Lerp: %d", player->crash_zoffset_lerp);
+	ImGui::Text("Crash Side: %d", player->crash_side);
+	ImGui::Text("Crash Bumpme: %d", player->crash_bumpme);
+	ImGui::Text("Crash Speed: %d", player->crash_speed);
+
+	ImGui::Text("Squished Timer: %d", player->squishedtimer);
+
+	ImGui::Text("Just Bumped %d", player->justbumped);
+	ImGui::Text("Just Shoved: %d", player->justshoved);
 
 	generic_mobj(player->mo, "Mobj", recursive_mobj, recursive_player);
 
