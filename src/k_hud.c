@@ -5596,15 +5596,15 @@ static void K_drawKartMinimap(void)
 			iconoffsets.y = heighthalf;
 
 #ifdef ROTSPRITE
+			if (arrow)
+			{
+				// Rotate based on (visual) player angle.
+				rollangle = players[localplayers[i]].drawangle-ANGLE_90;
+			}
 			if ((K_MinimapIconCanSpinout()) && (players[localplayers[i]].spinoutrot))
 			{
 				// Rotate counterclockwise.
-				rollangle = FixedAngle(players[localplayers[i]].spinoutrot * -1);
-			}
-			else if (arrow)
-			{
-				// Rotate based on player angle.
-				rollangle = mobj->angle-ANGLE_90;
+				rollangle -= FixedAngle(players[localplayers[i]].spinoutrot);
 			}
 #endif
 
