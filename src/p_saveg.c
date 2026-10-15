@@ -2917,6 +2917,12 @@ static thinker_t *SyncCeilingThinker(savebuffer_t *save, actionf_p1 thinker, thi
 	if (!save->write && ht->sector)
 		ht->sector->ceilingdata = ht;
 
+	if (!save->write)
+	{
+		// interpolation
+		R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, false);
+	}
+
 	return &ht->thinker;
 }
 
@@ -2951,6 +2957,15 @@ static thinker_t *SyncFloormoveThinker(savebuffer_t *save, actionf_p1 thinker, t
 	SYNC(ht->crushSpeed);
 	SYNC(ht->returnHeight);
 	SYNC(ht->returnSpeed);
+	if (!save->write && ht->sector)
+		ht->sector->floordata = ht;
+
+	if (!save->write)
+	{
+		// interpolation
+		R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, false);
+	}
+
 	return &ht->thinker;
 }
 
@@ -3089,6 +3104,14 @@ static thinker_t *SyncElevatorThinker(savebuffer_t *save, actionf_p1 thinker, th
 		ht->sector->ceilingdata = ht;
 		ht->sector->floordata = ht;
 	}
+
+	if (!save->write)
+	{
+		// interpolation
+		R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, false);
+		R_CreateInterpolator_SectorPlane(&ht->thinker, ht->sector, true);
+	}
+
 	return &ht->thinker;
 }
 
@@ -3150,6 +3173,26 @@ static thinker_t *SyncScrollThinker(savebuffer_t *save, actionf_p1 thinker, thin
 	SYNC(ht->accel);
 	SYNC(ht->exclusive);
 	SYNC(ht->type);
+
+	if (!save->write)
+	{
+		// interpolation
+		switch (ht->type)
+		{
+			case sc_side:
+				R_CreateInterpolator_SideScroll(&ht->thinker, &sides[ht->affectee]);
+				break;
+			case sc_floor:
+				R_CreateInterpolator_SectorScroll(&ht->thinker, &sectors[ht->affectee], false);
+				break;
+			case sc_ceiling:
+				R_CreateInterpolator_SectorScroll(&ht->thinker, &sectors[ht->affectee], true);
+				break;
+			default:
+				break;
+		}
+	}
+
 	return &ht->thinker;
 }
 
@@ -3452,6 +3495,9 @@ static thinker_t *SyncDynamicVertexSlopeThinker(savebuffer_t *save, actionf_p1 t
 static thinker_t *SyncPolyrotatetThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	polyrotate_t *ht = (void *)th;
+	// interpolation
+	polyobj_t *po;
+
 	if (save->write)
 	{
 		WRITEUINT8(save->p, type);
@@ -3468,12 +3514,27 @@ static thinker_t *SyncPolyrotatetThinker(savebuffer_t *save, actionf_p1 thinker,
 	SYNC(ht->speed);
 	SYNC(ht->distance);
 	SYNC(ht->turnobjs);
+
+	if (!save->write)
+	{
+		if (!(po = Polyobj_GetForNum(ht->polyObjNum)))
+		{
+			CONS_Debug(DBG_POLYOBJ, "EV_DoPolyObjRotate: bad polyobj %d\n", ht->polyObjNum);
+			return NULL;
+		}
+
+		R_CreateInterpolator_Polyobj(&ht->thinker, po);
+	}
+
 	return &ht->thinker;
 }
 
 static thinker_t *SyncPolymoveThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	polymove_t *ht = (void *)th;
+	// interpolation
+	polyobj_t *po;
+
 	if (save->write)
 	{
 		WRITEUINT8(save->p, type);
@@ -3492,12 +3553,29 @@ static thinker_t *SyncPolymoveThinker(savebuffer_t *save, actionf_p1 thinker, th
 	SYNC(ht->momy);
 	SYNC(ht->distance);
 	SYNC(ht->angle);
+
+	if (!save->write)
+	{
+		if (!(po = Polyobj_GetForNum(ht->polyObjNum)))
+		{
+			CONS_Debug(DBG_POLYOBJ, "EV_DoPolyObjRotate: bad polyobj %d\n", ht->polyObjNum);
+			return NULL;
+		}
+
+		R_CreateInterpolator_Polyobj(&ht->thinker, po);
+	}
+
 	return &ht->thinker;
 }
 
 static thinker_t *SyncPolywaypointThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	polywaypoint_t *ht = (void *)th;
+	// interpolation
+	polyobj_t *po;
+	polyobj_t *oldpo;
+	int32_t start;
+
 	if (save->write)
 	{
 		WRITEUINT8(save->p, type);
@@ -3518,12 +3596,44 @@ static thinker_t *SyncPolywaypointThinker(savebuffer_t *save, actionf_p1 thinker
 	SYNC(ht->returnbehavior);
 	SYNC(ht->continuous);
 	SYNC(ht->stophere);
+
+	if (!save->write)
+	{
+		if (!(po = Polyobj_GetForNum(ht->polyObjNum)))
+		{
+			CONS_Debug(DBG_POLYOBJ, "EV_DoPolyObjRotate: bad polyobj %d\n", ht->polyObjNum);
+			return NULL;
+		}
+
+		R_CreateInterpolator_Polyobj(&ht->thinker, po);
+		// T_PolyObjWaypoint is the only polyobject movement
+		// that can adjust z, so we add these ones too.
+		R_CreateInterpolator_SectorPlane(&ht->thinker, po->lines[0]->backsector, false);
+		R_CreateInterpolator_SectorPlane(&ht->thinker, po->lines[0]->backsector, true);
+
+		// Most other polyobject functions handle children by recursively
+		// giving each child another thinker. T_PolyObjWaypoint handles
+		// it manually though, which means we need to manually give them
+		// interpolation here instead.
+		start = 0;
+		oldpo = po;
+		while ((po = Polyobj_GetChild(oldpo, &start)))
+		{
+			R_CreateInterpolator_Polyobj(&ht->thinker, po);
+			R_CreateInterpolator_SectorPlane(&ht->thinker, po->lines[0]->backsector, false);
+			R_CreateInterpolator_SectorPlane(&ht->thinker, po->lines[0]->backsector, true);
+		}
+	}
+
 	return &ht->thinker;
 }
 
 static thinker_t *SyncPolyslidedoorThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	polyslidedoor_t *ht = (void *)th;
+	// interpolation
+	polyobj_t *po;
+
 	if (save->write)
 	{
 		WRITEUINT8(save->p, type);
@@ -3549,12 +3659,27 @@ static thinker_t *SyncPolyslidedoorThinker(savebuffer_t *save, actionf_p1 thinke
 	SYNC(ht->momx);
 	SYNC(ht->momy);
 	SYNC(ht->closing);
+
+	if (!save->write)
+	{
+		if (!(po = Polyobj_GetForNum(ht->polyObjNum)))
+		{
+			CONS_Debug(DBG_POLYOBJ, "EV_DoPolyObjRotate: bad polyobj %d\n", ht->polyObjNum);
+			return NULL;
+		}
+
+		R_CreateInterpolator_Polyobj(&ht->thinker, po);
+	}
+
 	return &ht->thinker;
 }
 
 static thinker_t *SyncPolyswingdoorThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	polyswingdoor_t *ht = (void *)th;
+	// interpolation
+	polyobj_t *po;
+
 	if (save->write)
 	{
 		WRITEUINT8(save->p, type);
@@ -3575,12 +3700,27 @@ static thinker_t *SyncPolyswingdoorThinker(savebuffer_t *save, actionf_p1 thinke
 	SYNC(ht->initDistance);
 	SYNC(ht->distance);
 	SYNC(ht->closing);
+
+	if (!save->write)
+	{
+		if (!(po = Polyobj_GetForNum(ht->polyObjNum)))
+		{
+			CONS_Debug(DBG_POLYOBJ, "EV_DoPolyObjRotate: bad polyobj %d\n", ht->polyObjNum);
+			return NULL;
+		}
+
+		R_CreateInterpolator_Polyobj(&ht->thinker, po);
+	}
+
 	return &ht->thinker;
 }
 
 static thinker_t *SyncPolydisplaceThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	polydisplace_t *ht = (void *)th;
+	// interpolation
+	polyobj_t *po;
+
 	if (save->write)
 	{
 		WRITEUINT8(save->p, type);
@@ -3598,12 +3738,27 @@ static thinker_t *SyncPolydisplaceThinker(savebuffer_t *save, actionf_p1 thinker
 	SYNC(ht->dx);
 	SYNC(ht->dy);
 	SYNC(ht->oldHeights);
+
+	if (!save->write)
+	{
+		if (!(po = Polyobj_GetForNum(ht->polyObjNum)))
+		{
+			CONS_Debug(DBG_POLYOBJ, "EV_DoPolyObjRotate: bad polyobj %d\n", ht->polyObjNum);
+			return NULL;
+		}
+
+		R_CreateInterpolator_Polyobj(&ht->thinker, po);
+	}
+
 	return &ht->thinker;
 }
 
 static thinker_t *SyncPolyrotdisplaceThinker(savebuffer_t *save, actionf_p1 thinker, thinker_t *th, uint8_t type)
 {
 	polyrotdisplace_t *ht = (void *)th;
+	// interpolation
+	polyobj_t *po;
+
 	if (save->write)
 	{
 		WRITEUINT8(save->p, type);
@@ -3621,6 +3776,18 @@ static thinker_t *SyncPolyrotdisplaceThinker(savebuffer_t *save, actionf_p1 thin
 	SYNC(ht->rotscale);
 	SYNC( ht->turnobjs);
 	SYNC(ht->oldHeights);
+
+	if (!save->write)
+	{
+		if (!(po = Polyobj_GetForNum(ht->polyObjNum)))
+		{
+			CONS_Debug(DBG_POLYOBJ, "EV_DoPolyObjRotate: bad polyobj %d\n", ht->polyObjNum);
+			return NULL;
+		}
+
+		R_CreateInterpolator_Polyobj(&ht->thinker, po);
+	}
+
 	return &ht->thinker;
 }
 

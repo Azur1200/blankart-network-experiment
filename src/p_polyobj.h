@@ -365,6 +365,7 @@ struct polyfadedata_t
 dboolean Polyobj_moveXY(polyobj_t *po, fixed_t x, fixed_t y, dboolean checkmobjs);
 dboolean Polyobj_rotate(polyobj_t *po, angle_t delta, dboolean turnplayers, dboolean turnothers, dboolean checkmobjs);
 polyobj_t *Polyobj_GetForNum(int32_t id);
+polyobj_t *Polyobj_GetChild(polyobj_t *po, int32_t *start);
 void Polyobj_InitLevel(void);
 void Polyobj_MoveOnLoad(polyobj_t *po, angle_t angle, fixed_t x, fixed_t y);
 dboolean P_PointInsidePolyobj(polyobj_t *po, fixed_t x, fixed_t y);

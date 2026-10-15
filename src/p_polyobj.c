@@ -1273,7 +1273,7 @@ static polyobj_t *Polyobj_GetParent(polyobj_t *po)
 
 // Iteratively retrieves the children POs of a parent,
 // sorta like P_FindSectorSpecialFromTag.
-static polyobj_t *Polyobj_GetChild(polyobj_t *po, int32_t *start)
+polyobj_t *Polyobj_GetChild(polyobj_t *po, int32_t *start)
 {
 	for (; *start < numPolyObjects; (*start)++)
 	{
