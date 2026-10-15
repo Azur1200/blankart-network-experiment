@@ -117,6 +117,7 @@
 #include "k_specialstage.h"
 #include "k_itemlist.hpp"
 #include "k_dialogue.h"
+#include "k_hud_message.h"
 #include "g_input.h"
 
 #include "blan/b_soc.h"
@@ -9259,6 +9260,8 @@ dboolean P_LoadLevel(dboolean fromnetsave, dboolean reloadinggamestate)
 	P_InitThinkers();
 	P_InitTIDHash();
 	P_InitCachedActions();
+
+	K_ClearPersistentMessages();
 
 	// This ticker isn't EVER supposed to run for dedis, but just in case...
 	RR_resetRidersFinishTicker();
