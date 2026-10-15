@@ -5155,6 +5155,8 @@ static void K_drawKartMinimap(void)
 		demoghost *g = ghosts;
 		while (g)
 		{
+			rollangle = 0;
+
 			if (g->mo->skin)
 				skin = ((skin_t*)g->mo->skin)->skinnum;
 			else
@@ -5193,6 +5195,8 @@ static void K_drawKartMinimap(void)
 	{
 		for (i = MAXPLAYERS-1; i >= 0; i--)
 		{
+			rollangle = 0;
+
 			if (!playeringame[i])
 				continue;
 			if (!players[i].mo || players[i].spectator || !players[i].mo->skin || (!cv_showfinishedplayers.value && players[i].exiting))
@@ -5399,6 +5403,8 @@ static void K_drawKartMinimap(void)
 	// draw minimap-pertinent objects
 	for (mobj = kitemcap; mobj; mobj = next)
 	{
+		rollangle = 0;
+
 		workingPic = NULL;
 		colormap = NULL;
 		next = mobj->itnext;
@@ -5446,6 +5452,8 @@ static void K_drawKartMinimap(void)
 
 	for (mobj = misccap; mobj; mobj = next)
 	{
+		rollangle = 0;
+
 		workingPic = NULL;
 		colormap = NULL;
 		next = mobj->itnext;
@@ -5490,6 +5498,8 @@ static void K_drawKartMinimap(void)
 	{
 		for (i = 0; i < NUMWEAKSPOTS; i++)
 		{
+			rollangle = 0;
+
 			// exists at all?
 			if (bossinfo.weakspots[i].spot == NULL || P_MobjWasRemoved(bossinfo.weakspots[i].spot))
 				continue;
@@ -5516,6 +5526,8 @@ static void K_drawKartMinimap(void)
 	for (i = 0; i < numlocalplayers; i++)
 	{
 		dboolean nocontest = false;
+
+		rollangle = 0;
 
 		if (localplayers[i] == -1)
 			continue; // this doesn't interest us
@@ -5650,7 +5662,7 @@ static void K_drawKartMinimap(void)
 							x + FixedMul(FCOS(ang), ICON_DOT_RADIUS),
 							y - FixedMul(FSIN(ang), ICON_DOT_RADIUS),
 							splitflags,
-							rollangle,
+							0,
 							kp_minimapdot,
 							misccolormap,
 							NULL
