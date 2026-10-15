@@ -4494,7 +4494,7 @@ bool CallFunc_AddMessage(ACSVM::Thread *thread, const ACSVM::Word *argV, ACSVM::
 {
 	ACSVM::MapScope *map = thread->scopeMap;
 
-	K_AddMessage(map->getString(argV[0])->str, argV[1], argV[2]);
+	K_AddMessage(map->getString(argV[0])->str, argV[1], argV[2], argV[3]);
 
 	return false;
 }
@@ -4509,7 +4509,7 @@ bool CallFunc_AddMessageForPlayer(ACSVM::Thread *thread, const ACSVM::Word *argV
 		&& (info->mo != NULL && P_MobjWasRemoved(info->mo) == false)
 		&& (info->mo->player != NULL))
 	{
-		K_AddMessageForPlayer(info->mo->player, map->getString(argV[0])->str, argV[1], argV[2]);
+		K_AddMessageForPlayer(info->mo->player, map->getString(argV[0])->str, argV[1], argV[2], argV[3]);
 	}
 
 	return false;

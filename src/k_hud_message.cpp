@@ -35,11 +35,12 @@ typedef struct
 {
 	std::string text;
 	sfxenum_t sound;
+	dboolean background;
 } message_t;
 
 struct messagestate_t
 {
-	std::deque<std::string> messages;
+	std::deque<message_t> messages;
 	std::string objective = "";
 	tic_t timer = 0;
 	dboolean persist = false;
@@ -47,7 +48,7 @@ struct messagestate_t
 	const tic_t speedyswitch = 2*TICRATE;
 	const tic_t lazyswitch = 4*TICRATE;
 
-	void add(std::string msg)
+	void add(message_t msg)
 	{
 		messages.push_back(msg);
 	}
@@ -85,7 +86,7 @@ struct messagestate_t
 		switch (mode)
 		{
 			case MM_IN:
-				if (timer > messages[0].length())
+				if (timer > messages[0].text.length())
 					switch_mode(MM_HOLD);
 				break;
 			case MM_HOLD:
@@ -95,7 +96,7 @@ struct messagestate_t
 					switch_mode(MM_OUT);
 				break;
 			case MM_OUT:
-				if (timer > messages[0].length())
+				if (timer > messages[0].text.length())
 					next();
 				break;
 		}
@@ -106,7 +107,7 @@ struct messagestate_t
 		switch_mode(MM_IN);
 		persist = true;
 		messages.clear();
-		messages.push_front(objective);
+		messages.push_front({.text = objective});
 	}
 
 	void next()
@@ -121,7 +122,7 @@ struct messagestate_t
 
 static std::vector<messagestate_t> messagestates{MAXSPLITSCREENPLAYERS};
 
-void K_AddMessage(const char *msg, dboolean interrupt, dboolean persist)
+void K_AddMessage(const char *msg, dboolean interrupt, dboolean persist, dboolean hidebackground)
 {
 	for (auto &state : messagestates)
 	{
@@ -133,7 +134,7 @@ void K_AddMessage(const char *msg, dboolean interrupt, dboolean persist)
 		if (persist)
 			state.objective = parsedmsg;
 		else
-			state.add(parsedmsg);
+			state.add({.text = parsedmsg, .background = !hidebackground});
 	}
 }
 
@@ -147,7 +148,7 @@ void K_ClearPersistentMessages()
 }
 
 // Return value can be used for "paired" splitscreen messages, true = was displayed
-void K_AddMessageForPlayer(player_t *player, const char *msg, dboolean interrupt, dboolean persist)
+void K_AddMessageForPlayer(player_t *player, const char *msg, dboolean interrupt, dboolean persist, dboolean hidebackground)
 {
 	if (!player)
 		return;
@@ -168,7 +169,7 @@ void K_AddMessageForPlayer(player_t *player, const char *msg, dboolean interrupt
 	if (persist)
 		state->objective = parsedmsg;
 	else
-		state->add(parsedmsg);
+		state->add({.text = parsedmsg, .background = !hidebackground});
 }
 
 void K_ClearPersistentMessageForPlayer(player_t *player)
@@ -181,6 +182,16 @@ void K_ClearPersistentMessageForPlayer(player_t *player)
 
 	messagestate_t *state = &messagestates[G_PartyPosition(player - players)];
 	state->objective = "";
+}
+
+void K_AddCEchoMessage(char* msg)
+{
+	// Convert \\ into /n
+	for (int32_t i = 0; msg[i] != '\0'; ++i)
+		if (msg[i] == '\\')
+			msg[i] = '\n';
+
+	K_AddMessage(msg, true, false, true);
 }
 
 void K_TickMessages(void)
@@ -205,7 +216,8 @@ void K_DrawMessageFeed(void)
 		if (state.messages.size() == 0)
 			continue;
 
-		std::string msg = state.messages[0];
+		std::string msg = state.messages[0].text;
+		dboolean background = state.messages[0].background;
 
 		uint8_t sublen = state.timer;
 		if (state.mode == MM_IN)
@@ -250,7 +262,8 @@ void K_DrawMessageFeed(void)
 		}
 		uint16_t sw = text.width();
 
-		K_DrawSticker(x - sw/2, y, sw, 0, true);
+		if (background)
+			K_DrawSticker(x - sw/2, y, sw, 0, true);
 		Draw(x, y+shift).align(Draw::Align::kCenter).flags(V_ALLOWLOWERCASE|V_6WIDTHSPACE).text(text);
 	}
 }

@@ -64,6 +64,7 @@
 #include "k_color.h"
 #include "k_hud.h"
 #include "r_fps.h"
+#include "k_hud_message.h"
 
 // coords are scaled
 #define HU_INPUTX 0
@@ -620,8 +621,9 @@ static void Got_Saycmd(uint8_t **p, int32_t playernum)
 	if (flags & HU_CSAY)
 	{
 		HU_SetCEchoDuration(5);
-		I_OutputMsg("Server message: ");
-		HU_DoCEcho(msg);
+		I_OutputMsg("Server message: %s", msg);
+		//HU_DoCEcho(msg);
+		K_AddCEchoMessage(msg);
 		return;
 	}
 

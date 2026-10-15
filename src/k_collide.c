@@ -14,6 +14,7 @@
 #include "hu_stuff.h" // Sink snipe print
 #include "doomdef.h" // Sink snipe print
 #include "g_game.h" // Sink snipe print
+#include "k_hud_message.h"
 
 angle_t K_GetCollideAngle(mobj_t *t1, mobj_t *t2)
 {
@@ -1081,9 +1082,10 @@ dboolean K_KitchenSinkCollide(mobj_t *t1, mobj_t *t2)
 		S_StartSound(NULL, sfx_bsnipe); //let all players hear it.
 		S_StartSound(NULL, sfx_cgot); //let all players hear it.
 
-		HU_SetCEchoFlags(0);
-		HU_SetCEchoDuration(5);
-		HU_DoCEcho(va("%s\\was hit by a kitchen sink.\\\\\\\\", player_names[t2->player-players]));
+		//HU_SetCEchoFlags(0);
+		//HU_SetCEchoDuration(5);
+		//HU_DoCEcho(va("%s\\was hit by a kitchen sink.\\\\\\\\", player_names[t2->player-players]));
+		K_AddCEchoMessage(va("%s was hit by a kitchen sink.", player_names[t2->player-players]));
 		I_OutputMsg("%s was hit by a kitchen sink.\n", player_names[t2->player-players]);
 
 		P_PlayerRingBurst(t2->player, t2->player->rings);

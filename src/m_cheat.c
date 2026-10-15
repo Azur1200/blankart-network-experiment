@@ -34,6 +34,7 @@
 #include "p_slopes.h"
 
 #include "k_kart.h" // srb2kart
+#include "k_hud_message.h"
 
 #include "lua_script.h"
 #include "lua_hook.h"
@@ -1174,10 +1175,8 @@ void Command_ObjectPlace_f(void)
 
 			if (! silent)
 			{
-				HU_SetCEchoFlags(V_MONOSPACE);
-				HU_SetCEchoDuration(10);
-				HU_DoCEcho(va(M_GetText(
-					"\\\\\\\\\\\\\\\\\\\\\\\\\x82"
+				K_AddCEchoMessage(va(M_GetText(
+					"\x82"
 					"   Objectplace Controls:   \x80\\\\"
 					"Weapon Next/Prev: Cycle mapthings\\"
 					"            Jump: Float up       \\"

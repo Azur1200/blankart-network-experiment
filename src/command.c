@@ -38,6 +38,7 @@
 #include "r_skins.h"
 #include "m_random.h"
 #include "p_local.h" // P_ResetPlayerCheats
+#include "k_hud_message.h"
 
 //========
 // protos.
@@ -829,7 +830,8 @@ static void COM_CEcho_f(void)
 		strlcat(cechotext, COM_Argv(i), sizeof(cechotext));
 	}
 
-	HU_DoCEcho(cechotext);
+	//HU_DoCEcho(cechotext);
+	K_AddCEchoMessage(cechotext);
 }
 
 /** Sets drawing flags for the CECHO command.

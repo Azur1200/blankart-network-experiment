@@ -3770,10 +3770,11 @@ static int lib_kAddMessage(lua_State *L)
 	const char *msg = luaL_checkstring(L, 1);
 	dboolean interrupt = lua_optdboolean(L, 2);
 	dboolean persist = lua_optdboolean(L, 3);
+	dboolean hidebackground = lua_optdboolean(L, 4);
 	INLEVEL
 	if (msg == NULL)
 		return luaL_error(L, "argument #1 not given (expected string)");
-	K_AddMessage(msg, interrupt, persist);
+	K_AddMessage(msg, interrupt, persist, hidebackground);
 	return 0;
 }
 
@@ -3783,12 +3784,13 @@ static int lib_kAddMessageForPlayer(lua_State *L)
 	const char *msg = luaL_checkstring(L, 2);
 	dboolean interrupt = lua_optdboolean(L, 3);
 	dboolean persist = lua_optdboolean(L, 4);
+	dboolean hidebackground = lua_optdboolean(L, 5);
 	INLEVEL
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
 	if (msg == NULL)
 		return luaL_error(L, "argument #2 not given (expected string)");
-	K_AddMessageForPlayer(player, msg, interrupt, persist);
+	K_AddMessageForPlayer(player, msg, interrupt, persist, hidebackground);
 	return 0;
 }
 
