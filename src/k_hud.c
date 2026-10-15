@@ -674,7 +674,14 @@ void K_LoadKartHUDGraphics(void)
 	HU_UpdatePatch(&kp_wantedsplit, "4PWANTED");
 
 	// Minimap Patches
-	HU_UpdatePatch(&kp_wantedreticle, "MMAPWANT");
+	HU_UpdatePatch(&kp_wantedreticle, "MMAPWANT");	
+	kp_wantedreticle->pivot.x =
+		(kp_wantedreticle->width / 2) + kp_wantedreticle->leftoffset;
+	kp_wantedreticle->pivot.y =
+		(kp_wantedreticle->height / 2) + kp_wantedreticle->topoffset;
+	kp_wantedreticle->alignflags |=
+		(PATCHALIGN_AUTOCENTER | PATCHALIGN_USEPIVOTS);
+
 	HU_UpdatePatch(&kp_minimapdot, "MMAPDOT");
 	kp_minimapdot->pivot.x =
 		(kp_minimapdot->width / 2) + kp_minimapdot->leftoffset;
@@ -2776,8 +2783,16 @@ static dboolean K_drawKartPositionFaces(void)
 
 			patch_t *facerank = faceprefix[players[rankplayer[i]].skin][hires ? FACE_WANTED : FACE_RANK];
 
-			offsets.x = facerank->leftoffset;
-			offsets.y = facerank->topoffset;
+			if (hires)
+			{
+				offsets.x = (-facerank->width/2) * (FRACUNIT/2);
+				offsets.y = (-facerank->height/2) * (FRACUNIT/2);
+			}
+			else
+			{
+				offsets.x = facerank->leftoffset * FRACUNIT;
+				offsets.y = facerank->topoffset * FRACUNIT;
+			}
 
 #ifdef ROTSPRITE
 			if ((K_RankIconCanSpinout()) && (players[rankplayer[i]].spinoutrot))
@@ -2787,7 +2802,7 @@ static dboolean K_drawKartPositionFaces(void)
 			}
 #endif
 
-			V_DrawRotatedFixedPatch((FACE_X + offsets.x)<<FRACBITS, (Y + offsets.y)<<FRACBITS, rollangle, hires ? FRACUNIT / 2 : FRACUNIT, V_HUDTRANS|V_SNAPTOLEFT, facerank, colormap);
+			V_DrawRotatedFixedPatch((FACE_X<<FRACBITS) + offsets.x, (Y<<FRACBITS) + offsets.y, rollangle, hires ? FRACUNIT / 2 : FRACUNIT, V_HUDTRANS|V_SNAPTOLEFT, facerank, colormap);
 
 			if (players[rankplayer[i]].smonitortimer)
 			{
@@ -2815,7 +2830,8 @@ static dboolean K_drawKartPositionFaces(void)
 		{
 			patch_t *highlight = kp_facehighlight[(leveltime / 4) % 8];
 
-			int32_t left, top;
+			int32_t left = 0;
+			int32_t top = 0;
 
 			left = highlight->leftoffset;
 			top = highlight->topoffset;
@@ -5394,7 +5410,14 @@ static void K_drawKartMinimap(void)
 				if ((gametype == GT_RACE && players[i].position == spbplace)
 					|| ((gametypes[gametype]->rules & GTR_WANTED) && K_IsPlayerWanted(&players[i])))
 				{
-					K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, rollangle, kp_wantedreticle, NULL, NULL);
+					workingPic = kp_wantedreticle;       
+					widthhalf = ((workingPic->width) / 2);
+					heighthalf = ((workingPic->height) / 2);
+
+					iconoffsets.x = widthhalf;
+					iconoffsets.y = heighthalf;
+
+					K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, rollangle, kp_wantedreticle, NULL, &iconoffsets);
 				}
 			}
 		}
@@ -5601,10 +5624,10 @@ static void K_drawKartMinimap(void)
 				// Rotate based on (visual) player angle.
 				rollangle = players[localplayers[i]].drawangle-ANGLE_90;
 			}
-			if ((K_MinimapIconCanSpinout()) && (players[localplayers[i]].spinoutrot))
+			else if ((K_MinimapIconCanSpinout()) && (players[localplayers[i]].spinoutrot))
 			{
 				// Rotate counterclockwise.
-				rollangle -= FixedAngle(players[localplayers[i]].spinoutrot);
+				rollangle = -FixedAngle(players[localplayers[i]].spinoutrot);
 			}
 #endif
 
@@ -5723,22 +5746,8 @@ static void K_drawKartMinimap(void)
 						widthhalf = ((kp_smonitorsparkle->width) / 2);
 						heighthalf = ((kp_smonitorsparkle->height) / 2);
 
-						if (cv_minihead.value)
-						{
-							adjustx = FixedMul(
-							    4,
-							    (widthhalf - kp_smonitorsparkle->leftoffset) *
-								FRACUNIT / widthhalf);
-							adjusty = FixedMul(
-							    4,
-							    (heighthalf - kp_smonitorsparkle->topoffset) *
-								FRACUNIT / heighthalf);
-						}
-
-						iconoffsets.x =
-						    widthhalf - kp_smonitorsparkle->leftoffset - adjustx;
-						iconoffsets.y =
-						    heighthalf - kp_smonitorsparkle->topoffset - adjusty;
+						iconoffsets.x = widthhalf;
+						iconoffsets.y = heighthalf;
 
 						K_drawKartMinimapIcon(interpx,
 									interpy,
@@ -5758,7 +5767,14 @@ static void K_drawKartMinimap(void)
 			if ((gametype == GT_RACE && players[localplayers[i]].position == spbplace)
 				|| ((gametypes[gametype]->rules & GTR_WANTED) && K_IsPlayerWanted(&players[localplayers[i]])))
 			{
-				K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, rollangle, kp_wantedreticle, NULL, NULL);
+				workingPic = kp_wantedreticle;       
+				widthhalf = ((workingPic->width) / 2);
+				heighthalf = ((workingPic->height) / 2);
+
+				iconoffsets.x = widthhalf;
+				iconoffsets.y = heighthalf;
+
+				K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, 0, kp_wantedreticle, NULL, &iconoffsets);
 			}
 
 			K_drawKartMinimapNametag(interpx, interpy, x, y, splitflags, mobj->player);
