@@ -13098,6 +13098,8 @@ dboolean K_SMonitorSlotHogging(player_t *player)
 
 static void K_StretchPlayerGravity(player_t *player)
 {
+	fixed_t stretchScaleFactor;
+
 	I_Assert(player != NULL);
 	I_Assert(!P_MobjWasRemoved(player->mo));
 
@@ -13106,33 +13108,34 @@ static void K_StretchPlayerGravity(player_t *player)
 	fixed_t tempxscale = player->mo->realxscale;
 	fixed_t tempyscale =  player->mo->realyscale;
 
-	const fixed_t stretchScaleFactor = min(FixedDiv(FRACUNIT*60, cv_gravstretch.value), MAXSTRETCHDIV);
+	stretchScaleFactor = FixedDiv(mapobjectscale*60, cv_gravstretch.value);
+	stretchScaleFactor = min(stretchScaleFactor, MAXSTRETCHDIV);
 
 	if (pmo->slamsoundtimer)
 		pmo->slamsoundtimer--;
 
 	if (!P_IsObjectOnGround(pmo))
 	{
-		fixed_t pzmom = abs(pmo->momz);
+		const fixed_t pzmom = abs(pmo->momz);
 		const fixed_t stretchDiv = FixedDiv(pzmom, stretchScaleFactor);
 
-		if (abs(pzmom/FRACUNIT) != 0)
+		if (abs(pzmom/mapobjectscale) != 0)
 		{
-			if (((tempxscale-(stretchDiv))) > (tempxscale/5))
+			if ((tempxscale - stretchDiv) > (tempxscale / 5))
 			{
 				pmo->spritexscale = (tempxscale - stretchDiv);
 				pmo->stretchslam = pzmom;
 			}
 			else
-				pmo->spritexscale = (tempxscale/5);
+				pmo->spritexscale = (tempxscale / 5);
 
-			pmo->spriteyscale = (tempyscale + ((stretchDiv*2)/3));
+			pmo->spriteyscale = (tempyscale + ((stretchDiv * 2) / 3));
 		}
 	}
 	else if (pmo->stretchslam > 0)
 	{
 		// Funni slam sound when landing
-		if (cv_slamsound.value && (pmo->eflags & MFE_JUSTHITFLOOR) && !pmo->slamsoundtimer && (pmo->stretchslam > 4*FRACUNIT))
+		if (cv_slamsound.value && (pmo->eflags & MFE_JUSTHITFLOOR) && !pmo->slamsoundtimer && (pmo->stretchslam > 4*mapobjectscale))
 		{
 			S_StartSound(pmo, sfx_s3k4c);
 			pmo->slamsoundtimer = TICRATE;
@@ -13140,9 +13143,9 @@ static void K_StretchPlayerGravity(player_t *player)
 
 		const fixed_t slamDiv = FixedDiv(pmo->stretchslam, stretchScaleFactor);
 
-		pmo->spritexscale = (tempxscale + (((slamDiv*2)/3)*2));
+		pmo->spritexscale = (tempxscale + (((slamDiv * 2) / 3 ) * 2));
 		pmo->spriteyscale = (tempyscale - slamDiv);
-		pmo->stretchslam -= (4*FRACUNIT);
+		pmo->stretchslam -= (4*mapobjectscale);
 	}
 	else
 		pmo->stretchslam = 0;
@@ -13162,11 +13165,11 @@ static void K_SaltySquish(player_t *player)
 
 	if (pmo->stretchslam > 0)
 	{
-		const fixed_t slamDiv = FixedDiv(pmo->stretchslam, 3932160); // stretchScaleFactor = FixedDiv(FRACUNIT*60, FRACUNIT)
+		const fixed_t slamDiv = FixedDiv(pmo->stretchslam, mapobjectscale*60); // stretchScaleFactor = FixedDiv(mapobjectscale*60, FRACUNIT)
 
-		pmo->spritexscale = (tempxscale + (((slamDiv*2)/3)*2));
+		pmo->spritexscale = (tempxscale + (((slamDiv * 2) / 3) * 2));
 		pmo->spriteyscale = (tempyscale - slamDiv);
-		pmo->stretchslam -= (4*FRACUNIT);
+		pmo->stretchslam -= (4*mapobjectscale);
 	}
 	else
 		pmo->stretchslam = 0;
@@ -13231,7 +13234,7 @@ void K_QuiteSaltyHop(player_t *player)
 			player->salty.momz = 0;
 			// shlamma damma
 			if (cv_saltysquish.value)
-				player->mo->stretchslam += 8*FRACUNIT;
+				player->mo->stretchslam += 8*mapobjectscale;
 		}
 		else if (cv_saltysquish.value && player->salty.zoffset >= 0)
 		{
