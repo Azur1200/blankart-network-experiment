@@ -5400,6 +5400,12 @@ static void K_drawKartMinimap(void)
 		}
 	}
 
+	// draw our local players and various other things opaque.
+	{
+		splitflags &= ~V_HUDTRANSHALF;
+		splitflags |= V_HUDTRANS;
+	}
+
 	// draw minimap-pertinent objects
 	for (mobj = kitemcap; mobj; mobj = next)
 	{
@@ -5485,12 +5491,6 @@ static void K_drawKartMinimap(void)
 		interpy = R_InterpolateFixed(mobj->old_y, mobj->y);
 
 		K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, rollangle, workingPic, colormap, NULL);
-	}
-
-	// draw our local players here, opaque.
-	{
-		splitflags &= ~V_HUDTRANSHALF;
-		splitflags |= V_HUDTRANS;
 	}
 
 	// ...but first, any boss targets.
