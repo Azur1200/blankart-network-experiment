@@ -13106,7 +13106,7 @@ static void K_StretchPlayerGravity(player_t *player)
 	fixed_t tempxscale = player->mo->realxscale;
 	fixed_t tempyscale =  player->mo->realyscale;
 
-	const fixed_t stretchScaleFactor = min(FixedDiv(FRACUNIT*60, cv_gravstretch.value), MAXSTRETCHDIV);
+	const fixed_t stretchScaleFactor = min(FixedDiv(mapobjectscale*60, cv_gravstretch.value), MAXSTRETCHDIV);
 
 	if (pmo->slamsoundtimer)
 		pmo->slamsoundtimer--;
@@ -13116,7 +13116,7 @@ static void K_StretchPlayerGravity(player_t *player)
 		fixed_t pzmom = abs(pmo->momz);
 		const fixed_t stretchDiv = FixedDiv(pzmom, stretchScaleFactor);
 
-		if (abs(pzmom/FRACUNIT) != 0)
+		if (abs(pzmom/mapobjectscale) != 0)
 		{
 			if (((tempxscale-(stretchDiv))) > (tempxscale/5))
 			{
