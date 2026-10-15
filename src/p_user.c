@@ -2201,19 +2201,58 @@ static void P_3dMovement(player_t *player)
 		K_MomentumToFacing(player);
 	}
 
+#define BASE_SIDEMOVEPOWER (FRACUNIT / 128)
+#define STRONG_SIDEMOVEPOWER (FRACUNIT / 32)
+#define BASE_ANGLEPOWER (0)
+#define STRONG_ANGLEPOWER (ANGLE_45 / 2)
+#define CRASH_SPEEDEXPONENT_THRESHOLD (16 * FRACUNIT)
+
 	const fixed_t kartspd = K_GetKartSpeed(player, true, true);
 
 	// Sideways movement
-	if (cmd->sidemove != 0 && !((player->exiting || mapreset) || K_DamagePreventSidemove(player)))
+	if (cmd->sidemove != 0 &&
+	    !((player->exiting || mapreset) || K_DamagePreventSidemove(player)))
 	{
-		if (cmd->sidemove > 0)
-			movepushside = FixedMul((cmd->sidemove * FRACUNIT/128) + FixedDiv(player->speed, kartspd), mapobjectscale);
-		else
-			movepushside = FixedMul((cmd->sidemove * FRACUNIT/128) - FixedDiv(player->speed, kartspd), mapobjectscale);
+		fixed_t sidemovepower = BASE_SIDEMOVEPOWER;
+		fixed_t powerfac = 0;
+		angle_t anglepower = 0;
+		int64_t realmomentum = FixedDiv64(K_Momentum2D(player->mo), mapobjectscale);
 
-		totalthrust.x += P_ReturnThrustX(player->mo, movepushsideangle, movepushside);
-		totalthrust.y += P_ReturnThrustY(player->mo, movepushsideangle, movepushside);
+		// Make crashes steer stronger the closer the player's speed is to 0
+		if (player->crash_state)
+		{
+			if (realmomentum <= (16 * FRACUNIT))
+			{
+				powerfac = (fixed_t)(FixedDiv64(
+				    max(0, CRASH_SPEEDEXPONENT_THRESHOLD - max(0, realmomentum)),
+				    CRASH_SPEEDEXPONENT_THRESHOLD));
+				sidemovepower = Easing_InCubic(
+				    powerfac, BASE_SIDEMOVEPOWER, STRONG_SIDEMOVEPOWER);
+				anglepower =
+				    Easing_InCubic(powerfac, BASE_ANGLEPOWER, STRONG_ANGLEPOWER);
+			}
+		}
+
+		if (cmd->sidemove > 0)
+			movepushside = FixedMul(
+			    (cmd->sidemove * sidemovepower) + FixedDiv(player->speed, kartspd),
+			    mapobjectscale);
+		else
+			movepushside = FixedMul(
+			    (cmd->sidemove * sidemovepower) - FixedDiv(player->speed, kartspd),
+			    mapobjectscale);
+
+		totalthrust.x +=
+		    P_ReturnThrustX(player->mo, movepushsideangle - anglepower, movepushside);
+		totalthrust.y +=
+		    P_ReturnThrustY(player->mo, movepushsideangle - anglepower, movepushside);
 	}
+
+#undef BASE_SIDEMOVEPOWER
+#undef STRONG_SIDEMOVEPOWER
+#undef BASE_ANGLEPOWER
+#undef STRONG_ANGLEPOWER
+#undef CRASH_SPEEDEXPONENT_THRESHOLD
 
 	if ((totalthrust.x || totalthrust.y)
 		&& player->mo->standingslope != NULL

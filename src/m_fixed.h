@@ -207,6 +207,21 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedDiv2(fixed_t a, fixed_t b)
 	return (fixed_t)(((int64_t)a * FRACUNIT) / b);
 }
 
+/**	\brief	The FixedDiv2_64 function
+
+	\param	a	fixed_t number
+	\param	b	fixed_t number
+
+	\return	(int64_t) a/b * FRACUNIT
+
+*/
+FUNCMATH FUNCINLINE static ATTRINLINE int64_t FixedDiv2_64(fixed_t a, fixed_t b)
+{
+	// This does not check for division overflow or division by 0!
+	// That is the caller's responsibility.
+	return (((int64_t)a * FRACUNIT) / b);
+}
+
 /**	\brief	The FixedInt function
 
 	\param	a	fixed_t number
@@ -234,6 +249,23 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedDiv(fixed_t a, fixed_t b)
 		return (a^b) < 0 ? INT32_MIN : INT32_MAX;
 
 	return FixedDiv2(a, b);
+}
+
+/**	\brief	The FixedDiv64 function
+
+	\param	a	fixed_t number
+	\param	b	fixed_t number
+
+	\return	(int64_t) a/b
+
+
+*/
+FUNCMATH FUNCINLINE static ATTRINLINE int64_t FixedDiv64(fixed_t a, fixed_t b)
+{
+	if ((abs(a / (FRACUNIT/4))) >= abs(b))
+		return (a^b) < 0 ? INT64_MIN : INT64_MAX;
+
+	return FixedDiv2_64(a, b);
 }
 
 /*!

@@ -3683,6 +3683,8 @@ uint16_t K_GetKartButtons(const player_t *player)
 		(K_KartKickstart(player) ? BT_ACCELERATE : 0));
 }
 
+#define TUMBLESTART_DIV (60303) // 0.920161
+
 int8_t K_GetForwardMove(const player_t *player)
 {
 	int8_t forwardmove = player->cmd.forwardmove;
@@ -3704,10 +3706,10 @@ int8_t K_GetForwardMove(const player_t *player)
 	if ((player->exiting || mapreset) ||
 		player->pflags & PF_STASIS ||
 		player->spinouttimer ||
-		player->flipovertimer) // pw_introcam?
+		player->flipovertimer || player->crash_state) // pw_introcam?
 	{
 		forwardmove = 0;
-		if (player->sneakertimer || player->crash_state) // Maybe move this to a function like K_DamagePreventSidemove?
+		if (player->sneakertimer) // Maybe move this to a function like K_DamagePreventSidemove?
 			forwardmove = MAXPLMOVE;
 	}
 
@@ -3725,7 +3727,9 @@ int8_t K_GetSideMove(const player_t *player)
 		return 0;
 	}
 
-	if (player->pogospring)
+	const dboolean onground = ((!P_MobjWasRemoved(player->mo)) && (P_IsObjectOnGround(player->mo)));
+
+	if (player->pogospring || (player->crash_state && onground))
 	{
 		return sidemove;
 	}
@@ -4094,8 +4098,6 @@ void K_FlipPlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 	P_SetPlayerMobjState(player->mo, S_KART_SPINOUT);
 }
 
-#define TUMBLESTART_DIV (60303) // 0.920161
-
 // This makes the player "roll over" along the ground for some time
 void K_TumblePlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 {
@@ -4215,15 +4217,59 @@ void K_Player_CrashThinker(player_t *player)
 	{
 		if (player->crash_zoffset_delta)
 		{
-			player->crash_zoffset += player->crash_zoffset_delta;
+			// Shitty logic check: prevent crashes from seeping into the negative *relative to the offset's signedness*
+			// Why? GRAVFLIP, THAT'S WHY.
+			fixed_t newzoffset = player->crash_zoffset + player->crash_zoffset_delta;
+
+			int8_t offset_sign = intsign(player->crash_zoffset);
+
+			if (!player->crash_zoffset)
+			{
+				offset_sign = P_MobjFlip(player->mo);
+			}
+
+			if (offset_sign < 0)
+			{
+				// Z offset is negative
+				if (newzoffset > 0)
+				{
+					player->crash_zoffset = 0;
+					player->crash_zoffset_delta = 0;
+				}
+				else
+				{
+					player->crash_zoffset = newzoffset;
+				}
+			}
+			else if (offset_sign > 0)
+			{
+				// Z offset is positive
+				if (newzoffset < 0)
+				{
+					player->crash_zoffset = 0;
+					player->crash_zoffset_delta = 0;
+				}
+				else
+				{
+					player->crash_zoffset = newzoffset;
+				}
+			}
+			else
+			{
+				// We don't even have an offset yet!
+				player->crash_zoffset = newzoffset;
+			}
 		}
 	}
 
-	if (player->crash_zoffset < 0)
+	if (!player->crash_zoffset_delta)
 	{
-		// Don't let this go into the negatives
-		player->crash_zoffset = 0;
-		player->crash_zoffset_delta = 0;
+		int8_t gravflip = P_MobjFlip(player->mo);
+		if (((gravflip < 0) && (player->crash_zoffset > 0)) || ((gravflip > 0) && (player->crash_zoffset < 0)))
+		{
+			// If we have no delta, we should probably fix this!
+			player->crash_zoffset = ApproachOneWayFixed(player->crash_zoffset, 0, 4*mapobjectscale);
+		}
 	}
 
 	// Early-exit if we're not crashing
@@ -4243,7 +4289,7 @@ void K_Player_CrashThinker(player_t *player)
 	if (P_IsObjectOnGround(player->mo))
 	{
 		player->crash_zoffset_delta =
-			ApproachOneWayFixed(player->crash_zoffset_delta, (-64 * mapobjectscale), my_gravity);
+			ApproachOneWayFixed(player->crash_zoffset_delta, (-64 * mapobjectscale * P_MobjFlip(player->mo)), my_gravity);
 	}
 	else
 	{
@@ -13052,6 +13098,8 @@ dboolean K_SMonitorSlotHogging(player_t *player)
 
 static void K_StretchPlayerGravity(player_t *player)
 {
+	fixed_t stretchScaleFactor;
+
 	I_Assert(player != NULL);
 	I_Assert(!P_MobjWasRemoved(player->mo));
 
@@ -13060,33 +13108,34 @@ static void K_StretchPlayerGravity(player_t *player)
 	fixed_t tempxscale = player->mo->realxscale;
 	fixed_t tempyscale =  player->mo->realyscale;
 
-	const fixed_t stretchScaleFactor = min(FixedDiv(FRACUNIT*60, cv_gravstretch.value), MAXSTRETCHDIV);
+	stretchScaleFactor = FixedDiv(mapobjectscale*60, cv_gravstretch.value);
+	stretchScaleFactor = min(stretchScaleFactor, MAXSTRETCHDIV);
 
 	if (pmo->slamsoundtimer)
 		pmo->slamsoundtimer--;
 
 	if (!P_IsObjectOnGround(pmo))
 	{
-		fixed_t pzmom = abs(pmo->momz);
+		const fixed_t pzmom = abs(pmo->momz);
 		const fixed_t stretchDiv = FixedDiv(pzmom, stretchScaleFactor);
 
-		if (abs(pzmom/FRACUNIT) != 0)
+		if (abs(pzmom/mapobjectscale) != 0)
 		{
-			if (((tempxscale-(stretchDiv))) > (tempxscale/5))
+			if ((tempxscale - stretchDiv) > (tempxscale / 5))
 			{
 				pmo->spritexscale = (tempxscale - stretchDiv);
 				pmo->stretchslam = pzmom;
 			}
 			else
-				pmo->spritexscale = (tempxscale/5);
+				pmo->spritexscale = (tempxscale / 5);
 
-			pmo->spriteyscale = (tempyscale + ((stretchDiv*2)/3));
+			pmo->spriteyscale = (tempyscale + ((stretchDiv * 2) / 3));
 		}
 	}
 	else if (pmo->stretchslam > 0)
 	{
 		// Funni slam sound when landing
-		if (cv_slamsound.value && (pmo->eflags & MFE_JUSTHITFLOOR) && !pmo->slamsoundtimer && (pmo->stretchslam > 4*FRACUNIT))
+		if (cv_slamsound.value && (pmo->eflags & MFE_JUSTHITFLOOR) && !pmo->slamsoundtimer && (pmo->stretchslam > 4*mapobjectscale))
 		{
 			S_StartSound(pmo, sfx_s3k4c);
 			pmo->slamsoundtimer = TICRATE;
@@ -13094,9 +13143,9 @@ static void K_StretchPlayerGravity(player_t *player)
 
 		const fixed_t slamDiv = FixedDiv(pmo->stretchslam, stretchScaleFactor);
 
-		pmo->spritexscale = (tempxscale + (((slamDiv*2)/3)*2));
+		pmo->spritexscale = (tempxscale + (((slamDiv * 2) / 3 ) * 2));
 		pmo->spriteyscale = (tempyscale - slamDiv);
-		pmo->stretchslam -= (4*FRACUNIT);
+		pmo->stretchslam -= (4*mapobjectscale);
 	}
 	else
 		pmo->stretchslam = 0;
@@ -13116,11 +13165,11 @@ static void K_SaltySquish(player_t *player)
 
 	if (pmo->stretchslam > 0)
 	{
-		const fixed_t slamDiv = FixedDiv(pmo->stretchslam, 3932160); // stretchScaleFactor = FixedDiv(FRACUNIT*60, FRACUNIT)
+		const fixed_t slamDiv = FixedDiv(pmo->stretchslam, mapobjectscale*60); // stretchScaleFactor = FixedDiv(mapobjectscale*60, FRACUNIT)
 
-		pmo->spritexscale = (tempxscale + (((slamDiv*2)/3)*2));
+		pmo->spritexscale = (tempxscale + (((slamDiv * 2) / 3) * 2));
 		pmo->spriteyscale = (tempyscale - slamDiv);
-		pmo->stretchslam -= (4*FRACUNIT);
+		pmo->stretchslam -= (4*mapobjectscale);
 	}
 	else
 		pmo->stretchslam = 0;
@@ -13185,7 +13234,7 @@ void K_QuiteSaltyHop(player_t *player)
 			player->salty.momz = 0;
 			// shlamma damma
 			if (cv_saltysquish.value)
-				player->mo->stretchslam += 8*FRACUNIT;
+				player->mo->stretchslam += 8*mapobjectscale;
 		}
 		else if (cv_saltysquish.value && player->salty.zoffset >= 0)
 		{
