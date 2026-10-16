@@ -4323,8 +4323,8 @@ static void P_RefreshItemCapsuleParts(mobj_t *mobj)
 			P_SetTarget(&part->tracer, P_SpawnMobjFromMobj(mobj, 0, 0, 0, MT_OVERLAY));
 			P_SetTarget(&part->tracer->target, part);
 			P_SetMobjState(part->tracer, S_INVISIBLE);
-			part->tracer->spriteyoffset = 10*FRACUNIT;
-			part->tracer->spritexoffset = 13*numNumbers*FRACUNIT;
+			part->tracer->realyoffset = part->tracer->spriteyoffset = 10*FRACUNIT;
+			part->tracer->realxoffset = part->tracer->spritexoffset = 13*numNumbers*FRACUNIT;
 			part->tracer->threshold = OV_DONTSCREENOFFSET;
 		}
 		part = part->tracer;
