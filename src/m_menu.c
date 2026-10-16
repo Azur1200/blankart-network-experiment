@@ -3750,7 +3750,6 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 
 		fixed_t scale = part->small ? FRACUNIT/2 : FRACUNIT;
 		int32_t colorflag;
-		int32_t (*widthfunc)(const char *string, int32_t length, int32_t option);
 
 		if (item->status & IT_SECRET)
 		{
@@ -3779,6 +3778,8 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 		patch_t *p = NULL;
 		uint8_t *cmap = NULL;
 		int32_t num;
+		fixed_t stringwidth = 0;
+		fixed_t stringscale = 0;
 
 		switch (part->type)
 		{
@@ -3786,13 +3787,9 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 			switch (part->font)
 			{
 			case HU_FONT:
-				widthfunc = V_SubStringWidth;
-				break;
 			case TINY_FONT:
-				widthfunc = V_ThinSubStringWidth;
-				break;
 			case CRED_FONT:
-				widthfunc = V_CreditSubStringWidth;
+				stringscale = FRACUNIT;
 				break;
 			default:
 				I_Error("unknown font %d", part->font);
@@ -3802,10 +3799,9 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 			if (part->fontalt)
 				vflags |= V_6WIDTHSPACE;
 
-			width = M_GetAlignment(part, x, widthfunc(string, -1, vflags)*FRACUNIT);
+			stringwidth = V_StringScaledWidth(stringscale, stringscale, stringscale, vflags, part->font, string);
 
-			//if (part->flags & IT_STICKER)
-				//K_DrawSticker((x - width)/FRACUNIT, y/FRACUNIT + 2, widthfunc(string, -1, vflags), vflags & ~V_FLIP, true);
+			width = M_GetAlignment(part, x, stringwidth);
 
 			V_DrawStringScaled(x - width + part->xofs, y + part->yofs, scale, FRACUNIT, FRACUNIT, colorflag|vflags, part->font, string);
 			retwidth = max(retwidth, width);

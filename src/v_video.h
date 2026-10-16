@@ -178,6 +178,7 @@ void V_CubeApply(RGBA_t *input);
 #define V_MODULATE           ((AST_MODULATE-1)<<V_BLENDSHIFT) // Modulate
 #define V_OVERLAY            ((AST_OVERLAY-1)<<V_BLENDSHIFT) // Overlay
 
+#define V_USETEXTTAG 0x08000000 // (strings only) Use text tags when drawing this string.
 #define V_ALLOWLOWERCASE     0x10000000 // (strings only) allow fonts that have lowercase letters to use them
 #define V_FLIP               0x10000000 // (patches only) Horizontal flip
 #define V_SLIDEIN            0x20000000 // Slide in from the sides on level load, depending on snap flags
@@ -277,6 +278,11 @@ void V_DrawPromptBack(int32_t boxheight, int32_t color);
 
 /* Convenience macros for leagacy string function macros. */
 
+#define V__OneScaleStringWidth( scale,option,font,string ) \
+	V_SubStringScaledWidth(scale,FRACUNIT,FRACUNIT,option,font,-1,string)
+#define V__IntegerStringWidth( scale,option,font,string ) \
+	(V_SubStringScaledWidth(scale,FRACUNIT,FRACUNIT,option,font,-1,string) / FRACUNIT)
+
 /* Yes I'm lazy RN, deal with it. */
 #define V_DrawStringScaled( x,y,scale,space_scale,linefeed_scale,option,font,string ) \
 	V_DrawStringScaledEx(x,y,scale,scale,space_scale,linefeed_scale,option,NULL,font,string)
@@ -314,13 +320,20 @@ void V_DrawStringScaledEx(
 		int         font,
 		const char *text);
 
-fixed_t V_StringScaledWidth(
+fixed_t V_SubStringScaledWidth(
 		fixed_t      scale,
 		fixed_t spacescale,
 		fixed_t    lfscale,
 		int32_t      flags,
 		int        fontno,
+		int32_t length,
 		const char *s);
+
+#define V_StringScaledWidth(scale, spacescale, lfscale, option,font,string) \
+	V_SubStringScaledWidth(scale, spacescale, lfscale, option, font, -1, string)
+
+#define V_SubStringWidth(string,length,option) \
+	V_SubStringScaledWidth(FRACUNIT, FRACUNIT, FRACUNIT, option, HU_FONT, length, string) / FRACUNIT
 
 char * V_ScaledWordWrap(
 		fixed_t          w,
@@ -410,20 +423,30 @@ int16_t V_LevelActNumWidth(uint8_t num); // act number width
 	V__DrawOneScaleString (x,y,FRACUNIT,option,CRED_FONT,string)
 
 
-int32_t V_CreditSubStringWidth(const char *string, int32_t length, int32_t option);
-#define V_CreditStringWidth(string) V_ThinSubStringWidth(string, -1, 0)
+#define V_CreditStringWidth( string ) \
+	V__IntegerStringWidth ( FRACUNIT,0,CRED_FONT,string )
 
 // Find string width from hu_font chars
-int32_t V_SubStringWidth(const char *string, int32_t length, int32_t option);
-#define V_StringWidth(string, option) V_SubStringWidth(string, -1, option)
+#define V_StringWidth( string,option ) \
+	V__IntegerStringWidth ( FRACUNIT,option,HU_FONT,string )
 // Find string width from hu_font chars, 0.5x scale
-int32_t V_SmallSubStringWidth(const char *string, int32_t length, int32_t option);
-#define V_SmallStringWidth(string, option) V_SmallSubStringWidth(string, -1, option)
+#define V_SmallStringWidth( string,option ) \
+	V__IntegerStringWidth ( FRACUNIT>>1,option,HU_FONT,string )
 // Find string width from tny_font chars
-int32_t V_ThinSubStringWidth(const char *string, int32_t length, int32_t option);
-#define V_ThinStringWidth(string, option) V_ThinSubStringWidth(string, -1, option)
+#define V_ThinStringWidth( string,option ) \
+	V__IntegerStringWidth ( FRACUNIT,option,TINY_FONT,string )
 
-int32_t V_SubStringLengthToFit(const char *string, int32_t width, int32_t option);
+fixed_t V_SubStringScaledLengthToFit(
+		fixed_t      scale,
+		fixed_t spacescale,
+		fixed_t    lfscale,
+		int32_t      flags,
+		int        fontno,
+		int32_t width,
+		const char *s);
+
+#define V_SubStringLengthToFit( string, length, option ) \
+	V_SubStringScaledLengthToFit(FRACUNIT,FRACUNIT,FRACUNIT,option,HU_FONT,length,string)
 
 // this is pretty dumb, but has to be done like this, otherwise the fps counter just disappears sometimes for no reason lol
 FUNCINLINE static ATTRINLINE int32_t V_LocalTransFlag(void)

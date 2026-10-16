@@ -234,7 +234,7 @@ void K_DrawMessageFeed(void)
 		Draw::TextElement text(submsg);
 
 		text.font(Draw::Font::kThin);
-		text.flags(V_ALLOWLOWERCASE|V_6WIDTHSPACE);
+		text.flags(V_ALLOWLOWERCASE|V_6WIDTHSPACE|V_USETEXTTAG);
 
 		uint8_t x = 160;
 		uint8_t y = 10;
@@ -264,6 +264,6 @@ void K_DrawMessageFeed(void)
 
 		if (background)
 			K_DrawSticker(x - sw/2, y, sw, 0, true);
-		Draw(x, y+shift).align(Draw::Align::kCenter).flags(V_ALLOWLOWERCASE|V_6WIDTHSPACE).text(text);
+		Draw(x, y+shift).align(Draw::Align::kCenter).flags(V_ALLOWLOWERCASE|V_6WIDTHSPACE|V_USETEXTTAG).text(text);
 	}
 }

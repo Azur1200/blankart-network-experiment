@@ -455,7 +455,7 @@ void Dialogue::Draw(void)
 	drawer
 		.xy(10 - BASEVIDWIDTH, -3-32)
 		.font(srb2::Draw::Font::kConsole)
-		.flags(V_ALLOWLOWERCASE|V_6WIDTHSPACE)
+		.flags(V_ALLOWLOWERCASE|V_6WIDTHSPACE|V_USETEXTTAG)
 		.text( typewriter.text.c_str() );
 
 	if (Dismissable())

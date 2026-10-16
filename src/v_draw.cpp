@@ -45,7 +45,7 @@ Draw::TextElement& Draw::TextElement::parse(std::string_view raw)
 		BUTTON("right", 0x02),
 		BUTTON("left", 0x03),
 
-		//BUTTON("dpad", 0x04),
+		BUTTON("lookback", 0x04),
 
 		BUTTON("drift", 0x07),
 		BUTTON("item", 0x08),
