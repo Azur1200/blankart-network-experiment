@@ -1792,8 +1792,6 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	spr_offset = spritecachedinfo[lumpoff].offset;
 	spr_topoffset = spritecachedinfo[lumpoff].topoffset;
 
-	float base_topoffs = FIXED_TO_FLOAT(spr_topoffset);
-
 #ifdef ROTSPRITE
 	spriterotangle = R_SpriteRotationAngle(thing, NULL, &interp, (affinesprite && vflip));
 
@@ -1938,11 +1936,13 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		spriteyscale = 1.0;
 	}
 
+	fixed_t thingyoffset = (FixedDiv(interp.spriteyoffset, highresscale) + FixedDiv((visoffs.y * visoffymul), mapobjectscale) + ((affinesprite) ? 0 : (rotoffset.y * visoffymul)));
+
 	if (thing->renderflags & RF_ABSOLUTEOFFSETS)
 	{
 		spr_offset = FixedDiv(interp.spritexoffset,highresscale);
 #ifdef ROTSPRITE
-		spr_topoffset = (FixedDiv(interp.spriteyoffset,highresscale) + FixedDiv((visoffs.y * visoffymul), mapobjectscale) + (rotoffset.y * visoffymul));
+		spr_topoffset = thingyoffset;
 #else
 		spr_topoffset = FixedDiv(interp.spriteyoffset,highresscale);
 #endif
@@ -1956,10 +1956,14 @@ static void HWR_ProjectSprite(mobj_t *thing)
 
 		spr_offset += FixedDiv(interp.spritexoffset,highresscale) * flipoffset;
 #ifdef ROTSPRITE
-		spr_topoffset += (FixedDiv(interp.spriteyoffset,highresscale) + FixedDiv((visoffs.y * visoffymul),
-		mapobjectscale) + (rotoffset.y * visoffymul)) * flipoffset;
+		thingyoffset *= flipoffset;
+
+		if (vflip && affinesprite)
+			thingyoffset *= -1;
+
+		spr_topoffset += thingyoffset;
 #else
-		spr_topoffset += FixedDiv(interp.spriteyoffset,highresscale) * flipoffset;
+		spr_topoffset += FixedDiv(interp.spriteyoffset, highresscale) * flipoffset;
 #endif
 	}
 
@@ -2196,26 +2200,28 @@ nodeterminant:
 		affine_rootpoint.y = 0;
 
 		const float f_topoffs = (FIXED_TO_FLOAT(spr_topoffset));
+		float ys = FIXED_TO_FLOAT(interp.scale) * FIXED_TO_FLOAT(interp.spriteyscale);
+		float oy = ys * FIXED_TO_FLOAT(interp.spriteyoffset);
 
 		if (vflip)
 		{
-			affine_rootpoint.y = (FIXED_TO_FLOAT(interp.z + thing->height) + affine_pivotoffsetdiff.y) - (f_topoffs * this_yscale);
+			affine_rootpoint.y = (FIXED_TO_FLOAT(interp.z + thing->height) + affine_pivotoffsetdiff.y);
 		}
 		else
 		{
-			affine_rootpoint.y = (FIXED_TO_FLOAT(interp.z) - affine_pivotoffsetdiff.y) + (f_topoffs * this_yscale);
+			affine_rootpoint.y = (FIXED_TO_FLOAT(interp.z) - affine_pivotoffsetdiff.y);
 		}
 
 		if (!affinesprite)
 		{
 			if (vflip)
 			{
-				gz = affine_rootpoint.y;
+				gz = affine_rootpoint.y - (f_topoffs * this_yscale);
 				gzt = gz + (FIXED_TO_FLOAT(spr_height) * this_yscale);
 			}
 			else
 			{
-				gzt = affine_rootpoint.y;
+				gzt = affine_rootpoint.y + (f_topoffs * this_yscale);
 				gz = gzt - (FIXED_TO_FLOAT(spr_height) * this_yscale);
 			}
 		}
@@ -2223,13 +2229,13 @@ nodeterminant:
 		{
 			if (vflip)
 			{
-				affine_rootpoint.y += (base_topoffs * this_yscale);
+				affine_rootpoint.y -= oy;
 				gz = affine_rootpoint.y - (f_topoffs * this_yscale);
 				gzt = gz + (FIXED_TO_FLOAT(spr_height) * this_yscale);
 			}
 			else
 			{
-				affine_rootpoint.y -= (base_topoffs * this_yscale);
+				affine_rootpoint.y += oy;
 				gzt = affine_rootpoint.y + (f_topoffs * this_yscale);
 				gz = gzt - (FIXED_TO_FLOAT(spr_height) * this_yscale);
 			}

@@ -8924,14 +8924,35 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	
 	if (player->karttilt)
 	{
-		//todo: a way for skins(?) to define the tyre offset
-		// this can look weird depending on camera angle, may be smarter to change pivots instead
-		fixed_t tyredistance = player->mo->info->radius * intsign(player->karttilt);
-		vector2_t tyreoffs = {tyredistance, 0};
+		angle_t viewingAngle = R_PointToAnglePlayer(NULL, player->mo->x, player->mo->y);
+		angle_t angleDelta = (viewingAngle - player->drawangle);
 		fixed_t rate = FixedDiv(abs(player->karttilt), 90*FRACUNIT);
 		fixed_t vrate = (-FixedMul(rate * 2 - FRACUNIT, rate * 2 - FRACUNIT)) + FRACUNIT;
+
+		fixed_t tyredistance = player->mo->info->radius;
+		int32_t axlewidth = 26;
+		int32_t axleseparation = 32;
+		vector2_t tyreoffs = {0};
+
+		if (wadfiles[skins[player->skin]->wadnum]->compatmode)
+		{
+			// v1 kart
+			axlewidth = 22;
+			axleseparation = 26;
+		}
+		FV2_Load(&tyreoffs, axlewidth*FRACUNIT, axleseparation*FRACUNIT);
+		FV2_Rotate(&tyreoffs, AngleFixed(angleDelta));
+
+		tyreoffs.y = 0;
+		tyreoffs.x = abs(tyreoffs.x);
+		tyredistance = tyreoffs.x;
+		FV2_Rotate(&tyreoffs, abs(player->karttilt));
+
+		player->mo->spritexoffset += (tyredistance - abs(tyreoffs.x)) * intsign(player->karttilt);
+
+		tyreoffs.y = 0;
+		tyreoffs.x = tyredistance;
 		FV2_Rotate(&tyreoffs, 45*FRACUNIT);
-		player->mo->spritexoffset += Easing_Linear(rate, 0, (5*tyredistance/2));
 		player->mo->spriteyoffset += Easing_Linear(vrate, 0, abs(tyreoffs.y/2));
 		
 		// CONS_Debug(DBG_PLAYER, "tyre dist : %4.3f\n", FIXED_TO_FLOAT(tyredistance));

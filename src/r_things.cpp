@@ -201,7 +201,6 @@ static void R_InstallSpriteLump(uint16_t wad,            // graphics patch
 			sprtemp[frame].lumpid[r + rightfactor] = lumpid;
 			sprtemp[frame].lumppat[r + rightfactor + 8] = lumppat;
 			sprtemp[frame].lumpid[r + rightfactor + 8] = lumpid;
-
 		}
 
 		if (flipped)
@@ -682,7 +681,7 @@ void R_InitSprites(void)
 		negonearray[i] = -1;
 
 #ifdef ROTSPRITE
-	for (angle = 1; angle < ROTANGLES; angle++)
+	for (angle = 0; angle < ROTANGLES; angle++)
 	{
 		fa = ANG2RAD(FixedAngle((ROTANGDIFF * angle)<<FRACBITS));
 		rollcosang[angle] = FLOAT_TO_FIXED(cosf(-fa));
@@ -2201,7 +2200,7 @@ static void R_ProjectSprite(mobj_t *thing)
 		sprinfo = &((skin_t *)thing->skin)->sprinfo[thing->sprite2];
 #endif
 		if (frame >= sprdef->numframes) {
-			CONS_Alert(CONS_ERROR, M_GetText("R_ProjectSprite: invalid skins[\"%s\"].sprites[%sSPR2_%s] frame %s\n"), ((skin_t *)thing->skin)->name, ((thing->sprite2 & FF_SPR2SUPER) ? "FF_SPR2SUPER|": ""), spr2names[(thing->sprite2 & ~FF_SPR2SUPER)], sizeu5(frame));
+			CONS_Alert(CONS_ERROR, M_GetText("R_ProjectSprite: invalid skins[\"%s\"].sprites[SPR2_%s] frame %s\n"), ((skin_t *)thing->skin)->name, spr2names[thing->sprite2], sizeu5(frame));
 			thing->sprite = states[S_UNKNOWN].sprite;
 			thing->frame = states[S_UNKNOWN].frame;
 			sprdef = &sprites[thing->sprite];
@@ -2537,21 +2536,10 @@ static void R_ProjectSprite(mobj_t *thing)
 #endif
 	}
 
-	if (papersprite)
-	{
-		// yama: No, seriously -- why the FUCK do I need to do this?!
-		if (flip)
-			offset = spr_offset - spr_width;
-		else
-			offset = -spr_offset;
-	}
+	if (flip)
+		offset = spr_offset - spr_width;
 	else
-	{
-		if (((interptarg->renderflags & RF_FLIPOFFSETS) || (interptarg->player)) && flip)
-			offset = spr_offset - spr_width;
-		else
-			offset = -spr_offset;
-	}
+		offset = -spr_offset;
 
 #ifdef ROTSPRITE
 	if (visoffs.x)
