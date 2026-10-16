@@ -3582,7 +3582,8 @@ void V_DrawStringScaledEx(
 					else BUTTONCODE(custom1, gc_custom1)
 					else BUTTONCODE(custom2, gc_custom2)
 					else BUTTONCODE(custom3, gc_custom3)
-
+#undef DRAWBUTTON
+#undef BUTTONCODE
 					if (match)
 					{
 						// Now skip past this part of the string.
@@ -3728,6 +3729,64 @@ fixed_t V_StringScaledWidth(
 			case '\n':
 				cx  =   0;
 				break;
+			case '<': // Control Codes
+			{
+				char temp[1024] = {};
+				strncpy(temp, s, strlen(s));
+				char *end = strchr(temp, '>');
+				dboolean match = false;
+
+				// No end why bother.
+				if (end != NULL)
+				{
+					int32_t size = end - temp;
+					char temp2[1024] = {};
+
+					strncpy(temp2, temp+1, size-1);
+
+#define BUTTONCODE(buttonname, buttoncode) \
+	if (fastcmp(temp2, #buttonname)) \
+	{ \
+		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
+		cx += cw; \
+		match = true; \
+	} \
+	else if (fastcmp(temp2, va("%s_pressed", #buttonname))) \
+	{ \
+		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
+		cx += cw; \
+		match = true; \
+	} \
+	else if (fastcmp(temp2, va("%s_animated", #buttonname))) \
+	{ \
+		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
+		cx += cw; \
+		match = true; \
+	}
+
+					BUTTONCODE(up, gc_aimforward)
+					else BUTTONCODE(down, gc_aimbackward)
+					else BUTTONCODE(left, gc_turnright)
+					else BUTTONCODE(right, gc_turnleft)
+					//else BUTTONCODE(dpad, dpad
+					else BUTTONCODE(drift, gc_drift)
+					else BUTTONCODE(item, gc_fire)
+					else BUTTONCODE(systemmenu, gc_systemmenu)
+					else BUTTONCODE(accel, gc_accelerate)
+					else BUTTONCODE(brake, gc_brake)
+					else BUTTONCODE(horn, gc_horncode)
+					else BUTTONCODE(custom1, gc_custom1)
+					else BUTTONCODE(custom2, gc_custom2)
+					else BUTTONCODE(custom3, gc_custom3)
+#undef BUTTONCODE
+					if (match)
+					{
+						// Now skip past this part of the string.
+						s += size;
+						break;
+					}
+				}
+			}
 			default:
 				if (( c & 0x80 ) || c == V_STRINGDANCE)
 					continue;
@@ -3860,6 +3919,64 @@ char * V_ScaledWordWrap(
 				cxatstart = 0;
 				startwriter = 0;
 				break;
+			case '<': // Control Codes
+			{
+				char temp[1024] = {};
+				strncpy(temp, s, strlen(s));
+				char *end = strchr(temp, '>');
+				dboolean match = false;
+
+				// No end why bother.
+				if (end != NULL)
+				{
+					int32_t size = end - temp;
+					char temp2[1024] = {};
+
+					strncpy(temp2, temp+1, size-1);
+
+#define BUTTONCODE(buttonname, buttoncode) \
+	if (fastcmp(temp2, #buttonname)) \
+	{ \
+		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
+		cx += cw; \
+		match = true; \
+	} \
+	else if (fastcmp(temp2, va("%s_pressed", #buttonname))) \
+	{ \
+		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
+		cx += cw; \
+		match = true; \
+	} \
+	else if (fastcmp(temp2, va("%s_animated", #buttonname))) \
+	{ \
+		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
+		cx += cw; \
+		match = true; \
+	}
+
+					BUTTONCODE(up, gc_aimforward)
+					else BUTTONCODE(down, gc_aimbackward)
+					else BUTTONCODE(left, gc_turnright)
+					else BUTTONCODE(right, gc_turnleft)
+					//else BUTTONCODE(dpad, dpad
+					else BUTTONCODE(drift, gc_drift)
+					else BUTTONCODE(item, gc_fire)
+					else BUTTONCODE(systemmenu, gc_systemmenu)
+					else BUTTONCODE(accel, gc_accelerate)
+					else BUTTONCODE(brake, gc_brake)
+					else BUTTONCODE(horn, gc_horncode)
+					else BUTTONCODE(custom1, gc_custom1)
+					else BUTTONCODE(custom2, gc_custom2)
+					else BUTTONCODE(custom3, gc_custom3)
+#undef BUTTONCODE
+					if (match)
+					{
+						// Now skip past this part of the string.
+						s += size;
+						break;
+					}
+				}
+			}
 			default:
 				if (( c & 0x80 ) || c == V_STRINGDANCE)
 					;
