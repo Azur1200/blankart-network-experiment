@@ -4353,6 +4353,8 @@ void K_Player_CrashThinker(player_t *player)
 				// We're reoriented, stop crashing
 				player->crash_rot = 0;
 				player->crash_state = CRASH_FINISH;
+
+				player->karttiltmomentum = FixedMul(120*FRACUNIT, M_DEGTORAD_FIXED) * player->crash_side;
 			}
 			break;
 		case CRASH_TUMBLING:
@@ -10830,7 +10832,6 @@ fixed_t K_HandleAirDrag(player_t *player, dboolean onground, fixed_t targetspeed
 }
 
 // no float-to-fixed here because this is in the deterministic path
-#define FIXEDRADTODEG (3754879)	//57.2958
 #define PLAYERTILTCAP (90*FRACUNIT)
 #define PLAYERTILTMOMENTUMCAP (12*M_PI_FIXED)
 
@@ -10871,7 +10872,7 @@ static void K_HandleKartTilt(player_t *player)
 	angaccelgravity = FixedSqrt(FixedDiv(FixedMul(3 * angulargravity, tiltfactor), 2 * player->mo->radius));
 
 	player->karttiltmomentum += angaccelgravity * -intsign(player->karttilt);
-	player->karttilt = CLAMP(player->karttilt + FixedMul(player->karttiltmomentum, FIXEDRADTODEG)/TICRATE, -PLAYERTILTCAP + 1, PLAYERTILTCAP - 1);
+	player->karttilt = CLAMP(player->karttilt + FixedMul(player->karttiltmomentum, M_RADTODEG_FIXED)/TICRATE, -PLAYERTILTCAP + 1, PLAYERTILTCAP - 1);
 	// angular drag
 	if (player->mo->eflags & MFE_UNDERWATER)
 	{
@@ -10899,7 +10900,6 @@ static void K_HandleKartTilt(player_t *player)
 	}
 }
 
-#undef FIXEDRADTODEG
 #undef PLAYERTILTCAP
 #undef PLAYERTILTMOMENTUMCAP
 

@@ -50,6 +50,9 @@ extern "C" {
 
 #define M_PI_FIXED (M_TAU_FIXED >> 1)
 
+#define M_RADTODEG_FIXED (3754879)	//57.2958
+#define M_DEGTORAD_FIXED (1144)		//0.017453
+
 typedef int32_t fixed_t;
 
 #define FIXED_MIN INT32_MIN
