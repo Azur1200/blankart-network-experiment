@@ -3343,33 +3343,33 @@ static void V_GetFontSpecification(int fontno, int32_t flags, fontspec_t *result
 	}
 }
 
-static uint8_t V_GetButtonCodeWidth(uint8_t c)
+static uint8_t V_GetButtonCodeWidth(gamecontrols_e control)
 {
 	uint8_t x = 16;
 	int32_t keynum = 0;
 
-	switch (c & 0x0F)
+	switch (control)
 	{
-	case 0x00:
+	case gc_aimforward:
 		keynum = G_KeynumFromGamecontrol(gc_aimforward);
 		break;
-	case 0x01:
+	case gc_aimbackward:
 		keynum = G_KeynumFromGamecontrol(gc_aimbackward);
 		break;
-	case 0x02:
+	case gc_turnleft:
 		keynum = G_KeynumFromGamecontrol(gc_turnleft);
 		break;
-	case 0x03:
+	case gc_turnright:
 		keynum = G_KeynumFromGamecontrol(gc_turnright);
 		break;
 
-	case 0x07:
+	case gc_drift:
 		keynum = G_KeynumFromGamecontrol(gc_drift);
 		break;
-	case 0x08:
+	case gc_fire:
 		keynum = G_KeynumFromGamecontrol(gc_fire);
 		break;
-	case 0x09:
+	case gc_systemmenu:
 		keynum = G_KeynumFromGamecontrol(gc_systemmenu);
 		break;
 
@@ -3378,23 +3378,25 @@ static uint8_t V_GetButtonCodeWidth(uint8_t c)
 		x = 14;
 		break;*/
 
-	case 0x0A:
+	case gc_accelerate:
 		keynum = G_KeynumFromGamecontrol(gc_accelerate);
 		break;
-	case 0x0B:
+	case gc_brake:
 		keynum = G_KeynumFromGamecontrol(gc_brake);
 		break;
-	case 0x0C:
+	case gc_horncode:
 		keynum = G_KeynumFromGamecontrol(gc_horncode);
 		break;
-	case 0x0D:
+	case gc_custom1:
 		keynum = G_KeynumFromGamecontrol(gc_custom1);
 		break;
-	case 0x0E:
+	case gc_custom2:
 		keynum = G_KeynumFromGamecontrol(gc_custom2);
 		break;
-	case 0x0F:
+	case gc_custom3:
 		keynum = G_KeynumFromGamecontrol(gc_custom3);
+		break;
+	default:
 		break;
 	}
 
@@ -3526,8 +3528,71 @@ void V_DrawStringScaledEx(
 					return;
 				cx  =   x;
 				break;
+			case '<': // Control Codes
+			{
+				char temp[1024] = {};
+				strncpy(temp, s, strlen(s));
+				char *end = strchr(temp, '>');
+				dboolean match = false;
+
+				// No end why bother.
+				if (end != NULL)
+				{
+					int32_t size = end - temp;
+					char temp2[1024] = {};
+
+					strncpy(temp2, temp+1, size-1);
+
+#define DRAWBUTTON(buttoncode, state) \
+	cw = V_GetButtonCodeWidth(buttoncode) * dup; \
+	cxoff = (*fontspec.dim_fn)(scale, fontspec.chw, hchw, dup, &cw); \
+	srb2::Draw( \
+	FixedToFloat(cx + cxoff) - (2 * dup), \
+	FixedToFloat(cy + cyoff) - ((1 + fontspec.button_yofs) * dup)) \
+	.flags(flags) \
+	.button(buttoncode, state); \
+	cx += cw; \
+	match = true;
+
+#define BUTTONCODE(buttonname, buttoncode) \
+	if (fastcmp(temp2, #buttonname)) \
+	{ \
+		DRAWBUTTON(buttoncode, false) \
+	} \
+	else if (fastcmp(temp2, va("%s_pressed", #buttonname))) \
+	{ \
+		DRAWBUTTON(buttoncode, true) \
+	} \
+	else if (fastcmp(temp2, va("%s_animated", #buttonname))) \
+	{ \
+		DRAWBUTTON(buttoncode, {}) \
+	}
+
+					BUTTONCODE(up, gc_aimforward)
+					else BUTTONCODE(down, gc_aimbackward)
+					else BUTTONCODE(left, gc_turnright)
+					else BUTTONCODE(right, gc_turnleft)
+					//else BUTTONCODE(dpad, dpad
+					else BUTTONCODE(drift, gc_drift)
+					else BUTTONCODE(item, gc_fire)
+					else BUTTONCODE(systemmenu, gc_systemmenu)
+					else BUTTONCODE(accel, gc_accelerate)
+					else BUTTONCODE(brake, gc_brake)
+					else BUTTONCODE(horn, gc_horncode)
+					else BUTTONCODE(custom1, gc_custom1)
+					else BUTTONCODE(custom2, gc_custom2)
+					else BUTTONCODE(custom3, gc_custom3)
+
+					if (match)
+					{
+						// Now skip past this part of the string.
+						s += size;
+						break;
+					}
+				}
+			}
 			default:
-				if (( c & 0xF0 ) == 0x80)
+				if (c &  0x80)
 				{
 					if (notcolored)
 					{
@@ -3568,69 +3633,6 @@ void V_DrawStringScaledEx(
 					if (dance)
 					{
 						cyoff = V_DanceYOffset(dancecounter) * FRACUNIT;
-					}
-
-					if (( c & 0xB0 ) & 0x80) // button prompts
-					{
-						using srb2::Draw;
-
-						struct BtConf
-						{
-							uint8_t x, y;
-							gamecontrols_e type;
-						};
-
-						auto bt_inst = [c]() -> std::optional<BtConf>
-						{
-							switch (c & 0x0F)
-							{
-								case 0x00: return {{0, 3, gc_aimforward}};
-								case 0x01: return {{0, 3, gc_aimbackward}};
-								case 0x02: return {{0, 3, gc_turnleft}};
-								case 0x03: return {{0, 3,  gc_turnright}};
-
-								//case 0x04: return {{0, 4, Draw::Button::dpad}};
-
-								case 0x07: return {{0, 2,gc_drift}};
-								case 0x08: return {{0, 2, gc_fire}};
-
-								case 0x09: return {{0, 1, gc_systemmenu}};
-
-								case 0x0A: return {{2, 1, gc_accelerate}};
-								case 0x0B: return {{2, 1, gc_brake}};
-								case 0x0C: return {{2, 1, gc_horncode}};
-
-								case 0x0D: return {{2, 1, gc_custom1}};
-								case 0x0E: return {{2, 1, gc_custom2}};
-								case 0x0F: return {{2, 1, gc_custom3}};
-
-								default: return {};
-							}
-						}();
-
-						if (bt_inst)
-						{
-							auto bt_translate_press = [c]() -> std::optional<bool>
-							{
-								switch (c & 0xB0)
-								{
-									default:
-									case 0x90: return true;
-									case 0xA0: return {};
-									case 0xB0: return false;
-								}
-							};
-
-							cw = V_GetButtonCodeWidth(c) * dup;
-							cxoff = (*fontspec.dim_fn)(scale, fontspec.chw, hchw, dup, &cw);
-							Draw(
-								FixedToFloat(cx + cxoff) - (bt_inst->x * dup),
-								FixedToFloat(cy + cyoff) - ((bt_inst->y + fontspec.button_yofs) * dup))
-							.flags(flags)
-							.button(bt_inst->type, bt_translate_press());
-							cx += cw;
-						}
-						break;
 					}
 
 					c -= font->start;
@@ -3727,7 +3729,7 @@ fixed_t V_StringScaledWidth(
 				cx  =   0;
 				break;
 			default:
-				if (( c & 0xF0 ) == 0x80 || c == V_STRINGDANCE)
+				if (( c & 0x80 ) || c == V_STRINGDANCE)
 					continue;
 
 				if (uppercase)
@@ -3859,7 +3861,7 @@ char * V_ScaledWordWrap(
 				startwriter = 0;
 				break;
 			default:
-				if (( c & 0xF0 ) == 0x80 || c == V_STRINGDANCE)
+				if (( c & 0x80 ) || c == V_STRINGDANCE)
 					;
 				else
 				{
