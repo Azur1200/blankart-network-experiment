@@ -17,6 +17,10 @@ void K_AddCEchoMessage(char* msg);
 void K_TickMessages(void);
 void K_DrawMessageFeed(void);
 
+size_t M_MessageLength(const char *s);
+size_t M_SeekMessage(const char *s, size_t pos);
+char* M_MessageSubString(const char *message, size_t start, size_t end);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
