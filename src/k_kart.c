@@ -662,6 +662,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartsoftbump);
 
 	CV_RegisterVar(&cv_kartairsquish);
+	CV_RegisterVar(&cv_kartfloatysquish);
 
 	CV_RegisterVar(&cv_karthyudorostealbehind);
 
@@ -4470,7 +4471,6 @@ void K_RemoveGrowShrink(player_t *player)
 
 void K_SquishPlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 {
-	(void)inflictor;
 	(void)source;
 
 	if (player->crash_state)
@@ -4488,6 +4488,24 @@ void K_SquishPlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 		player->growshrinktimer += TICRATE;
 		if (player->growshrinktimer >= 0)
 			K_RemoveGrowShrink(player);
+	}
+
+	if (cv_kartfloatysquish.value && inflictor && inflictor->player && inflictor->player->growshrinktimer > 0)
+	{
+		player->karttiltmomentum = FixedMul(180*FRACUNIT, M_DEGTORAD_FIXED);
+		player->mo->momz = 4*mapobjectscale*P_MobjFlip(player->mo);
+		if (player->mo->eflags & MFE_UNDERWATER)
+			player->mo->momz = (117 * player->mo->momz) / 200;
+		
+		player->mo->momx = (inflictor->momx / 10) + (player->mo->momx / 3);
+		player->mo->momy = (inflictor->momy / 10) + (player->mo->momy / 3);
+		K_SetPlayerBumped(player, source);
+	}
+	else
+	{
+		player->mo->momx = 0;
+		player->mo->momy = 0;
+		K_SetPlayerBumped(player, source);
 	}
 
 	player->mo->flags |= MF_NOCLIP;
@@ -8162,13 +8180,23 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	player->mo->spriteyoffset = 0;
 
 	// flips and crashes use centred pivots
-	if (skins[player->skin]->flags & SF_OLDPIVOTS || (player->flipovertimer > 0 || player->crash_state != 0))
+	if (skins[player->skin]->flags & SF_OLDPIVOTS || (player->flipovertimer > 0 || player->crash_state != 0 
+		|| (cv_kartfloatysquish.value && player->squishedtimer && !P_IsObjectOnGround(player->mo))))
 	{
 		player->mo->renderflags2 &= ~RF2_PIVOTATOFFSETS;
 	}
 	else
 	{
 		player->mo->renderflags2 |= RF2_PIVOTATOFFSETS;
+	}
+
+	if (cv_kartfloatysquish.value && player->squishedtimer)
+	{
+		player->mo->renderflags |= RF_AFFINEPRESCALE;
+	}
+	else
+	{
+		player->mo->renderflags &= ~RF_AFFINEPRESCALE;
 	}
 
 	if (player->loop.radius)
@@ -8912,8 +8940,11 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	else
 	{
 		player->mo->flags |= MF_NOCLIP;
-		player->mo->momx = 0;
-		player->mo->momy = 0;
+		if (!cv_kartfloatysquish.value)
+		{
+			player->mo->momx = 0;
+			player->mo->momy = 0;
+		}
 	}
 
 	if (player->noclip)

@@ -899,6 +899,7 @@ consvar_t cv_kartsoftbump = CVAR_INIT ("kart_softbump", "Off", CV_NETVAR, CV_OnO
 
 static CV_PossibleValue_t kartairsquish_cons_t[] = {{1, "Squish"}, {2, "Flip-over"}, {0, "None"}, {0, NULL}};
 consvar_t cv_kartairsquish = CVAR_INIT ("kartairsquish", "None", CV_NETVAR, kartairsquish_cons_t, NULL);
+consvar_t cv_kartfloatysquish = CVAR_INIT ("kartfloatysquish", "Off", CV_NETVAR, CV_OnOff, NULL);
 
 consvar_t cv_karthyudorostealbehind = CVAR_INIT ("karthyudorostealbehind", "On", CV_NETVAR, CV_OnOff, NULL);
 
