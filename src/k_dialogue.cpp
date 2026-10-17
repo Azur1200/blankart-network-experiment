@@ -85,6 +85,22 @@ void Dialogue::Typewriter::WriteText(void)
 		if (c == '\n')
 			textLines++;
 
+		if (c == '<')
+		{
+			size_t p = textDest.rfind('>');
+
+			if (p != textDest.npos)
+			{
+				while (!textDest.empty() && textDest.size() > p)
+				{
+					text.push_back(textDest.back());
+					textDest.pop_back();
+				}
+
+				empty = textDest.empty();
+			}
+		}
+
 		if (!empty)
 			nextc = textDest.back();
 
