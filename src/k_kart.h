@@ -333,6 +333,7 @@ void K_LogPlayerRankScores(void);
 void K_TimerReset(void);
 void K_TimerInit(void);
 uint32_t K_GetPlayerDontDrawFlag(player_t *player);
+uint32_t K_GetPlayerOnTopFlag(player_t *player);
 dboolean K_IsPlayerLosing(const player_t *player);
 dboolean K_IsPlayerLosingByRank(const player_t *player);
 fixed_t K_GetKartGameSpeedScalar(int8_t value);

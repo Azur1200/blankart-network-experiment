@@ -273,6 +273,7 @@ extern consvar_t cv_kartstartboost_runnerbonus;
 extern consvar_t cv_kartsoftbump;
 
 extern consvar_t cv_kartairsquish;
+extern consvar_t cv_kartfloatysquish;
 
 extern consvar_t cv_karthyudorostealbehind;
 

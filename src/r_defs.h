@@ -987,7 +987,7 @@ typedef enum
 
 	RF_NOCOLORMAPS      = 0x00000400,   // Sprite is not drawn with colormaps
 
-	RF_ALWAYSONTOP      = 0x00000800,   // Sprite is drawn on top of level geometry
+	RF_ALWAYSONTOP      = 0x00000800,   // Sprite is drawn on top of level geometry (see also the RF2 flags)
 
 	RF_SPRITETYPEMASK   = 0x00003000,   // --Different sprite types
 	RF_PAPERSPRITE      = 0x00001000,   // Paper sprite
@@ -1037,7 +1037,13 @@ typedef enum
 
 typedef enum
 {
-	RF2_PIVOTATOFFSETS	= 0x00000001,  // Use sprite offsets as the rotation pivot instead of the centre
+	RF2_PIVOTATOFFSETS	= 0x00000001,	// Use sprite offsets as the rotation pivot instead of the centre
+
+	RF2_ONTOPONLYMASK	= 0x0000001F,
+	RF2_ONTOPONLYP1		= 0x00000002,	// only apply RF_ALWAYSONTOP for P1's view
+	RF2_ONTOPONLYP2		= 0x00000004,	// only apply RF_ALWAYSONTOP for P2's view
+	RF2_ONTOPONLYP3		= 0x00000008,	// only apply RF_ALWAYSONTOP for P3's view
+	RF2_ONTOPONLYP4		= 0x00000010,	// only apply RF_ALWAYSONTOP for P4's view
 } renderflags2_t;
 
 typedef enum

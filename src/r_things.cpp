@@ -201,7 +201,6 @@ static void R_InstallSpriteLump(uint16_t wad,            // graphics patch
 			sprtemp[frame].lumpid[r + rightfactor] = lumpid;
 			sprtemp[frame].lumppat[r + rightfactor + 8] = lumppat;
 			sprtemp[frame].lumpid[r + rightfactor + 8] = lumpid;
-
 		}
 
 		if (flipped)
@@ -682,7 +681,7 @@ void R_InitSprites(void)
 		negonearray[i] = -1;
 
 #ifdef ROTSPRITE
-	for (angle = 1; angle < ROTANGLES; angle++)
+	for (angle = 0; angle < ROTANGLES; angle++)
 	{
 		fa = ANG2RAD(FixedAngle((ROTANGDIFF * angle)<<FRACBITS));
 		rollcosang[angle] = FLOAT_TO_FIXED(cosf(-fa));
@@ -2201,7 +2200,7 @@ static void R_ProjectSprite(mobj_t *thing)
 		sprinfo = &((skin_t *)thing->skin)->sprinfo[thing->sprite2];
 #endif
 		if (frame >= sprdef->numframes) {
-			CONS_Alert(CONS_ERROR, M_GetText("R_ProjectSprite: invalid skins[\"%s\"].sprites[%sSPR2_%s] frame %s\n"), ((skin_t *)thing->skin)->name, ((thing->sprite2 & FF_SPR2SUPER) ? "FF_SPR2SUPER|": ""), spr2names[(thing->sprite2 & ~FF_SPR2SUPER)], sizeu5(frame));
+			CONS_Alert(CONS_ERROR, M_GetText("R_ProjectSprite: invalid skins[\"%s\"].sprites[SPR2_%s] frame %s\n"), ((skin_t *)thing->skin)->name, spr2names[thing->sprite2], sizeu5(frame));
 			thing->sprite = states[S_UNKNOWN].sprite;
 			thing->frame = states[S_UNKNOWN].frame;
 			sprdef = &sprites[thing->sprite];
@@ -2537,21 +2536,10 @@ static void R_ProjectSprite(mobj_t *thing)
 #endif
 	}
 
-	if (papersprite)
-	{
-		// yama: No, seriously -- why the FUCK do I need to do this?!
-		if (flip)
-			offset = spr_offset - spr_width;
-		else
-			offset = -spr_offset;
-	}
+	if (flip)
+		offset = spr_offset - spr_width;
 	else
-	{
-		if (((interptarg->renderflags & RF_FLIPOFFSETS) || (interptarg->player)) && flip)
-			offset = spr_offset - spr_width;
-		else
-			offset = -spr_offset;
-	}
+		offset = -spr_offset;
 
 #ifdef ROTSPRITE
 	if (visoffs.x)
@@ -3762,8 +3750,8 @@ static void R_CreateDrawNodes(maskcount_t* mask, drawnode_t* head, dboolean temp
 
 	for (rover = vsprsortedhead.prev; rover != &vsprsortedhead; rover = rover->prev)
 	{
-		const dboolean alwaysontop = cv_debugrender_spriteclip.value || (rover->renderflags & RF_ALWAYSONTOP);
-		const int32_t ontopflag = cv_debugrender_spriteclip.value ? 0 : (rover->renderflags & RF_ALWAYSONTOP);
+		const dboolean alwaysontop = cv_debugrender_spriteclip.value || R_ThingRendersOnTop(rover->mobj);
+		const int32_t ontopflag = cv_debugrender_spriteclip.value ? 0 : R_ThingRendersOnTop(rover->mobj);
 
 		if (rover->szt > vidheight || rover->sz < 0)
 			continue;
@@ -4044,7 +4032,7 @@ void R_ClipVisSprite(vissprite_t *spr, int32_t x1, int32_t x2, portal_t* portal)
 	int32_t		silhouette;
 	int32_t		xclip;
 
-	if ((spr->renderflags & RF_ALWAYSONTOP) || cv_debugrender_spriteclip.value)
+	if (R_ThingRendersOnTop(spr->mobj) || cv_debugrender_spriteclip.value)
 	{
 		for (x = x1; x <= x2; x++)
 		{
@@ -4381,6 +4369,26 @@ dboolean R_ThingVisible (mobj_t *thing)
 		return false;
 
 	return true;
+}
+
+dboolean R_ThingRendersOnTop (mobj_t *thing)
+{
+	if (UNLIKELY((thing->renderflags & RF_ALWAYSONTOP)))
+	{
+		// keep old behaviour where not setting these new flags just makes it activate anyways
+		if (!(thing->renderflags2 & RF2_ONTOPONLYMASK))
+		{
+			return true;
+		}
+		else if (UNLIKELY((viewssnum == 0 && (thing->renderflags2 & RF2_ONTOPONLYP1))
+			|| (viewssnum == 1 && (thing->renderflags2 & RF2_ONTOPONLYP2))
+			|| (viewssnum == 2 && (thing->renderflags2 & RF2_ONTOPONLYP3))
+			|| (viewssnum == 3 && (thing->renderflags2 & RF2_ONTOPONLYP4))))
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 dboolean R_ThingWithinDist (mobj_t *thing, fixed_t limit_dist)

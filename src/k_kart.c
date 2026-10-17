@@ -324,6 +324,22 @@ uint32_t K_GetPlayerDontDrawFlag(player_t *player)
 	return flag;
 }
 
+uint32_t K_GetPlayerOnTopFlag(player_t *player)
+{
+	uint32_t flag = 0;
+
+	if (player == &players[displayplayers[0]])
+		flag = RF2_ONTOPONLYP1;
+	else if (r_splitscreen >= 1 && player == &players[displayplayers[1]])
+		flag = RF2_ONTOPONLYP2;
+	else if (r_splitscreen >= 2 && player == &players[displayplayers[2]])
+		flag = RF2_ONTOPONLYP3;
+	else if (r_splitscreen >= 3 && player == &players[displayplayers[3]])
+		flag = RF2_ONTOPONLYP4;
+
+	return flag;
+}
+
 // Angle reflection used by springs & speed pads
 angle_t K_ReflectAngle(angle_t yourangle, angle_t theirangle, fixed_t yourspeed, fixed_t theirspeed)
 {
@@ -646,6 +662,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartsoftbump);
 
 	CV_RegisterVar(&cv_kartairsquish);
+	CV_RegisterVar(&cv_kartfloatysquish);
 
 	CV_RegisterVar(&cv_karthyudorostealbehind);
 
@@ -2147,9 +2164,9 @@ static void K_RespawnChecker(player_t *player)
 				angle_t newangle;
 				fixed_t newx, newy, newz;
 
-				newangle = FixedAngle(((360/8)*i)*FRACUNIT);
-				newx = player->mo->x + P_ReturnThrustX(player->mo, newangle, 31<<FRACBITS); // does NOT use scale, since this effect doesn't scale properly
-				newy = player->mo->y + P_ReturnThrustY(player->mo, newangle, 31<<FRACBITS);
+				newangle = FixedAngle(((360 / 8) * i) * FRACUNIT);
+				newx = player->mo->x + P_ReturnThrustX(player->mo, newangle, 31 * player->mo->scale);
+				newy = player->mo->y + P_ReturnThrustY(player->mo, newangle, 31 * player->mo->scale);
 				if (player->mo->eflags & MFE_VERTICALFLIP)
 					newz = player->mo->z + player->mo->height;
 				else
@@ -2161,9 +2178,9 @@ static void K_RespawnChecker(player_t *player)
 					if (player->mo->eflags & MFE_VERTICALFLIP)
 						mo->eflags |= MFE_VERTICALFLIP;
 					P_SetTarget(&mo->target, player->mo);
-					mo->angle = newangle+ANGLE_90;
-					mo->momz = (8<<FRACBITS) * P_MobjFlip(player->mo);
-					P_SetScale(mo, (mo->destscale = FRACUNIT));
+					mo->angle = newangle + ANGLE_90;
+					mo->momz = (8 * player->mo->scale) * P_MobjFlip(player->mo);
+					P_SetScale(mo, (mo->destscale = player->mo->scale));
 				}
 			}
 		}
@@ -4454,7 +4471,6 @@ void K_RemoveGrowShrink(player_t *player)
 
 void K_SquishPlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 {
-	(void)inflictor;
 	(void)source;
 
 	if (player->crash_state)
@@ -4472,6 +4488,24 @@ void K_SquishPlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 		player->growshrinktimer += TICRATE;
 		if (player->growshrinktimer >= 0)
 			K_RemoveGrowShrink(player);
+	}
+
+	if (cv_kartfloatysquish.value && inflictor && inflictor->player && inflictor->player->growshrinktimer > 0)
+	{
+		player->karttiltmomentum = FixedMul(180*FRACUNIT, M_DEGTORAD_FIXED);
+		player->mo->momz = 4*mapobjectscale*P_MobjFlip(player->mo);
+		if (player->mo->eflags & MFE_UNDERWATER)
+			player->mo->momz = (117 * player->mo->momz) / 200;
+		
+		player->mo->momx = (inflictor->momx / 10) + (player->mo->momx / 3);
+		player->mo->momy = (inflictor->momy / 10) + (player->mo->momy / 3);
+		K_SetPlayerBumped(player, source);
+	}
+	else
+	{
+		player->mo->momx = 0;
+		player->mo->momy = 0;
+		K_SetPlayerBumped(player, source);
 	}
 
 	player->mo->flags |= MF_NOCLIP;
@@ -5186,6 +5220,12 @@ static void K_SpawnDriftSparks(player_t *player)
 
 		if (pencilready)
 			spark->renderflags |= RF_ADD;
+		
+		if (P_IsDisplayPlayer(player))
+		{
+			spark->renderflags |= RF_ALWAYSONTOP;
+			spark->renderflags2 |= K_GetPlayerOnTopFlag(player);
+		}
 	}
 }
 
@@ -5416,7 +5456,7 @@ void K_DriftDustHandling(mobj_t *spawner)
 		{
 			angle_t playerangle = spawner->angle;
 
-			if (spawner->player->speed < 5<<FRACBITS)
+			if (spawner->player->speed < (5 * spawner->scale))
 				return;
 
 			if (spawner->player->cmd.forwardmove < 0)
@@ -5427,7 +5467,7 @@ void K_DriftDustHandling(mobj_t *spawner)
 	}
 	else
 	{
-		if (P_AproxDistance(spawner->momx, spawner->momy) < 5<<FRACBITS)
+		if (P_AproxDistance(spawner->momx, spawner->momy) < (5 * spawner->scale))
 			return;
 
 		anglediff = abs((signed)(spawner->angle - R_PointToAngle2(0, 0, spawner->momx, spawner->momy)));
@@ -5438,12 +5478,12 @@ void K_DriftDustHandling(mobj_t *spawner)
 
 	if (anglediff > ANG10*4) // Trying to turn further than 40 degrees
 	{
-		fixed_t spawnx = P_RandomRange(PR_DECORATION, -spawnrange, spawnrange)<<FRACBITS;
-		fixed_t spawny = P_RandomRange(PR_DECORATION, -spawnrange, spawnrange)<<FRACBITS;
+		fixed_t spawnx = P_RandomRange(PR_DECORATION, -spawnrange, spawnrange) << FRACBITS;
+		fixed_t spawny = P_RandomRange(PR_DECORATION, -spawnrange, spawnrange) << FRACBITS;
 		int32_t speedrange = 2;
 		mobj_t *dust = P_SpawnMobj(spawner->x + spawnx, spawner->y + spawny, spawner->z, MT_DRIFTDUST);
-		dust->momx = FixedMul(spawner->momx + (P_RandomRange(PR_DECORATION, -speedrange, speedrange)<<FRACBITS), 3*(spawner->scale)/4);
-		dust->momy = FixedMul(spawner->momy + (P_RandomRange(PR_DECORATION, -speedrange, speedrange)<<FRACBITS), 3*(spawner->scale)/4);
+		dust->momx = FixedMul(spawner->momx + (P_RandomRange(PR_DECORATION, -speedrange, speedrange) * spawner->scale), 3*FRACUNIT/4);
+		dust->momy = FixedMul(spawner->momy + (P_RandomRange(PR_DECORATION, -speedrange, speedrange) * spawner->scale), 3*FRACUNIT/4);
 		dust->momz = P_MobjFlip(spawner) * (P_RandomRange(PR_DECORATION, 1, 4) * (spawner->scale));
 		P_SetScale(dust, spawner->scale/2);
 		dust->destscale = spawner->scale * 3;
@@ -8140,13 +8180,23 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	player->mo->spriteyoffset = 0;
 
 	// flips and crashes use centred pivots
-	if (skins[player->skin]->flags & SF_OLDPIVOTS || (player->flipovertimer > 0 || player->crash_state != 0))
+	if (skins[player->skin]->flags & SF_OLDPIVOTS || (player->flipovertimer > 0 || player->crash_state != 0 
+		|| (cv_kartfloatysquish.value && player->squishedtimer && !P_IsObjectOnGround(player->mo))))
 	{
 		player->mo->renderflags2 &= ~RF2_PIVOTATOFFSETS;
 	}
 	else
 	{
 		player->mo->renderflags2 |= RF2_PIVOTATOFFSETS;
+	}
+
+	if (cv_kartfloatysquish.value && player->squishedtimer)
+	{
+		player->mo->renderflags |= RF_AFFINEPRESCALE;
+	}
+	else
+	{
+		player->mo->renderflags &= ~RF_AFFINEPRESCALE;
 	}
 
 	if (player->loop.radius)
@@ -8890,8 +8940,11 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	else
 	{
 		player->mo->flags |= MF_NOCLIP;
-		player->mo->momx = 0;
-		player->mo->momy = 0;
+		if (!cv_kartfloatysquish.value)
+		{
+			player->mo->momx = 0;
+			player->mo->momy = 0;
+		}
 	}
 
 	if (player->noclip)
@@ -8924,14 +8977,35 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	
 	if (player->karttilt)
 	{
-		//todo: a way for skins(?) to define the tyre offset
-		// this can look weird depending on camera angle, may be smarter to change pivots instead
-		fixed_t tyredistance = player->mo->info->radius * intsign(player->karttilt);
-		vector2_t tyreoffs = {tyredistance, 0};
+		angle_t viewingAngle = R_PointToAnglePlayer(NULL, player->mo->x, player->mo->y);
+		angle_t angleDelta = (viewingAngle - player->drawangle);
 		fixed_t rate = FixedDiv(abs(player->karttilt), 90*FRACUNIT);
 		fixed_t vrate = (-FixedMul(rate * 2 - FRACUNIT, rate * 2 - FRACUNIT)) + FRACUNIT;
+
+		fixed_t tyredistance = player->mo->info->radius;
+		int32_t axlewidth = 26;
+		int32_t axleseparation = 32;
+		vector2_t tyreoffs = {0};
+
+		if (wadfiles[skins[player->skin]->wadnum]->compatmode)
+		{
+			// v1 kart
+			axlewidth = 22;
+			axleseparation = 26;
+		}
+		FV2_Load(&tyreoffs, axlewidth*FRACUNIT, axleseparation*FRACUNIT);
+		FV2_Rotate(&tyreoffs, AngleFixed(angleDelta));
+
+		tyreoffs.y = 0;
+		tyreoffs.x = abs(tyreoffs.x);
+		tyredistance = tyreoffs.x;
+		FV2_Rotate(&tyreoffs, abs(player->karttilt));
+
+		player->mo->spritexoffset += (tyredistance - abs(tyreoffs.x)) * intsign(player->karttilt);
+
+		tyreoffs.y = 0;
+		tyreoffs.x = tyredistance;
 		FV2_Rotate(&tyreoffs, 45*FRACUNIT);
-		player->mo->spritexoffset += Easing_Linear(rate, 0, (5*tyredistance/2));
 		player->mo->spriteyoffset += Easing_Linear(vrate, 0, abs(tyreoffs.y/2));
 		
 		// CONS_Debug(DBG_PLAYER, "tyre dist : %4.3f\n", FIXED_TO_FLOAT(tyredistance));
@@ -11324,6 +11398,12 @@ static void K_KartSlipdash(player_t *player, dboolean onground)
 		P_InstaThrust(spark, player->mo->angle, 2*player->speed/3);
 		spark->momz = player->mo->z - player->mo->old_z;
 		spark->z += spark->momz;
+		
+		if (P_IsDisplayPlayer(player))
+		{
+			spark->renderflags |= RF_ALWAYSONTOP;
+			spark->renderflags2 |= K_GetPlayerOnTopFlag(player);
+		}
 	}
 }
 
@@ -11519,6 +11599,12 @@ static void K_RecoveryDash(player_t *player)
 						P_SetMobjState(spark, S_DRIFTSPARK_A1);
 					}
 					K_MatchGenericExtraFlags(spark, player->mo);
+		
+					if (P_IsDisplayPlayer(player))
+					{
+						spark->renderflags |= RF_ALWAYSONTOP;
+						spark->renderflags2 |= K_GetPlayerOnTopFlag(player);
+					}
 				}
 			}
 		}
@@ -14440,7 +14526,7 @@ void K_KartAttractHomingAttack(player_t *player)
 		dboolean raceFirst = ((gametypes[gametype]->rules & GTR_CIRCUIT) && player->position <= 1);
 		if (player->speed > 0)
 		{
-			effectangle = R_PointToAngle2(0,0, player->mo->momx, player->mo->momy);
+			effectangle = R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy);
 		}
 
 		mo = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_THOK);
