@@ -2476,6 +2476,17 @@ void K_KartSeekingReticule(player_t *player)
 		ret->tics = 1;
 		ret->color = player->skincolor;
 
+		if (P_IsDisplayPlayer(player))
+		{
+			ret->renderflags |= RF_ALWAYSONTOP;
+			ret->renderflags2 |= K_GetPlayerOnTopFlag(player);
+		}
+		if (P_IsDisplayPlayer(targ))
+		{
+			ret->renderflags |= RF_ALWAYSONTOP;
+			ret->renderflags2 |= K_GetPlayerOnTopFlag(targ);
+		}
+
 		if (targ-players != lasttarg)
 		{
 			if (P_IsDisplayPlayer(player) || P_IsDisplayPlayer(targ))
