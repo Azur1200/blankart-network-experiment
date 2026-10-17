@@ -1277,32 +1277,11 @@ void ST_Drawer(void)
 		{
 		case DSM_NOTSAVING:
 		{
-			char replaytext[60] = {0};
-			int32_t flags = 0;
-			const char *item1 = gamecontrol[0][gc_lookback][0] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][0]) : NULL;
-			const char *item2 = gamecontrol[0][gc_lookback][1] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][1]) : NULL;
-			const char *item3 = gamecontrol[0][gc_lookback][2] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][2]) : NULL;
-			const char *item4 = gamecontrol[0][gc_lookback][3] != 0 ? G_KeynumToString(gamecontrol[0][gc_lookback][3]) : NULL;
+			char replaytext[100] = {0};
+			int32_t flags = V_USETEXTTAG;
+			const char *button = M_ButtonName(0, gc_lookback, keyboardcontrolled);
 
-			if (item1 && item2 && item3 && item4)
-			{
-				snprintf(replaytext, 60, "%s/%s/%s/%s: Save Replay", item1,item2,item3,item4);
-				flags = V_6WIDTHSPACE;
-			}
-			else if (item1 && item2 && item3)
-			{
-				snprintf(replaytext, 60, "%s/%s/%s: Save Replay", item1,item2,item3);
-				flags = V_6WIDTHSPACE;
-			}
-			else if (item1 && item2)
-			{
-				snprintf(replaytext, 60, "%s/%s: Save Replay", item1,item2);
-				flags = V_6WIDTHSPACE;
-			}
-			else
-			{
-				snprintf(replaytext, 60, "%s: Save Replay", item1 ? item1 : "Look Backwards");
-			}
+			snprintf(replaytext, 100, "%s: Save Replay", button);
 
 			V_DrawRightAlignedThinString(BASEVIDWIDTH - 2, 2, V_SNAPTOTOP|V_SNAPTORIGHT|V_ALLOWLOWERCASE|gtc|flags, replaytext);
 			break;
@@ -1311,8 +1290,8 @@ void ST_Drawer(void)
 		case DSM_WILLAUTOSAVE:
 		{
 			char replaytext[100] = {0};
-			int32_t flags = 0;
-			const char *button = M_ButtonName(0, gc_lookback, false);
+			int32_t flags = V_USETEXTTAG;
+			const char *button = M_ButtonName(0, gc_lookback, keyboardcontrolled);
 
 			snprintf(replaytext, 100, "Replay will be saved. (%s: Change title)", button);
 
@@ -1321,7 +1300,7 @@ void ST_Drawer(void)
 		}
 
 		case DSM_WILLSAVE:
-			V_DrawRightAlignedThinString(BASEVIDWIDTH - 2, 2, V_HUDTRANS|V_SNAPTOTOP|V_SNAPTORIGHT|V_ALLOWLOWERCASE|gtc, "Replay will be saved.");
+			V_DrawRightAlignedThinString(BASEVIDWIDTH - 2, 2, V_HUDTRANS|V_SNAPTOTOP|V_SNAPTORIGHT|V_ALLOWLOWERCASE|gtc|V_USETEXTTAG, "Replay will be saved.");
 			break;
 
 		default: // Don't render anything

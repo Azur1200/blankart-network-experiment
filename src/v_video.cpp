@@ -3323,7 +3323,7 @@ static void V_GetFontSpecification(int fontno, int32_t flags, fontspec_t *result
 
 	switch (fontno)
 	{
-		case HU_FONT:
+		default:
 			result->button_yofs = 2;
 			break;
 	}
@@ -3348,7 +3348,6 @@ static uint8_t V_GetButtonCodeWidth(gamecontrols_e control)
 	case gc_turnright:
 		keynum = G_KeynumFromGamecontrol(gc_turnright);
 		break;
-
 	case gc_drift:
 		keynum = G_KeynumFromGamecontrol(gc_drift);
 		break;
@@ -3358,12 +3357,9 @@ static uint8_t V_GetButtonCodeWidth(gamecontrols_e control)
 	case gc_systemmenu:
 		keynum = G_KeynumFromGamecontrol(gc_systemmenu);
 		break;
-
-	/*case 0x04:
-		// dpad
-		x = 14;
-		break;*/
-
+	case gc_lookback:
+		keynum = G_KeynumFromGamecontrol(gc_lookback);
+		break;
 	case gc_accelerate:
 		keynum = G_KeynumFromGamecontrol(gc_accelerate);
 		break;
@@ -3386,11 +3382,16 @@ static uint8_t V_GetButtonCodeWidth(gamecontrols_e control)
 		break;
 	}
 
-	int32_t length = V_SmallStringWidth(G_KeynumToString(keynum), 0);
+	if (G_SupportedGamePadButtonDrawing(keynum))
+	{
+		return x;
+	}
+	else
+	{
+		int32_t length = V_SmallStringWidth(G_KeynumToString(keynum), 0);
 
-	int32_t finalsize = std::max<int32_t>(x, length / 2);
-
-	return finalsize;
+		return std::max<int32_t>(x, length + (length / 2));
+	}
 }
 
 void V_DrawStringScaledEx(
@@ -3521,7 +3522,6 @@ void V_DrawStringScaledEx(
 					char temp[1024] = {};
 					strncpy(temp, s, strlen(s));
 					char *end = strchr(temp, '>');
-					dboolean match = false;
 
 					// No end why bother.
 					if (end != NULL)
@@ -3535,12 +3535,11 @@ void V_DrawStringScaledEx(
 	cw = V_GetButtonCodeWidth(buttoncode) * dup; \
 	cxoff = (*fontspec.dim_fn)(scale, fontspec.chw, hchw, dup, &cw); \
 	srb2::Draw( \
-	FixedToFloat(cx + cxoff) - (2 * dup), \
-	FixedToFloat(cy + cyoff) - ((1 + fontspec.button_yofs) * dup)) \
+	FixedToFloat(cx + cxoff), \
+	FixedToFloat(cy + cyoff) - ((fontspec.button_yofs) * dup)) \
 	.flags(flags) \
 	.button(buttoncode, state); \
 	cx += cw; \
-	match = true;
 
 #define BUTTONCODE(buttonname, buttoncode) \
 	if (fastcmp(temp2, #buttonname)) \
@@ -3572,12 +3571,9 @@ void V_DrawStringScaledEx(
 						else BUTTONCODE(custom3, gc_custom3)
 	#undef DRAWBUTTON
 	#undef BUTTONCODE
-						if (match)
-						{
 							// Now skip past this part of the string.
 							s += size;
 							break;
-						}
 					}
 				}
 			}
@@ -3733,7 +3729,6 @@ fixed_t V_SubStringScaledWidth(
 					char temp[1024] = {};
 					strncpy(temp, s, strlen(s));
 					char *end = strchr(temp, '>');
-					dboolean match = false;
 
 					// No end why bother.
 					if (end != NULL)
@@ -3747,20 +3742,20 @@ fixed_t V_SubStringScaledWidth(
 	if (fastcmp(temp2, #buttonname)) \
 	{ \
 		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
-		cx += cw; \
-		match = true; \
+		cx += cw * scale; \
+		right = cx ; \
 	} \
 	else if (fastcmp(temp2, va("%s_pressed", #buttonname))) \
 	{ \
 		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
-		cx += cw; \
-		match = true; \
+		cx += cw * scale; \
+		right = cx; \
 	} \
 	else if (fastcmp(temp2, va("%s_animated", #buttonname))) \
 	{ \
 		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
-		cx += cw; \
-		match = true; \
+		cx += cw * scale; \
+		right = cx + (cw * scale); \
 	}
 
 						BUTTONCODE(up, gc_aimforward)
@@ -3917,7 +3912,6 @@ fixed_t V_SubStringScaledLengthToFit(
 					char temp[1024] = {};
 					strncpy(temp, s, strlen(s));
 					char *end = strchr(temp, '>');
-					dboolean match = false;
 
 					// No end why bother.
 					if (end != NULL)
@@ -3931,20 +3925,20 @@ fixed_t V_SubStringScaledLengthToFit(
 	if (fastcmp(temp2, #buttonname)) \
 	{ \
 		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
-		cx += cw; \
-		match = true; \
+		cx += cw * scale; \
+		right = cx ; \
 	} \
 	else if (fastcmp(temp2, va("%s_pressed", #buttonname))) \
 	{ \
 		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
-		cx += cw; \
-		match = true; \
+		cx += cw * scale; \
+		right = cx ; \
 	} \
 	else if (fastcmp(temp2, va("%s_animated", #buttonname))) \
 	{ \
 		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
-		cx += cw; \
-		match = true; \
+		cx += cw * scale; \
+		right = cx ; \
 	}
 
 						BUTTONCODE(up, gc_aimforward)
@@ -4122,20 +4116,20 @@ char * V_ScaledWordWrap(
 	if (fastcmp(temp2, #buttonname)) \
 	{ \
 		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
-		cx += cw; \
-		match = true; \
+		cx += cw * scale; \
+		right = cx ; \
 	} \
 	else if (fastcmp(temp2, va("%s_pressed", #buttonname))) \
 	{ \
 		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
-		cx += cw; \
-		match = true; \
+		cx += cw * scale; \
+		right = cx ; \
 	} \
 	else if (fastcmp(temp2, va("%s_animated", #buttonname))) \
 	{ \
 		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
-		cx += cw; \
-		match = true; \
+		cx += cw * scale; \
+		right = cx ; \
 	}
 
 						BUTTONCODE(up, gc_aimforward)

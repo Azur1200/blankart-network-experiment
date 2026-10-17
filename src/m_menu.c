@@ -3352,6 +3352,11 @@ static void M_HandleMenuInput(void)
 
 static void M_HutCheckReplays(size_t maxnum);
 
+// Can't use va twice in the same line.
+char ConfirmString[64] = {};
+char DeclineString[64]= {};
+dboolean messagequit  = false;
+
 void M_Ticker(void)
 {
 	size_t i;
@@ -3384,6 +3389,24 @@ void M_Ticker(void)
 	if (noFurtherInput <= 0)
 	{
 		M_HandleMenuInput();
+	}
+
+	if (messagebox.active)
+	{
+		const char *item1 = M_ButtonName(0, gc_accelerate, keyboardcontrolled);
+		const char *item2 = M_ButtonName(0, gc_brake, keyboardcontrolled);
+
+		memset(&ConfirmString, 0, sizeof(ConfirmString));
+
+		if (messagequit)
+			snprintf(ConfirmString, 64, "%s to quit", item1);
+		else
+			snprintf(ConfirmString, 64, "%s to confirm", item1);
+
+		if (messagequit)
+			snprintf(DeclineString, 64, "%s to return", item2);
+		else
+			snprintf(DeclineString, 64, "%s to cancel", item2);
 	}
 
 	if (menustack[0])
@@ -5234,42 +5257,54 @@ const char *M_ButtonName(uint8_t p, gamecontrols_e gc, dboolean forcekeyboard)
 	else
 fallback:
 	{
-		int32_t keynum = G_KeynumFromGamecontrol(gc);
-
-		return G_KeynumToString(keynum);
+		switch(gc)
+		{
+			case gc_aimforward:
+				return "<up_animated>";
+			case gc_aimbackward:
+				return "<down_animated>";
+			case gc_turnleft:
+				return "<left_animated>";
+			case gc_turnright:
+				return "<right_animated>";
+			case gc_drift:
+				return "<drift_animated>";
+			case gc_fire:
+				return "<fire_animated>";
+			case gc_systemmenu:
+				return "<systemmenu_animated>";
+			case gc_lookback:
+				return "<lookback_animated>";
+			case gc_accelerate:
+				return "<accel_animated>";
+			case gc_brake:
+				return "<brake_animated>";
+			case gc_horncode:
+				return "<horn_animated>";
+			case gc_custom1:
+				return "<custom1_animated>";
+			case gc_custom2:
+				return "<custom2_animated>";
+			case gc_custom3:
+				return "<custom3_animated>";
+			default:
+				return G_KeynumToString(G_KeynumFromGamecontrol(gc));
+		}
 	}
 }
 
-// Can't use va twice in the same line.
-char ConfirmString[25];
-char DeclineString[25];
-
 char *M_MessageConfirmText(dboolean gamequit, dboolean forcekeyboard)
 {
-	const char *item1 = M_ButtonName(0, gc_accelerate, forcekeyboard);
+	messagequit = gamequit;
 
-	memset(&ConfirmString, 0, sizeof(ConfirmString));
-
-	if (gamequit)
-		snprintf(ConfirmString, 25, "%s to quit", item1);
-	else
-		snprintf(ConfirmString, 25, "%s to confirm", item1);
-
-	return ConfirmString;
+	return "[CONFIRMSTRING]";
 }
 
 char *M_MessageCancelText(dboolean gamequit, dboolean forcekeyboard)
 {
-	const char *item1 = M_ButtonName(0, gc_brake, forcekeyboard);
+	messagequit = gamequit;
 
-	memset(&DeclineString, 0, sizeof(DeclineString));
-
-	if (gamequit)
-		snprintf(DeclineString, 25, "%s to return", item1);
-	else
-		snprintf(DeclineString, 25, "%s to cancel", item1);
-
-	return DeclineString;
+	return "[DECLINESTRING]";
 }
 
 void M_MessageboxClose(dboolean clearstack)
@@ -5482,6 +5517,8 @@ void M_StartMessage2(const char *headerstr, const char *str, messagebox_callback
 	if ((confirmstr && confirmstr[0] != 0) || (declinestr && declinestr[0] != 0))
 		strlines++;
 
+	max = BASEVIDWIDTH;
+
 	messageboxset->x = (BASEVIDWIDTH  - 8*max-16)/2;
 	messageboxset->y = (BASEVIDHEIGHT - (message ? M_StringHeight(message) : 0))/2;
 
@@ -5534,28 +5571,55 @@ static void M_DrawMessageMenu(void)
 		int32_t texty = y+(numboxlines*8) + 2;
 
 		if (confirmvalid && !declinevalid)
+		{
 			textstring = messagebox.confirmtext;
+
+			if (fasticmp(messagebox.confirmtext, "[CONFIRMSTRING]"))
+			{
+				textstring = ConfirmString;
+			}
+		}
 		else
+		{
 			textstring = messagebox.declinetext;
 
-		V_DrawCenteredThinString(textx, texty, thinflags, textstring);
+			if (fasticmp(textstring, "[DECLINESTRING]"))
+			{
+				textstring = DeclineString;
+			}
+		}
+
+		V_DrawCenteredThinString(textx, texty, thinflags|V_USETEXTTAG, textstring);
 	}
 	else if (confirmvalid && declinevalid)
 	{
 		numboxlines--;
 
+		char *confirmtext = messagebox.confirmtext;
+		char *declinetext = messagebox.declinetext;
+
+		if (fasticmp(confirmtext, "[CONFIRMSTRING]"))
+		{
+			confirmtext = ConfirmString;
+		}
+
+		if (fasticmp(declinetext, "[DECLINESTRING]"))
+		{
+			declinetext = DeclineString;
+		}
+
 		const int32_t spacing = 10;
 
-		int32_t offset = spacing + V_ThinStringWidth(messagebox.confirmtext, thinflags) + V_ThinStringWidth(messagebox.declinetext, thinflags);
+		int32_t offset = spacing + V_ThinStringWidth(confirmtext, thinflags) + V_ThinStringWidth(declinetext, thinflags);
 		offset = offset / 4;
 
 		int32_t textx = (messagebox.x + boxwidth/2) - offset;
 		int32_t text2x = (messagebox.x + boxwidth/2) + offset;
 		int32_t texty = y+(numboxlines*8) + 2;
 
-		V_DrawCenteredThinString(textx, texty, thinflags, messagebox.confirmtext);
+		V_DrawCenteredThinString(textx, texty, thinflags|V_USETEXTTAG, confirmtext);
 
-		V_DrawCenteredThinString(text2x, texty, thinflags, messagebox.declinetext);
+		V_DrawCenteredThinString(text2x, texty, thinflags|V_USETEXTTAG, declinetext);
 	}
 
 

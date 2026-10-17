@@ -6728,20 +6728,36 @@ K_drawMiniPing (void)
 
 void K_drawButton(fixed_t x, fixed_t y, int32_t flags, patch_t *button[2], dboolean pressed, gamecontrols_e type)
 {
-	V_DrawFixedPatch(x, y, FRACUNIT, flags, button[(pressed == true) ? 1 : 0], NULL);
-
 	int32_t keynum = G_KeynumFromGamecontrol(type);
 	const char *teststring = G_KeynumToString(keynum);
 
-	if (!G_SupportedGamePadButtonDrawing(keynum))
+	if (G_SupportedGamePadButtonDrawing(keynum))
+	{
+		V_DrawFixedPatch(x, y, FRACUNIT, flags, button[(pressed == true) ? 1 : 0], NULL);;
+	}
+	else
 	{
 		int32_t colorflag = pressed ? V_GRAYMAP : 0;
 		int8_t length = strlen(teststring);
 
 		if (length > 1)
+		{
+			int32_t width = V_SmallStringWidth(teststring, 0);
+			int32_t xoffset = 0;
+
+			if (length > 3 && (width + (width / 2) > 16))
+			{
+				xoffset = (width/2)*FRACUNIT;
+			}
+
+			V_DrawFixedPatch(x+xoffset, y, FRACUNIT, flags, button[(pressed == true) ? 1 : 0], NULL);
 			V_DrawSmallStringAtFixed(x+8*FRACUNIT, y+5*FRACUNIT, flags|colorflag, teststring);
+		}
 		else
+		{
+			V_DrawFixedPatch(x, y, FRACUNIT, flags, button[(pressed == true) ? 1 : 0], NULL);
 			V_DrawThinStringAtFixed(x+5*FRACUNIT, y+3*FRACUNIT, flags|colorflag, teststring);
+		}
 	}
 }
 
