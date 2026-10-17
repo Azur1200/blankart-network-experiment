@@ -5,6 +5,7 @@
 #include <cmath>
 #include <type_traits>
 #include <utility>
+#include <string>
 
 #include "doomdef.h"
 
@@ -191,6 +192,74 @@ static inline int32_t floattofixed(FloatT val)
 
 	// fixed_t is just an int32_t, i dont wanna include doomtype here if it can be avoided
 	return floattoint<FloatT, int32_t>(val * 65535.);
+}
+
+// Idk where to place  these since they are c++, so I'll put them here.
+
+// Get the length of a message while couting <> tags as one character
+// Thanks TextElement::parse in v_draw.cpp for helping me understand C++ strings better
+static size_t messagelength(const std::string& string)
+{
+	size_t len = 0;
+	size_t end = string.size();
+
+	for (size_t i = 0; i < end; i++)
+	{
+		if (string[i] == '<')
+		{
+			size_t p = string.find('>', i);
+
+			if (p == string.npos)
+			{
+				len++;
+				continue; // no end tag
+			}
+
+			len++;
+			i = p;
+
+			continue;
+		}
+		else
+		{
+			len++;
+		}
+	}
+
+	return len;
+}
+
+// Get the substring of a message while couting <> tags as one character
+// Thanks TextElement::parse in v_draw.cpp for helping me understand C++ strings better
+static std::string messagesubstring(const std::string& message, size_t pos, size_t count)
+{
+	std::string ret;
+	size_t stringpos = 0;
+
+	for (size_t i = 0; i < message.size() && count > 0; i++)
+	{
+		size_t offset = i;
+
+		if (message[i] == '<')
+		{
+			size_t p = message.find('>', i);
+
+			if (p != message.npos)
+			{
+				offset = p;
+			}
+		}
+
+		if (stringpos >= pos)
+		{
+			ret.append(message, i, offset - i + 1);
+			count--;
+		}
+
+		stringpos++;
+		i = offset;
+	}
+	return ret;
 }
 
 } // namespace srb2

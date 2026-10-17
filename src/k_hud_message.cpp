@@ -24,6 +24,8 @@
 
 #include "k_bot.h"
 
+#include "cxxutil.hpp"
+
 typedef enum
 {
 	MM_IN,
@@ -202,88 +204,6 @@ void K_TickMessages(void)
 	}
 }
 
-std::size_t M_MessageLength(const char *s)
-{
-	size_t i = 0;
-	size_t printable = 0;
-	size_t len = strlen(s);
-	int c;
-
-	for (; ( c = *s ); ++s)
-	{
-		// skip rich text tags
-		if (s[i] == '<')
-		{
-			char temp[len] = {};
-			strncpy(temp, s, len);
-			char *end = strchr(temp, '>');
-
-			if (end != NULL)
-			{
-				i += end - temp;
-			}
-		}
-		printable++;
-	}
-	return printable;
-}
-
-/// @brief returns a position into a string, treating rich text tags as one character
-/// @param s string
-/// @param pos position in "display characters" to seek to
-/// @return position in the actual string
-/// @todo handle potential future text tags that don't print a character (eg <u></u> etc.)
-std::size_t M_SeekMessage(const char *s, std::size_t pos)
-{
-	size_t i = 0;
-	size_t printable = 0;
-	size_t len = strlen(s);
-	int c;
-
-	if (pos > len) return len;
-
-	for (; ( c = *s ); ++s)
-	{
-		// skip rich text tags
-		if (s[i] == '<')
-		{
-			char temp[len] = {};
-			strncpy(temp, s, len);
-			char *end = strchr(temp, '>');
-
-			if (end != NULL)
-			{
-				s += end - temp;
-			}
-			else
-			{
-				printable++;
-				break;
-			}
-		}
-		printable++;
-		if (printable == pos) break;
-	}
-	return printable;
-}
-
-/// @brief sub string that takes rich text tags into account, treating them as one printable charcater
-/// @param message 
-/// @param start 
-/// @param end 
-char* M_MessageSubString(const char *message, std::size_t start, std::size_t end)
-{
-	size_t pstart = M_SeekMessage(message, start);
-	size_t pend = M_SeekMessage(message, end);
-	size_t len = pend - pstart;
-	char buf[len];
-	
-	strncpy(buf, message + pstart, pend);
-	buf[pend] = '\0';
-
-	return buf;
-}
-
 void K_DrawMessageFeed(void)
 {
 	int i;
@@ -301,15 +221,16 @@ void K_DrawMessageFeed(void)
 		std::string msg = state.messages[0].text;
 		dboolean background = state.messages[0].background;
 
-		uint8_t sublen = state.timer;
+		size_t sublen = state.timer;
+		size_t messagelength = srb2::messagelength(msg);
 		if (state.mode == MM_IN)
 			sublen = state.timer;
 		else if (state.mode == MM_HOLD)
-			sublen = msg.length();
+			sublen = messagelength;
 		else if (state.mode == MM_OUT)
-			sublen = msg.length() - state.timer;
+			sublen = state.timer > messagelength ? 0 : messagelength - state.timer;
 
-		std::string submsg = msg.substr(0, sublen);
+		std::string submsg = srb2::messagesubstring(msg, 0, sublen);
 
 		using srb2::Draw;
 
