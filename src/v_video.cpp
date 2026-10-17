@@ -3269,23 +3269,9 @@ static void V_GetFontSpecification(int fontno, int32_t flags, fontspec_t *result
 				case V_OLDSPACING:
 					result->chw    = 5;
 					break;
-				// Out of video flags, so we're reusing this for alternate charwidth instead
-				/*case V_6WIDTHSPACE:
-				  spacewidth = 3;*/
-			}
-			break;
-		case KART_FONT:
-			result->spacew = 12;
-			switch (spacing)
-			{
-				case V_MONOSPACE:
-					result->spacew = 12;
-					/* FALLTHRU */
-				case V_OLDSPACING:
-					result->chw    = 12;
-					break;
 				case V_6WIDTHSPACE:
-					result->spacew = 6;
+					result->spacew = 3;
+					break;
 			}
 			break;
 		case LT_FONT:
@@ -3343,33 +3329,33 @@ static void V_GetFontSpecification(int fontno, int32_t flags, fontspec_t *result
 	}
 }
 
-static uint8_t V_GetButtonCodeWidth(uint8_t c)
+static uint8_t V_GetButtonCodeWidth(gamecontrols_e control)
 {
 	uint8_t x = 16;
 	int32_t keynum = 0;
 
-	switch (c & 0x0F)
+	switch (control)
 	{
-	case 0x00:
+	case gc_aimforward:
 		keynum = G_KeynumFromGamecontrol(gc_aimforward);
 		break;
-	case 0x01:
+	case gc_aimbackward:
 		keynum = G_KeynumFromGamecontrol(gc_aimbackward);
 		break;
-	case 0x02:
+	case gc_turnleft:
 		keynum = G_KeynumFromGamecontrol(gc_turnleft);
 		break;
-	case 0x03:
+	case gc_turnright:
 		keynum = G_KeynumFromGamecontrol(gc_turnright);
 		break;
 
-	case 0x07:
+	case gc_drift:
 		keynum = G_KeynumFromGamecontrol(gc_drift);
 		break;
-	case 0x08:
+	case gc_fire:
 		keynum = G_KeynumFromGamecontrol(gc_fire);
 		break;
-	case 0x09:
+	case gc_systemmenu:
 		keynum = G_KeynumFromGamecontrol(gc_systemmenu);
 		break;
 
@@ -3378,23 +3364,25 @@ static uint8_t V_GetButtonCodeWidth(uint8_t c)
 		x = 14;
 		break;*/
 
-	case 0x0A:
+	case gc_accelerate:
 		keynum = G_KeynumFromGamecontrol(gc_accelerate);
 		break;
-	case 0x0B:
+	case gc_brake:
 		keynum = G_KeynumFromGamecontrol(gc_brake);
 		break;
-	case 0x0C:
+	case gc_horncode:
 		keynum = G_KeynumFromGamecontrol(gc_horncode);
 		break;
-	case 0x0D:
+	case gc_custom1:
 		keynum = G_KeynumFromGamecontrol(gc_custom1);
 		break;
-	case 0x0E:
+	case gc_custom2:
 		keynum = G_KeynumFromGamecontrol(gc_custom2);
 		break;
-	case 0x0F:
+	case gc_custom3:
 		keynum = G_KeynumFromGamecontrol(gc_custom3);
+		break;
+	default:
 		break;
 	}
 
@@ -3526,8 +3514,75 @@ void V_DrawStringScaledEx(
 					return;
 				cx  =   x;
 				break;
+			case '<': // Control Codes
+			{
+				if (flags & V_USETEXTTAG)
+				{
+					char temp[1024] = {};
+					strncpy(temp, s, strlen(s));
+					char *end = strchr(temp, '>');
+					dboolean match = false;
+
+					// No end why bother.
+					if (end != NULL)
+					{
+						int32_t size = end - temp;
+						char temp2[1024] = {};
+
+						strncpy(temp2, temp+1, size-1);
+
+#define DRAWBUTTON(buttoncode, state) \
+	cw = V_GetButtonCodeWidth(buttoncode) * dup; \
+	cxoff = (*fontspec.dim_fn)(scale, fontspec.chw, hchw, dup, &cw); \
+	srb2::Draw( \
+	FixedToFloat(cx + cxoff) - (2 * dup), \
+	FixedToFloat(cy + cyoff) - ((1 + fontspec.button_yofs) * dup)) \
+	.flags(flags) \
+	.button(buttoncode, state); \
+	cx += cw; \
+	match = true;
+
+#define BUTTONCODE(buttonname, buttoncode) \
+	if (fastcmp(temp2, #buttonname)) \
+	{ \
+		DRAWBUTTON(buttoncode, false) \
+	} \
+	else if (fastcmp(temp2, va("%s_pressed", #buttonname))) \
+	{ \
+		DRAWBUTTON(buttoncode, true) \
+	} \
+	else if (fastcmp(temp2, va("%s_animated", #buttonname))) \
+	{ \
+		DRAWBUTTON(buttoncode, {}) \
+	}
+
+						BUTTONCODE(up, gc_aimforward)
+						else BUTTONCODE(down, gc_aimbackward)
+						else BUTTONCODE(left, gc_turnright)
+						else BUTTONCODE(right, gc_turnleft)
+						else BUTTONCODE(lookback, gc_lookback)
+						else BUTTONCODE(drift, gc_drift)
+						else BUTTONCODE(item, gc_fire)
+						else BUTTONCODE(systemmenu, gc_systemmenu)
+						else BUTTONCODE(accel, gc_accelerate)
+						else BUTTONCODE(brake, gc_brake)
+						else BUTTONCODE(horn, gc_horncode)
+						else BUTTONCODE(custom1, gc_custom1)
+						else BUTTONCODE(custom2, gc_custom2)
+						else BUTTONCODE(custom3, gc_custom3)
+	#undef DRAWBUTTON
+	#undef BUTTONCODE
+						if (match)
+						{
+							// Now skip past this part of the string.
+							s += size;
+							break;
+						}
+					}
+				}
+			}
 			default:
-				if (( c & 0xF0 ) == 0x80)
+				if (c &  0x80)
 				{
 					if (notcolored)
 					{
@@ -3570,69 +3625,6 @@ void V_DrawStringScaledEx(
 						cyoff = V_DanceYOffset(dancecounter) * FRACUNIT;
 					}
 
-					if (( c & 0xB0 ) & 0x80) // button prompts
-					{
-						using srb2::Draw;
-
-						struct BtConf
-						{
-							uint8_t x, y;
-							gamecontrols_e type;
-						};
-
-						auto bt_inst = [c]() -> std::optional<BtConf>
-						{
-							switch (c & 0x0F)
-							{
-								case 0x00: return {{0, 3, gc_aimforward}};
-								case 0x01: return {{0, 3, gc_aimbackward}};
-								case 0x02: return {{0, 3, gc_turnleft}};
-								case 0x03: return {{0, 3,  gc_turnright}};
-
-								//case 0x04: return {{0, 4, Draw::Button::dpad}};
-
-								case 0x07: return {{0, 2,gc_drift}};
-								case 0x08: return {{0, 2, gc_fire}};
-
-								case 0x09: return {{0, 1, gc_systemmenu}};
-
-								case 0x0A: return {{2, 1, gc_accelerate}};
-								case 0x0B: return {{2, 1, gc_brake}};
-								case 0x0C: return {{2, 1, gc_horncode}};
-
-								case 0x0D: return {{2, 1, gc_custom1}};
-								case 0x0E: return {{2, 1, gc_custom2}};
-								case 0x0F: return {{2, 1, gc_custom3}};
-
-								default: return {};
-							}
-						}();
-
-						if (bt_inst)
-						{
-							auto bt_translate_press = [c]() -> std::optional<bool>
-							{
-								switch (c & 0xB0)
-								{
-									default:
-									case 0x90: return true;
-									case 0xA0: return {};
-									case 0xB0: return false;
-								}
-							};
-
-							cw = V_GetButtonCodeWidth(c) * dup;
-							cxoff = (*fontspec.dim_fn)(scale, fontspec.chw, hchw, dup, &cw);
-							Draw(
-								FixedToFloat(cx + cxoff) - (bt_inst->x * dup),
-								FixedToFloat(cy + cyoff) - ((bt_inst->y + fontspec.button_yofs) * dup))
-							.flags(flags)
-							.button(bt_inst->type, bt_translate_press());
-							cx += cw;
-						}
-						break;
-					}
-
 					c -= font->start;
 					if (V_CharacterValid(font, c) == true)
 					{
@@ -3653,14 +3645,18 @@ void V_DrawStringScaledEx(
 	}
 }
 
-fixed_t V_StringScaledWidth(
+fixed_t V_SubStringScaledWidth(
 		fixed_t      scale,
 		fixed_t spacescale,
 		fixed_t    lfscale,
 		int32_t      flags,
 		int        fontno,
+		int32_t length,
 		const char *s)
 {
+	if (s == NULL)
+		return 0;
+
 	int32_t     hchw;/* half-width for centering */
 
 	int32_t     dup;
@@ -3675,8 +3671,12 @@ fixed_t V_StringScaledWidth(
 	fixed_t cw;
 
 	int c;
+	int32_t i;
 
 	fixed_t fullwidth = 0;
+
+	if (length < 0)
+		length = strlen(s);
 
 	uppercase  = !( flags & V_ALLOWLOWERCASE );
 	flags	&= ~(V_FLIP);/* These two (V_ALLOWLOWERCASE) share a bit. */
@@ -3719,15 +3719,74 @@ fixed_t V_StringScaledWidth(
 	cx = 0;
 	right = 0;
 
-	for (; ( c = *s ); ++s)
+	for (i = 0; ( (c = *s) && i < length ); ++s, i++)
 	{
 		switch (c)
 		{
 			case '\n':
 				cx  =   0;
 				break;
+			case '<': // Control Codes
+			{
+				if (flags & V_USETEXTTAG)
+				{
+					char temp[1024] = {};
+					strncpy(temp, s, strlen(s));
+					char *end = strchr(temp, '>');
+					dboolean match = false;
+
+					// No end why bother.
+					if (end != NULL)
+					{
+						int32_t size = end - temp;
+						char temp2[1024] = {};
+
+						strncpy(temp2, temp+1, size-1);
+
+#define BUTTONCODE(buttonname, buttoncode) \
+	if (fastcmp(temp2, #buttonname)) \
+	{ \
+		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
+		cx += cw; \
+		match = true; \
+	} \
+	else if (fastcmp(temp2, va("%s_pressed", #buttonname))) \
+	{ \
+		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
+		cx += cw; \
+		match = true; \
+	} \
+	else if (fastcmp(temp2, va("%s_animated", #buttonname))) \
+	{ \
+		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
+		cx += cw; \
+		match = true; \
+	}
+
+						BUTTONCODE(up, gc_aimforward)
+						else BUTTONCODE(down, gc_aimbackward)
+						else BUTTONCODE(left, gc_turnright)
+						else BUTTONCODE(right, gc_turnleft)
+						else BUTTONCODE(lookback, gc_lookback)
+						else BUTTONCODE(drift, gc_drift)
+						else BUTTONCODE(item, gc_fire)
+						else BUTTONCODE(systemmenu, gc_systemmenu)
+						else BUTTONCODE(accel, gc_accelerate)
+						else BUTTONCODE(brake, gc_brake)
+						else BUTTONCODE(horn, gc_horncode)
+						else BUTTONCODE(custom1, gc_custom1)
+						else BUTTONCODE(custom2, gc_custom2)
+						else BUTTONCODE(custom3, gc_custom3)
+#undef BUTTONCODE
+
+						// Now skip past this part of the string.
+						s += size;
+						break;
+					}
+				}
+			}
 			default:
-				if (( c & 0xF0 ) == 0x80 || c == V_STRINGDANCE)
+				if (( c & 0x80 ) || c == V_STRINGDANCE)
 					continue;
 
 				if (uppercase)
@@ -3768,6 +3827,190 @@ fixed_t V_StringScaledWidth(
 	}
 
 	return fullwidth;
+}
+
+fixed_t V_SubStringScaledLengthToFit(
+	fixed_t      scale,
+	fixed_t spacescale,
+	fixed_t    lfscale,
+	int32_t      flags,
+	int        fontno,
+	int32_t length,
+	const char *s)
+{
+	if (s == NULL)
+		return 0;
+
+	int32_t     hchw;/* half-width for centering */
+
+	int32_t     dup;
+
+	font_t   *font;
+
+	dboolean uppercase;
+
+	fixed_t cx;
+	fixed_t right;
+
+	fixed_t cw;
+
+	int c;
+	int32_t i;
+
+	fixed_t fullwidth = 0;
+
+	if (length < 0)
+		length = strlen(s);
+
+	uppercase  = !( flags & V_ALLOWLOWERCASE );
+	flags	&= ~(V_FLIP);/* These two (V_ALLOWLOWERCASE) share a bit. */
+
+	font       = &fontv[fontno];
+
+	fontspec_t fontspec;
+
+	V_GetFontSpecification(fontno, flags, &fontspec);
+
+	hchw     = fontspec.chw >> 1;
+
+	fontspec.chw    <<= FRACBITS;
+	fontspec.spacew <<= FRACBITS;
+
+#define Mul( id, scale ) ( id = FixedMul (scale, id) )
+	Mul    (fontspec.chw,      scale);
+	Mul (fontspec.spacew,      scale);
+	Mul    (fontspec.lfh,      scale);
+
+	Mul (fontspec.spacew, spacescale);
+	Mul    (fontspec.lfh,    lfscale);
+#undef  Mul
+
+	if (( flags & V_NOSCALESTART ))
+	{
+		dup      = vid.dup;
+
+		hchw     *=     dup;
+
+		fontspec.chw      *=     dup;
+		fontspec.spacew   *=     dup;
+		fontspec.lfh      *=     dup;
+	}
+	else
+	{
+		dup      = 1;
+	}
+
+	cx = 0;
+	right = 0;
+
+	for (i = 0; ( (c = *s) && i < length ); ++s, i++)
+	{
+		switch (c)
+		{
+			case '\n':
+				cx  =   0;
+				break;
+			case '<': // Control Codes
+			{
+				if (flags & V_USETEXTTAG)
+				{
+					char temp[1024] = {};
+					strncpy(temp, s, strlen(s));
+					char *end = strchr(temp, '>');
+					dboolean match = false;
+
+					// No end why bother.
+					if (end != NULL)
+					{
+						int32_t size = end - temp;
+						char temp2[1024] = {};
+
+						strncpy(temp2, temp+1, size-1);
+
+#define BUTTONCODE(buttonname, buttoncode) \
+	if (fastcmp(temp2, #buttonname)) \
+	{ \
+		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
+		cx += cw; \
+		match = true; \
+	} \
+	else if (fastcmp(temp2, va("%s_pressed", #buttonname))) \
+	{ \
+		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
+		cx += cw; \
+		match = true; \
+	} \
+	else if (fastcmp(temp2, va("%s_animated", #buttonname))) \
+	{ \
+		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
+		cx += cw; \
+		match = true; \
+	}
+
+						BUTTONCODE(up, gc_aimforward)
+						else BUTTONCODE(down, gc_aimbackward)
+						else BUTTONCODE(left, gc_turnright)
+						else BUTTONCODE(right, gc_turnleft)
+						else BUTTONCODE(lookback, gc_lookback)
+						else BUTTONCODE(drift, gc_drift)
+						else BUTTONCODE(item, gc_fire)
+						else BUTTONCODE(systemmenu, gc_systemmenu)
+						else BUTTONCODE(accel, gc_accelerate)
+						else BUTTONCODE(brake, gc_brake)
+						else BUTTONCODE(horn, gc_horncode)
+						else BUTTONCODE(custom1, gc_custom1)
+						else BUTTONCODE(custom2, gc_custom2)
+						else BUTTONCODE(custom3, gc_custom3)
+#undef BUTTONCODE
+
+						// Now skip past this part of the string.
+						s += size;
+						break;
+					}
+				}
+			}
+			default:
+				if (( c & 0xF0 ) == 0x80 || c == V_STRINGDANCE)
+					continue;
+
+			if (uppercase)
+			{
+				c = toupper(c);
+			}
+			else if (V_CharacterValid(font, c - font->start) == false)
+			{
+				// Try the other case if it doesn't exist
+				if (c >= 'A' && c <= 'Z')
+				{
+					c = tolower(c);
+				}
+				else if (c >= 'a' && c <= 'z')
+				{
+					c = toupper(c);
+				}
+			}
+
+			c -= font->start;
+			if (V_CharacterValid(font, c) == true)
+			{
+				cw = LSBF_SHORT (font->font[c]->width) * dup;
+
+				// How bunched dims work is by incrementing cx slightly less than a full character width.
+				// This causes the next character to be drawn overlapping the previous.
+				// We need to count the full width to get the rightmost edge of the string though.
+				right = cx + (cw * scale);
+
+				(*fontspec.dim_fn)(scale, fontspec.chw, hchw, dup, &cw);
+				cx += cw;
+			}
+			else
+				cx += fontspec.spacew;
+		}
+
+		fullwidth = std::max<fixed_t>(right, std::max(cx, fullwidth));
+	}
+
+	return std::max(i-1, 0);
 }
 
 // Modify a string to wordwrap at any given width.
@@ -3858,8 +4101,67 @@ char * V_ScaledWordWrap(
 				cxatstart = 0;
 				startwriter = 0;
 				break;
+			case '<': // Control Codes
+			{
+				if (flags & V_USETEXTTAG)
+				{
+					char temp[1024] = {};
+					strncpy(temp, s, strlen(s));
+					char *end = strchr(temp, '>');
+					dboolean match = false;
+
+					// No end why bother.
+					if (end != NULL)
+					{
+						int32_t size = end - temp;
+						char temp2[1024] = {};
+
+						strncpy(temp2, temp+1, size-1);
+
+#define BUTTONCODE(buttonname, buttoncode) \
+	if (fastcmp(temp2, #buttonname)) \
+	{ \
+		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
+		cx += cw; \
+		match = true; \
+	} \
+	else if (fastcmp(temp2, va("%s_pressed", #buttonname))) \
+	{ \
+		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
+		cx += cw; \
+		match = true; \
+	} \
+	else if (fastcmp(temp2, va("%s_animated", #buttonname))) \
+	{ \
+		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
+		cx += cw; \
+		match = true; \
+	}
+
+						BUTTONCODE(up, gc_aimforward)
+						else BUTTONCODE(down, gc_aimbackward)
+						else BUTTONCODE(left, gc_turnright)
+						else BUTTONCODE(right, gc_turnleft)
+						else BUTTONCODE(lookback, gc_lookback)
+						else BUTTONCODE(drift, gc_drift)
+						else BUTTONCODE(item, gc_fire)
+						else BUTTONCODE(systemmenu, gc_systemmenu)
+						else BUTTONCODE(accel, gc_accelerate)
+						else BUTTONCODE(brake, gc_brake)
+						else BUTTONCODE(horn, gc_horncode)
+						else BUTTONCODE(custom1, gc_custom1)
+						else BUTTONCODE(custom2, gc_custom2)
+						else BUTTONCODE(custom3, gc_custom3)
+#undef BUTTONCODE
+
+						// Now skip past this part of the string.
+						s += size;
+						break;
+					}
+				}
+			}
 			default:
-				if (( c & 0xF0 ) == 0x80 || c == V_STRINGDANCE)
+				if (( c & 0x80 ) || c == V_STRINGDANCE)
 					;
 				else
 				{
@@ -4085,34 +4387,6 @@ void V_DrawRankNum(int32_t x, int32_t y, int32_t flags, int32_t num, int32_t dig
 	} while (--digits);
 }
 
-// Find string width from cred_font chars
-//
-int32_t V_CreditSubStringWidth(const char *string, int32_t length, int32_t option)
-{
-	int32_t c, w = 0;
-	int32_t i;
-
-	(void)option;
-
-	// It's possible for string to be a null pointer
-	if (!string)
-		return 0;
-
-	if (length < 0)
-		length = strlen(string);
-
-	for (i = 0; i < length; i++)
-	{
-		c = toupper(string[i]) - CRED_FONTSTART;
-		if (c < 0 || c >= CRED_FONTSIZE)
-			w += 16;
-		else
-			w += fontv[CRED_FONT].font[c]->width;
-	}
-
-	return w;
-}
-
 // Draws a tallnum.  Replaces two functions in y_inter and st_stuff
 void V_DrawTallNum(int32_t x, int32_t y, int32_t flags, int32_t num)
 {
@@ -4219,232 +4493,9 @@ int32_t V_LevelNameHeight(const char *string)
 	return w;
 }
 
-//
-// Find string width from hu_font chars
-//
-int32_t V_SubStringWidth(const char *string, int32_t length, int32_t option)
-{
-	int32_t c, w = 0, lw = 0;
-	int32_t spacewidth = 4, charwidth = 0;
-	ssize_t i;
-
-	if (length < 0)
-		length = strlen(string);
-
-	switch (option & V_SPACINGMASK)
-	{
-		case V_MONOSPACE:
-			spacewidth = 8;
-			/* FALLTHRU */
-		case V_OLDSPACING:
-			charwidth = 8;
-			break;
-		case V_6WIDTHSPACE:
-			spacewidth = 6;
-		default:
-			break;
-	}
-
-	for (i = 0; string[i] && i < length; i++)
-	{
-		c = string[i];
-
-		if (c == '\n') {
-			w = std::max(w, lw); // width is based on widest line of text
-			lw = 0;
-			continue;
-		}
-
-		if ((uint8_t)c & 0x80) //color parsing! -Inuyasha 2.16.09
-			continue;
-
-		if (c < HU_FONTSTART)
-			continue; // this is not a proper character.
-
-		c = toupper(c) - HU_FONTSTART;
-		if (c < 0 || c >= HU_FONTSIZE || !fontv[HU_FONT].font[c])
-			lw += spacewidth;
-		else
-			lw += (charwidth ? charwidth : fontv[HU_FONT].font[c]->width);
-	}
-	w = std::max(w, lw);
-
-	if (option & (V_NOSCALESTART|V_NOSCALEPATCH))
-		w *= vid.dup;
-
-	return w;
-}
-
-//
-// Find string width from hu_font chars, 0.5x scale
-//
-int32_t V_SmallSubStringWidth(const char *string, int32_t length, int32_t option)
-{
-	int32_t c, w = 0, lw = 0;
-	int32_t spacewidth = 2, charwidth = 0;
-	ssize_t i;
-
-	if (length < 0)
-		length = strlen(string);
-
-	switch (option & V_SPACINGMASK)
-	{
-		case V_MONOSPACE:
-			spacewidth = 4;
-			/* FALLTHRU */
-		case V_OLDSPACING:
-			charwidth = 4;
-			break;
-		case V_6WIDTHSPACE:
-			spacewidth = 3;
-		default:
-			break;
-	}
-
-	for (i = 0; string[i] && i < length; i++)
-	{
-		c = string[i];
-
-		if (c == '\n') {
-			w = std::max(w, lw); // width is based on widest line of text
-			lw = 0;
-			continue;
-		}
-
-		if ((uint8_t)c & 0x80) //color parsing! -Inuyasha 2.16.09
-			continue;
-
-		if (c < HU_FONTSTART)
-			continue; // this is not a proper character.
-
-		c = toupper(c) - HU_FONTSTART;
-		if (c < 0 || c >= HU_FONTSIZE || !fontv[HU_FONT].font[c])
-			lw += spacewidth;
-		else
-			lw += (charwidth ? charwidth : fontv[HU_FONT].font[c]->width / 2);
-	}
-	w = std::max(w, lw);
-
-	return w;
-}
-
-//
-// Find string width from tny_font chars
-//
-int32_t V_ThinSubStringWidth(const char *string, int32_t length, int32_t option)
-{
-	int32_t c, w = 0, lw = 0;
-	int32_t spacewidth = 2, charwidth = 0;
-	dboolean lowercase = (option & V_ALLOWLOWERCASE);
-	ssize_t i;
-
-	if (length < 0)
-		length = strlen(string);
-
-	switch (option & V_SPACINGMASK)
-	{
-		case V_MONOSPACE:
-			spacewidth = 5;
-			/* FALLTHRU */
-		case V_OLDSPACING:
-			charwidth = 5;
-			break;
-		// Out of video flags, so we're reusing this for alternate charwidth instead
-		/*case V_6WIDTHSPACE:
-			spacewidth = 3;*/
-		default:
-			break;
-	}
-
-	for (i = 0; string[i] && i < length; i++)
-	{
-		c = string[i];
-
-		if (c == '\n') {
-			w = std::max(w, lw); // width is based on widest line of text
-			lw = 0;
-			continue;
-		}
-
-		if ((uint8_t)c & 0x80) //color parsing! -Inuyasha 2.16.09
-			continue;
-
-		if (c < HU_FONTSTART)
-			continue; // this is not a proper character.
-
-		if (!lowercase || !fontv[TINY_FONT].font[c-HU_FONTSTART])
-			c = toupper(c);
-		c -= HU_FONTSTART;
-
-		if (c < 0 || c >= HU_FONTSIZE || !fontv[TINY_FONT].font[c])
-			lw += spacewidth;
-		else
-		{
-			lw += (charwidth ? charwidth
-				: ((option & V_6WIDTHSPACE && i < (ssize_t)strlen(string)-1) ? std::max(1, fontv[TINY_FONT].font[c]->width-1) // Reuse this flag for the alternate bunched-up spacing
-				: fontv[TINY_FONT].font[c]->width));
-		}
-	}
-	w = std::max(w, lw);
-
-	return w;
-}
-
-//
-// Find string width from tny_font chars, 0.5x scale
-//
-/*int32_t V_SmallThinStringWidth(const char *string, int32_t option)
-{
-	int32_t w = V_ThinStringWidth(string, option)<<FRACBITS;
-	return w/2 + FRACUNIT; // +FRACUNIT because otherwise it's offset wrong.
-}*/
-
-//
-
 // Find maximum length for substring taken from current string to fit into given width
 
 //
-
-int32_t V_SubStringLengthToFit(const char *string, int32_t width, int32_t option)
-{
-	int32_t c, w = 0;
-	int32_t spacewidth = 4, charwidth = 0;
-	int32_t i;
-
-	switch (option & V_SPACINGMASK)
-	{
-		case V_MONOSPACE:
-			spacewidth = 8;
-			/* FALLTHRU */
-		case V_OLDSPACING:
-			charwidth = 8;
-			break;
-
-		case V_6WIDTHSPACE:
-			spacewidth = 6;
-			break;
-
-		default:
-			break;
-	}
-
-	for (i = 0; string[i] && w < width; i++)
-	{
-		c = string[i];
-
-		if ((uint8_t)c >= 0x80 && (uint8_t)c <= 0x8F) //color parsing! -Inuyasha 2.16.09
-			continue;
-
-		c = toupper(c) - HU_FONTSTART;
-
-		if (c < 0 || c >= HU_FONTSIZE || !fontv[HU_FONT].font[c])
-			w += spacewidth;
-		else
-			w += (charwidth ? charwidth : fontv[HU_FONT].font[c]->width);
-	}
-
-	return std::max(i-1, 0);
-}
 
 dboolean *heatshifter = NULL;
 int32_t lastheight = 0;

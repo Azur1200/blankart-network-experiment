@@ -85,6 +85,22 @@ void Dialogue::Typewriter::WriteText(void)
 		if (c == '\n')
 			textLines++;
 
+		if (c == '<')
+		{
+			size_t p = textDest.rfind('>');
+
+			if (p != textDest.npos)
+			{
+				while (!textDest.empty() && textDest.size() > p)
+				{
+					text.push_back(textDest.back());
+					textDest.pop_back();
+				}
+
+				empty = textDest.empty();
+			}
+		}
+
 		if (!empty)
 			nextc = textDest.back();
 
@@ -455,7 +471,7 @@ void Dialogue::Draw(void)
 	drawer
 		.xy(10 - BASEVIDWIDTH, -3-32)
 		.font(srb2::Draw::Font::kConsole)
-		.flags(V_ALLOWLOWERCASE|V_6WIDTHSPACE)
+		.flags(V_ALLOWLOWERCASE|V_6WIDTHSPACE|V_USETEXTTAG)
 		.text( typewriter.text.c_str() );
 
 	if (Dismissable())

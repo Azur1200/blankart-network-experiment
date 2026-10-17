@@ -40,12 +40,12 @@ Draw::TextElement& Draw::TextElement::parse(std::string_view raw)
 		{str "_animated", 0xA0 | lower_bits},\
 		{str "_pressed",  0x90 | lower_bits}
 
-		BUTTON("up", 0x00),
+		/*BUTTON("up", 0x00),
 		BUTTON("down", 0x01),
 		BUTTON("right", 0x02),
 		BUTTON("left", 0x03),
 
-		//BUTTON("dpad", 0x04),
+		BUTTON("lookback", 0x04),
 
 		BUTTON("drift", 0x07),
 		BUTTON("item", 0x08),
@@ -57,7 +57,7 @@ Draw::TextElement& Draw::TextElement::parse(std::string_view raw)
 
 		BUTTON("custom1", 0x0D),
 		BUTTON("custom2", 0x0E),
-		BUTTON("custom3", 0x0F),
+		BUTTON("custom3", 0x0F),*/
 
 #undef BUTTON
 

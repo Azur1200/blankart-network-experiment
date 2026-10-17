@@ -24,6 +24,8 @@
 
 #include "k_bot.h"
 
+#include "cxxutil.hpp"
+
 typedef enum
 {
 	MM_IN,
@@ -219,22 +221,23 @@ void K_DrawMessageFeed(void)
 		std::string msg = state.messages[0].text;
 		dboolean background = state.messages[0].background;
 
-		uint8_t sublen = state.timer;
+		size_t sublen = state.timer;
+		size_t messagelength = srb2::messagelength(msg);
 		if (state.mode == MM_IN)
 			sublen = state.timer;
 		else if (state.mode == MM_HOLD)
-			sublen = msg.length();
+			sublen = messagelength;
 		else if (state.mode == MM_OUT)
-			sublen = msg.length() - state.timer;
+			sublen = state.timer > messagelength ? 0 : messagelength - state.timer;
 
-		std::string submsg = msg.substr(0, sublen);
+		std::string submsg = srb2::messagesubstring(msg, 0, sublen);
 
 		using srb2::Draw;
 
 		Draw::TextElement text(submsg);
 
 		text.font(Draw::Font::kThin);
-		text.flags(V_ALLOWLOWERCASE|V_6WIDTHSPACE);
+		text.flags(V_ALLOWLOWERCASE|V_6WIDTHSPACE|V_USETEXTTAG);
 
 		uint8_t x = 160;
 		uint8_t y = 10;
@@ -264,6 +267,6 @@ void K_DrawMessageFeed(void)
 
 		if (background)
 			K_DrawSticker(x - sw/2, y, sw, 0, true);
-		Draw(x, y+shift).align(Draw::Align::kCenter).flags(V_ALLOWLOWERCASE|V_6WIDTHSPACE).text(text);
+		Draw(x, y+shift).align(Draw::Align::kCenter).flags(V_ALLOWLOWERCASE|V_6WIDTHSPACE|V_USETEXTTAG).text(text);
 	}
 }
