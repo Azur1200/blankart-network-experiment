@@ -2728,6 +2728,10 @@ void M_OpenVirtualKeyboard(textinput_t *textinput, char *buffer, menuitem_t *ite
 	menutyping.textinput = textinput;
 	menutyping.item = item;
 
+	// Start on enter for people who want to quickly exit typing menus.
+	menutyping.keyboardx = 11;
+	menutyping.keyboardy = 4;
+
 	M_TextInputInit(menutyping.textinput, buffer, M_StringCvarLength(menutyping.item->cvar));
 	M_TextInputSetString(menutyping.textinput, menutyping.item->cvar->string);
 	I_SetTextInput(true);
