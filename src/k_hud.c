@@ -2704,6 +2704,9 @@ static dboolean K_drawKartPositionFaces(void)
 	if (numplayersingame <= 1)
 		return true;
 
+	if (gametype == GT_FREEROAM)
+		return false; // There's no objective so whats the point.
+
 	if (!LUA_HudEnabled(hud_minirankings))
 		return false;	// Don't proceed but still return true for free play above if HUD is disabled.
 
