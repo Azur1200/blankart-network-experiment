@@ -324,6 +324,22 @@ uint32_t K_GetPlayerDontDrawFlag(player_t *player)
 	return flag;
 }
 
+uint32_t K_GetPlayerOnTopFlag(player_t *player)
+{
+	uint32_t flag = 0;
+
+	if (player == &players[displayplayers[0]])
+		flag = RF2_ONTOPONLYP1;
+	else if (r_splitscreen >= 1 && player == &players[displayplayers[1]])
+		flag = RF2_ONTOPONLYP2;
+	else if (r_splitscreen >= 2 && player == &players[displayplayers[2]])
+		flag = RF2_ONTOPONLYP3;
+	else if (r_splitscreen >= 3 && player == &players[displayplayers[3]])
+		flag = RF2_ONTOPONLYP4;
+
+	return flag;
+}
+
 // Angle reflection used by springs & speed pads
 angle_t K_ReflectAngle(angle_t yourangle, angle_t theirangle, fixed_t yourspeed, fixed_t theirspeed)
 {
@@ -5186,6 +5202,12 @@ static void K_SpawnDriftSparks(player_t *player)
 
 		if (pencilready)
 			spark->renderflags |= RF_ADD;
+		
+		if (P_IsDisplayPlayer(player))
+		{
+			spark->renderflags |= RF_ALWAYSONTOP;
+			spark->renderflags2 |= K_GetPlayerOnTopFlag(player);
+		}
 	}
 }
 
@@ -11345,6 +11367,12 @@ static void K_KartSlipdash(player_t *player, dboolean onground)
 		P_InstaThrust(spark, player->mo->angle, 2*player->speed/3);
 		spark->momz = player->mo->z - player->mo->old_z;
 		spark->z += spark->momz;
+		
+		if (P_IsDisplayPlayer(player))
+		{
+			spark->renderflags |= RF_ALWAYSONTOP;
+			spark->renderflags2 |= K_GetPlayerOnTopFlag(player);
+		}
 	}
 }
 
@@ -11540,6 +11568,12 @@ static void K_RecoveryDash(player_t *player)
 						P_SetMobjState(spark, S_DRIFTSPARK_A1);
 					}
 					K_MatchGenericExtraFlags(spark, player->mo);
+		
+					if (P_IsDisplayPlayer(player))
+					{
+						spark->renderflags |= RF_ALWAYSONTOP;
+						spark->renderflags2 |= K_GetPlayerOnTopFlag(player);
+					}
 				}
 			}
 		}

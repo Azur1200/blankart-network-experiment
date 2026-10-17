@@ -548,7 +548,7 @@ static void HWR_SplitSprite(gl_vissprite_t *spr)
 		blend = HWR_SurfaceBlend(blendmode, trans, &Surf);
 
 		// if sprite has PF_ALWAYSONTOP, draw on top of everything.
-		if (cv_debugrender_spriteclip.value || spr->mobj->renderflags & RF_ALWAYSONTOP)
+		if (cv_debugrender_spriteclip.value || R_ThingRendersOnTop(spr->mobj))
 			blend |= PF_NoDepthTest;
 
 		if (!trans && !blendmode)
@@ -1109,7 +1109,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 			blend = HWR_SurfaceBlend(blendmode, trans, &Surf);
 
 			// if sprite has PF_ALWAYSONTOP, draw on top of everything.
-			if (cv_debugrender_spriteclip.value || spr->mobj->renderflags & RF_ALWAYSONTOP)
+			if (cv_debugrender_spriteclip.value || R_ThingRendersOnTop(spr->mobj))
 				blend |= PF_NoDepthTest;
 
 			if (!trans && !blendmode)

@@ -78,6 +78,7 @@ uint8_t R_GetBoundingBoxColor(mobj_t *thing);
 dboolean R_ThingBoundingBoxVisible(mobj_t *thing);
 
 dboolean R_ThingVisible (mobj_t *thing);
+dboolean R_ThingRendersOnTop (mobj_t *thing);
 
 dboolean R_ThingWithinDist (mobj_t *thing,
 		fixed_t        draw_dist);
