@@ -3384,7 +3384,19 @@ dboolean P_ProcessSpecial(activator_t *activator, int16_t special, int32_t *args
 		case 437: // Toggle Player Controls
 			if (mo && mo->player)
 			{
-				mo->player->nocontrol = ((args[0] != 0) ? UINT16_MAX : 0);
+				if (args[2])
+				{
+					uint16_t fractime = (uint16_t)(args[0]);
+					if (fractime < 1)
+						fractime = 1; //instantly wears off upon leaving
+					if (args[1])
+						fractime |= 1<<15; //more crazy &ing, as if music stuff wasn't enough
+					mo->player->nocontrol = fractime;
+				}
+				else
+				{
+					mo->player->nocontrol = ((args[0] == 0) ? UINT16_MAX : 0);
+				}
 			}
 			break;
 
