@@ -2442,6 +2442,10 @@ void readmenuitemstyle(MYFILE *f, menuitemstyle_t *style)
 
 			part->fontalt = word[4] == 'A';
 		}
+		else if (fastcmp(word, "TEXTTAG"))
+		{
+			part->texttag = (word2[0] == 'T' || word2[0] == 'Y');
+		}
 		else if (fastcmp(word, "TYPE"))
 		{
 			if (fastcmp(word2, "STRING"))

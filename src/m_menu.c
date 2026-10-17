@@ -3826,6 +3826,9 @@ static fixed_t M_DrawMenuItem(const menupanelinst_t *pi, menuitem_t *item, fixed
 			if (part->fontalt)
 				vflags |= V_6WIDTHSPACE;
 
+			if (part->texttag)
+				vflags |= V_USETEXTTAG;
+
 			stringwidth = V_StringScaledWidth(stringscale, stringscale, stringscale, vflags, part->font, string);
 
 			width = M_GetAlignment(part, x, stringwidth);
@@ -5270,7 +5273,7 @@ fallback:
 			case gc_drift:
 				return "<drift_animated>";
 			case gc_fire:
-				return "<fire_animated>";
+				return "<item_animated>";
 			case gc_systemmenu:
 				return "<systemmenu_animated>";
 			case gc_lookback:
@@ -11360,15 +11363,15 @@ void MP_SetupViewServer(menupanelinst_t *pi)
 	M_SetItemVisible(pi, "ADDONSCOUNT", viewserver_showaddons);
 
 	const char *item1 = M_ButtonName(0, gc_accelerate, keyboardcontrolled);
-	const char *item2 = M_ButtonName(0, gc_brake, keyboardcontrolled);
+	const char *item2 = M_ButtonName(0, gc_brake,  keyboardcontrolled);
 	const char *item3 = M_ButtonName(0, gc_fire, keyboardcontrolled);
 
-	M_SetItemText(pi, "TOGGLEBUTTON1", va("[%s] = Players", item3));
-	M_SetItemText(pi, "TOGGLEBUTTON2", va("[%s] = Addons", item3));
+	M_SetItemText(pi, "TOGGLEBUTTON1", va("%s = Players", item3));
+	M_SetItemText(pi, "TOGGLEBUTTON2", va("%s = Addons", item3));
 
-	M_SetItemText(pi, "EXITBUTTON", va("[%s] = Return", item2));
+	M_SetItemText(pi, "EXITBUTTON", va("%s = Return", item2));
 
-	M_SetItemText(pi, "JOINBUTTON", va("[%s] = Join", item1));
+	M_SetItemText(pi, "JOINBUTTON", va("%s = Join", item1));
 
 	switch (kartvars & SV_SPEEDMASK)
 	{
@@ -11644,12 +11647,12 @@ int32_t MR_TickViewServer(int32_t choice)
 	const char *item2 = M_ButtonName(0, gc_brake,  keyboardcontrolled);
 	const char *item3 = M_ButtonName(0, gc_fire, keyboardcontrolled);
 
-	M_SetItemText(pi, "TOGGLEBUTTON1", va("[%s] = Players", item3));
-	M_SetItemText(pi, "TOGGLEBUTTON2", va("[%s] = Addons", item3));
+	M_SetItemText(pi, "TOGGLEBUTTON1", va("%s = Players", item3));
+	M_SetItemText(pi, "TOGGLEBUTTON2", va("%s = Addons", item3));
 
-	M_SetItemText(pi, "EXITBUTTON", va("[%s] = Return", item2));
+	M_SetItemText(pi, "EXITBUTTON", va("%s = Return", item2));
 
-	M_SetItemText(pi, "JOINBUTTON", va("[%s] = Join", item1));
+	M_SetItemText(pi, "JOINBUTTON", va("%s = Join", item1));
 
 	menupanelinst_t *pplayers = M_GetPanel("PLAYERS");
 	menupanelinst_t *paddons = M_GetPanel("ADDONS");

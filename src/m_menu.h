@@ -326,6 +326,7 @@ struct menuitempart_t
 
 	uint8_t font;
 	dboolean fontalt; // V_6WIDTHSPACE
+	dboolean texttag; // V_USETEXTTAG
 	dboolean small;
 	dboolean translucent;
 	dboolean nohighlight;

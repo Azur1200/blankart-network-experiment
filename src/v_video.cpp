@@ -3323,6 +3323,9 @@ static void V_GetFontSpecification(int fontno, int32_t flags, fontspec_t *result
 
 	switch (fontno)
 	{
+		case HU_FONT:
+			result->button_yofs = 4;
+			break;
 		default:
 			result->button_yofs = 2;
 			break;
@@ -4102,7 +4105,6 @@ char * V_ScaledWordWrap(
 					char temp[1024] = {};
 					strncpy(temp, s, strlen(s));
 					char *end = strchr(temp, '>');
-					dboolean match = false;
 
 					// No end why bother.
 					if (end != NULL)
