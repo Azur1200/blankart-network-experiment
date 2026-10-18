@@ -7014,14 +7014,14 @@ static void SV_SendTics(void)
 			for (j = 0; j < MAXPLAYERS; j++)
 			{
 				uint8_t *textcmd = D_GetExistingTextcmd(i, j);
-				int32_t size = textcmd ? textcmd[0] : 0;
+				int32_t size = textcmd ? ((uint16_t*)textcmd)[0] : 0;
 
 				if ((!j || playeringame[j]) && size)
 				{
 					(*ntextcmd)++;
 					WRITEUINT8(bufpos, j);
-					memcpy(bufpos, textcmd, size + 1);
-					bufpos += size + 1;
+					WRITEUINT16(bufpos, ((uint16_t*)textcmd)[0]);
+					WRITEMEM(bufpos, &textcmd[2], size);
 				}
 			}
 		}
