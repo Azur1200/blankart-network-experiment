@@ -6594,7 +6594,12 @@ void G_InitNew(uint8_t pencoremode, mapnum_t map, dboolean resetplayer, dboolean
 	comebackshowninfo = false;
 
 	if (!demo.playback && !netgame) // Netgame sets random seed elsewhere, demo playback sets seed just before us!
-		P_ClearRandom(M_RandomizedSeed()); // Use a more "Random" random seed
+	{
+		initial_seed = M_RandomizedSeed(); // Use a more "Random" random seed
+		I_OutputMsg("[G_InitNew] initial seed: %u\n", initial_seed);
+
+		P_ClearRandom(initial_seed);
+	}
 
 	// Clear a bunch of variables
 	redscore = bluescore = lastmap = 0;
