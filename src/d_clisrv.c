@@ -5725,6 +5725,12 @@ static void PT_ServerTics(int8_t node, int32_t netconsole)
 				int32_t k = *txtpak++; // playernum
 				const size_t txtsize = ((uint16_t*)txtpak)[0]+2;
 
+				if (k < 0 || k >= MAXPLAYERS)
+				{
+					CONS_Alert(CONS_WARNING, "Got bogus NetXCmd packet targetting player %d\n", k);
+					return;
+				}
+
 				if (i >= gametic) // Don't copy old net commands
 					memcpy(D_GetTextcmd(i, k), txtpak, txtsize);
 				txtpak += txtsize;
