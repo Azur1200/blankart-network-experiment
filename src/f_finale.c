@@ -81,7 +81,7 @@ static uint32_t demoIdleLeft;
 
 // customizable title screen graphics
 
-ttmode_enum ttmode = TTMODE_KART;
+ttmode_enum ttmode = TTMODE_BLAN;
 uint8_t ttscale = 1; // FRACUNIT / ttscale
 // ttmode user vars
 char ttname[9];
@@ -103,8 +103,14 @@ uint16_t curtttics;
 // ttmode kart
 static patch_t *ttbanner; // SONIC ROBO BLAST 2
 static patch_t *ttkart; // *vroom* KART
+
 static patch_t *ttcheckers; // *vroom* KART
 static patch_t *ttkflash; // flash screen
+
+// ttmode blan
+static patch_t *ttblanlogo;
+static patch_t *ttblanoverlay;
+static patch_t *ttblanpieces[8];
 
 #define NOWAY
 
@@ -1416,6 +1422,28 @@ void F_CacheTitleScreen(void)
 			ttcheckers = W_CachePatchName("TTCHECK", PU_PATCH_LOWPRIORITY);
 			ttkflash = W_CachePatchName("TTKFLASH", PU_PATCH_LOWPRIORITY);
 			break;
+		
+		case TTMODE_BLAN:
+			ttblanlogo = W_CachePatchName("BKLOGOMN", PU_PATCH_LOWPRIORITY);
+			ttblanoverlay = W_CachePatchName("BKLOGOOV", PU_PATCH_LOWPRIORITY);
+
+			const char* patchNames[] = {
+				"BKLOGO00",
+				"BKLOGO01",
+				"BKLOGO02",
+				"BKLOGO03",
+				"BKLOGO04",
+				"BKLOGO05",
+				"BKLOGO06",
+				"BKLOGO07"
+			};
+
+			for (size_t m = 0; m < sizeof(patchNames) / sizeof(patchNames[0]); ++m)
+			{
+				ttblanpieces[m] = W_CachePatchName(patchNames[m], PU_PATCH_LOWPRIORITY);
+			}
+			
+			break;
 
 		case TTMODE_USER:
 		{
@@ -1513,6 +1541,18 @@ void F_StartTitleScreen(void)
 	F_CacheTitleScreen();
 }
 
+static void F_DrawCompositeGameLogo(void)
+{
+	V_DrawFixedPatch(32<<FRACBITS,	38<<FRACBITS,	FRACUNIT, V_SNAPTOTOP, ttblanpieces[0], NULL);
+	V_DrawFixedPatch(84<<FRACBITS,	39<<FRACBITS,	FRACUNIT, V_SNAPTOTOP, ttblanpieces[1], NULL);
+	V_DrawFixedPatch(100<<FRACBITS,	45<<FRACBITS,	FRACUNIT, V_SNAPTOTOP, ttblanpieces[2], NULL);
+	V_DrawFixedPatch(132<<FRACBITS,	45<<FRACBITS,	FRACUNIT, V_SNAPTOTOP, ttblanpieces[3], NULL);
+	V_DrawFixedPatch(163<<FRACBITS,	38<<FRACBITS,	FRACUNIT, V_SNAPTOTOP, ttblanpieces[4], NULL);
+	V_DrawFixedPatch(195<<FRACBITS,	45<<FRACBITS,	FRACUNIT, V_SNAPTOTOP, ttblanpieces[5], NULL);
+	V_DrawFixedPatch(227<<FRACBITS,	45<<FRACBITS,	FRACUNIT, V_SNAPTOTOP, ttblanpieces[6], NULL);
+	V_DrawFixedPatch(253<<FRACBITS,	38<<FRACBITS,	FRACUNIT, V_SNAPTOTOP, ttblanpieces[7], NULL);
+}
+
 // (no longer) De-Demo'd Title Screen
 void F_TitleScreenDrawer(void)
 {
@@ -1592,6 +1632,19 @@ void F_TitleScreenDrawer(void)
 			break;
 		}
 
+		case TTMODE_BLAN:
+		{
+			if (titlemapinaction == false)
+				F_TitleBGScroll(5, finalecount);
+
+			// V_DrawFixedPatch(30<<FRACBITS, 26<<FRACBITS, FRACUNIT, V_SNAPTOTOP, ttblanlogo, NULL);
+			F_DrawCompositeGameLogo();
+
+			// int32_t alphaflags = ((10 - CLAMP((finalecount - 50)/17, 0, 10))<<V_ALPHASHIFT);
+			// V_DrawFixedPatch(30<<FRACBITS, 26<<FRACBITS, FRACUNIT, V_SNAPTOTOP|V_MODULATE|alphaflags, ttblanoverlay, NULL);
+			break;
+		}
+
 		case TTMODE_USER:
 			if (!ttuser[max(0, ttuser_count)])
 			{
@@ -1646,16 +1699,10 @@ void F_TitleScreenTicker(dboolean run)
 
 		finalecount++;
 
-		if (finalecount == 10)
+		if (finalecount == 5)
 		{
-			S_StartSound(NULL, sfx_s23e);
-		}
-		else if (finalecount == 50)
-		{
-			// Now start the music
-			S_ChangeMusicInternal("titles", true);
+			S_ChangeMusicInternal("titlea", true);
 			S_ShowMusicCredit(0, 5*TICRATE, 0);
-			S_StartSound(NULL, sfx_s23c);
 		}
 	}
 

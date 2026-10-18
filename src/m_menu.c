@@ -2142,6 +2142,8 @@ void M_StartControlPanel(void)
 	{
 		if (gamestate != GS_MENU)
 		{
+			gamestate_t oldgamestate = gamestate;
+
 			if (titlemapinaction)
 			{
 				// We clear a LITTLE bit of state, but not a full D_ClearState.
@@ -2151,6 +2153,11 @@ void M_StartControlPanel(void)
 			}
 
 			G_SetGamestate(GS_MENU);
+			// this was annoying
+			if (oldgamestate == GS_TITLESCREEN)
+			{
+				wipegamestate = GS_MENU;
+			}
 			gameaction = ga_nothing;
 			paused = false;
 			CON_ToggleOff();
