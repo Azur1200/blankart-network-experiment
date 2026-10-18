@@ -920,11 +920,20 @@ static void DebugPrintpacket(const char *header)
 		case PT_TEXTCMD:
 		case PT_TEXTCMD2:
 		case PT_TEXTCMD3:
-		case PT_TEXTCMD4:
-			fprintf(debugfile, "    length %d\n", netbuffer->u.textcmd[0]);
-			fprintf(debugfile, "[%s]", netxcmdnames[netbuffer->u.textcmd[1] - 1]);
-			fprintfstringnewline((char *)netbuffer->u.textcmd + 2, netbuffer->u.textcmd[0] - 1);
+		case PT_TEXTCMD4: {
+			uint16_t size;
+
+			{
+				uint8_t *p = netbuffer->u.textcmd;
+
+				size = READUINT16(p);
+			}
+
+			fprintf(debugfile, "    length %d\n", size);
+			fprintf(debugfile, "[%s]", netxcmdnames[netbuffer->u.textcmd[2] - 1]);
+			fprintfstringnewline((char *)netbuffer->u.textcmd + 3, size - 2);
 			break;
+		}
 		case PT_SERVERCFG:
 			fprintf(debugfile, "    playerslots %d clientnode %d serverplayer %d "
 				"gametic %u gamestate %d gametype %d modifiedgame %d\n",
