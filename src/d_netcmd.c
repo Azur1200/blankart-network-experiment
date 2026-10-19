@@ -3893,7 +3893,14 @@ void D_MapChange(mapnum_t mapnum, int32_t newgametype, dboolean pencoremode, dbo
 		chmappending++;
 
 		if (netgame)
-			WRITEUINT32(buf_p, M_RandomizedSeed()); // random seed
+		{
+			// random seed
+			initial_seed = M_RandomizedSeed();
+			I_OutputMsg("[D_MapChange] initial seed: %u\n", initial_seed);
+
+			WRITEUINT32(buf_p, initial_seed);
+		}
+
 		SendNetXCmd(XD_MAP, buf, buf_p - buf);
 	}
 }

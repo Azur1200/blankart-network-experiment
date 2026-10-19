@@ -59,7 +59,7 @@ void ServerInfoUpdateSend(void);
 // Networking and tick handling related.
 #define BACKUPTICS 512 // more than enough for most timeouts....
 #define CLIENTBACKUPTICS 32
-#define MAXTEXTCMD 256
+#define MAXTEXTCMD 512
 
 // No. of tics your controls can be delayed by.
 
@@ -479,7 +479,7 @@ struct doomdata_t
 		servertics_pak serverpak; // 633 bytes
 		rngdiagnosis_pak rngdiagnosis; // 412 bytes
 		serverconfig_pak servercfg; // 33 bytes
-		uint8_t textcmd[MAXTEXTCMD+1]; // 257 bytes
+		uint8_t textcmd[MAXTEXTCMD+2]; // 257 bytes
 		char filetxpak[sizeof (filetx_pak)]; // 12 bytes
 		char fileack[sizeof (fileack_pak)]; // 3 bytes
 		uint8_t filereceived; // 1 byte
