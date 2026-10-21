@@ -3494,7 +3494,10 @@ void M_Ticker(void)
 		if (M_AttackOnStack())
 			modeattacking = ATTACKING_MENU;
 		else
+		{
 			modeattacking = ATTACKING_NONE;
+			levellistmode_ta = LLM__MAX;
+		}
 	}
 
 	CL_TimeoutServerList();
