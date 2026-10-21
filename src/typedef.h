@@ -242,6 +242,9 @@ TYPEDEF (lua_timer_t);
 // m_aatree.h
 TYPEDEF (aatree_t);
 
+// m_animkeyframe.h
+TYPEDEF (animkeyframe_t);
+
 // m_cond.h
 TYPEDEF (condition_t);
 TYPEDEF (conditionset_t);

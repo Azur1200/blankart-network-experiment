@@ -43,6 +43,8 @@
 #include "lua_hud.h"
 #include "lua_hook.h"
 
+#include "m_animkeyframe.h"
+
 // Stage of animation:
 // 0 = text, 1 = art screen
 int32_t finalecount;
@@ -1541,16 +1543,165 @@ void F_StartTitleScreen(void)
 	F_CacheTitleScreen();
 }
 
+// B
+static animkeyframe_t logokeyframes_0_x[] = {
+	{360<<FRACBITS, 0, EASE_OUTBACK},
+	{32<<FRACBITS, 10, EASE_OUTBACK},
+};
+static animkeyframe_t logokeyframes_0_y[] = {
+	{46<<FRACBITS, 0, EASE_INQUAD},
+	{62<<FRACBITS, 5, EASE_INOUTQUAD},
+	{46<<FRACBITS, 10, EASE_OUTQUAD},
+};
+static animkeyframe_t logokeyframes_0_scale[] = {
+	{2 * FRACUNIT, 0, EASE_INOUTBACK},
+	{FRACUNIT, 10, EASE_INOUTBACK},
+};
+// L
+static animkeyframe_t logokeyframes_1_x[] = {
+	{360<<FRACBITS, 2, EASE_OUTBACK},
+	{84<<FRACBITS, 12, EASE_OUTBACK}
+};
+static animkeyframe_t logokeyframes_1_y[] = {
+	{47<<FRACBITS, 2, EASE_INQUAD},
+	{63<<FRACBITS, 7, EASE_INOUTQUAD},
+	{47<<FRACBITS, 12, EASE_OUTQUAD},
+};
+static animkeyframe_t logokeyframes_1_scale[] = {
+	{2 * FRACUNIT, 2, EASE_INOUTBACK},
+	{FRACUNIT, 12, EASE_INOUTBACK},
+};
+// A
+static animkeyframe_t logokeyframes_2_x[] = {
+	{360<<FRACBITS, 10, EASE_OUTBACK},
+	{100<<FRACBITS, 20, EASE_OUTBACK}
+};
+static animkeyframe_t logokeyframes_2_y[] = {
+	{53<<FRACBITS, 10, EASE_INQUAD},
+	{69<<FRACBITS, 15, EASE_INOUTQUAD},
+	{53<<FRACBITS, 20, EASE_OUTQUAD},
+};
+static animkeyframe_t logokeyframes_2_scale[] = {
+	{2 * FRACUNIT, 10, EASE_INOUTBACK},
+	{FRACUNIT, 20, EASE_INOUTBACK},
+};
+//N
+static animkeyframe_t logokeyframes_3_x[] = {
+	{360<<FRACBITS, 12, EASE_OUTBACK},
+	{132<<FRACBITS, 22, EASE_OUTBACK}
+};
+static animkeyframe_t logokeyframes_3_y[] = {
+	{53<<FRACBITS, 12, EASE_INQUAD},
+	{69<<FRACBITS, 17, EASE_INOUTQUAD},
+	{53<<FRACBITS, 22, EASE_OUTQUAD},
+};
+static animkeyframe_t logokeyframes_3_scale[] = {
+	{2 * FRACUNIT, 12, EASE_INOUTBACK},
+	{FRACUNIT, 22, EASE_INOUTBACK},
+};
+
+//K
+static animkeyframe_t logokeyframes_4_x[] = {
+	{-80<<FRACBITS, 0, EASE_OUTBACK},
+	{163<<FRACBITS, 10, EASE_OUTBACK},
+};
+static animkeyframe_t logokeyframes_4_y[] = {
+	{46<<FRACBITS, 0, EASE_INQUAD},
+	{38<<FRACBITS, 5, EASE_INOUTQUAD},
+	{46<<FRACBITS, 10, EASE_OUTQUAD},
+};
+static animkeyframe_t logokeyframes_4_scale[] = {
+	{FRACUNIT/2, 0, EASE_INOUTBACK},
+	{FRACUNIT, 10, EASE_INOUTBACK},
+};
+//A
+static animkeyframe_t logokeyframes_5_x[] = {
+	{-80<<FRACBITS, 2, EASE_OUTBACK},
+	{195<<FRACBITS, 12, EASE_OUTBACK},
+};
+static animkeyframe_t logokeyframes_5_y[] = {
+	{53<<FRACBITS, 2, EASE_INQUAD},
+	{45<<FRACBITS, 7, EASE_INOUTQUAD},
+	{53<<FRACBITS, 12, EASE_OUTQUAD},
+};
+static animkeyframe_t logokeyframes_5_scale[] = {
+	{FRACUNIT/2, 2, EASE_INOUTBACK},
+	{FRACUNIT, 12, EASE_INOUTBACK},
+};
+//R
+static animkeyframe_t logokeyframes_6_x[] = {
+	{-80<<FRACBITS, 10, EASE_OUTBACK},
+	{227<<FRACBITS, 20, EASE_OUTBACK},
+};
+static animkeyframe_t logokeyframes_6_y[] = {
+	{53<<FRACBITS, 10, EASE_INQUAD},
+	{45<<FRACBITS, 15, EASE_INOUTQUAD},
+	{53<<FRACBITS, 20, EASE_OUTQUAD},
+};
+static animkeyframe_t logokeyframes_6_scale[] = {
+	{FRACUNIT/2, 10, EASE_INOUTBACK},
+	{FRACUNIT, 20, EASE_INOUTBACK},
+};
+//T
+static animkeyframe_t logokeyframes_7_x[] = {
+	{-80<<FRACBITS, 12, EASE_OUTBACK},
+	{253<<FRACBITS, 22, EASE_OUTBACK},
+};
+static animkeyframe_t logokeyframes_7_y[] = {
+	{46<<FRACBITS, 12, EASE_INQUAD},
+	{38<<FRACBITS, 17, EASE_INOUTQUAD},
+	{46<<FRACBITS, 22, EASE_OUTQUAD},
+};
+static animkeyframe_t logokeyframes_7_scale[] = {
+	{FRACUNIT/2, 12, EASE_INOUTBACK},
+	{FRACUNIT, 22, EASE_INOUTBACK},
+};
+
+
 static void F_DrawCompositeGameLogo(void)
 {
-	V_DrawFixedPatch(32<<FRACBITS,	38<<FRACBITS,	FRACUNIT, V_SNAPTOTOP, ttblanpieces[0], NULL);
-	V_DrawFixedPatch(84<<FRACBITS,	39<<FRACBITS,	FRACUNIT, V_SNAPTOTOP, ttblanpieces[1], NULL);
-	V_DrawFixedPatch(100<<FRACBITS,	45<<FRACBITS,	FRACUNIT, V_SNAPTOTOP, ttblanpieces[2], NULL);
-	V_DrawFixedPatch(132<<FRACBITS,	45<<FRACBITS,	FRACUNIT, V_SNAPTOTOP, ttblanpieces[3], NULL);
-	V_DrawFixedPatch(163<<FRACBITS,	38<<FRACBITS,	FRACUNIT, V_SNAPTOTOP, ttblanpieces[4], NULL);
-	V_DrawFixedPatch(195<<FRACBITS,	45<<FRACBITS,	FRACUNIT, V_SNAPTOTOP, ttblanpieces[5], NULL);
-	V_DrawFixedPatch(227<<FRACBITS,	45<<FRACBITS,	FRACUNIT, V_SNAPTOTOP, ttblanpieces[6], NULL);
-	V_DrawFixedPatch(253<<FRACBITS,	38<<FRACBITS,	FRACUNIT, V_SNAPTOTOP, ttblanpieces[7], NULL);
+	fixed_t fractime = ((finalecount - 15)<<FRACBITS) + R_GetTimeFrac(RTF_MENU);
+	fixed_t x, y, scale;
+
+	x = M_GetAnimatedKeyFrameValue(logokeyframes_4_x, 2, fractime);
+	y = M_GetAnimatedKeyFrameValue(logokeyframes_4_y, 3, fractime);
+	scale = M_GetAnimatedKeyFrameValue(logokeyframes_4_scale, 2, fractime);
+	V_DrawFixedPatch(x, y, scale, V_SNAPTOTOP, ttblanpieces[4], NULL);
+	
+	x = M_GetAnimatedKeyFrameValue(logokeyframes_5_x, 2, fractime);
+	y = M_GetAnimatedKeyFrameValue(logokeyframes_5_y, 3, fractime);
+	scale = M_GetAnimatedKeyFrameValue(logokeyframes_5_scale, 2, fractime);
+	V_DrawFixedPatch(x, y, scale, V_SNAPTOTOP, ttblanpieces[5], NULL);
+	
+	x = M_GetAnimatedKeyFrameValue(logokeyframes_6_x, 2, fractime);
+	y = M_GetAnimatedKeyFrameValue(logokeyframes_6_y, 3, fractime);
+	scale = M_GetAnimatedKeyFrameValue(logokeyframes_6_scale, 2, fractime);
+	V_DrawFixedPatch(x, y, scale, V_SNAPTOTOP, ttblanpieces[6], NULL);
+	
+	x = M_GetAnimatedKeyFrameValue(logokeyframes_7_x, 2, fractime);
+	y = M_GetAnimatedKeyFrameValue(logokeyframes_7_y, 3, fractime);
+	scale = M_GetAnimatedKeyFrameValue(logokeyframes_7_scale, 2, fractime);
+	V_DrawFixedPatch(x, y, scale, V_SNAPTOTOP, ttblanpieces[7], NULL);
+	
+	x = M_GetAnimatedKeyFrameValue(logokeyframes_0_x, 2, fractime);
+	y = M_GetAnimatedKeyFrameValue(logokeyframes_0_y, 3, fractime);
+	scale = M_GetAnimatedKeyFrameValue(logokeyframes_0_scale, 2, fractime);
+	V_DrawFixedPatch(x, y, scale, V_SNAPTOTOP, ttblanpieces[0], NULL);
+	
+	x = M_GetAnimatedKeyFrameValue(logokeyframes_1_x, 2, fractime);
+	y = M_GetAnimatedKeyFrameValue(logokeyframes_1_y, 3, fractime);
+	scale = M_GetAnimatedKeyFrameValue(logokeyframes_1_scale, 2, fractime);
+	V_DrawFixedPatch(x, y, scale, V_SNAPTOTOP, ttblanpieces[1], NULL);
+	
+	x = M_GetAnimatedKeyFrameValue(logokeyframes_2_x, 2, fractime);
+	y = M_GetAnimatedKeyFrameValue(logokeyframes_2_y, 3, fractime);
+	scale = M_GetAnimatedKeyFrameValue(logokeyframes_2_scale, 2, fractime);
+	V_DrawFixedPatch(x, y, scale, V_SNAPTOTOP, ttblanpieces[2], NULL);
+	
+	x = M_GetAnimatedKeyFrameValue(logokeyframes_3_x, 2, fractime);
+	y = M_GetAnimatedKeyFrameValue(logokeyframes_3_y, 3, fractime);
+	scale = M_GetAnimatedKeyFrameValue(logokeyframes_3_scale, 2, fractime);
+	V_DrawFixedPatch(x, y, scale, V_SNAPTOTOP, ttblanpieces[3], NULL);
 }
 
 // (no longer) De-Demo'd Title Screen
@@ -1640,8 +1791,11 @@ void F_TitleScreenDrawer(void)
 			// V_DrawFixedPatch(30<<FRACBITS, 26<<FRACBITS, FRACUNIT, V_SNAPTOTOP, ttblanlogo, NULL);
 			F_DrawCompositeGameLogo();
 
-			// int32_t alphaflags = ((10 - CLAMP((finalecount - 50)/17, 0, 10))<<V_ALPHASHIFT);
-			// V_DrawFixedPatch(30<<FRACBITS, 26<<FRACBITS, FRACUNIT, V_SNAPTOTOP|V_MODULATE|alphaflags, ttblanoverlay, NULL);
+			int32_t alphaflags = ((CLAMP((finalecount - 40)/2, 0, 10))<<V_ALPHASHIFT);
+			if (alphaflags)
+			{
+				V_DrawFixedPatch(30<<FRACBITS, 34<<FRACBITS, FRACUNIT, V_SNAPTOTOP|V_ADD|alphaflags, ttblanoverlay, NULL);
+			}
 			break;
 		}
 
@@ -1699,10 +1853,39 @@ void F_TitleScreenTicker(dboolean run)
 
 		finalecount++;
 
-		if (finalecount == 5)
+		switch (curttmode)
 		{
-			S_ChangeMusicInternal("titlea", true);
-			S_ShowMusicCredit(0, 5*TICRATE, 0);
+			case TTMODE_KART:
+			{
+				if (finalecount == 10)
+				{
+					S_StartSound(NULL, sfx_s23e);
+				}
+				else if (finalecount == 50)
+				{
+					// Now start the music
+					S_ChangeMusicInternal("titles", true);
+					S_ShowMusicCredit(0, 5*TICRATE, 0);
+					S_StartSound(NULL, sfx_s23c);
+				}
+
+				break;
+			}
+			case TTMODE_BLAN:
+			{
+				if (finalecount == 5)
+				{
+					S_ChangeMusicInternal("titlea", true);
+				}
+				else if (finalecount == 80)
+				{
+					S_ShowMusicCredit(0, 5*TICRATE, 0);
+				}
+
+				break;
+			}
+			default:
+				break;
 		}
 	}
 
