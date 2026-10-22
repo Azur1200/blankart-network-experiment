@@ -1472,15 +1472,15 @@ static void K_UpdateDraft(player_t *player)
 	draftdistance = FixedMul(draftdistance, K_GetKartGameSpeedScalar(gamespeed));
 
 	// On the contrary, the leniency period biases toward high weight.
-	leniency = (3*TICRATE)/4 + ((player->kartweight-1) * (TICRATE/6));
+	leniency = TICRATE + (TICRATE / 2 * (player->kartweight - 1) / 8); //(3*TICRATE)/4 + ((player->kartweight-1) * (TICRATE/6));
 
 	minDist = cv_kartdrafting_closedeadzone.value * player->mo->scale;
 
 	if (gametypes[gametype]->rules & GTR_CLOSERPLAYERS)
 	{
-		minDist /= 4;
+		minDist /= 2;
 		draftdistance *= 2;
-		leniency *= 4;
+		//leniency *= 4;
 	}
 
 	// Not enough speed to draft.
@@ -1561,7 +1561,11 @@ static void K_UpdateDraft(player_t *player)
 
 			olddraft = player->draftpower;
 
-			player->draftleeway = leniency;
+			// if we somehow pass the player we are drafting off of, reduce the draft leeway.
+			if (player->position < players[i].position)
+				player->draftleeway = leniency/2;
+			else
+				player->draftleeway = leniency;
 			player->lastdraft = i;
 
 			// Draft power is used later in K_GetKartBoostPower, ranging from 0 for normal speed and FRACUNIT for max draft speed.
