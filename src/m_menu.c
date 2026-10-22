@@ -2001,7 +2001,7 @@ void M_Drawer(void)
 				M_DrawSplitText(pi->items[pi->itemon].tooltip,
 								BASEVIDWIDTH / 2,
 					BASEVIDHEIGHT-50,
-					V_SNAPTOBOTTOM|V_6WIDTHSPACE|MENUCAPS,
+					V_SNAPTOBOTTOM|V_6WIDTHSPACE|MENUCAPS|V_USETEXTTAG,
 					cursortimer <= 9 ? 9 - cursortimer : 0);
 			}
 		}
