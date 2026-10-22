@@ -13002,7 +13002,7 @@ fixed_t K_PlayerBaseFriction(const player_t *player, fixed_t original)
 	);
 	fixed_t frict = original;
 
-	if (player->dashpadcooldown == 0 && player->spinouttimer == 0) // attempt to fix Hot Shelter. Also Prevent spinout cheese.
+	if (player->dashpadcooldown == 0 && !P_PlayerInPain(player)) // attempt to fix Hot Shelter. Also Prevent spinout cheese.
 	{
 		if (K_PlayerUsesBotMovement(player) == true)
 		{
