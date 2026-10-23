@@ -77,7 +77,7 @@ Draw::TextElement& Draw::TextElement::parse(std::string_view raw)
 		{"pink", 0x8D},
 		{"brown", 0x8E},
 		{"tan", 0x8F},
-		{"newline", '\n'}
+		//{"newline", '\n'}
 	};
 
 	string_.clear();
