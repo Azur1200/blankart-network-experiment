@@ -8379,6 +8379,8 @@ static void P_TrapBubbleThink(mobj_t* mobj)
 			player->spinouttype |= KSPIN_AIRTIMER;
 		}
 
+		player->pogospring = 0;
+
 		if (mobj->movecount > 5 * TICRATE)
 		{
 			S_StartSound(mobj->tracer, sfx_s3k77);
