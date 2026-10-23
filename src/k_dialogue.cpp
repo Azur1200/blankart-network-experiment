@@ -250,7 +250,7 @@ void Dialogue::SetSpeaker(std::string name, patch_t *patch, uint8_t *colormap, s
 	typewriter.voiceSfx = voice;
 }
 
-void Dialogue::NewText(std::string_view rawText)
+void Dialogue::NewText(std::string rawText)
 {
 	Init();
 
@@ -258,7 +258,7 @@ void Dialogue::NewText(std::string_view rawText)
 		290 << FRACBITS,
 		FRACUNIT, FRACUNIT, FRACUNIT,
 		0, HU_FONT,
-		srb2::Draw::TextElement().parse(rawText).string().c_str() // parse special characters
+		rawText.c_str()
 	);
 
 	typewriter.NewText(newText);

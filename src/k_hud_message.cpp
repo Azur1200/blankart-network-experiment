@@ -131,12 +131,10 @@ void K_AddMessage(const char *msg, dboolean interrupt, dboolean persist, dboolea
 		if (interrupt)
 			state.clear();
 
-		std::string parsedmsg = srb2::Draw::TextElement().parse(msg).string();
-
 		if (persist)
-			state.objective = parsedmsg;
+			state.objective = msg;
 		else
-			state.add({.text = parsedmsg, .background = !hidebackground});
+			state.add({.text = msg, .background = !hidebackground});
 	}
 }
 
@@ -166,12 +164,10 @@ void K_AddMessageForPlayer(player_t *player, const char *msg, dboolean interrupt
 	if (interrupt)
 		state->clear();
 
-	std::string parsedmsg = srb2::Draw::TextElement().parse(msg).string();
-
 	if (persist)
-		state->objective = parsedmsg;
+		state->objective = msg;
 	else
-		state->add({.text = parsedmsg, .background = !hidebackground});
+		state->add({.text = msg, .background = !hidebackground});
 }
 
 void K_ClearPersistentMessageForPlayer(player_t *player)

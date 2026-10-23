@@ -36,7 +36,7 @@ public:
 	void SetSpeaker(std::string skinName, int portraitID);
 	void SetSpeaker(std::string name, patch_t *patch, uint8_t *colormap, sfxenum_t voice);
 
-	void NewText(std::string_view newText);
+	void NewText(std::string newText);
 
 	bool Active(void);
 	bool TextDone(void);
