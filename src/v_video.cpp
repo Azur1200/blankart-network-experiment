@@ -3433,18 +3433,6 @@ typedef enum
 	STRINGDRAW_NORMAL,
 } stringdraw_e;
 
-static stringdraw_e drawtexttag(
-	stringdraw_t *sd,
-	fixed_t x,
-	fixed_t y,
-	int32_t flags,
-	fixed_t scale,
-	char *tagstring,
-	const char *originalstring,
-	fontspec_t *fontspec)
-{
-	(void)y;
-	(void)originalstring;
 #define DRAWBUTTON(buttoncode, state) \
 	sd->cw = V_GetButtonCodeWidth(buttoncode) * sd->dup; \
 	sd->cxoff = (*fontspec->dim_fn)(scale, fontspec->chw, sd->hchw, sd->dup, &sd->cw); \
@@ -3469,6 +3457,31 @@ static stringdraw_e drawtexttag(
 		DRAWBUTTON(buttoncode, {}) \
 	}
 
+#define HANDLECOLOR(colorname, hexcode) \
+if (fastcmp(tagstring, #colorname)) \
+{ \
+	if (sd->notcolored) \
+	{ \
+		colormap = V_GetStringColormap( \
+		( ( hexcode & 0x7f )<< V_CHARCOLORSHIFT )& \
+		V_CHARCOLORMASK); \
+	} \
+}
+
+static stringdraw_e drawtexttag(
+	stringdraw_t *sd,
+	fixed_t x,
+	fixed_t y,
+	int32_t flags,
+	fixed_t scale,
+	char *tagstring,
+	const char *originalstring,
+	const uint8_t *&colormap,
+	fontspec_t *fontspec)
+{
+	(void)y;
+	(void)originalstring;
+
 	BUTTONCODE(up, gc_aimforward)
 	else BUTTONCODE(down, gc_aimbackward)
 	else BUTTONCODE(left, gc_turnright)
@@ -3483,8 +3496,22 @@ static stringdraw_e drawtexttag(
 	else BUTTONCODE(custom1, gc_custom1)
 	else BUTTONCODE(custom2, gc_custom2)
 	else BUTTONCODE(custom3, gc_custom3)
-#undef DRAWBUTTON
-#undef BUTTONCODE
+	else HANDLECOLOR(white, 0x80)
+	else HANDLECOLOR(purple, 0x81)
+	else HANDLECOLOR(yellow, 0x82)
+	else HANDLECOLOR(green, 0x83)
+	else HANDLECOLOR(blue, 0x84)
+	else HANDLECOLOR(red, 0x85)
+	else HANDLECOLOR(gray, 0x86)
+	else HANDLECOLOR(orange, 0x87)
+	else HANDLECOLOR(sky, 0x88)
+	else HANDLECOLOR(lavender, 0x89)
+	else HANDLECOLOR(gold, 0x8A)
+	else HANDLECOLOR(aqua, 0x8B)
+	else HANDLECOLOR(magenta, 0x8C)
+	else HANDLECOLOR(pink, 0x8D)
+	else HANDLECOLOR(brown, 0x8E)
+	else HANDLECOLOR(tan, 0x8F)
 	else if (fastcmp(tagstring, "newline"))
 	{
 		sd->cy += fontspec->lfh;
@@ -3495,6 +3522,10 @@ static stringdraw_e drawtexttag(
 
 	return STRINGDRAW_NORMAL;
 }
+
+#undef DRAWBUTTON
+#undef BUTTONCODE
+#undef HANDLECOLOR
 
 static stringdraw_e drawtexttagwidth(
 	stringdraw_t *sd,
@@ -3512,7 +3543,7 @@ static stringdraw_e drawtexttagwidth(
 	{ \
 		sd->cw = V_GetButtonCodeWidth(buttoncode) * sd->dup; \
 		sd->cx += sd->cw * scale; \
-		sd->right = sd->cx ; \
+		sd->right = sd->cx; \
 	} \
 	else if (fastcmp(tagstring, va("%s_pressed", #buttonname))) \
 	{ \
@@ -3663,7 +3694,7 @@ void V_DrawStringScaledEx(
 
 						strncpy(temp2, temp+1, size-1);
 
-						stringdraw_e sde = drawtexttag(&sd, x, y, flags, scale, temp2, s, &fontspec);
+						stringdraw_e sde = drawtexttag(&sd, x, y, flags, scale, temp2, s, colormap, &fontspec);
 
 						if (sde == STRINGDRAW_RETURN)
 						{
@@ -3717,7 +3748,6 @@ void V_DrawStringScaledEx(
 							sd.c = toupper(sd.c);
 						}
 					}
-
 
 					if (sd.dance)
 					{

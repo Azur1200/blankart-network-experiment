@@ -61,7 +61,7 @@ Draw::TextElement& Draw::TextElement::parse(std::string_view raw)
 
 #undef BUTTON
 
-		{"white", 0x80},
+		/*{"white", 0x80},
 		{"purple", 0x81},
 		{"yellow", 0x82},
 		{"green", 0x83},
@@ -77,7 +77,7 @@ Draw::TextElement& Draw::TextElement::parse(std::string_view raw)
 		{"pink", 0x8D},
 		{"brown", 0x8E},
 		{"tan", 0x8F},
-		//{"newline", '\n'}
+		//{"newline", '\n'}*/
 	};
 
 	string_.clear();
