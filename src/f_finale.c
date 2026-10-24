@@ -113,6 +113,7 @@ static patch_t *ttkflash; // flash screen
 static patch_t *ttblanlogo;
 static patch_t *ttblanoverlay;
 static patch_t *ttblanpieces[8];
+static patch_t *ttblanchara[3];
 
 #define NOWAY
 
@@ -1444,6 +1445,24 @@ void F_CacheTitleScreen(void)
 			{
 				ttblanpieces[m] = W_CachePatchName(patchNames[m], PU_PATCH_LOWPRIORITY);
 			}
+
+			const char* charaPatchNames[] = {
+				"BKCHAR00",
+				"BKCHAR01",
+				"BKCHAR02"
+			};
+
+			for (size_t m = 0; m < sizeof(charaPatchNames) / sizeof(charaPatchNames[0]); ++m)
+			{
+				ttblanchara[m] = W_CachePatchName(charaPatchNames[m], PU_PATCH_LOWPRIORITY);
+			}
+
+			ttblanchara[2]->pivot.x =
+				(108) + ttblanchara[2]->leftoffset;
+			ttblanchara[2]->pivot.y =
+				(47) + ttblanchara[2]->topoffset;
+			ttblanchara[2]->alignflags |=
+				(PATCHALIGN_AUTOCENTER | PATCHALIGN_USEPIVOTS);
 			
 			break;
 
@@ -1549,9 +1568,9 @@ static animkeyframe_t logokeyframes_0_x[] = {
 	{32<<FRACBITS, 10, EASE_OUTBACK},
 };
 static animkeyframe_t logokeyframes_0_y[] = {
-	{70<<FRACBITS, 0, EASE_OUTQUAD},
-	{110<<FRACBITS, 5, EASE_OUTQUAD},
-	{46<<FRACBITS, 10, EASE_OUTQUAD},
+	{(70 - 18)<<FRACBITS, 0, EASE_OUTQUAD},
+	{(110 - 18)<<FRACBITS, 5, EASE_OUTQUAD},
+	{(46 - 18)<<FRACBITS, 10, EASE_OUTQUAD},
 };
 static animkeyframe_t logokeyframes_0_scale[] = {
 	{2 * FRACUNIT, 0, EASE_INOUTBACK},
@@ -1563,9 +1582,9 @@ static animkeyframe_t logokeyframes_1_x[] = {
 	{84<<FRACBITS, 12, EASE_OUTBACK}
 };
 static animkeyframe_t logokeyframes_1_y[] = {
-	{71<<FRACBITS, 2, EASE_OUTQUAD},
-	{111<<FRACBITS, 7, EASE_OUTQUAD},
-	{47<<FRACBITS, 12, EASE_OUTQUAD},
+	{(71 - 18)<<FRACBITS, 2, EASE_OUTQUAD},
+	{(111 - 18)<<FRACBITS, 7, EASE_OUTQUAD},
+	{(47 - 18)<<FRACBITS, 12, EASE_OUTQUAD},
 };
 static animkeyframe_t logokeyframes_1_scale[] = {
 	{2 * FRACUNIT, 2, EASE_INOUTBACK},
@@ -1577,9 +1596,9 @@ static animkeyframe_t logokeyframes_2_x[] = {
 	{100<<FRACBITS, 20, EASE_OUTBACK}
 };
 static animkeyframe_t logokeyframes_2_y[] = {
-	{77<<FRACBITS, 10, EASE_OUTQUAD},
-	{117<<FRACBITS, 15, EASE_OUTQUAD},
-	{53<<FRACBITS, 20, EASE_OUTQUAD},
+	{(77 - 18)<<FRACBITS, 10, EASE_OUTQUAD},
+	{(117 - 18)<<FRACBITS, 15, EASE_OUTQUAD},
+	{(53 - 18)<<FRACBITS, 20, EASE_OUTQUAD},
 };
 static animkeyframe_t logokeyframes_2_scale[] = {
 	{2 * FRACUNIT, 10, EASE_INOUTBACK},
@@ -1591,9 +1610,9 @@ static animkeyframe_t logokeyframes_3_x[] = {
 	{132<<FRACBITS, 22, EASE_OUTBACK}
 };
 static animkeyframe_t logokeyframes_3_y[] = {
-	{77<<FRACBITS, 12, EASE_OUTQUAD},
-	{117<<FRACBITS, 17, EASE_OUTQUAD},
-	{53<<FRACBITS, 22, EASE_OUTQUAD},
+	{(77 - 18)<<FRACBITS, 12, EASE_OUTQUAD},
+	{(117 - 18)<<FRACBITS, 17, EASE_OUTQUAD},
+	{(53 - 18)<<FRACBITS, 22, EASE_OUTQUAD},
 };
 static animkeyframe_t logokeyframes_3_scale[] = {
 	{2 * FRACUNIT, 12, EASE_INOUTBACK},
@@ -1606,9 +1625,9 @@ static animkeyframe_t logokeyframes_4_x[] = {
 	{163<<FRACBITS, 10, EASE_OUTBACK},
 };
 static animkeyframe_t logokeyframes_4_y[] = {
-	{46<<FRACBITS, 0, EASE_OUTQUAD},
-	{30<<FRACBITS, 5, EASE_OUTQUAD},
-	{46<<FRACBITS, 10, EASE_OUTQUAD},
+	{(52 - 18)<<FRACBITS, 0, EASE_OUTQUAD},
+	{(24 - 18)<<FRACBITS, 5, EASE_OUTQUAD},
+	{(46 - 18)<<FRACBITS, 10, EASE_OUTQUAD},
 };
 static animkeyframe_t logokeyframes_4_scale[] = {
 	{FRACUNIT/2, 0, EASE_INOUTBACK},
@@ -1620,9 +1639,9 @@ static animkeyframe_t logokeyframes_5_x[] = {
 	{195<<FRACBITS, 12, EASE_OUTBACK},
 };
 static animkeyframe_t logokeyframes_5_y[] = {
-	{53<<FRACBITS, 2, EASE_OUTQUAD},
-	{29<<FRACBITS, 7, EASE_OUTQUAD},
-	{53<<FRACBITS, 12, EASE_OUTQUAD},
+	{(57 - 18)<<FRACBITS, 2, EASE_OUTQUAD},
+	{(21 - 18)<<FRACBITS, 7, EASE_OUTQUAD},
+	{(53 - 18)<<FRACBITS, 12, EASE_OUTQUAD},
 };
 static animkeyframe_t logokeyframes_5_scale[] = {
 	{FRACUNIT/2, 2, EASE_INOUTBACK},
@@ -1634,9 +1653,9 @@ static animkeyframe_t logokeyframes_6_x[] = {
 	{227<<FRACBITS, 20, EASE_OUTBACK},
 };
 static animkeyframe_t logokeyframes_6_y[] = {
-	{53<<FRACBITS, 10, EASE_OUTQUAD},
-	{37<<FRACBITS, 15, EASE_OUTQUAD},
-	{53<<FRACBITS, 20, EASE_OUTQUAD},
+	{(57 - 18)<<FRACBITS, 10, EASE_OUTQUAD},
+	{(29 - 18)<<FRACBITS, 15, EASE_OUTQUAD},
+	{(53 - 18)<<FRACBITS, 20, EASE_OUTQUAD},
 };
 static animkeyframe_t logokeyframes_6_scale[] = {
 	{FRACUNIT/2, 10, EASE_INOUTBACK},
@@ -1648,15 +1667,30 @@ static animkeyframe_t logokeyframes_7_x[] = {
 	{253<<FRACBITS, 22, EASE_OUTBACK},
 };
 static animkeyframe_t logokeyframes_7_y[] = {
-	{46<<FRACBITS, 12, EASE_OUTQUAD},
-	{30<<FRACBITS, 17, EASE_OUTQUAD},
-	{46<<FRACBITS, 22, EASE_OUTQUAD},
+	{(52 - 18)<<FRACBITS, 12, EASE_OUTQUAD},
+	{(24 - 18)<<FRACBITS, 17, EASE_OUTQUAD},
+	{(46 - 18)<<FRACBITS, 22, EASE_OUTQUAD},
 };
 static animkeyframe_t logokeyframes_7_scale[] = {
 	{FRACUNIT/2, 12, EASE_INOUTBACK},
 	{FRACUNIT, 22, EASE_INOUTBACK},
 };
 
+static animkeyframe_t charakeyframes_0_x[] = {
+	{380<<FRACBITS, 40, EASE_OUTQUAD},
+	{-57<<FRACBITS, 60, EASE_OUTQUAD},
+};
+
+static animkeyframe_t charakeyframes_1_x[] = {
+	{430<<FRACBITS, 40, EASE_OUTQUAD},
+	{-3<<FRACBITS, 60, EASE_OUTQUAD},
+};
+
+static animkeyframe_t charakeyframes_1_rot[] = {
+	{60<<FRACBITS, 50, EASE_LINEAR},
+	{-5<<FRACBITS, 62, EASE_OUTQUAD},
+	{0, 68, EASE_OUTQUAD},
+};
 
 static void F_DrawCompositeGameLogo(void)
 {
@@ -1809,6 +1843,7 @@ void F_TitleScreenDrawer(void)
 
 		case TTMODE_BLAN:
 		{
+			fixed_t fractime = ((finalecount)<<FRACBITS) + R_GetTimeFrac(RTF_MENU);
 			int32_t transval = CLAMP((finalecount - 40)>>1, 0, 10);
 			int32_t alphaflags = (transval<<V_ALPHASHIFT);
 			if (finalecount < 40)
@@ -1817,6 +1852,9 @@ void F_TitleScreenDrawer(void)
 			}
 			else
 			{
+				fixed_t chxA, chxB, chrot;
+				fixed_t chsuby = 2 * FSIN(FixedAngle(FixedMul((fractime / TICRATE) % (M_TAU_FIXED), M_RADTODEG_FIXED)));
+
 				if (titlemapinaction == false)
 					F_TitleBGScroll(5, finalecount);
 				
@@ -1824,12 +1862,19 @@ void F_TitleScreenDrawer(void)
 				{
 					V_DrawFadeScreen(0, 10 - transval);
 				}
+
+				chxA = M_GetAnimatedKeyFrameValue(charakeyframes_0_x, 2, fractime);
+				chxB = M_GetAnimatedKeyFrameValue(charakeyframes_1_x, 2, fractime);
+				chrot = M_GetAnimatedKeyFrameValue(charakeyframes_1_rot, 3, fractime);
+				V_DrawFixedPatch(chxA, (44<<FRACBITS) - chsuby, FRACUNIT/3, V_SNAPTOBOTTOM, ttblanchara[0], NULL);
+				V_DrawRotatedFixedPatch(chxB, (73<<FRACBITS) - chsuby, FixedAngle(chrot), FRACUNIT/3, V_SNAPTOBOTTOM, ttblanchara[2], NULL);
+				V_DrawFixedPatch(chxA, (44<<FRACBITS) - chsuby, FRACUNIT/3, V_SNAPTOBOTTOM, ttblanchara[1], NULL);
 			}
 
 			F_DrawCompositeGameLogo();
 			if (alphaflags)
 			{
-				V_DrawFixedPatch(30<<FRACBITS, 34<<FRACBITS, FRACUNIT, V_SNAPTOTOP|V_ADD|alphaflags, ttblanoverlay, NULL);
+				V_DrawFixedPatch(30<<FRACBITS, 16<<FRACBITS, FRACUNIT, V_SNAPTOTOP|V_ADD|alphaflags, ttblanoverlay, NULL);
 			}
 			break;
 		}
@@ -1914,7 +1959,7 @@ void F_TitleScreenTicker(dboolean run)
 				}
 				else if (finalecount == 80)
 				{
-					S_ShowMusicCredit(0, 5*TICRATE, 0);
+					S_ShowMusicCredit(-25*FRACUNIT, 5*TICRATE, V_SNAPTOTOP);
 				}
 
 				break;
