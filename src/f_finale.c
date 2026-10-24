@@ -1697,14 +1697,6 @@ static void F_DrawCompositeGameLogo(void)
 	fixed_t fractime = ((finalecount - 15)<<FRACBITS) + R_GetTimeFrac(RTF_MENU);
 	fixed_t x, y, scale;
 
-	if (fractime > 0)
-	{
-		x = M_GetAnimatedKeyFrameValue(logokeyframes_4_x, 2, fractime);
-		y = M_GetAnimatedKeyFrameValue(logokeyframes_4_y, 3, fractime);
-		scale = M_GetAnimatedKeyFrameValue(logokeyframes_4_scale, 2, fractime);
-		V_DrawFixedPatch(x, y, scale, V_SNAPTOTOP, ttblanpieces[4], NULL);
-	}
-	
 	if (fractime > 2<<FRACBITS)
 	{
 		x = M_GetAnimatedKeyFrameValue(logokeyframes_5_x, 2, fractime);
@@ -1712,13 +1704,13 @@ static void F_DrawCompositeGameLogo(void)
 		scale = M_GetAnimatedKeyFrameValue(logokeyframes_5_scale, 2, fractime);
 		V_DrawFixedPatch(x, y, scale, V_SNAPTOTOP, ttblanpieces[5], NULL);
 	}
-	
-	if (fractime > 10<<FRACBITS)
+
+	if (fractime > 0)
 	{
-		x = M_GetAnimatedKeyFrameValue(logokeyframes_6_x, 2, fractime);
-		y = M_GetAnimatedKeyFrameValue(logokeyframes_6_y, 3, fractime);
-		scale = M_GetAnimatedKeyFrameValue(logokeyframes_6_scale, 2, fractime);
-		V_DrawFixedPatch(x, y, scale, V_SNAPTOTOP, ttblanpieces[6], NULL);
+		x = M_GetAnimatedKeyFrameValue(logokeyframes_4_x, 2, fractime);
+		y = M_GetAnimatedKeyFrameValue(logokeyframes_4_y, 3, fractime);
+		scale = M_GetAnimatedKeyFrameValue(logokeyframes_4_scale, 2, fractime);
+		V_DrawFixedPatch(x, y, scale, V_SNAPTOTOP, ttblanpieces[4], NULL);
 	}
 
 	if (fractime > 12<<FRACBITS)
@@ -1727,6 +1719,14 @@ static void F_DrawCompositeGameLogo(void)
 		y = M_GetAnimatedKeyFrameValue(logokeyframes_7_y, 3, fractime);
 		scale = M_GetAnimatedKeyFrameValue(logokeyframes_7_scale, 2, fractime);
 		V_DrawFixedPatch(x, y, scale, V_SNAPTOTOP, ttblanpieces[7], NULL);
+	}
+
+	if (fractime > 10<<FRACBITS)
+	{
+		x = M_GetAnimatedKeyFrameValue(logokeyframes_6_x, 2, fractime);
+		y = M_GetAnimatedKeyFrameValue(logokeyframes_6_y, 3, fractime);
+		scale = M_GetAnimatedKeyFrameValue(logokeyframes_6_scale, 2, fractime);
+		V_DrawFixedPatch(x, y, scale, V_SNAPTOTOP, ttblanpieces[6], NULL);
 	}
 
 	if (fractime > 0)
