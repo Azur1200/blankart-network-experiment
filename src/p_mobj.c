@@ -13796,6 +13796,8 @@ static dboolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, dboolea
 		mobj->health = mthing->args[0] + 1;
 		if (!P_MapAlreadyHasStarPost(mobj))
 			numstarposts++;
+		if (mobj->health > higheststarpost)
+			higheststarpost = mobj->health;
 		break;
 	case MT_BOSS3WAYPOINT:
 		mobj->health = mthing->angle;

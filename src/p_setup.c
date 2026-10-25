@@ -161,6 +161,7 @@ sector_t *spawnsectors = NULL;
 line_t *spawnlines = NULL;
 side_t *spawnsides = NULL;
 int32_t numstarposts = 0;
+int32_t higheststarpost = 0;
 int32_t numbosswaypoints = 0;
 dboolean ringsactive = false;
 dboolean stackingactive = false;
@@ -8517,6 +8518,7 @@ static void P_InitLevelSettings(dboolean reloadinggamestate)
 	// circuit, race and competition stuff
 	circuitmap = false;
 	numstarposts = 0;
+	higheststarpost = 0;
 	numbosswaypoints = 0;
 	if (!reloadinggamestate)
 		timeinmap = 0;
@@ -9368,7 +9370,7 @@ dboolean P_LoadLevel(dboolean fromnetsave, dboolean reloadinggamestate)
 
 	if ((waypointcap == NULL) && (numstarposts))
 	{
-		legacygradelap_size = (numstarposts + 1) * MAXPLAYERS;
+		legacygradelap_size = (higheststarpost + 1) * MAXPLAYERS;
 
 		const size_t arraysize = sizeof(int16_t) * legacygradelap_size;
 		legacygradelap = Z_Malloc(arraysize, PU_STATIC, NULL);

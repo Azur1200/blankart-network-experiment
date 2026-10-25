@@ -12793,7 +12793,13 @@ void K_UpdateAllPlayerPositions(void)
 				{
 					if (legacygradelap)
 					{
-						const size_t idx = (max(0, player->starpostnum) * MAXPLAYERS) + i;
+						const uint32_t idx = (max(0, player->starpostnum) * MAXPLAYERS) + i;
+
+						if (idx > legacygradelap_size)
+						{
+							I_Error("K_UpdateAllPlayerPositions: Legacy progression index is larger then legacy lap grade size.");
+						}
+
 						if (player->laps > legacygradelap[idx])
 						{
 							legacygradelap[idx] = player->laps;

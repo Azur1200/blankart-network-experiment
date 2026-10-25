@@ -664,6 +664,7 @@ extern int32_t numhuntemeralds;
 extern dboolean runemeraldmanager;
 extern uint16_t emeraldspawndelay;
 extern int32_t numstarposts;
+extern int32_t higheststarpost;
 extern int32_t numbosswaypoints;
 extern dboolean ringsactive;
 extern dboolean stackingactive;
