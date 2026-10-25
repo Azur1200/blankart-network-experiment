@@ -898,7 +898,7 @@ static void HWR_PrecacheLevelTextures(void)
 	// Sky texture is always present.
 	// Note that F_SKY1 is the name used to indicate a sky floor/ceiling as a flat,
 	// while the sky texture is stored like a wall texture, with a skynum dependent name.
-	texturepresent[skytexture] = 1;
+	texturepresent[skytexture] = (noencoresky) ? 2 : 1;
 
 	for (i = 0; i < (unsigned)numtextures; i++)
 	{

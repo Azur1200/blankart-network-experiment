@@ -145,18 +145,20 @@ static void Obj_InitNeoSpringParts(mobj_t *spring)
 		spring->y + spring->spryoff + FixedMul(ofsy, spring->scale), \
 		spring->z + spring->sprzoff + FixedMul(ofsz, spring->scale))
 
-#define UPDATEANGLE(angle, ofsx, ofsy)                                                                                        \
+#define UPDATEANGLE(angle, ofsx, ofsy) {                                                                                      \
 	fixed_t ofsxbak = ofsx;                                                                                                   \
 	fixed_t ofsybak = ofsy;                                                                                                   \
 	ofsx = FixedMul(ofsxbak, FINECOSINE(angle >> ANGLETOFINESHIFT)) - FixedMul(ofsybak, FINESINE(angle >> ANGLETOFINESHIFT)); \
-	ofsy = FixedMul(ofsxbak, FINESINE(angle >> ANGLETOFINESHIFT)) + FixedMul(ofsybak, FINECOSINE(angle >> ANGLETOFINESHIFT));
+	ofsy = FixedMul(ofsxbak, FINESINE(angle >> ANGLETOFINESHIFT)) + FixedMul(ofsybak, FINECOSINE(angle >> ANGLETOFINESHIFT)); \
+}
 
-#define UPDATEPLANEANGLE(floorspriteslope, facingangle, angle, x, y, z)                                            \
+#define UPDATEPLANEANGLE(floorspriteslope, facingangle, angle, x, y, z) {                                          \
 	fixed_t slope_a = FixedMul(-FINESINE(angle >> ANGLETOFINESHIFT), FINECOSINE(facingangle >> ANGLETOFINESHIFT)); \
 	fixed_t slope_b = FixedMul(-FINESINE(angle >> ANGLETOFINESHIFT), FINESINE(facingangle >> ANGLETOFINESHIFT));   \
 	fixed_t slope_c = FINECOSINE(angle >> ANGLETOFINESHIFT);                                                       \
 	fixed_t slope_d = -(FixedMul(slope_a, x) + FixedMul(slope_b, y) + FixedMul(slope_c, z));                       \
-	ReconfigureViaConstants(floorspriteslope, slope_a, slope_b, slope_c, slope_d)
+	ReconfigureViaConstants(floorspriteslope, slope_a, slope_b, slope_c, slope_d);                                 \
+}
 
 static void Obj_HandleHorizNeoSpringParts(mobj_t *spring)
 {

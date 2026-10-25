@@ -1504,6 +1504,14 @@ void readlevelheader(MYFILE *f, char * name)
 			{
 				mapheaderinfo[num]->par_time[KARTSPEED_EXPERT] = (tic_t)i;
 			}
+			// Encore skybox palette toggle
+			else if (fastcmp(word, "DISABLEENCORESKY") || fastcmp(word, "NOENCORESKY"))
+			{
+				if (i || word2[0] == 'T' || word2[0] == 'Y')
+					mapheaderinfo[num]->disable_encore_sky = true;
+				else
+					mapheaderinfo[num]->disable_encore_sky = false;
+			}
 			 // ignored for compatibility
 			else if (fastcmp(word, "NEXTLEVEL") || fastcmp(word, "TIMEATTACK") || fastcmp(word, "RECORDATTACK"))
 				continue;

@@ -95,6 +95,9 @@ fixed_t R_PointToDist2Precise(fixed_t px2, fixed_t py2, fixed_t px1, fixed_t py1
 #define R_PointToDist(x, y) R_PointToDist2(viewx, viewy, x, y)
 #define R_PointToDist2(px2, py2, px1, py1) FixedHypot((px1) - (px2), (py1) - (py2))
 
+line_t *R_GetFFloorLine(const line_t *line, const ffloor_t *pfloor, const sector_t *sector);
+side_t *R_GetFFloorSide(const line_t *line, const ffloor_t *pfloor, const sector_t *sector);
+
 fixed_t R_ScaleFromGlobalAngle(angle_t visangle);
 subsector_t *R_PointInSubsector(fixed_t x, fixed_t y);
 subsector_t *R_PointInSubsectorOrNull(fixed_t x, fixed_t y);

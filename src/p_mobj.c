@@ -8379,6 +8379,8 @@ static void P_TrapBubbleThink(mobj_t* mobj)
 			player->spinouttype |= KSPIN_AIRTIMER;
 		}
 
+		player->pogospring = 0;
+
 		if (mobj->movecount > 5 * TICRATE)
 		{
 			S_StartSound(mobj->tracer, sfx_s3k77);
@@ -13794,6 +13796,8 @@ static dboolean P_SetupSpawnedMapThing(mapthing_t *mthing, mobj_t *mobj, dboolea
 		mobj->health = mthing->args[0] + 1;
 		if (!P_MapAlreadyHasStarPost(mobj))
 			numstarposts++;
+		if (mobj->health > higheststarpost)
+			higheststarpost = mobj->health;
 		break;
 	case MT_BOSS3WAYPOINT:
 		mobj->health = mthing->angle;

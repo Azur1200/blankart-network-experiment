@@ -43,12 +43,12 @@
 
 static const skincolornum_t ring_colors[] = {
 	SKINCOLOR_GREY,        // 1x
-	SKINCOLOR_TAN,         // 1.25x
-	SKINCOLOR_YELLOW,      // 1.5x
-	SKINCOLOR_TANGERINE,   // 1.75x
-	SKINCOLOR_KETCHUP,     // 2x
-	SKINCOLOR_MOONSET,     // 2.25x
-	SKINCOLOR_ULTRAMARINE,  // 2.5x +
+	SKINCOLOR_SLATE,         // 1.25x
+	SKINCOLOR_SAPPHIRE,      // 1.5x
+	SKINCOLOR_YELLOW,   // 1.75x
+	SKINCOLOR_TANGERINE,     // 2x
+	SKINCOLOR_KETCHUP,     // 2.25x
+	SKINCOLOR_CRIMSON,  // 2.5x +
 };
 
 static const skincolornum_t rainbow_colors[] = {

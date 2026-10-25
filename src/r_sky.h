@@ -27,6 +27,7 @@ extern "C" {
 #define ANGLETOSKYSHIFT 22
 
 extern int32_t skytexture, skytexturemid, skytextureoffset;
+extern dboolean noencoresky;
 extern fixed_t skyscale[MAXSPLITSCREENPLAYERS];
 
 extern int32_t skyflatnum;

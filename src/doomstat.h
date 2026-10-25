@@ -456,6 +456,8 @@ struct mapheader_t
 
 	tic_t par_time[NUMKARTSPEEDS];				///< Par time for the map, used as part of the rank system.
 
+	dboolean disable_encore_sky;				///< Prevents Encore from repaletting the sky in this map.
+
 	// EFX
 	efx_t *globalEFX;							///< Decides what global EFX for the current map is. ONLY USE FOR TYPE AND VARS.
 };

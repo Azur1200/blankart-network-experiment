@@ -161,6 +161,7 @@ sector_t *spawnsectors = NULL;
 line_t *spawnlines = NULL;
 side_t *spawnsides = NULL;
 int32_t numstarposts = 0;
+int32_t higheststarpost = 0;
 int32_t numbosswaypoints = 0;
 dboolean ringsactive = false;
 dboolean stackingactive = false;
@@ -494,6 +495,7 @@ static void P_ClearSingleMapHeaderInfo(mapnum_t num)
 	P_ClearMapHeaderLighting(&mapheaderinfo[num]->lighting);
 	P_ClearMapHeaderLighting(&mapheaderinfo[num]->lighting_encore);
 	mapheaderinfo[num]->use_encore_lighting = false;
+	mapheaderinfo[num]->disable_encore_sky = false;
 	S_InitEFXArray(mapheaderinfo[num]->globalEFX);
 #if 1 // equivalent to "FlickyList = DEMO"
 	P_SetDemoFlickies(num);
@@ -8516,6 +8518,7 @@ static void P_InitLevelSettings(dboolean reloadinggamestate)
 	// circuit, race and competition stuff
 	circuitmap = false;
 	numstarposts = 0;
+	higheststarpost = 0;
 	numbosswaypoints = 0;
 	if (!reloadinggamestate)
 		timeinmap = 0;
@@ -9318,6 +9321,9 @@ dboolean P_LoadLevel(dboolean fromnetsave, dboolean reloadinggamestate)
 	// SRB2 determines the sky texture to be used depending on the map header.
 	P_SetupLevelSky(mapheaderinfo[gamemap-1]->skytexture, true);
 
+	// Set this boolean after we set up the sky
+	noencoresky = mapheaderinfo[gamemap-1]->disable_encore_sky;
+
 	P_ResetSpawnpoints();
 
 	P_ResetTubeWaypoints();
@@ -9364,7 +9370,7 @@ dboolean P_LoadLevel(dboolean fromnetsave, dboolean reloadinggamestate)
 
 	if ((waypointcap == NULL) && (numstarposts))
 	{
-		legacygradelap_size = (numstarposts + 1) * MAXPLAYERS;
+		legacygradelap_size = (higheststarpost + 1) * MAXPLAYERS;
 
 		const size_t arraysize = sizeof(int16_t) * legacygradelap_size;
 		legacygradelap = Z_Malloc(arraysize, PU_STATIC, NULL);

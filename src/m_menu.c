@@ -2001,7 +2001,7 @@ void M_Drawer(void)
 				M_DrawSplitText(pi->items[pi->itemon].tooltip,
 								BASEVIDWIDTH / 2,
 					BASEVIDHEIGHT-50,
-					V_SNAPTOBOTTOM|V_6WIDTHSPACE|MENUCAPS,
+					V_SNAPTOBOTTOM|V_6WIDTHSPACE|MENUCAPS|V_USETEXTTAG,
 					cursortimer <= 9 ? 9 - cursortimer : 0);
 			}
 		}
@@ -3501,7 +3501,10 @@ void M_Ticker(void)
 		if (M_AttackOnStack())
 			modeattacking = ATTACKING_MENU;
 		else
+		{
 			modeattacking = ATTACKING_NONE;
+			levellistmode_ta = LLM__MAX;
+		}
 	}
 
 	CL_TimeoutServerList();
@@ -4561,7 +4564,7 @@ static int Levelsort_File(const void *a, const void *b)
 
 static int Cupsort_Name(const void *a, const void *b)
 {
-	const cupheader_t *c1 = *(const cupheader_t **)a, *c2 = *(const cupheader_t **)b;
+	const cupheader_t *c1 = *(const cupheader_t * const*)a, *c2 = *(const cupheader_t * const*)b;
 	CLEANUP(pfree) char *name1 = strdup(CupName(c1, false)), *name2 = strdup(CupName(c2, false));
 
 	if (name1 == NULL || name2 == NULL)
@@ -4575,7 +4578,7 @@ static int Cupsort_Name(const void *a, const void *b)
 
 static int Cupsort_File(const void *a, const void *b)
 {
-	const cupheader_t *c1 = *(const cupheader_t **)a, *c2 = *(const cupheader_t **)b;
+	const cupheader_t *c1 = *(const cupheader_t * const*)a, *c2 = *(const cupheader_t * const*)b;
 	// can't get the full lump number from within dehacked.c, this will do...
 	int w = c1->wadnum - c2->wadnum;
 	return w != 0 ? w : c1->id - c2->id;

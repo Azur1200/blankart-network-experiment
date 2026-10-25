@@ -16,6 +16,7 @@
 #include "../r_local.h"
 #include "../g_game.h"
 #include "../r_fps.h"
+#include "../r_sky.h" // noencoresky
 
 
 // ==========================================================================
@@ -201,7 +202,7 @@ void HWR_DrawSkyBackground(player_t *player)
 		HWR_RollTransform(&dometransform, viewroll);
 		dometransform.splitscreen = r_splitscreen;
 
-		HWR_GetTexture(texturetranslation[skytexture], false);
+		HWR_GetTexture(texturetranslation[skytexture], noencoresky);
 
 		if (gl_sky.texture != texturetranslation[skytexture])
 		{
@@ -223,7 +224,7 @@ void HWR_DrawSkyBackground(player_t *player)
 		float aspectratio;
 		float angleturn;
 
-		HWR_GetTexture(texturetranslation[skytexture], false);
+		HWR_GetTexture(texturetranslation[skytexture], noencoresky);
 
 		aspectratio = (float)vid.width/(float)vid.height;
 

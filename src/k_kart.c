@@ -1472,15 +1472,15 @@ static void K_UpdateDraft(player_t *player)
 	draftdistance = FixedMul(draftdistance, K_GetKartGameSpeedScalar(gamespeed));
 
 	// On the contrary, the leniency period biases toward high weight.
-	leniency = (3*TICRATE)/4 + ((player->kartweight-1) * (TICRATE/6));
+	leniency = TICRATE + (TICRATE / 2 * (player->kartweight - 1) / 8); //(3*TICRATE)/4 + ((player->kartweight-1) * (TICRATE/6));
 
 	minDist = cv_kartdrafting_closedeadzone.value * player->mo->scale;
 
 	if (gametypes[gametype]->rules & GTR_CLOSERPLAYERS)
 	{
-		minDist /= 4;
+		minDist /= 2;
 		draftdistance *= 2;
-		leniency *= 4;
+		//leniency *= 4;
 	}
 
 	// Not enough speed to draft.
@@ -1561,7 +1561,11 @@ static void K_UpdateDraft(player_t *player)
 
 			olddraft = player->draftpower;
 
-			player->draftleeway = leniency;
+			// if we somehow pass the player we are drafting off of, reduce the draft leeway.
+			if (player->position < players[i].position)
+				player->draftleeway = leniency/2;
+			else
+				player->draftleeway = leniency;
 			player->lastdraft = i;
 
 			// Draft power is used later in K_GetKartBoostPower, ranging from 0 for normal speed and FRACUNIT for max draft speed.
@@ -12789,7 +12793,13 @@ void K_UpdateAllPlayerPositions(void)
 				{
 					if (legacygradelap)
 					{
-						const size_t idx = (max(0, player->starpostnum) * MAXPLAYERS) + i;
+						const uint32_t idx = (max(0, player->starpostnum) * MAXPLAYERS) + i;
+
+						if (idx > legacygradelap_size)
+						{
+							I_Error("K_UpdateAllPlayerPositions: Legacy progression index is larger then legacy lap grade size.");
+						}
+
 						if (player->laps > legacygradelap[idx])
 						{
 							legacygradelap[idx] = player->laps;
@@ -12998,7 +13008,7 @@ fixed_t K_PlayerBaseFriction(const player_t *player, fixed_t original)
 	);
 	fixed_t frict = original;
 
-	if (player->dashpadcooldown == 0 && player->spinouttimer == 0) // attempt to fix Hot Shelter. Also Prevent spinout cheese.
+	if (player->dashpadcooldown == 0 && !P_PlayerInPain(player)) // attempt to fix Hot Shelter. Also Prevent spinout cheese.
 	{
 		if (K_PlayerUsesBotMovement(player) == true)
 		{

@@ -3397,17 +3397,7 @@ static uint8_t V_GetButtonCodeWidth(gamecontrols_e control)
 	}
 }
 
-void V_DrawStringScaledEx(
-		fixed_t    x,
-		fixed_t    y,
-		fixed_t      scale,
-		fixed_t     vscale,
-		fixed_t spacescale,
-		fixed_t    lfscale,
-		int32_t      flags,
-		const uint8_t *colormap,
-		int        fontno,
-		const char *s)
+typedef struct
 {
 	int32_t     hchw;/* half-width for centering */
 
@@ -3434,35 +3424,205 @@ void V_DrawStringScaledEx(
 	fixed_t   left;
 
 	int c;
+} stringdraw_t;
 
-	uppercase  = !( flags & V_ALLOWLOWERCASE );
+typedef enum
+{
+	STRINGDRAW_BREAK = -1,
+	STRINGDRAW_RETURN,
+	STRINGDRAW_NORMAL,
+} stringdraw_e;
+
+#define DRAWBUTTON(buttoncode, state) \
+	sd->cw = V_GetButtonCodeWidth(buttoncode) * sd->dup; \
+	sd->cxoff = (*fontspec->dim_fn)(scale, fontspec->chw, sd->hchw, sd->dup, &sd->cw); \
+	srb2::Draw( \
+	FixedToFloat(sd->cx + sd->cxoff), \
+	FixedToFloat(sd->cy + sd->cyoff) - ((fontspec->button_yofs) * sd->dup)) \
+	.flags(flags) \
+	.button(buttoncode, state); \
+	sd->cx += sd->cw; \
+
+#define BUTTONCODE(buttonname, buttoncode) \
+	if (fastcmp(tagstring, #buttonname)) \
+	{ \
+		DRAWBUTTON(buttoncode, false) \
+	} \
+	else if (fastcmp(tagstring, va("%s_pressed", #buttonname))) \
+	{ \
+		DRAWBUTTON(buttoncode, true) \
+	} \
+	else if (fastcmp(tagstring, va("%s_animated", #buttonname))) \
+	{ \
+		DRAWBUTTON(buttoncode, {}) \
+	}
+
+#define HANDLECOLOR(colorname, hexcode) \
+if (fastcmp(tagstring, #colorname)) \
+{ \
+	if (sd->notcolored) \
+	{ \
+		colormap = V_GetStringColormap( \
+		( ( hexcode & 0x7f )<< V_CHARCOLORSHIFT )& \
+		V_CHARCOLORMASK); \
+	} \
+}
+
+static stringdraw_e drawtexttag(
+	stringdraw_t *sd,
+	fixed_t x,
+	fixed_t y,
+	int32_t flags,
+	fixed_t scale,
+	char *tagstring,
+	const char *originalstring,
+	const uint8_t *&colormap,
+	fontspec_t *fontspec)
+{
+	(void)y;
+	(void)originalstring;
+
+	BUTTONCODE(up, gc_aimforward)
+	else BUTTONCODE(down, gc_aimbackward)
+	else BUTTONCODE(left, gc_turnright)
+	else BUTTONCODE(right, gc_turnleft)
+	else BUTTONCODE(lookback, gc_lookback)
+	else BUTTONCODE(drift, gc_drift)
+	else BUTTONCODE(item, gc_fire)
+	else BUTTONCODE(systemmenu, gc_systemmenu)
+	else BUTTONCODE(accel, gc_accelerate)
+	else BUTTONCODE(brake, gc_brake)
+	else BUTTONCODE(horn, gc_horncode)
+	else BUTTONCODE(custom1, gc_custom1)
+	else BUTTONCODE(custom2, gc_custom2)
+	else BUTTONCODE(custom3, gc_custom3)
+	else HANDLECOLOR(white, 0x80)
+	else HANDLECOLOR(purple, 0x81)
+	else HANDLECOLOR(yellow, 0x82)
+	else HANDLECOLOR(green, 0x83)
+	else HANDLECOLOR(blue, 0x84)
+	else HANDLECOLOR(red, 0x85)
+	else HANDLECOLOR(gray, 0x86)
+	else HANDLECOLOR(orange, 0x87)
+	else HANDLECOLOR(sky, 0x88)
+	else HANDLECOLOR(lavender, 0x89)
+	else HANDLECOLOR(gold, 0x8A)
+	else HANDLECOLOR(aqua, 0x8B)
+	else HANDLECOLOR(magenta, 0x8C)
+	else HANDLECOLOR(pink, 0x8D)
+	else HANDLECOLOR(brown, 0x8E)
+	else HANDLECOLOR(tan, 0x8F)
+	else if (fastcmp(tagstring, "newline"))
+	{
+		sd->cy += fontspec->lfh;
+		if (sd->cy >= sd->bot)
+			return STRINGDRAW_RETURN;
+		sd->cx  =   x;
+	}
+
+	return STRINGDRAW_NORMAL;
+}
+
+#undef DRAWBUTTON
+#undef BUTTONCODE
+#undef HANDLECOLOR
+
+static stringdraw_e drawtexttagwidth(
+	stringdraw_t *sd,
+	int32_t flags,
+	fixed_t scale,
+	char *tagstring,
+	const char *originalstring,
+	fontspec_t *fontspec)
+{
+	(void)flags;
+	(void)originalstring;
+	(void)fontspec;
+#define BUTTONCODE(buttonname, buttoncode) \
+	if (fastcmp(tagstring, #buttonname)) \
+	{ \
+		sd->cw = V_GetButtonCodeWidth(buttoncode) * sd->dup; \
+		sd->cx += sd->cw * scale; \
+		sd->right = sd->cx; \
+	} \
+	else if (fastcmp(tagstring, va("%s_pressed", #buttonname))) \
+	{ \
+		sd->cw = V_GetButtonCodeWidth(buttoncode) * sd->dup; \
+		sd->cx += sd->cw * scale; \
+		sd->right = sd->cx; \
+	} \
+	else if (fastcmp(tagstring, va("%s_animated", #buttonname))) \
+	{ \
+		sd->cw = V_GetButtonCodeWidth(buttoncode) * sd->dup; \
+		sd->cx += sd->cw * scale; \
+		sd->right = sd->cx + (sd->cw * scale); \
+	}
+
+	BUTTONCODE(up, gc_aimforward)
+	else BUTTONCODE(down, gc_aimbackward)
+	else BUTTONCODE(left, gc_turnright)
+	else BUTTONCODE(right, gc_turnleft)
+	else BUTTONCODE(lookback, gc_lookback)
+	else BUTTONCODE(drift, gc_drift)
+	else BUTTONCODE(item, gc_fire)
+	else BUTTONCODE(systemmenu, gc_systemmenu)
+	else BUTTONCODE(accel, gc_accelerate)
+	else BUTTONCODE(brake, gc_brake)
+	else BUTTONCODE(horn, gc_horncode)
+	else BUTTONCODE(custom1, gc_custom1)
+	else BUTTONCODE(custom2, gc_custom2)
+	else BUTTONCODE(custom3, gc_custom3)
+#undef BUTTONCODE
+	else if (fastcmp(tagstring, "newline"))
+	{
+		sd->cx  =  0;
+	}
+
+	return STRINGDRAW_NORMAL;
+}
+
+void V_DrawStringScaledEx(
+		fixed_t    x,
+		fixed_t    y,
+		fixed_t      scale,
+		fixed_t     vscale,
+		fixed_t spacescale,
+		fixed_t    lfscale,
+		int32_t      flags,
+		const uint8_t *colormap,
+		int        fontno,
+		const char *s)
+{
+	stringdraw_t sd = {0};
+
+	sd.uppercase  = !( flags & V_ALLOWLOWERCASE );
 	flags	&= ~(V_FLIP);/* These two (V_ALLOWLOWERCASE) share a bit. */
 
-	dance           = (flags & V_STRINGDANCE) != 0;
-	nodanceoverride = !dance;
-	dancecounter    = 0;
-	vflip = (flags & V_VFLIP) != 0;
+	sd.dance           = (flags & V_STRINGDANCE) != 0;
+	sd.nodanceoverride = !sd.dance;
+	sd.dancecounter    = 0;
+	sd.vflip = (flags & V_VFLIP) != 0;
 
 	/* Some of these flags get overloaded in this function so
 	   don't pass them on. */
 	flags &= ~(V_PARAMMASK);
 
-	if (vflip) flags |= V_VFLIP;
+	if (sd.vflip) flags |= V_VFLIP;
 
 	if (colormap == NULL)
 	{
 		colormap   =  V_GetStringColormap(( flags & V_CHARCOLORMASK ));
 	}
 
-	notcolored = !colormap;
+	sd.notcolored = !colormap;
 
-	font       = &fontv[fontno];
+	sd.font       = &fontv[fontno];
 
 	fontspec_t fontspec;
 
 	V_GetFontSpecification(fontno, flags, &fontspec);
 
-	hchw     = fontspec.chw >> 1;
+	sd.hchw     = fontspec.chw >> 1;
 
 	fontspec.chw    <<= FRACBITS;
 	fontspec.spacew <<= FRACBITS;
@@ -3479,44 +3639,44 @@ void V_DrawStringScaledEx(
 
 	if (( flags & V_NOSCALESTART ))
 	{
-		dup      = vid.dup;
+		sd.dup      = vid.dup;
 
-		hchw     *=     dup;
+		sd.hchw     *=     sd.dup;
 
-		fontspec.chw      *=     dup;
-		fontspec.spacew   *=     dup;
-		fontspec.lfh      *=     dup;
+		fontspec.chw      *=     sd.dup;
+		fontspec.spacew   *=     sd.dup;
+		fontspec.lfh      *=     sd.dup;
 
-		right     = vid.width;
+		sd.right     = vid.width;
 	}
 	else
 	{
-		dup      = 1;
+		sd.dup      = 1;
 
-		right     = ( vid.scaledwidth );
+		sd.right     = ( vid.scaledwidth );
 		if (!( flags & V_SNAPTOLEFT ))
 		{
-			left   = ( right - BASEVIDWIDTH )/ 2;/* left edge of drawable area */
-			right -= left;
+			sd.left   = ( sd.right - BASEVIDWIDTH )/ 2;/* left edge of drawable area */
+			sd.right -= sd.left;
 		}
 	}
 
-	right      <<=               FRACBITS;
-	bot          = vid.height << FRACBITS;
+	sd.right      <<=               FRACBITS;
+	sd.bot          = vid.height << FRACBITS;
 
-	cx = x;
-	cy = y;
-	cyoff = 0;
+	sd.cx = x;
+	sd.cy = y;
+	sd.cyoff = 0;
 
-	for (; ( c = *s ); ++s, ++dancecounter)
+	for (; ( sd.c = *s ); ++s, ++sd.dancecounter)
 	{
-		switch (c)
+		switch (sd.c)
 		{
 			case '\n':
-				cy += fontspec.lfh;
-				if (cy >= bot)
+				sd.cy += fontspec.lfh;
+				if (sd.cy >= sd.bot)
 					return;
-				cx  =   x;
+				sd.cx  =   x;
 				break;
 			case '<': // Control Codes
 			{
@@ -3534,110 +3694,80 @@ void V_DrawStringScaledEx(
 
 						strncpy(temp2, temp+1, size-1);
 
-#define DRAWBUTTON(buttoncode, state) \
-	cw = V_GetButtonCodeWidth(buttoncode) * dup; \
-	cxoff = (*fontspec.dim_fn)(scale, fontspec.chw, hchw, dup, &cw); \
-	srb2::Draw( \
-	FixedToFloat(cx + cxoff), \
-	FixedToFloat(cy + cyoff) - ((fontspec.button_yofs) * dup)) \
-	.flags(flags) \
-	.button(buttoncode, state); \
-	cx += cw; \
+						stringdraw_e sde = drawtexttag(&sd, x, y, flags, scale, temp2, s, colormap, &fontspec);
 
-#define BUTTONCODE(buttonname, buttoncode) \
-	if (fastcmp(temp2, #buttonname)) \
-	{ \
-		DRAWBUTTON(buttoncode, false) \
-	} \
-	else if (fastcmp(temp2, va("%s_pressed", #buttonname))) \
-	{ \
-		DRAWBUTTON(buttoncode, true) \
-	} \
-	else if (fastcmp(temp2, va("%s_animated", #buttonname))) \
-	{ \
-		DRAWBUTTON(buttoncode, {}) \
-	}
-
-						BUTTONCODE(up, gc_aimforward)
-						else BUTTONCODE(down, gc_aimbackward)
-						else BUTTONCODE(left, gc_turnright)
-						else BUTTONCODE(right, gc_turnleft)
-						else BUTTONCODE(lookback, gc_lookback)
-						else BUTTONCODE(drift, gc_drift)
-						else BUTTONCODE(item, gc_fire)
-						else BUTTONCODE(systemmenu, gc_systemmenu)
-						else BUTTONCODE(accel, gc_accelerate)
-						else BUTTONCODE(brake, gc_brake)
-						else BUTTONCODE(horn, gc_horncode)
-						else BUTTONCODE(custom1, gc_custom1)
-						else BUTTONCODE(custom2, gc_custom2)
-						else BUTTONCODE(custom3, gc_custom3)
-	#undef DRAWBUTTON
-	#undef BUTTONCODE
-							// Now skip past this part of the string.
-							s += size;
+						if (sde == STRINGDRAW_RETURN)
+						{
+							return;
+						}
+						else if (sde == STRINGDRAW_BREAK)
+						{
 							break;
+						}
+
+						// Now skip past this part of the string.
+						s += size;
+						break;
 					}
 				}
 			}
 			default:
-				if (c &  0x80)
+				if (sd.c &  0x80)
 				{
-					if (notcolored)
+					if (sd.notcolored)
 					{
 						colormap = V_GetStringColormap(
-								( ( c & 0x7f )<< V_CHARCOLORSHIFT )&
+								( ( sd.c & 0x7f )<< V_CHARCOLORSHIFT )&
 								V_CHARCOLORMASK);
 					}
-					if (nodanceoverride)
+					if (sd.nodanceoverride)
 					{
-						dance = false;
-						cyoff = 0;
+						sd.dance = false;
+						sd.cyoff = 0;
 					}
 				}
-				else if (c == V_STRINGDANCE)
+				else if (sd.c == V_STRINGDANCE)
 				{
-					dance = true;
+					sd.dance = true;
 				}
-				else if (cx < right)
+				else if (sd.cx < sd.right)
 				{
-					if (uppercase)
+					if (sd.uppercase)
 					{
-						c = toupper(c);
+						sd.c = toupper(sd.c);
 					}
-					else if (V_CharacterValid(font, c - font->start) == false)
+					else if (V_CharacterValid(sd.font, sd.c - sd.font->start) == false)
 					{
 						// Try the other case if it doesn't exist
-						if (c >= 'A' && c <= 'Z')
+						if (sd.c >= 'A' && sd.c <= 'Z')
 						{
-							c = tolower(c);
+							sd.c = tolower(sd.c);
 						}
-						else if (c >= 'a' && c <= 'z')
+						else if (sd.c >= 'a' && sd.c <= 'z')
 						{
-							c = toupper(c);
+							sd.c = toupper(sd.c);
 						}
 					}
 
-
-					if (dance)
+					if (sd.dance)
 					{
-						cyoff = V_DanceYOffset(dancecounter) * FRACUNIT;
+						sd.cyoff = V_DanceYOffset(sd.dancecounter) * FRACUNIT;
 					}
 
-					c -= font->start;
-					if (V_CharacterValid(font, c) == true)
+					sd.c -= sd.font->start;
+					if (V_CharacterValid(sd.font, sd.c) == true)
 					{
 						// Remove offsets from patch
-						fixed_t patchxofs = LSBF_SHORT (font->font[c]->leftoffset) * dup * scale;
-						cw = LSBF_SHORT (font->font[c]->width) * dup;
-						cxoff = (*fontspec.dim_fn)(scale, fontspec.chw, hchw, dup, &cw);
-						V_DrawStretchyFixedPatch(cx + cxoff + patchxofs, cy + cyoff, scale, vscale,
-								flags, font->font[c], colormap);
-						cx += cw;
+						fixed_t patchxofs = LSBF_SHORT (sd.font->font[sd.c]->leftoffset) * sd.dup * scale;
+						sd.cw = LSBF_SHORT (sd.font->font[sd.c]->width) * sd.dup;
+						sd.cxoff = (*fontspec.dim_fn)(scale, fontspec.chw, sd.hchw, sd.dup, &sd.cw);
+						V_DrawStretchyFixedPatch(sd.cx + sd.cxoff + patchxofs, sd.cy + sd.cyoff, scale, vscale,
+								flags, sd.font->font[sd.c], colormap);
+						sd.cx += sd.cw;
 					}
 					else
 					{
-						cx += fontspec.spacew;
+						sd.cx += fontspec.spacew;
 					}
 				}
 		}
@@ -3656,20 +3786,8 @@ fixed_t V_SubStringScaledWidth(
 	if (s == NULL)
 		return 0;
 
-	int32_t     hchw;/* half-width for centering */
+	stringdraw_t sd = {0};
 
-	int32_t     dup;
-
-	font_t   *font;
-
-	dboolean uppercase;
-
-	fixed_t cx;
-	fixed_t right;
-
-	fixed_t cw;
-
-	int c;
 	int32_t i;
 
 	fixed_t fullwidth = 0;
@@ -3677,16 +3795,16 @@ fixed_t V_SubStringScaledWidth(
 	if (length < 0)
 		length = strlen(s);
 
-	uppercase  = !( flags & V_ALLOWLOWERCASE );
+	sd.uppercase  = !( flags & V_ALLOWLOWERCASE );
 	flags	&= ~(V_FLIP);/* These two (V_ALLOWLOWERCASE) share a bit. */
 
-	font       = &fontv[fontno];
+	sd.font       = &fontv[fontno];
 
 	fontspec_t fontspec;
 
 	V_GetFontSpecification(fontno, flags, &fontspec);
 
-	hchw     = fontspec.chw >> 1;
+	sd.hchw     = fontspec.chw >> 1;
 
 	fontspec.chw    <<= FRACBITS;
 	fontspec.spacew <<= FRACBITS;
@@ -3702,28 +3820,28 @@ fixed_t V_SubStringScaledWidth(
 
 	if (( flags & V_NOSCALESTART ))
 	{
-		dup      = vid.dup;
+		sd.dup      = vid.dup;
 
-		hchw     *=     dup;
+		sd.hchw     *=     sd.dup;
 
-		fontspec.chw      *=     dup;
-		fontspec.spacew   *=     dup;
-		fontspec.lfh      *=     dup;
+		fontspec.chw      *=     sd.dup;
+		fontspec.spacew   *=     sd.dup;
+		fontspec.lfh      *=     sd.dup;
 	}
 	else
 	{
-		dup      = 1;
+		sd.dup      = 1;
 	}
 
-	cx = 0;
-	right = 0;
+	sd.cx = 0;
+	sd.right = 0;
 
-	for (i = 0; ( (c = *s) && i < length ); ++s, i++)
+	for (i = 0; ( (sd.c = *s) && i < length ); ++s, i++)
 	{
-		switch (c)
+		switch (sd.c)
 		{
 			case '\n':
-				cx  =   0;
+				sd.cx  =   0;
 				break;
 			case '<': // Control Codes
 			{
@@ -3741,41 +3859,16 @@ fixed_t V_SubStringScaledWidth(
 
 						strncpy(temp2, temp+1, size-1);
 
-#define BUTTONCODE(buttonname, buttoncode) \
-	if (fastcmp(temp2, #buttonname)) \
-	{ \
-		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
-		cx += cw * scale; \
-		right = cx ; \
-	} \
-	else if (fastcmp(temp2, va("%s_pressed", #buttonname))) \
-	{ \
-		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
-		cx += cw * scale; \
-		right = cx; \
-	} \
-	else if (fastcmp(temp2, va("%s_animated", #buttonname))) \
-	{ \
-		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
-		cx += cw * scale; \
-		right = cx + (cw * scale); \
-	}
+						stringdraw_e sde = drawtexttagwidth(&sd, flags, scale, temp2, s, &fontspec);
 
-						BUTTONCODE(up, gc_aimforward)
-						else BUTTONCODE(down, gc_aimbackward)
-						else BUTTONCODE(left, gc_turnright)
-						else BUTTONCODE(right, gc_turnleft)
-						else BUTTONCODE(lookback, gc_lookback)
-						else BUTTONCODE(drift, gc_drift)
-						else BUTTONCODE(item, gc_fire)
-						else BUTTONCODE(systemmenu, gc_systemmenu)
-						else BUTTONCODE(accel, gc_accelerate)
-						else BUTTONCODE(brake, gc_brake)
-						else BUTTONCODE(horn, gc_horncode)
-						else BUTTONCODE(custom1, gc_custom1)
-						else BUTTONCODE(custom2, gc_custom2)
-						else BUTTONCODE(custom3, gc_custom3)
-#undef BUTTONCODE
+						if (sde == STRINGDRAW_RETURN)
+						{
+							return 0;
+						}
+						else if (sde == STRINGDRAW_BREAK)
+						{
+							break;
+						}
 
 						// Now skip past this part of the string.
 						s += size;
@@ -3784,44 +3877,44 @@ fixed_t V_SubStringScaledWidth(
 				}
 			}
 			default:
-				if (( c & 0x80 ) || c == V_STRINGDANCE)
+				if (( sd.c & 0x80 ) || sd.c == V_STRINGDANCE)
 					continue;
 
-				if (uppercase)
+				if (sd.uppercase)
 				{
-					c = toupper(c);
+					sd.c = toupper(sd.c);
 				}
-				else if (V_CharacterValid(font, c - font->start) == false)
+				else if (V_CharacterValid(sd.font, sd.c - sd.font->start) == false)
 				{
 					// Try the other case if it doesn't exist
-					if (c >= 'A' && c <= 'Z')
+					if (sd.c >= 'A' && sd.c <= 'Z')
 					{
-						c = tolower(c);
+						sd.c = tolower(sd.c);
 					}
-					else if (c >= 'a' && c <= 'z')
+					else if (sd.c >= 'a' && sd.c <= 'z')
 					{
-						c = toupper(c);
+						sd.c = toupper(sd.c);
 					}
 				}
 
-				c -= font->start;
-				if (V_CharacterValid(font, c) == true)
+				sd.c -= sd.font->start;
+				if (V_CharacterValid(sd.font, sd.c) == true)
 				{
-					cw = LSBF_SHORT (font->font[c]->width) * dup;
+					sd.cw = LSBF_SHORT (sd.font->font[sd.c]->width) * sd.dup;
 
 					// How bunched dims work is by incrementing cx slightly less than a full character width.
 					// This causes the next character to be drawn overlapping the previous.
 					// We need to count the full width to get the rightmost edge of the string though.
-					right = cx + (cw * scale);
+					sd.right = sd.cx + (sd.cw * scale);
 
-					(*fontspec.dim_fn)(scale, fontspec.chw, hchw, dup, &cw);
-					cx += cw;
+					(*fontspec.dim_fn)(scale, fontspec.chw, sd.hchw, sd.dup, &sd.cw);
+					sd.cx += sd.cw;
 				}
 				else
-					cx += fontspec.spacew;
+					sd.cx += fontspec.spacew;
 		}
 
-		fullwidth = std::max<fixed_t>(right, std::max(cx, fullwidth));
+		fullwidth = std::max<fixed_t>(sd.right, std::max(sd.cx, fullwidth));
 	}
 
 	return fullwidth;
@@ -3839,20 +3932,8 @@ fixed_t V_SubStringScaledLengthToFit(
 	if (s == NULL)
 		return 0;
 
-	int32_t     hchw;/* half-width for centering */
+	stringdraw_t sd = {0};
 
-	int32_t     dup;
-
-	font_t   *font;
-
-	dboolean uppercase;
-
-	fixed_t cx;
-	fixed_t right;
-
-	fixed_t cw;
-
-	int c;
 	int32_t i;
 
 	fixed_t fullwidth = 0;
@@ -3860,16 +3941,16 @@ fixed_t V_SubStringScaledLengthToFit(
 	if (length < 0)
 		length = strlen(s);
 
-	uppercase  = !( flags & V_ALLOWLOWERCASE );
+	sd.uppercase  = !( flags & V_ALLOWLOWERCASE );
 	flags	&= ~(V_FLIP);/* These two (V_ALLOWLOWERCASE) share a bit. */
 
-	font       = &fontv[fontno];
+	sd.font       = &fontv[fontno];
 
 	fontspec_t fontspec;
 
 	V_GetFontSpecification(fontno, flags, &fontspec);
 
-	hchw     = fontspec.chw >> 1;
+	sd.hchw     = fontspec.chw >> 1;
 
 	fontspec.chw    <<= FRACBITS;
 	fontspec.spacew <<= FRACBITS;
@@ -3885,28 +3966,28 @@ fixed_t V_SubStringScaledLengthToFit(
 
 	if (( flags & V_NOSCALESTART ))
 	{
-		dup      = vid.dup;
+		sd.dup      = vid.dup;
 
-		hchw     *=     dup;
+		sd.hchw     *=     sd.dup;
 
-		fontspec.chw      *=     dup;
-		fontspec.spacew   *=     dup;
-		fontspec.lfh      *=     dup;
+		fontspec.chw      *=     sd.dup;
+		fontspec.spacew   *=     sd.dup;
+		fontspec.lfh      *=     sd.dup;
 	}
 	else
 	{
-		dup      = 1;
+		sd.dup      = 1;
 	}
 
-	cx = 0;
-	right = 0;
+	sd.cx = 0;
+	sd.right = 0;
 
-	for (i = 0; ( (c = *s) && i < length ); ++s, i++)
+	for (i = 0; ( (sd.c = *s) && i < length ); ++s, i++)
 	{
-		switch (c)
+		switch (sd.c)
 		{
 			case '\n':
-				cx  =   0;
+				sd.cx  =   0;
 				break;
 			case '<': // Control Codes
 			{
@@ -3924,41 +4005,16 @@ fixed_t V_SubStringScaledLengthToFit(
 
 						strncpy(temp2, temp+1, size-1);
 
-#define BUTTONCODE(buttonname, buttoncode) \
-	if (fastcmp(temp2, #buttonname)) \
-	{ \
-		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
-		cx += cw * scale; \
-		right = cx ; \
-	} \
-	else if (fastcmp(temp2, va("%s_pressed", #buttonname))) \
-	{ \
-		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
-		cx += cw * scale; \
-		right = cx ; \
-	} \
-	else if (fastcmp(temp2, va("%s_animated", #buttonname))) \
-	{ \
-		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
-		cx += cw * scale; \
-		right = cx ; \
-	}
+						stringdraw_e sde = drawtexttagwidth(&sd, flags, scale, temp2, s, &fontspec);
 
-						BUTTONCODE(up, gc_aimforward)
-						else BUTTONCODE(down, gc_aimbackward)
-						else BUTTONCODE(left, gc_turnright)
-						else BUTTONCODE(right, gc_turnleft)
-						else BUTTONCODE(lookback, gc_lookback)
-						else BUTTONCODE(drift, gc_drift)
-						else BUTTONCODE(item, gc_fire)
-						else BUTTONCODE(systemmenu, gc_systemmenu)
-						else BUTTONCODE(accel, gc_accelerate)
-						else BUTTONCODE(brake, gc_brake)
-						else BUTTONCODE(horn, gc_horncode)
-						else BUTTONCODE(custom1, gc_custom1)
-						else BUTTONCODE(custom2, gc_custom2)
-						else BUTTONCODE(custom3, gc_custom3)
-#undef BUTTONCODE
+						if (sde == STRINGDRAW_RETURN)
+						{
+							return 0;
+						}
+						else if (sde == STRINGDRAW_BREAK)
+						{
+							break;
+						}
 
 						// Now skip past this part of the string.
 						s += size;
@@ -3967,44 +4023,44 @@ fixed_t V_SubStringScaledLengthToFit(
 				}
 			}
 			default:
-				if (( c & 0xF0 ) == 0x80 || c == V_STRINGDANCE)
+				if (( sd.c & 0xF0 ) == 0x80 || sd.c == V_STRINGDANCE)
 					continue;
 
-			if (uppercase)
+			if (sd.uppercase)
 			{
-				c = toupper(c);
+				sd.c = toupper(sd.c);
 			}
-			else if (V_CharacterValid(font, c - font->start) == false)
+			else if (V_CharacterValid(sd.font, sd.c - sd.font->start) == false)
 			{
 				// Try the other case if it doesn't exist
-				if (c >= 'A' && c <= 'Z')
+				if (sd.c >= 'A' && sd.c <= 'Z')
 				{
-					c = tolower(c);
+					sd.c = tolower(sd.c);
 				}
-				else if (c >= 'a' && c <= 'z')
+				else if (sd.c >= 'a' && sd.c <= 'z')
 				{
-					c = toupper(c);
+					sd.c = toupper(sd.c);
 				}
 			}
 
-			c -= font->start;
-			if (V_CharacterValid(font, c) == true)
+			sd.c -= sd.font->start;
+			if (V_CharacterValid(sd.font, sd.c) == true)
 			{
-				cw = LSBF_SHORT (font->font[c]->width) * dup;
+				sd.cw = LSBF_SHORT (sd.font->font[sd.c]->width) * sd.dup;
 
 				// How bunched dims work is by incrementing cx slightly less than a full character width.
 				// This causes the next character to be drawn overlapping the previous.
 				// We need to count the full width to get the rightmost edge of the string though.
-				right = cx + (cw * scale);
+				sd.right = sd.cx + (sd.cw * scale);
 
-				(*fontspec.dim_fn)(scale, fontspec.chw, hchw, dup, &cw);
-				cx += cw;
+				(*fontspec.dim_fn)(scale, fontspec.chw, sd.hchw, sd.dup, &sd.cw);
+				sd.cx += sd.cw;
 			}
 			else
-				cx += fontspec.spacew;
+				sd.cx += fontspec.spacew;
 		}
 
-		fullwidth = std::max<fixed_t>(right, std::max(cx, fullwidth));
+		fullwidth = std::max<fixed_t>(sd.right, std::max(sd.cx, fullwidth));
 	}
 
 	return std::max(i-1, 0);
@@ -4020,31 +4076,18 @@ char * V_ScaledWordWrap(
 		int        fontno,
 		const char *s)
 {
-	int32_t     hchw;/* half-width for centering */
+	stringdraw_t sd = {0};
 
-	int32_t     dup;
-
-	font_t   *font;
-
-	dboolean uppercase;
-
-	fixed_t cx;
-	fixed_t right;
-
-	fixed_t cw;
-
-	int c;
-
-	uppercase  = !( flags & V_ALLOWLOWERCASE );
+	sd.uppercase  = !( flags & V_ALLOWLOWERCASE );
 	flags	&= ~(V_FLIP);/* These two (V_ALLOWLOWERCASE) share a bit. */
 
-	font       = &fontv[fontno];
+	sd.font       = &fontv[fontno];
 
 	fontspec_t fontspec;
 
 	V_GetFontSpecification(fontno, flags, &fontspec);
 
-	hchw     = fontspec.chw >> 1;
+	sd.hchw     = fontspec.chw >> 1;
 
 	fontspec.chw    <<= FRACBITS;
 	fontspec.spacew <<= FRACBITS;
@@ -4060,21 +4103,21 @@ char * V_ScaledWordWrap(
 
 	if (( flags & V_NOSCALESTART ))
 	{
-		dup      = vid.dup;
+		sd.dup      = vid.dup;
 
-		hchw     *=     dup;
+		sd.hchw     *=     sd.dup;
 
-		fontspec.chw      *=     dup;
-		fontspec.spacew   *=     dup;
-		fontspec.lfh      *=     dup;
+		fontspec.chw      *=     sd.dup;
+		fontspec.spacew   *=     sd.dup;
+		fontspec.lfh      *=     sd.dup;
 	}
 	else
 	{
-		dup      = 1;
+		sd.dup      = 1;
 	}
 
-	cx = 0;
-	right = 0;
+	sd.cx = 0;
+	sd.right = 0;
 
 	size_t reader = 0, writer = 0, startwriter = 0;
 	fixed_t cxatstart = 0;
@@ -4085,16 +4128,16 @@ char * V_ScaledWordWrap(
 
 	char *newstring = static_cast<char *>(Z_Malloc(len + sparenewlines, PU_STATIC, NULL));
 
-	for (; ( c = s[reader] ); ++reader, ++writer)
+	for (; ( sd.c = s[reader] ); ++reader, ++writer)
 	{
 		newstring[writer] = s[reader];
 
-		right = 0;
+		sd.right = 0;
 
-		switch (c)
+		switch (sd.c)
 		{
 			case '\n':
-				cx  =   0;
+				sd.cx  =   0;
 				cxatstart = 0;
 				startwriter = 0;
 				break;
@@ -4114,41 +4157,16 @@ char * V_ScaledWordWrap(
 
 						strncpy(temp2, temp+1, size-1);
 
-#define BUTTONCODE(buttonname, buttoncode) \
-	if (fastcmp(temp2, #buttonname)) \
-	{ \
-		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
-		cx += cw * scale; \
-		right = cx ; \
-	} \
-	else if (fastcmp(temp2, va("%s_pressed", #buttonname))) \
-	{ \
-		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
-		cx += cw * scale; \
-		right = cx ; \
-	} \
-	else if (fastcmp(temp2, va("%s_animated", #buttonname))) \
-	{ \
-		cw = V_GetButtonCodeWidth(buttoncode) * dup; \
-		cx += cw * scale; \
-		right = cx ; \
-	}
+						stringdraw_e sde = drawtexttagwidth(&sd, flags, scale, temp2, s, &fontspec);
 
-						BUTTONCODE(up, gc_aimforward)
-						else BUTTONCODE(down, gc_aimbackward)
-						else BUTTONCODE(left, gc_turnright)
-						else BUTTONCODE(right, gc_turnleft)
-						else BUTTONCODE(lookback, gc_lookback)
-						else BUTTONCODE(drift, gc_drift)
-						else BUTTONCODE(item, gc_fire)
-						else BUTTONCODE(systemmenu, gc_systemmenu)
-						else BUTTONCODE(accel, gc_accelerate)
-						else BUTTONCODE(brake, gc_brake)
-						else BUTTONCODE(horn, gc_horncode)
-						else BUTTONCODE(custom1, gc_custom1)
-						else BUTTONCODE(custom2, gc_custom2)
-						else BUTTONCODE(custom3, gc_custom3)
-#undef BUTTONCODE
+						if (sde == STRINGDRAW_RETURN)
+						{
+							return 0;
+						}
+						else if (sde == STRINGDRAW_BREAK)
+						{
+							break;
+						}
 
 						// Now skip past this part of the string.
 						s += size;
@@ -4157,56 +4175,56 @@ char * V_ScaledWordWrap(
 				}
 			}
 			default:
-				if (( c & 0x80 ) || c == V_STRINGDANCE)
+				if (( sd.c & 0x80 ) || sd.c == V_STRINGDANCE)
 					;
 				else
 				{
-					if (uppercase)
+					if (sd.uppercase)
 					{
-						c = toupper(c);
+						sd.c = toupper(sd.c);
 					}
-					else if (V_CharacterValid(font, c - font->start) == false)
+					else if (V_CharacterValid(sd.font, sd.c - sd.font->start) == false)
 					{
 						// Try the other case if it doesn't exist
-						if (c >= 'A' && c <= 'Z')
+						if (sd.c >= 'A' && sd.c <= 'Z')
 						{
-							c = tolower(c);
+							sd.c = tolower(sd.c);
 						}
-						else if (c >= 'a' && c <= 'z')
+						else if (sd.c >= 'a' && sd.c <= 'z')
 						{
-							c = toupper(c);
+							sd.c = toupper(sd.c);
 						}
 					}
 
-					c -= font->start;
-					if (V_CharacterValid(font, c) == true)
+					sd.c -= sd.font->start;
+					if (V_CharacterValid(sd.font, sd.c) == true)
 					{
-						cw = LSBF_SHORT (font->font[c]->width) * dup;
+						sd.cw = LSBF_SHORT (sd.font->font[sd.c]->width) * sd.dup;
 
 						// How bunched dims work is by incrementing cx slightly less than a full character width.
 						// This causes the next character to be drawn overlapping the previous.
 						// We need to count the full width to get the rightmost edge of the string though.
-						right = cx + (cw * scale);
+						sd.right = sd.cx + (sd.cw * scale);
 
-						(*fontspec.dim_fn)(scale, fontspec.chw, hchw, dup, &cw);
-						cx += cw;
+						(*fontspec.dim_fn)(scale, fontspec.chw, sd.hchw, sd.dup, &sd.cw);
+						sd.cx += sd.cw;
 					}
 					else
 					{
-						cx += fontspec.spacew;
-						cxatstart = cx;
+						sd.cx += fontspec.spacew;
+						cxatstart = sd.cx;
 						startwriter = writer;
 					}
 				}
 		}
 
 		// Start trying to wrap if presumed length exceeds the space we have on-screen.
-		if (right && right > w)
+		if (sd.right && sd.right > w)
 		{
 			if (startwriter != 0)
 			{
 				newstring[startwriter] = '\n';
-				cx -= cxatstart;
+				sd.cx -= cxatstart;
 				cxatstart = 0;
 				startwriter = 0;
 			}
@@ -4222,7 +4240,7 @@ char * V_ScaledWordWrap(
 				len++;
 
 				newstring[writer++] = '\n'; // Over-write previous
-				cx = cw; // Valid value in the only case right is currently set
+				sd.cx = sd.cw; // Valid value in the only case right is currently set
 				newstring[writer] = s[reader]; // Re-add
 			}
 		}
