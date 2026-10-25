@@ -54,6 +54,10 @@ fixed_t skyscale[MAXSPLITSCREENPLAYERS];
 char levelskytexture[9];
 char globallevelskytexture[9];
 
+/**	\brief Disables Encore remapping for the skybox
+*/
+dboolean noencoresky = false;
+
 /**	\brief	The R_SetupSkyDraw function
 
 	Called at loadlevel after skytexture is set, or when sky texture changes.

@@ -494,6 +494,7 @@ static void P_ClearSingleMapHeaderInfo(mapnum_t num)
 	P_ClearMapHeaderLighting(&mapheaderinfo[num]->lighting);
 	P_ClearMapHeaderLighting(&mapheaderinfo[num]->lighting_encore);
 	mapheaderinfo[num]->use_encore_lighting = false;
+	mapheaderinfo[num]->disable_encore_sky = false;
 	S_InitEFXArray(mapheaderinfo[num]->globalEFX);
 #if 1 // equivalent to "FlickyList = DEMO"
 	P_SetDemoFlickies(num);
@@ -9317,6 +9318,9 @@ dboolean P_LoadLevel(dboolean fromnetsave, dboolean reloadinggamestate)
 
 	// SRB2 determines the sky texture to be used depending on the map header.
 	P_SetupLevelSky(mapheaderinfo[gamemap-1]->skytexture, true);
+
+	// Set this boolean after we set up the sky
+	noencoresky = mapheaderinfo[gamemap-1]->disable_encore_sky;
 
 	P_ResetSpawnpoints();
 

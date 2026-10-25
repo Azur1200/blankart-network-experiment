@@ -690,7 +690,7 @@ static void R_DrawSkyPlane(visplane_t *pl, void(*colfunc)(drawcolumndata_t*), db
 	//  by sector colormaps (INVUL inverse mapping is not implemented in SRB2 so is irrelevant).
 	dc.colormap = colormaps;
 	dc.fullbright = colormaps;
-	if (encoremap)
+	if (encoremap && (!noencoresky))
 	{
 		dc.colormap += COLORMAP_REMAPOFFSET;
 		dc.fullbright += COLORMAP_REMAPOFFSET;
