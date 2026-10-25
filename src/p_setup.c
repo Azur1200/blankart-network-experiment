@@ -79,6 +79,7 @@
 #include "k_vote.h"
 
 #include "radio_finish.h"
+#include "radio_feed.h"
 
 // for MapLoad hook
 #include "lua_script.h"
@@ -9270,6 +9271,7 @@ dboolean P_LoadLevel(dboolean fromnetsave, dboolean reloadinggamestate)
 
 	// This ticker isn't EVER supposed to run for dedis, but just in case...
 	RR_resetRidersFinishTicker();
+	RR_ClearHudFeed();
 
 	if (!fromnetsave && savedata.lives > 0)
 	{

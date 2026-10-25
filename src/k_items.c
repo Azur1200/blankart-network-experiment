@@ -44,6 +44,8 @@
 #include "k_items.h"
 #include "k_collide.h"
 
+#include "radio_feed.h"
+
 #include <tracy/tracy/TracyC.h>
 
 kartitem_t kartitems[MAXKARTITEMS] = {0};
@@ -2058,6 +2060,8 @@ static void K_DoHyudoroSteal(player_t *player)
 
 		if (P_IsDisplayPlayer(&players[stealplayer]) && !r_splitscreen)
 			S_StartSound(NULL, sfx_s3k92);
+
+		RR_PushPlayerInteractionToFeed(player->mo, players[stealplayer].mo, ATTACK_HYUDORO);
 	}
 }
 

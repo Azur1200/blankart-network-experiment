@@ -11896,3 +11896,20 @@ void MD_DrawDiscordRequests(menupanelinst_t *pi)
 	}
 }
 #endif
+
+fixed_t M_TimeFrac(tic_t tics, tic_t duration, timefrac_e level)
+{
+	return tics < duration ? (tics * FRACUNIT + R_GetTimeFrac(level)) / duration : FRACUNIT;
+}
+
+fixed_t M_ReverseTimeFrac(tic_t tics, tic_t duration, timefrac_e level)
+{
+	return FRACUNIT - M_TimeFrac(duration - tics, duration, level);
+}
+
+fixed_t M_DueFrac(tic_t start, tic_t duration, timefrac_e level)
+{
+	tic_t t = I_GetTime();
+	tic_t n = t - start;
+	return M_TimeFrac(min(n, duration), duration, level);
+}

@@ -46,6 +46,8 @@
 #include "acs/interface.h"
 #include "k_itemlist.hpp"
 
+#include "radio_feed.h"
+
 // CTF player names
 #define CTFTEAMCODE(pl) pl->ctfteam ? (pl->ctfteam == 1 ? "\x85" : "\x84") : ""
 #define CTFTEAMENDCODE(pl) pl->ctfteam ? "\x80" : ""
@@ -2629,6 +2631,11 @@ dboolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t
 			}
 
 			player->instashield = 15;
+
+			// RadioRacers: .. right around here
+			if (inflictor) {
+				RR_PushPlayerDamageToFeed(source, target, inflictor);
+			}
 
 			return true;
 		}

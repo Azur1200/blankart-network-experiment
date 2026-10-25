@@ -78,6 +78,8 @@
 #include "k_vote.h"
 #include "k_dialogue.h"
 
+#include "radio_feed.h"
+
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 
@@ -1287,6 +1289,8 @@ void D_ClearState(void)
 
 	G_SetGamestate(GS_NULL);
 	wipegamestate = GS_NULL;
+
+	RR_ClearHudFeed();
 }
 
 //

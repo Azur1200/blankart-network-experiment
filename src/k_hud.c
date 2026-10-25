@@ -51,6 +51,7 @@
 #include "k_cluster.hpp"
 
 #include "radio_finish.h"
+#include "radio_feed.h"
 
 #include "k_hud_message.h"
 
@@ -385,6 +386,14 @@ void K_RegisterKartHUDStuff(void)
 
 	// radio_finish.cpp
 	CV_RegisterVar(&cv_show_riders_finish_ticker);
+
+	// radio_feed.cpp
+	CV_RegisterVar(&cv_hudfeed_enabled);
+	CV_RegisterVar(&cv_hudfeed_show_faults);
+	CV_RegisterVar(&cv_hudfeed_show_grades);
+	CV_RegisterVar(&cv_hudfeed_show_snipes);
+	CV_RegisterVar(&cv_hudfeed_position);
+	RR_FeedCom();
 }
 
 void K_LoadKartHUDGraphics(void)
@@ -7234,6 +7243,7 @@ void K_drawKartHUD(void)
 		islonesome = K_drawKartPositionFaces();
 
 		RR_drawRidersFinishTicker();
+		RR_DrawHudFeed();
 	}
 
 	if (!stplyr->spectator && !freecam) // Bottom of the screen elements, don't need in spectate mode

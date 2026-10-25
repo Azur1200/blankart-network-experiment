@@ -160,6 +160,7 @@ add_executable(BLANKART MACOSX_BUNDLE WIN32
 	k_dialogue.cpp
 	h_timers.cpp
 	radio_finish.cpp
+	radio_feed.cpp
 	stun.c
 	lonesha256.c
 )
