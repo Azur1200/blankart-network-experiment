@@ -2655,7 +2655,8 @@ dboolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t
 
 			player->instashield = 15;
 
-			target->eflags |= MFE_ALREADYHIT;
+			if (type == DMG_EXPLODE)
+				target->eflags |= MFE_ALREADYHIT;
 
 			return true;
 		}
@@ -2677,8 +2678,6 @@ dboolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t
 
 	if (source && source->player && target)
 		G_GhostAddHit((int32_t) (source->player - players), target);
-
-	target->eflags |= MFE_ALREADYHIT;
 
 	if (target->health <= 0)
 	{
