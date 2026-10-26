@@ -52,9 +52,7 @@ void RR_UpdateHudFeedConfig(void);
 void RR_FeedCom(void);
 
 extern consvar_t cv_hudfeed_enabled;
-extern consvar_t cv_hudfeed_show_faults;
 extern consvar_t cv_hudfeed_show_grades;
-extern consvar_t cv_hudfeed_show_snipes;
 extern consvar_t cv_hudfeed_position;
 
 #ifdef __cplusplus

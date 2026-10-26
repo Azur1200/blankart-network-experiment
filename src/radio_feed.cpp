@@ -1,6 +1,7 @@
 // BLANKART
 //-----------------------------------------------------------------------------
 // Copyright (C) 2025 by $HOME
+// Copyright (C) 2026 by Team BlanKart
 //
 // This program is free software distributed under the
 // terms of the GNU General Public License, version 2.
@@ -49,9 +50,7 @@ void RR_Hudfeed_OnChange(void)
 }
 
 consvar_t cv_hudfeed_enabled = CVAR_INIT ("hudfeed", "Yes", CV_SAVE|CV_NOINIT|CV_CALL, CV_YesNo, RR_Hudfeed_OnChange);
-consvar_t cv_hudfeed_show_faults = CVAR_INIT ("hudfeed_show_faults", "Yes", CV_SAVE, CV_YesNo, RR_Hudfeed_OnChange);
-consvar_t cv_hudfeed_show_grades = CVAR_INIT ("hudfeed_show_grades", "Yes", CV_SAVE, CV_YesNo, RR_Hudfeed_OnChange);
-consvar_t cv_hudfeed_show_snipes = CVAR_INIT ("hudfeed_show_snipes", "Yes", CV_SAVE, CV_YesNo, RR_Hudfeed_OnChange);
+consvar_t cv_hudfeed_show_grades = CVAR_INIT ("hudfeed_show_grades", "No", CV_SAVE, CV_YesNo, RR_Hudfeed_OnChange);
 static CV_PossibleValue_t hudfeed_position_cons_t[] = { {0, "Default"}, {1, "Top-Middle"}, {2, "Top-Right"}, {3, "Bottom-Middle"},{0, NULL}};
 consvar_t cv_hudfeed_position = CVAR_INIT ("hudfeedposition", "Default", CV_SAVE|CV_NOINIT|CV_CALL, hudfeed_position_cons_t, RR_UpdateHudFeedConfig);
 

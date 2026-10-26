@@ -389,9 +389,7 @@ void K_RegisterKartHUDStuff(void)
 
 	// radio_feed.cpp
 	CV_RegisterVar(&cv_hudfeed_enabled);
-	CV_RegisterVar(&cv_hudfeed_show_faults);
 	CV_RegisterVar(&cv_hudfeed_show_grades);
-	CV_RegisterVar(&cv_hudfeed_show_snipes);
 	CV_RegisterVar(&cv_hudfeed_position);
 	RR_FeedCom();
 }
