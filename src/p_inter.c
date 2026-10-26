@@ -2098,6 +2098,7 @@ static dboolean P_KillPlayer(player_t *player, mobj_t *inflictor, mobj_t *source
 	if (player->pitblame > -1)
 	{
 		K_TryHurtSoundExchange(player->mo, players[player->pitblame].mo);
+		RR_PushPlayerInteractionToFeed(players[player->pitblame].mo, player->mo, ATTACK_PITFALL, KITEM_NONE);
 		player->pitblame = -1;
 	}
 
@@ -2578,12 +2579,16 @@ dboolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t
 					K_KartPainEnergyFling(player);
 					break;
 				case DMG_VOLTAGE:
+					RR_PushPlayerInteractionToFeed(source, target, ATTACK_THUNDER_SHIELD, KITEM_NONE);
+				/* FALLTHRU */
 				case DMG_NORMAL:
 				default:
 					K_SpinPlayer(player, inflictor, source, KSPIN_SPINOUT);
 					LUA_HookPlayerSpin(target, inflictor, source, damage, damagetype);
 					break;
 			}
+
+			RR_PushPlayerDamageToFeed(source, target, inflictor);
 
 			// Have a shield? You get hit, but don't lose your rings!
 			if (K_GetShieldFromPlayer(player) != KSHIELD_NONE)
@@ -2645,11 +2650,6 @@ dboolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t
 			}
 
 			player->instashield = 15;
-
-			// RadioRacers: .. right around here
-			if (inflictor) {
-				RR_PushPlayerDamageToFeed(source, target, inflictor);
-			}
 
 			return true;
 		}

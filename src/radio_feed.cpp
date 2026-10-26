@@ -1,4 +1,4 @@
-// RadioRacers
+// BLANKART
 //-----------------------------------------------------------------------------
 // Copyright (C) 2025 by $HOME
 //
@@ -53,7 +53,7 @@ consvar_t cv_hudfeed_show_faults = CVAR_INIT ("hudfeed_show_faults", "Yes", CV_S
 consvar_t cv_hudfeed_show_grades = CVAR_INIT ("hudfeed_show_grades", "Yes", CV_SAVE, CV_YesNo, RR_Hudfeed_OnChange);
 consvar_t cv_hudfeed_show_snipes = CVAR_INIT ("hudfeed_show_snipes", "Yes", CV_SAVE, CV_YesNo, RR_Hudfeed_OnChange);
 static CV_PossibleValue_t hudfeed_position_cons_t[] = { {0, "Default"}, {1, "Top-Middle"}, {2, "Top-Right"}, {3, "Bottom-Middle"},{0, NULL}};
-consvar_t cv_hudfeed_position = CVAR_INIT ("hudfeedposition", "Top-Middle", CV_SAVE|CV_NOINIT|CV_CALL, hudfeed_position_cons_t, RR_UpdateHudFeedConfig);
+consvar_t cv_hudfeed_position = CVAR_INIT ("hudfeedposition", "Default", CV_SAVE|CV_NOINIT|CV_CALL, hudfeed_position_cons_t, RR_UpdateHudFeedConfig);
 
 // === CLASSES ===
 
@@ -79,7 +79,7 @@ class PlayerFeedUpdate : public BaseFeedUpdate {
                     row
                         .x(-attacker_name_width)
                         .scale(FEED_UPDATE_SCALE)
-                        .flags(attacker_colour)
+                        .flags(attacker_colour|V_ALLOWLOWERCASE)
                         .text(attacker.c_str());
 
                     row = row.x(-(attacker_name_width + c.x_offset)).colormap(c.colormap);
@@ -87,7 +87,7 @@ class PlayerFeedUpdate : public BaseFeedUpdate {
             } else {
                 uint8_t *item_recolormap = (c.should_flash) ? c.colormap : c.item_recolormap;
                 if (!is_self_hit) {
-                    row.scale(FEED_UPDATE_SCALE).flags(attacker_colour).text(attacker.c_str());
+                    row.scale(FEED_UPDATE_SCALE).flags(attacker_colour|V_ALLOWLOWERCASE).text(attacker.c_str());
 
                     // Then, the item
                     row = row.x(attacker_name_width + c.x_offset).colormap(item_recolormap);
@@ -110,6 +110,17 @@ class PlayerFeedUpdate : public BaseFeedUpdate {
                 .scale(c.patch_scale)
                 .patch(c.patch_name);
 
+			if (c.stolen != KITEM_NONE)
+			{
+				patch_t *itempatch = K_GetCachedItemPatch(c.stolen, true, 1);
+
+				row
+					.x(x-5)
+					.y(c.y_offset)
+					.scale(0.25)
+					.patch(itempatch);
+			}
+
             if (reverse) {
                 row = row.x(-(c.width_scaled + c.x_offset)).colormap(static_cast<uint8_t*>(NULL));
             } else {
@@ -120,10 +131,10 @@ class PlayerFeedUpdate : public BaseFeedUpdate {
         void draw_victim(dboolean reverse) {
             int victim_name_width = FeedUpdateUtils::getNameWidth(victim);
             if (reverse) {
-                row.x(-(victim_name_width)).scale(FEED_UPDATE_SCALE).flags(victim_colour).text(victim.c_str());
+                row.x(-(victim_name_width)).scale(FEED_UPDATE_SCALE).flags(victim_colour|V_ALLOWLOWERCASE).text(victim.c_str());
                 row = row.x(-(victim_name_width + c.x_offset)).colormap(c.colormap);
             } else {
-                row.scale(FEED_UPDATE_SCALE).flags(victim_colour).text(victim.c_str());
+                row.scale(FEED_UPDATE_SCALE).flags(victim_colour|V_ALLOWLOWERCASE).text(victim.c_str());
                 row = row.x(victim_name_width + c.x_offset).colormap(static_cast<uint8_t*>(NULL));
             }
         }
@@ -186,7 +197,7 @@ class PlayerFeedUpdate : public BaseFeedUpdate {
 
             // If the update doesn't concern the main player
             // then draw at a higher translucency
-            int32_t low_priority_trans = (!is_about_self) ? 5 : -1;
+            int32_t low_priority_trans = (!is_about_self) ? 3 : -1;
 
             if (is_entering() || is_exiting()) {
                 hud_flags |= (clamp_translucency(low_priority_trans) << V_ALPHASHIFT);
@@ -249,9 +260,9 @@ class GlobalFeedUpdate : public BaseFeedUpdate {
             int message_width = FeedUpdateUtils::getNameWidth(message);
 
             if (reverse) {
-                row.x(-message_width).scale(FEED_UPDATE_SCALE).text(message.c_str());
+                row.x(-message_width).scale(FEED_UPDATE_SCALE).flags(V_ALLOWLOWERCASE).text(message.c_str());
             } else {
-                row.scale(FEED_UPDATE_SCALE).text(message.c_str());
+                row.scale(FEED_UPDATE_SCALE).flags(V_ALLOWLOWERCASE).text(message.c_str());
                 row = row.x(message_width + c.x_offset).colormap(c.colormap);
             }
         }
@@ -280,10 +291,10 @@ class GlobalFeedUpdate : public BaseFeedUpdate {
         void draw_exclaimation_point(dboolean reverse) {
             if (reverse) {
                 int exclaimation_width = FeedUpdateUtils::getNameWidth("!");
-                row.x(-(exclaimation_width)).scale(FEED_UPDATE_SCALE).text("!");
+                row.x(-(exclaimation_width)).scale(FEED_UPDATE_SCALE).flags(V_ALLOWLOWERCASE).text("!");
                 row = row.x(-(exclaimation_width + c.x_offset)).colormap(c.colormap);
             } else {
-                row.scale(FEED_UPDATE_SCALE).text("!");
+                row.scale(FEED_UPDATE_SCALE).flags(V_ALLOWLOWERCASE).text("!");
             }
         }
 
@@ -372,10 +383,10 @@ class GlobalPlayerFeedUpdate : public BaseFeedUpdate {
             int player_name_width = FeedUpdateUtils::getNameWidth(player);
 
             if (reverse) {
-                row.x(-player_name_width).scale(FEED_UPDATE_SCALE).text(player.c_str());
+                row.x(-player_name_width).scale(FEED_UPDATE_SCALE).flags(V_ALLOWLOWERCASE).text(player.c_str());
                 row = row.x(-(player_name_width + c.x_offset)).colormap(get_item_colormap());
             } else {
-                row.scale(FEED_UPDATE_SCALE).text(player.c_str());
+                row.scale(FEED_UPDATE_SCALE).flags(V_ALLOWLOWERCASE).text(player.c_str());
             }
         }
 
@@ -487,7 +498,7 @@ static ItemConfigForFeedUpdate getItemConfigForFeedKillUpdate(mobj_t *mo) {
     mobjtype_t type = mo->type;
     switch (type) {
         case MT_SINK:
-            return {"RRISSINK", 22, 16, {false, true}};
+            return {"K_TISINK", 22, 16, {false, true}};
         default:
             break;
     }
@@ -500,30 +511,38 @@ static ItemConfigForFeedUpdate getItemConfigForFeedDamageUpdate(mobj_t *mo) {
     switch (type) {
         case MT_ORBINAUT:
         case MT_ORBINAUT_SHIELD:
-            return {"HL_ORBI", 22, 22};
+            return {"K_TIORBN", 22, 22};
         case MT_JAWZ:
         case MT_JAWZ_SHIELD:
-            return {"HL_JAWZ", 27, 18};
+            return {"K_TIJAWZ", 27, 18};
         case MT_BANANA:
         case MT_BANANA_SHIELD:
-            return {"HL_BANAN", 20, 20};
+			if (mo->health > 1)
+				return {"K_TIBANA", 20, 20, {false, true}};
+			else
+				return {"K_TIBANA", 20, 20};
+		case MT_SPB:
+			return {"K_TISPB", 20, 20};
         case MT_SPBEXPLOSION: {
             ItemConfigForFeedUpdate spbConfig = {"K_TISPB", 20, 20, {false, true}, {}, -2};
-            if (mo->threshold) {
-                if (mo->threshold == KITEM_EGGMAN) {
-                    spbConfig = {"RRISEGGM", 24, 20, {false, true}, {}, 0};
-                }
-            }
+			if (mo->extravalue1 != 1) {
+				spbConfig = {"K_TIEGGM", 24, 20, {false, true}, {}, 0};
+			}
             return spbConfig;
         }
         case MT_LANDMINE:
-            return {"RRISLNDM", 20, 20};
+		case MT_EGGMINE:
+		case MT_EGGMINE_SHIELD:
+			if (mo->health > 1)
+				return {"K_TILMNE", 20, 20, {false, true}};
+			else
+				return {"K_TILMNE", 20, 20};
         case MT_BALLHOG:
         case MT_BALLHOGBOOM:
-            return {"HL_BHOG.", 20, 20};
+            return {"K_TIBHOG", 20, 20};
         case MT_SSMINE:
         case MT_SSMINE_SHIELD:
-            return {"HL_SSMINE", 22, 22, {false, true}};
+            return {"K_TIMINE", 22, 22, {false, true}};
         default:
             break;
     }
@@ -532,7 +551,7 @@ static ItemConfigForFeedUpdate getItemConfigForFeedDamageUpdate(mobj_t *mo) {
 }
 
 const ItemConfigForFeedUpdate shrinkItemConfig = {
-        "RRISSHRK",
+        "K_TISHRK",
         12,
         16,
         {{}, true, {}, {}, SKINCOLOR_ORANGE},
@@ -540,36 +559,24 @@ const ItemConfigForFeedUpdate shrinkItemConfig = {
         0
 };
 
-static ItemConfigForFeedUpdate getItemConfigForFeedAttackUpdate(playerattacks_t attack) {
+static ItemConfigForFeedUpdate getItemConfigForFeedAttackUpdate(playerattacks_t attack, kartitemtype_e stolen) {
     switch (attack) {
         case ATTACK_FLAMEDASH:
-            return {"RRISFLMS", 18, 18};
+            return {"K_TIFLMS", 20, 20};
         case ATTACK_HYUDORO:
-            return {
-                "RRISHYU",
-                21,
-                24,
-                {
-                    true,
-                    {},
-                    9,
-                    4
-                },
-                {},
-                -2
-            };
+            return {"K_TIHYUD", 20, 20, {}, {}, {}, stolen};
         case ATTACK_SHRINK:
             return shrinkItemConfig;
-        case ATTACK_LIGHTNING_SHIELD:
+        case ATTACK_THUNDER_SHIELD:
             // see PIT_LightningShieldAttack
-            return {"RRISTHNS", 18, 18};
+            return {"K_TITHNS", 20, 20};
         case ATTACK_INVINCIBILITY:
-            return {"RRISINV", 30, 27, {true, false, 6}, {}, -2};
+            return {"K_TIINV", 20, 20, {true, false, 6}, {}, -2};
         case ATTACK_GROW:
             return {
-                "RRISGROW",
-                16,
-                21,
+                "K_TIGROW",
+                20,
+                20,
                 {
                     {},
                     true,
@@ -579,18 +586,9 @@ static ItemConfigForFeedUpdate getItemConfigForFeedAttackUpdate(playerattacks_t 
                 }
             };
         case ATTACK_PITFALL:
-            return {
-                "RRPTFLL",
-                21,
-                15,
-                {
-                    true,
-                    {},
-                    2,
-                },
-                0.5f,
-                -1
-            };
+            return {"K_TIDTHP", 20, 20};
+		case ATTACK_ATTRACTION:
+			return {"K_TIATTR", 20, 20};
         default:
             break;
     }
@@ -602,13 +600,7 @@ static ItemConfigForFeedUpdate getItemConfigForGlobalFeedUpdate(globalfeedevent_
         case EVENT_SHRINK:
             return shrinkItemConfig;
         case EVENT_SPB:
-            return {
-                "RRSPBHR",
-                13,
-                17,
-                {true, {}, 2, 1},
-                .5f,
-            };
+            return  {"K_TISPB", 20, 20};
         default:
             break;
     }
@@ -618,6 +610,9 @@ static ItemConfigForFeedUpdate getItemConfigForGlobalFeedUpdate(globalfeedevent_
 static playerattacks_t getPlayerAttackType(mobj_t* mo) {
     player_t* p = mo->player;
 
+	if (p->attractionattack ) {
+		return ATTACK_ATTRACTION;
+	}
     if (p->flamestore >= FLAMESTOREMAX-1 && p->flametimer > 0) {
         return ATTACK_FLAMEDASH;
     }
@@ -670,7 +665,7 @@ void RR_PushPlayerDamageToFeed(mobj_t *source, mobj_t *target, mobj_t *inflictor
     // If the inflictor type is a player, check for certain conditions
     if (inflictor->type == MT_PLAYER) {
         if (isPlayerMoValid(inflictor)) {
-            RR_PushPlayerInteractionToFeed(source, target, getPlayerAttackType(inflictor));
+            RR_PushPlayerInteractionToFeed(source, target, getPlayerAttackType(inflictor), KITEM_NONE);
         } else {
             return;
         }
@@ -679,7 +674,7 @@ void RR_PushPlayerDamageToFeed(mobj_t *source, mobj_t *target, mobj_t *inflictor
     // Special exception for MT_SPBEXPLOSION
     // Eggmark explosions use the same mobjtype, so check if the right player can be blamed
     if (inflictor->type == MT_SPBEXPLOSION) {
-        if (inflictor->threshold == KITEM_EGGMAN) {
+        if (inflictor->extravalue1 != 1) {
             if (isPlayerMoValid(inflictor->target)) {
                 // True source (K_KartPlayerThink)
                 source = inflictor->target;
@@ -761,14 +756,14 @@ void RR_PushPlayerDeathToFeed(mobj_t *source, mobj_t *target, mobj_t *inflictor)
     );
 }
 
-void RR_PushPlayerInteractionToFeed(mobj_t *source, mobj_t *target, playerattacks_t attack) {
+void RR_PushPlayerInteractionToFeed(mobj_t *source, mobj_t *target, playerattacks_t attack, kartitemtype_e stolen) {
     if (!canUseHudfeed()) return;
 
     if (attack == ATTACK_NONE) return;
     if (!arePlayersValid(source, target)) return;
 
     // Verify if the attack is something the feed is configured to show
-    ItemConfigForFeedUpdate itemConfig = getItemConfigForFeedAttackUpdate(attack);
+    ItemConfigForFeedUpdate itemConfig = getItemConfigForFeedAttackUpdate(attack, stolen);
 
     if (itemConfig.patch.empty()) return;
 
@@ -807,7 +802,19 @@ void RR_PushGlobalEventToFeed(player_t* player, globalfeedevent_t event) {
     ItemConfigForFeedUpdate itemConfig = getItemConfigForGlobalFeedUpdate(event);
     if (itemConfig.patch.empty()) return;
 
-    const std::string player_name = player_names[player-players];
+	uint16_t chatcolor = skincolors[player->skincolor].chatcolor;
+	char color_prefix[2];
+
+	if (chatcolor > V_TANMAP)
+	{
+		snprintf(color_prefix, sizeof(color_prefix), "%c", '\x80');
+	}
+	else
+	{
+		snprintf(color_prefix, sizeof(color_prefix), "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
+	}
+
+    const std::string player_name = va("%s%s\x80", color_prefix, player_names[player-players]);
 
     // Push to the feed
     hudfeed.push(std::make_unique<GlobalFeedUpdate>(player_name, itemConfig));
@@ -817,7 +824,7 @@ static const char *ranktierpatch_name(ranktier_e rank)
 {
     switch (rank)
     {
-        case RTIER_E:				// Good job! That was... AWFUL
+        case RTIER_E:
             return "BKRNS01";
         case RTIER_D:
             return "BKRNS02";
@@ -856,11 +863,24 @@ void RR_PushGlobalGradeEventToFeed(player_t* player, ranktier_e rank) {
         {},
         1.0f,
         {},
+		KITEM_NONE,
         SKINCOLOR_YELLOW,
         (rank == RTIER_P),
     };
 
-    const std::string player_name = player_names[player-players];
+	uint16_t chatcolor = skincolors[player->skincolor].chatcolor;
+	char color_prefix[2];
+
+	if (chatcolor > V_TANMAP)
+	{
+		snprintf(color_prefix, sizeof(color_prefix), "%c", '\x80');
+	}
+	else
+	{
+		snprintf(color_prefix, sizeof(color_prefix), "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
+	}
+
+    const std::string player_name = va("%s%s\x80", color_prefix, player_names[player-players]);
 
     // Push to the feed
     hudfeed.push(std::make_unique<GlobalPlayerFeedUpdate>(
@@ -903,28 +923,8 @@ void RR_UpdateHudFeedConfig(void) {
 }
 
 static void dummyupdate(void) {
-    ItemConfigForFeedUpdate bubble = {
-        "RRFSNIP",
-        90,
-        31,
-        {
-            true,
-            {},
-            2,
-        },
-        0.25f
-    };
-    // hudfeed.push(
-    //     std::make_unique<PlayerFeedUpdate>(
-    //         std::string("SUCMYADJKSAD"),
-    //         std::string("$HOME"),
-    //         bubble,
-    //         false,
-    //         true
-    //     )
-    // );
-    // RR_PushGlobalEventToFeed(stplyr, EVENT_SPB);
-    RR_PushGlobalGradeEventToFeed(stplyr, RTIER_P);
+	if (!netgame)
+		RR_PushGlobalGradeEventToFeed(stplyr, RTIER_P);
 }
 
 void RR_FeedCom(void) {

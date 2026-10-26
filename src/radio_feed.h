@@ -1,4 +1,4 @@
-// RadioRacers
+// BLANKART
 //-----------------------------------------------------------------------------
 // Copyright (C) 2025 by $HOME
 //
@@ -26,10 +26,11 @@ typedef enum
     ATTACK_FLAMEDASH,
     ATTACK_INVINCIBILITY,
     ATTACK_HYUDORO,
-    ATTACK_LIGHTNING_SHIELD,
+    ATTACK_THUNDER_SHIELD,
     ATTACK_GROW,
     ATTACK_SHRINK,
-    ATTACK_PITFALL
+    ATTACK_PITFALL,
+    ATTACK_ATTRACTION
 } playerattacks_t;
 
 typedef enum
@@ -41,7 +42,7 @@ typedef enum
 
 void RR_PushPlayerDamageToFeed(mobj_t *source, mobj_t *target, mobj_t *inflictor);
 void RR_PushPlayerDeathToFeed(mobj_t *source, mobj_t *target, mobj_t *inflictor);
-void RR_PushPlayerInteractionToFeed(mobj_t *source, mobj_t *target, playerattacks_t attack);
+void RR_PushPlayerInteractionToFeed(mobj_t *source, mobj_t *target, playerattacks_t attack, kartitemtype_e stolen);
 void RR_PushGlobalEventToFeed(player_t* player, globalfeedevent_t event);
 void RR_PushGlobalGradeEventToFeed(player_t* player, ranktier_e rank);
 void RR_DrawHudFeed(void);

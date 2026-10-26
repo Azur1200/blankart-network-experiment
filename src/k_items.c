@@ -1889,6 +1889,8 @@ static void K_DoShrink(player_t *user)
 
 	S_StartSound(user->mo, sfx_kc46); // Sound the BANG!
 
+	RR_PushGlobalEventToFeed(user, EVENT_SHRINK);
+
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
 		if (!playeringame[i] || players[i].spectator || !players[i].mo)
@@ -2053,6 +2055,8 @@ static void K_DoHyudoroSteal(player_t *player)
 					    players[stealplayer].itemamount);
 		}
 
+		int32_t backup_item = players[stealplayer].itemtype;
+
 		players[stealplayer].itemtype = KITEM_NONE;
 		players[stealplayer].itemamount = 0;
 		K_DisableSeekingReticule(&players[stealplayer]);
@@ -2061,7 +2065,7 @@ static void K_DoHyudoroSteal(player_t *player)
 		if (P_IsDisplayPlayer(&players[stealplayer]) && !r_splitscreen)
 			S_StartSound(NULL, sfx_s3k92);
 
-		RR_PushPlayerInteractionToFeed(player->mo, players[stealplayer].mo, ATTACK_HYUDORO);
+		RR_PushPlayerInteractionToFeed(player->mo, players[stealplayer].mo, ATTACK_HYUDORO, backup_item);
 	}
 }
 
@@ -3046,6 +3050,7 @@ void K_UseItem_SPB(player_t *player, dboolean itemjustdown, dboolean onground, d
 	{
 		K_DecrementAndCheckCurrentItem(player);
 		K_ThrowKartItem(player, true, MT_SPB, 1, 0);
+		RR_PushGlobalEventToFeed(player, EVENT_SPB);
 		K_PlayAttackTaunt(player->mo);
 		K_BotResetItemConfirm(player, false);
 	}

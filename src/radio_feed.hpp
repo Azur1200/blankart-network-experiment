@@ -1,4 +1,4 @@
-// RadioRacers
+// BLANKART
 //-----------------------------------------------------------------------------
 // Copyright (C) 2025 by $HOME
 //
@@ -93,6 +93,7 @@ struct ItemConfigForFeedUpdate {
     ItemAnimatedConfig animation_config; // Animation-related variables
     std::optional<float> patch_scale; // Graphic scale
     std::optional<int> y_offset; // Shrink, Eggmark, etc
+    std::optional<kartitemtype_e> stolen_item; // Hyudoro Steal Patch
     skincolornum_t recolour = SKINCOLOR_NONE; // The colour to recolour the item too (usually droptarget)
     dboolean rainbow = false; // Rainbow colormap
 };
@@ -104,6 +105,7 @@ struct ProcessedItemConfig {
     int height_scaled;
     int x_offset;
     int y_offset;
+	kartitemtype_e stolen;
     dboolean should_flash;
     dboolean rainbow;
     uint8_t *colormap;
@@ -142,18 +144,18 @@ FeedConfig BottomMiddleConfig {
 };
 FeedConfig NoItemBoxConfig {
     5, 
-    65, 
+    6,
     FEED_UPDATE_SPACING_Y, 
     FEED_POSITION_LEFT, 
-    FEED_DIRECTION_UP,
+    FEED_DIRECTION_DOWN,
     V_SNAPTOLEFT|V_SNAPTOTOP
 };
 FeedConfig ItemBoxConfig {
     65, 
-    65, 
+    6,
     FEED_UPDATE_SPACING_Y, 
     FEED_POSITION_LEFT, 
-    FEED_DIRECTION_UP,
+    FEED_DIRECTION_DOWN,
     V_SNAPTOLEFT|V_SNAPTOTOP
 };
 FeedConfig TimestampConfig {
@@ -181,6 +183,12 @@ namespace FeedUpdateUtils {
         int item_width_scaled = static_cast<int>(config.width * item_scale);
         int item_height_scaled = static_cast<int>(config.height * item_scale);
         std::string item_patch_name = config.patch;
+		kartitemtype_e item_stolen = KITEM_NONE;
+
+		if (config.stolen_item.has_value())
+		{
+			item_stolen = config.stolen_item.value();
+		}
 
         // For flashing items (Eggmark, SPB, mine)
         uint8_t *colormap = (config.animation_config.should_flash && (current_time & 1) ? R_GetTranslationColormap(TC_BLINK, config.animation_config.flashing_colour, GTC_CACHE) : NULL);
@@ -211,6 +219,7 @@ namespace FeedUpdateUtils {
             item_height_scaled, 
             item_x_offset, 
             item_y_offset, 
+			item_stolen,
             config.animation_config.should_flash,
             config.rainbow,
             static_cast<uint8_t*>(colormap),
@@ -292,6 +301,9 @@ class BaseFeedUpdate {
                 patch start =       "RRFDBEG";
                 patch mid =         "RRFDMID";
                 patch end =         "RRFDEND";
+				patch startactive =       "RRFDBEGW";
+				patch midactive =         "RRFDMIDW";
+				patch endactive =         "RRFDENDW";
             } 
             background;
         };
@@ -306,7 +318,7 @@ class BaseFeedUpdate {
             const dboolean reverse = (c.position == FEED_POSITION_RIGHT);
             const float x_offset = reverse ? 4.f : -2.f;
 
-            int32_t translucency_level = (is_about_self) ? 6 : 8;
+            int32_t translucency_level = (is_about_self) ? 4 : 6;
 
             int32_t feed_flags = c.hudflags;
 
@@ -322,15 +334,15 @@ class BaseFeedUpdate {
 
             if (reverse) {
                 background = background.x(-backgroundW);
-                background.patch(patches_.background.end);
+                background.patch(is_about_self ? patches_.background.endactive : patches_.background.end);
                 background = background.x(-width);
-                background.width(width).stretch(Draw::Stretch::kWidth).patch(patches_.background.mid);
-                background.x(-backgroundW).patch(patches_.background.start);
+                background.width(width).stretch(Draw::Stretch::kWidth).patch(is_about_self ? patches_.background.midactive : patches_.background.mid);
+                background.x(-backgroundW).patch(is_about_self ? patches_.background.startactive : patches_.background.start);
             } else {
-                background.patch(patches_.background.start);
+                background.patch(is_about_self ? patches_.background.startactive : patches_.background.start);
                 background = background.x(backgroundW);
-                background.width(width).stretch(Draw::Stretch::kWidth).patch(patches_.background.mid);
-                background.x(width).patch(patches_.background.end);
+                background.width(width).stretch(Draw::Stretch::kWidth).patch(is_about_self ? patches_.background.midactive : patches_.background.mid);
+                background.x(width).patch(is_about_self ? patches_.background.endactive : patches_.background.end);
             }
         }
 
