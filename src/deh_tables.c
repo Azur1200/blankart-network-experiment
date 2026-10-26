@@ -353,7 +353,7 @@ const char *const MOBJEFLAG_LIST[] = {
 	"JUSTBOUNCEDWALL",
 	"\x01",
 	"SLOPELAUNCHED",
-	"\x01",
+	"ALREADYHIT",
 	// eflags is only 16 bits wide...
 	"\x01",
 	"\x01",

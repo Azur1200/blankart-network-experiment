@@ -10797,7 +10797,7 @@ void P_MobjThinker(mobj_t *mobj)
 	if ((mobj->flags & MF_BOSS) && (bossdisabled & (1 << mobj->args[0])))
 		return;
 
-	mobj->eflags &= ~(MFE_PUSHED|MFE_SPRUNG|MFE_JUSTBOUNCEDWALL|MFE_SLOPELAUNCHED);
+	mobj->eflags &= ~(MFE_PUSHED|MFE_SPRUNG|MFE_JUSTBOUNCEDWALL|MFE_SLOPELAUNCHED|MFE_ALREADYHIT);
 
 	// sal: what the hell? is there any reason this isn't done, like, literally ANYWHERE else?
 	P_SetTarget(&g_tm.floorthing, NULL);

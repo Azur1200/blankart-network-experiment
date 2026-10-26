@@ -2371,6 +2371,10 @@ dboolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t
 					K_DoInstashield(player);
 					return false;
 				}
+				else if (target->eflags & MFE_ALREADYHIT) // do not deal extra damage in the same tic
+				{
+					return false;
+				}
 
 				// Alt. Shrink: Tank non-explosion hits, as long as you're in Arrow Bullet mode.
 				if ((explosioncombo == false) && (intercept == false) && (K_AltShrinkArrowBulletCondition(player)))
@@ -2651,6 +2655,8 @@ dboolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t
 
 			player->instashield = 15;
 
+			target->eflags |= MFE_ALREADYHIT;
+
 			return true;
 		}
 	}
@@ -2671,6 +2677,8 @@ dboolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t
 
 	if (source && source->player && target)
 		G_GhostAddHit((int32_t) (source->player - players), target);
+
+	target->eflags |= MFE_ALREADYHIT;
 
 	if (target->health <= 0)
 	{
