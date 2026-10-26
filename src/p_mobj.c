@@ -11002,7 +11002,9 @@ void P_MobjThinker(mobj_t *mobj)
 	if (mobj->flags & (MF_ENEMY|MF_BOSS) && mobj->health
 		&& P_CheckDeathPitCollide(mobj)) // extra pit check in case these didn't have momz
 	{
-		P_KillMobj(mobj, NULL, NULL, DMG_DEATHPIT);
+		dboolean validblame = (mobj->player && mobj->player->pitblame > -1);
+
+		P_DamageMobj(mobj, NULL, validblame ? players[mobj->player->pitblame].mo : NULL, 1, DMG_DEATHPIT);
 		return;
 	}
 

@@ -2093,6 +2093,12 @@ static dboolean P_KillPlayer(player_t *player, mobj_t *inflictor, mobj_t *source
 
 	P_ResetPlayer(player);
 
+	if (player->pitblame > -1)
+	{
+		K_TryHurtSoundExchange(player->mo, players[player->pitblame].mo);
+		player->pitblame = -1;
+	}
+
 	if (player->spectator == false)
 	{
 		player->mo->renderflags &= ~RF_DONTDRAW;
@@ -2435,6 +2441,14 @@ dboolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t
 			{
 				// Self hit; not a hazard
 				hithazard = false;
+			}
+
+			if (source && source != player->mo && source->player)
+			{
+				if (damagetype != DMG_DEATHPIT)
+				{
+					player->pitblame = source->player - players;
+				}
 			}
 
 			if (type == DMG_EXPLODE || type == DMG_KARMA || type == DMG_SQUISH ||

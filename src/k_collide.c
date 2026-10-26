@@ -921,15 +921,25 @@ dboolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2)
 		return false;
 	}
 
-	if (t2->player && !K_StrongPlayerBump(t2->player))
+	if (t2->player)
 	{
-		P_Thrust(t2, angle, momentum/2);
-	}
-	else
-	{
-		P_InstaThrust(t2, angle, momentum);
-		if (!t2->player)
-			t2->angle = angle;
+		if (!K_StrongPlayerBump(t2->player))
+		{
+			P_Thrust(t2, angle, momentum/2);
+		}
+		else
+		{
+			P_InstaThrust(t2, angle, momentum);
+			if (!t2->player)
+				t2->angle = angle;
+		}
+
+		if (owner->player)
+		{
+			// Set to 1 to allow bumping pitblame
+			t2->player->incontrol = 1;
+			t2->player->pitblame = owner->player - players;
+		}
 	}
 
 	if (K_BubbleReflectingTrapItem(t2) && (t2->momz * P_MobjFlip(t2) <= 8*t2->scale))

@@ -737,6 +737,8 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].flipovertimer);
 		SYNC(players[i].flipoverangle);
 		SYNC(players[i].squishedtimer);
+		SYNC(players[i].incontrol);
+		SYNC(players[i].pitblame);
 		SYNC(players[i].crash_state);
 		SYNC(players[i].crash_rot);
 		SYNC(players[i].crash_yaw);

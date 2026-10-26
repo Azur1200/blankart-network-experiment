@@ -1020,6 +1020,13 @@ static void K_SetPlayerBumped(player_t *player, mobj_t *comparemobj)
 	player->rmomx = player->mo->momx - player->cmomx;
 	player->rmomy = player->mo->momy - player->cmomy;
 	player->justbumped = bumptime;
+	// Set to 1 to allow bumping pitblame
+	player->incontrol = 1;
+
+	if (comparemobj->player)
+	{
+		player->pitblame = comparemobj->player - players;
+	}
 
 	if (comparemobj->player && player->ranklog.ijustgothitasshole < (7 * TICRATE))
 	{
@@ -8774,6 +8781,25 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->itemblinkmode = KITEMBLINK_NORMAL;
 		player->itemblink = 0;
 	}
+
+	if (P_PlayerInPain(player))
+	{
+		if (player->incontrol > 0)
+			player->incontrol = 0;
+		player->incontrol--;
+	}
+	else
+	{
+		if (player->incontrol < 0)
+			player->incontrol = 0;
+		player->incontrol++;
+	}
+
+	player->incontrol = min(player->incontrol, 5*TICRATE);
+	player->incontrol = max(player->incontrol, -5*TICRATE);
+
+	if (player->incontrol == 3*TICRATE)
+		player->pitblame = -1;
 
 	K_UpdateTripwire(player);
 

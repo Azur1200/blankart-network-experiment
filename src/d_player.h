@@ -782,6 +782,9 @@ struct player_t
 	uint16_t flipovertimer;   // Flipped over by a player.
 	angle_t flipoverangle;  // Movement angle for a flipped-over player.
 
+	int16_t incontrol; // -1 to -175 when in pain, 1 to 175 when not.
+	int8_t pitblame; // Index of last player that hit you, resets after being in control for a bit. If you deathpit, credit the old attacker!
+
 	crashstate_e crash_state; // Current state of the crash animation
 	uint16_t crashtimer;		// Crashing and tumbling due to an Orbinaut or other wipeout item
 	tic_t crash_elapsed;	// How long you've spent tumbling

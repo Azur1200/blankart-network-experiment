@@ -3546,6 +3546,8 @@ void G_PlayerReborn(int32_t player, dboolean betweenmaps)
 	p->ringtransparency = 255;
 	p->spinoutrot = 0;
 
+	p->pitblame = -1;
+
 	p->spectatorreentry = spectatorreentry;
 	p->grieftime = grieftime;
 	p->griefstrikes = griefstrikes;
