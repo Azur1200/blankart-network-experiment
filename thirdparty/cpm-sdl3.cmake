@@ -1,7 +1,7 @@
 CPMAddPackage(
 	NAME SDL3
-	VERSION 3.4.16
-	URL "https://github.com/libsdl-org/SDL/archive/refs/tags/release-3.4.16.zip"
+	VERSION 3.4.18
+	URL "https://github.com/libsdl-org/SDL/archive/refs/tags/release-3.4.18.zip"
 	EXCLUDE_FROM_ALL ON
 	OPTIONS
 		"BUILD_SHARED_LIBS ${SRB2_CONFIG_SHARED_INTERNAL_LIBRARIES}"
