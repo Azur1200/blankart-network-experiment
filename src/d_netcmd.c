@@ -10874,6 +10874,9 @@ static void HandleLiveSOC(dboolean hide, dboolean hell)
 		return;
 	}
 
+	Z_Free(realmapname);
+	Z_Free(mapname);
+
 	if (!Playing())
 	{
 		// Not in a netgame? Do it instantly.
@@ -10884,9 +10887,6 @@ static void HandleLiveSOC(dboolean hide, dboolean hell)
 	WRITEUINT16(p, mapnum);
 	WRITEUINT8(p, hide);
 	WRITEUINT8(p, hell);
-
-	Z_Free(realmapname);
-	Z_Free(mapname);
 
 	SendNetXCmd(XD_LIVESOC, buf, p - buf);
 }
