@@ -336,6 +336,7 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(crash_reorient_start) \
 	X(crash_rot) \
 	X(crash_bumpme) \
+	X(crash_speed) \
 	X(instashield) \
 	X(wipeoutslow) \
 	X(justbumped) \
@@ -431,6 +432,7 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(growshrinktimer) \
 	X(growcancel) \
 	X(squishedtimer) \
+	X(forceoldsquish) \
 	X(arrowbullet) \
 	X(inarrowbullet) \
 	X(rocketsneakertimer) \
@@ -501,7 +503,7 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(rankscorefactor) \
 	X(playerid) \
 	X(cansliptide) \
-	X(forceoldsquish)
+	X(pitblame)
 
 enum player_e
 {
@@ -706,6 +708,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_crash_bumpme:
 		lua_pushdboolean(L, plr->crash_bumpme);
+		break;
+	case player_crash_speed:
+		lua_pushinteger(L, plr->crash_speed);
 		break;
 	case player_instashield:
 		lua_pushinteger(L, plr->instashield);
@@ -997,6 +1002,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_squishedtimer:
 		lua_pushinteger(L, plr->squishedtimer);
+		break;
+	case player_forceoldsquish:
+		lua_pushdboolean(L, plr->forceoldsquish);
 		break;
 	case player_arrowbullet:
 		LUA_PushUserdata(L, plr->arrowbullet, META_MOBJ);
@@ -1360,8 +1368,8 @@ static int player_get(lua_State *L)
 	case player_cansliptide:
 		lua_pushdboolean(L, plr->cansliptide);
 		break;
-	case player_forceoldsquish:
-		lua_pushdboolean(L, plr->forceoldsquish);
+	case player_pitblame:
+		lua_pushinteger(L, plr->pitblame);
 		break;
 #ifdef HWRENDER
 	case player_fovadd:
@@ -1614,6 +1622,9 @@ static int player_set(lua_State *L)
 		break;
 	case player_crash_bumpme:
 		plr->crash_bumpme = luaL_checkdboolean(L, 3);
+		break;
+	case player_crash_speed:
+		plr->crash_speed = luaL_checkinteger(L, 3);
 		break;
 	case player_instashield:
 		plr->instashield = luaL_checkinteger(L, 3);
@@ -1920,6 +1931,9 @@ static int player_set(lua_State *L)
 		plr->squishedtimer = squishtimer;
 		break;
 	}
+	case player_forceoldsquish:
+		plr->forceoldsquish = lua_todboolean(L, 3);
+		break;
 	case player_arrowbullet:
 		return NOSET;
 	case player_inarrowbullet:
@@ -2252,8 +2266,8 @@ static int player_set(lua_State *L)
 	case player_cansliptide:
 		plr->cansliptide = lua_todboolean(L, 3);
 		break;
-	case player_forceoldsquish:
-		plr->forceoldsquish = lua_todboolean(L, 3);
+	case player_pitblame:
+		plr->pitblame = lua_tointeger(L, 3);
 		break;
 #ifdef HWRENDER
 	case player_fovadd:
