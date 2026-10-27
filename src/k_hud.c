@@ -7209,38 +7209,42 @@ void K_drawKartHUD(void)
 		K_drawKartItem();
 
 	// If not splitscreen, draw...
-	if (!r_splitscreen && !demo.title && gametype != GT_FREEROAM)
+	if (!r_splitscreen && !demo.title)
 	{
-		// Draw the timestamp
-		// this branching code sucks now gotta fix later :,)
-		if (LUA_HudEnabled(hud_time))
+		if (gametype != GT_FREEROAM)
 		{
-			if (!(K_GetRaceSplitsToggle() || K_doDrawSplits()))
+			// Draw the timestamp
+			// this branching code sucks now gotta fix later :,)
+			if (LUA_HudEnabled(hud_time))
 			{
-				K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap-1, 0);
-			}
-			else
-			{
-				// Draw splits
-				if (cv_lapemblemmode.value)
+				if (!(K_GetRaceSplitsToggle() || K_doDrawSplits()))
 				{
-					if (K_doDrawSplits())
-						K_drawLapSplitTimestamp();
-					else
-						K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap-1, 0);
+					K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap-1, 0);
 				}
 				else
 				{
-					K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap-1, 0);
-					// mine: moved this here to avoid redundant comparisions
-					K_drawLapSplitComparison();
+					// Draw splits
+					if (cv_lapemblemmode.value)
+					{
+						if (K_doDrawSplits())
+							K_drawLapSplitTimestamp();
+						else
+							K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap-1, 0);
+					}
+					else
+					{
+						K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap-1, 0);
+						// mine: moved this here to avoid redundant comparisions
+						K_drawLapSplitComparison();
+					}
 				}
 			}
+
+			islonesome = K_drawKartPositionFaces();
+
+			RR_drawRidersFinishTicker();
 		}
 
-		islonesome = K_drawKartPositionFaces();
-
-		RR_drawRidersFinishTicker();
 		RR_DrawHudFeed();
 	}
 
