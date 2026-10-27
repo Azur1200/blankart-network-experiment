@@ -500,7 +500,8 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(ranklog) \
 	X(rankscorefactor) \
 	X(playerid) \
-	X(cansliptide)
+	X(cansliptide) \
+	X(forceoldsquish)
 
 enum player_e
 {
@@ -1358,6 +1359,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_cansliptide:
 		lua_pushdboolean(L, plr->cansliptide);
+		break;
+	case player_forceoldsquish:
+		lua_pushdboolean(L, plr->forceoldsquish);
 		break;
 #ifdef HWRENDER
 	case player_fovadd:
@@ -2247,6 +2251,9 @@ static int player_set(lua_State *L)
 		break;
 	case player_cansliptide:
 		plr->cansliptide = lua_todboolean(L, 3);
+		break;
+	case player_forceoldsquish:
+		plr->forceoldsquish = lua_todboolean(L, 3);
 		break;
 #ifdef HWRENDER
 	case player_fovadd:

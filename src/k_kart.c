@@ -4517,6 +4517,7 @@ void K_SquishPlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 	{
 		player->mo->momx = 0;
 		player->mo->momy = 0;
+		player->forceoldsquish = true;
 		if (source)
 		{
 			K_SetPlayerBumped(player, source);
@@ -8970,12 +8971,14 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			// le no clipping cheat.
 			player->mo->flags &= ~MF_NOCLIP;
 		}
+
+		player->forceoldsquish = false;
 	}
 	else
 	{
-		player->mo->flags |= MF_NOCLIP;
-		if (!cv_kartfloatysquish.value)
+		if (!cv_kartfloatysquish.value || player->forceoldsquish)
 		{
+			player->mo->flags |= MF_NOCLIP;
 			player->mo->momx = 0;
 			player->mo->momy = 0;
 		}

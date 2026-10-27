@@ -962,6 +962,7 @@ struct player_t
 	int16_t growshrinktimer;			// > 0 = Big, < 0 = small
 	int16_t growcancel;				// Duration of grow canceling
 	int16_t squishedtimer;			// Duration of being squished
+	dboolean forceoldsquish;		// Forces old squish regardless of floaty squish status
 
 	int16_t altshrinktimeshit;		// (Alt. Shrink) How many times were you flipped over while shrunk?
 	dboolean inarrowbullet;			// (Alt. Shrink) Are we in the Arrow Bullet state?
