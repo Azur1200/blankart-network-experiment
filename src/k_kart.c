@@ -4482,11 +4482,9 @@ void K_RemoveGrowShrink(player_t *player)
 
 void K_SquishPlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 {
-	(void)source;
-
 	if (player->crash_state)
 	{
-		// Getting squished while crashing; kill the crash and let explosion damage take over
+		// Getting squished while crashing; kill the crash and let squish damage take over
 		K_ResetCrashData(player);
 		K_ResetCrashOffsetData(player);
 	}
@@ -4510,13 +4508,19 @@ void K_SquishPlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 		
 		player->mo->momx = (inflictor->momx / 10) + (player->mo->momx / 3);
 		player->mo->momy = (inflictor->momy / 10) + (player->mo->momy / 3);
-		K_SetPlayerBumped(player, source);
+		if (source)
+		{
+			K_SetPlayerBumped(player, source);
+		}
 	}
 	else
 	{
 		player->mo->momx = 0;
 		player->mo->momy = 0;
-		K_SetPlayerBumped(player, source);
+		if (source)
+		{
+			K_SetPlayerBumped(player, source);
+		}
 	}
 
 	player->mo->flags |= MF_NOCLIP;
