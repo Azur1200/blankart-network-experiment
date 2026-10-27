@@ -10785,7 +10785,7 @@ void Got_DiscordInfo(uint8_t **p, int32_t playernum)
 #undef VOTEROWSADDSONE
 
 
-static void HandleLevelHide(mapnum_t mapnum, dboolean hide, dboolean hell)
+static void HandleLevelHide(mapnum_t mapnum, dboolean hide, dboolean hell, dboolean notify)
 {
 	const char *mapname = G_BuildMapName(mapnum);
 
@@ -10794,12 +10794,18 @@ static void HandleLevelHide(mapnum_t mapnum, dboolean hide, dboolean hell)
 		if (hide == 1)
 		{
 			mapheaderinfo[mapnum-1]->menuflags |= LF2_HIDEINMENU;
-			CONS_Alert(CONS_NOTICE, "%s has been sent to hell.\n", mapname);
+			if (notify)
+			{
+				CONS_Alert(CONS_NOTICE, "%s has been sent to hell.\n", mapname);
+			}
 		}
 		else
 		{
 			mapheaderinfo[mapnum-1]->menuflags &= ~LF2_HIDEINMENU;
-			CONS_Alert(CONS_NOTICE, "%s has been freed from hell.\n", mapname);
+			if (notify)
+			{
+				CONS_Alert(CONS_NOTICE, "%s has been freed from hell.\n", mapname);
+			}
 		}
 	}
 	else
@@ -10807,12 +10813,18 @@ static void HandleLevelHide(mapnum_t mapnum, dboolean hide, dboolean hell)
 		if (hide == 1)
 		{
 			mapheaderinfo[mapnum-1]->menuflags |= LF2_HIDEINVOTE;
-			CONS_Alert(CONS_NOTICE, "%s has been hidden.\n", mapname);
+			if (notify)
+			{
+				CONS_Alert(CONS_NOTICE, "%s has been hidden.\n", mapname);
+			}
 		}
 		else
 		{
 			mapheaderinfo[mapnum-1]->menuflags &= ~LF2_HIDEINVOTE;
-			CONS_Alert(CONS_NOTICE, "%s has been unhidden.\n", mapname);
+			if (notify)
+			{
+				CONS_Alert(CONS_NOTICE, "%s has been unhidden.\n", mapname);
+			}
 		}
 	}
 
@@ -10831,9 +10843,12 @@ static void HandleLiveSOC(dboolean hide, dboolean hell)
 	char *p = buf;
 
 	size_t first_option = 0;
+	size_t option_hidenotification = 0;
 	mapnum_t mapnum = NEXTMAP_INVALID;
 	char *mapname = NULL;
 	char *realmapname = NULL;
+
+	option_hidenotification = COM_CheckPartialParm("-h");
 
 	if (!(first_option = COM_FirstOption()))
 		first_option = COM_Argc();
@@ -10842,12 +10857,12 @@ static void HandleLiveSOC(dboolean hide, dboolean hell)
 	{
 		if (hell)
 		{
-			CONS_Printf("%s <name / number>:\n", hide ? "hellmap" : "unhellmap");
+			CONS_Printf("%s <name / number> [-hide]:\n", hide ? "hellmap" : "unhellmap");
 			CONS_Printf("%s a map, by its name, two character code, with optional \"MAP\" prefix, or by its number (though why would you).\n", hide ? "Hell" : "Unhell");
 		}
 		else
 		{
-			CONS_Printf("%s <name / number>:\n", hide ? "hidemap" : "unhidemap");
+			CONS_Printf("%s <name / number> [-hide]:\n", hide ? "hidemap" : "unhidemap");
 			CONS_Printf("%s a map, by its name, two character code, with optional \"MAP\" prefix, or by its number (though why would you).\n", hide ? "Hide" : "Unhide");
 		}
 
@@ -10880,13 +10895,14 @@ static void HandleLiveSOC(dboolean hide, dboolean hell)
 	if (!Playing())
 	{
 		// Not in a netgame? Do it instantly.
-		HandleLevelHide(mapnum, hide, hell);
+		HandleLevelHide(mapnum, hide, hell, option_hidenotification ? false : true);
 		return;
 	}
 
 	WRITEUINT16(p, mapnum);
 	WRITEUINT8(p, hide);
 	WRITEUINT8(p, hell);
+	WRITEUINT8(p, option_hidenotification ? false : true);
 
 	SendNetXCmd(XD_LIVESOC, buf, p - buf);
 }
@@ -10914,8 +10930,10 @@ static void Command_UnhellMap_f(void)
 static void Got_LiveSoc(uint8_t **cp, int32_t playernum)
 {
 	mapnum_t mapnum = READUINT16(*cp);
-	uint8_t hide = READUINT8(*cp);
-	uint8_t hell = READUINT8(*cp);
+	dboolean hide = READUINT8(*cp);
+	dboolean hell = READUINT8(*cp);
+	dboolean notify = READUINT8(*cp);
+
 
 	if (playernum != serverplayer && !IsPlayerAdmin(playernum))
 	{
@@ -10937,5 +10955,5 @@ static void Got_LiveSoc(uint8_t **cp, int32_t playernum)
 		return;
 	}
 
-	HandleLevelHide(mapnum, hide, hell);
+	HandleLevelHide(mapnum, hide, hell, notify);
 }
