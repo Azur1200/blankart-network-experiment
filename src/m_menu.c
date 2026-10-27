@@ -9174,7 +9174,7 @@ void MD_DrawConnectMenu(menupanelinst_t *pi)
 		mservflags = mservflags|highlightflags|V_30TRANS;
 	else
 		mservflags = mservflags|warningflags;
-	V_DrawRightAlignedSmallString(BASEVIDWIDTH - pi->x/FRACUNIT, pi->y/FRACUNIT + 3 + M_GetMenuItem(pi, "REFRESH")->y,
+	V_DrawRightAlignedSmallString(BASEVIDWIDTH - pi->x/FRACUNIT, pi->y/FRACUNIT + 3 + M_GetMenuItem(pi, "REFRESH")->y/FRACUNIT,
 								  mservflags, va("MS: %s", cv_masterserver.string));
 
 	// When switching pages, slide the old page and the
