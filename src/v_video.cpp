@@ -1327,7 +1327,7 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 
 		// top offset
 		if (scrn & V_VFLIP)
-			offsety = FixedMul((patch->height - patch->topoffset)<<FRACBITS, vscale) + 1;
+			offsety = FixedMul((patch->height - patch->topoffset)<<FRACBITS, vscale);
 		else
 			offsety = FixedMul(patch->topoffset<<FRACBITS, vscale);
 
@@ -1415,6 +1415,12 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 					dest = desttop;
 					if (scrn & V_FLIP)
 						dest = deststart + (destend - dest);
+
+					if (scrn & V_VFLIP)
+					{
+						topdelta = patch->height - topdelta - column->length;
+					}
+
 					topdelta = FixedInt(FixedMul(topdelta << FRACBITS, vdup));
 					dest += topdelta * vidwidth;
 
@@ -1491,6 +1497,12 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 					dest = desttop;
 					if (scrn & V_FLIP)
 						dest = deststart + (destend - dest);
+
+					if (scrn & V_VFLIP)
+					{
+						topdelta = patch->height - topdelta - column->length;
+					}
+
 					topdelta = FixedInt(FixedMul(topdelta << FRACBITS, vdup));
 					dest += topdelta * vidwidth;
 
@@ -1567,6 +1579,12 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 					dest = desttop;
 					if (scrn & V_FLIP)
 						dest = deststart + (destend - dest);
+
+					if (scrn & V_VFLIP)
+					{
+						topdelta = patch->height - topdelta - column->length;
+					}
+
 					topdelta = FixedInt(FixedMul(topdelta << FRACBITS, vdup));
 					dest += topdelta * vidwidth;
 
@@ -1629,7 +1647,7 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 				}
 				break;
 
-				case TRANSLUCENTDRAW:
+			case TRANSLUCENTDRAW:
 				while (column->topdelta != 0xff)
 				{
 					fixed_t offy = 0;
@@ -1643,6 +1661,12 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 					dest = desttop;
 					if (scrn & V_FLIP)
 						dest = deststart + (destend - dest);
+
+					if (scrn & V_VFLIP)
+					{
+						topdelta = patch->height - topdelta - column->length;
+					}
+
 					topdelta = FixedInt(FixedMul(topdelta << FRACBITS, vdup));
 					dest += topdelta * vidwidth;
 
