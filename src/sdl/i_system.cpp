@@ -141,7 +141,6 @@ typedef LPVOID (WINAPI *p_MapViewOfFile) (HANDLE, DWORD, DWORD, DWORD, SIZE_T);
 #if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
 #include <execinfo.h>
 #include <time.h>
-#define UNIXBACKTRACE
 #endif
 
 const char *wadDefaultPaths[] = {
@@ -194,6 +193,7 @@ static char returnWadPath[256];
 #include "../s_sound.h"
 #include "../r_voicepreference.hpp"
 #include "../core/thread_pool.h"
+#include "../z_zone.h"
 #include "endtxt.h"
 #include "sdlmain.h"
 
@@ -228,70 +228,188 @@ bool framebuffer = false;
 uint8_t keyboard_started = false;
 static volatile sig_atomic_t g_in_exiting_signal_handler = false;
 
-#ifdef UNIXBACKTRACE
-#define STDERR_WRITE(string) if (fd != -1) I_OutputMsg("%s", string)
-#define CRASHLOG_WRITE(string) if (fd != -1) write(fd, string, strlen(string))
-#define CRASHLOG_STDERR_WRITE(string) \
-	if (fd != -1)\
-		write(fd, string, strlen(string));\
-	I_OutputMsg("%s", string)
+static void I_PrintSignal(int32_t signal_num, dboolean core_dumped, char *signal_msg, char *signal_name);
 
-static void write_backtrace(int32_t signal)
-{
-	int fd = -1;
+#ifdef HAVE_LIBBACKTRACE
+#include <backtrace.h>
+// TODO - move this to some header file instead
+extern struct backtrace_state *bt_state;
+
+typedef enum {
+	BTCRASH_SIGNAL,
+	BTCRASH_ERRORMSG,
+} bt_crash_type_t;
+
+typedef struct bt_crash_reason_s {
+	bt_crash_type_t type;
+
+	union {
+		int32_t signal;
+		const char *errormsg;
+	} value;
+} bt_crash_reason_t;
+
+#define BT_CRASH_REASON_SIGNAL(num) (bt_crash_reason_t){ .type = BTCRASH_SIGNAL, .value = { .signal = num } }
+#define BT_CRASH_REASON_ERRORMSG(msg) (bt_crash_reason_t){ .type = BTCRASH_ERRORMSG, .value = { .errormsg = msg } }
+
+typedef struct bt_out_buf_s {
+	dboolean error;
+	char *pos;
 	size_t size;
+} bt_out_buf_t;
+
+static void bt_syminfo_cb(void *data, uintptr_t pc, const char *symname, uintptr_t symval, uintptr_t symsize)
+{
+	(void)symval;
+	(void)symsize;
+
+	bt_out_buf_t *buf = (bt_out_buf_t*)data;
+
+	if (!symname)
+		symname = "???";
+
+	int n = snprintf(buf->pos, buf->size, "%p %s\n", (void*)pc, symname);
+
+	if (n <= 0)
+	{
+		buf->size = 0;
+		return;
+	}
+
+	buf->pos += n;
+	buf->size -= n;
+}
+
+static int bt_simple_cb(void *data, uintptr_t pc)
+{
+	bt_out_buf_t *buf = (bt_out_buf_t*)data;
+
+	backtrace_syminfo(bt_state, pc, bt_syminfo_cb, NULL, data);
+
+	if (!buf->size) return 1;
+
+	return 0;
+}
+
+static int bt_full_cb(void *data, uintptr_t pc, const char *filename, int lineno, const char *function)
+{
+	bt_out_buf_t *buf = (bt_out_buf_t*)data;
+
+	if (!filename) filename = "???";
+	if (!function) function = "???";
+
+	int n = snprintf(buf->pos, buf->size, "%p %s\n\t%s:%d\n", (void*)pc, function, filename, lineno);
+
+	if (n <= 0) return 1;
+
+	buf->pos += n;
+	buf->size -= n;
+
+	if (!buf->size) return 1;
+
+	return 0;
+}
+
+static void bt_error_cb(void *data, const char *msg, int errnum)
+{
+	(void)msg; // We don't need this
+
+	bt_out_buf_t *buf = (bt_out_buf_t*)data;
+
+	// No debug info
+	if (errnum == -1)
+		buf->error = true;
+}
+
+static void write_backtrace(bt_crash_reason_t reason)
+{
+	char sig_msg[512];
+	char sig_name[128];
+	const char *filename = va("%s" PATHSEP CRASH_LOGFILE_NAME, srb2home);
+	FILE *out = fopen(filename, "a+");
+
 	time_t rawtime;
-	struct tm timeinfo;
+	struct tm *timeinfo;
 
-	enum { BT_SIZE = 1024, STR_SIZE = 32 };
-	void *array[BT_SIZE];
-	char timestr[STR_SIZE];
+	const size_t BUFSIZE = 8192;
+	char backtrace[BUFSIZE];
 
-	const char *error = "An error occurred within BlanKart! Send this stack trace to someone who can help!\n";
-	const char *error2 = "(Or find crash-log.txt in your BlanKart directory.)\n"; // Shown only to stderr.
+	bt_out_buf_t buf;
+	buf.error = false;
+	buf.pos = backtrace;
+	buf.size = BUFSIZE;
 
-	fd = open(va("%s" PATHSEP "%s", srb2home, "crash-log.txt"), O_CREAT|O_APPEND|O_RDWR, S_IRUSR|S_IWUSR);
-
-	if (fd == -1)
-		I_OutputMsg("\nWARNING: Couldn't open crash log for writing! Make sure your permissions are correct. Please save the below report!\n");
+	if (!out)
+	{
+		fprintf(stderr, "\nWARNING: Couldn't open crash log for writing! Make sure your permissions are correct. Please save the below report!\n");
+		out = stderr;
+	}
 
 	// Get the current time as a string.
 	time(&rawtime);
-	localtime_r(&rawtime, &timeinfo);
-	strftime(timestr, STR_SIZE, "%a, %d %b %Y %T %z", &timeinfo);
+	timeinfo = localtime(&rawtime);
 
-	CRASHLOG_WRITE("------------------------\n"); // Nice looking seperator
+	fprintf(out, "------------------------\n\n");
 
-	CRASHLOG_STDERR_WRITE("\n"); // Newline to look nice for both outputs.
-	CRASHLOG_STDERR_WRITE(error); // "Oops, SRB2 crashed" message
-	STDERR_WRITE(error2); // Tell the user where the crash log is.
+	fprintf(out, "Program name: BlanKart %s\n", /*VERSIONSTRING*/ "Indev");
 
-	// Tell the log when we crashed.
-	CRASHLOG_WRITE("Time of crash: ");
-	CRASHLOG_WRITE(timestr);
-	CRASHLOG_WRITE("\n");
+	fprintf(out, "Platform: %s\n", I_GetSysName());
 
-	// Give the crash log the cause and a nice 'Backtrace:' thing
-	// The signal is given to the user when the parent process sees we crashed.
-	CRASHLOG_WRITE("Cause: ");
-	CRASHLOG_WRITE(strsignal(signal));
-	CRASHLOG_WRITE("\n"); // Newline for the signal name
+	if (compdate && comptime && comprevision && compbranch)
+		fprintf(out, "Compiled: %s %s, commit %s, branch %s\n", compdate, comptime, comprevision, compbranch);
 
-	CRASHLOG_STDERR_WRITE("\nBacktrace:\n");
+	if (gamestate == GS_LEVEL && gamemap)
+	{
+		char *map_title = G_BuildMapTitle(gamemap);
+		const char *map_name = G_BuildMapName(gamemap);
 
-	// Flood the output and log with the backtrace
-	size = backtrace(array, BT_SIZE);
-	backtrace_symbols_fd(array, size, fd);
-	backtrace_symbols_fd(array, size, STDERR_FILENO);
+		if (map_title && map_name)
+		{
+			fprintf(out, "Game map: %s (%s)\n", map_title, map_name);
+			Z_Free(map_title);
+		}
+		else if (map_name)
+		{
+			fprintf(out, "Game map: %s\n", map_name);
+		}
+	}
 
-	CRASHLOG_WRITE("\n"); // Write another newline to the log so it looks nice :)
+	fprintf(out, "Time of crash: %s\n", asctime(timeinfo));
 
-	close(fd);
+	fprintf(out, "Caused by: ");
+
+	switch (reason.type)
+	{
+		case BTCRASH_SIGNAL:
+			I_PrintSignal(reason.value.signal, false, sig_msg, sig_name);
+			fprintf(out, "%s - %s", sig_name, sig_msg);
+			break;
+
+		case BTCRASH_ERRORMSG:
+			fprintf(out, "%s", reason.value.errormsg);
+			break;
+	}
+
+	fprintf(out, "\nBacktrace:\n");
+
+	// Try to get full backtrace, it will print files and line numbers
+	backtrace_full(bt_state, 2, bt_full_cb, bt_error_cb, (void*)&buf);
+
+	if (buf.error)
+	{
+		// Fall back to simple backtrace, only prints function names
+		backtrace_simple(bt_state, 2, bt_simple_cb, NULL, (void*)&buf);
+	}
+
+	fputs(backtrace, out);
+
+	if (out != stderr)
+	{
+		fclose(out);
+		fprintf(stderr, "Crash report created, find %s in your BlanKart directory\n", CRASH_LOGFILE_NAME);
+	}
 }
-#undef STDERR_WRITE
-#undef CRASHLOG_WRITE
-#undef CRASHLOG_STDERR_WRITE
-#endif // UNIXBACKTRACE
+#endif
 
 static void I_ShowErrorMessageBox(const char *messagefordevelopers, dboolean dumpmade)
 {
@@ -309,13 +427,7 @@ static void I_ShowErrorMessageBox(const char *messagefordevelopers, dboolean dum
 			"\n"
 			"\n"
 			"%s",
-		dumpmade ?
-#if defined (UNIXBACKTRACE)
-			"crash-log.txt "
-#elif defined (_WIN32)
-			".rpt crash dump "
-#endif
-			: "",
+			CRASH_LOGFILE_NAME,
 		logfilename,
 		messagefordevelopers);
 
@@ -375,58 +487,95 @@ static void I_ShowErrorMessageBox(const char *messagefordevelopers, dboolean dum
 	// in case the fullscreen window blocks it for some absurd reason.
 }
 
-static void I_ReportSignal(int num, int coredumped)
+static void I_PrintSignal(int32_t signal_num, dboolean core_dumped, char *signal_msg, char *signal_name)
 {
-	//static char msg[] = "oh no! back to reality!\r\n";
-	const char *      sigmsg;
-	char msg[128];
+	const char *sigmsg, *signame;
 
-	switch (num)
+	switch (signal_num)
 	{
-//	case SIGINT:
-//		sigmsg = "SIGINT - interrupted";
-//		break;
-	case SIGILL:
-		sigmsg = "SIGILL - illegal instruction - invalid function image";
-		break;
-	case SIGFPE:
-		sigmsg = "SIGFPE - mathematical exception";
-		break;
-	case SIGSEGV:
-		sigmsg = "SIGSEGV - segment violation";
-		break;
-//	case SIGTERM:
-//		sigmsg = "SIGTERM - Software termination signal from kill";
-//		break;
-//	case SIGBREAK:
-//		sigmsg = "SIGBREAK - Ctrl-Break sequence";
-//		break;
-	case SIGABRT:
-		sigmsg = "SIGABRT - abnormal termination triggered by abort call";
-		break;
-	default:
-		snprintf(msg, sizeof(msg),"signal number %d", num);
-		if (coredumped)
-			sigmsg = 0;
-		else
-			sigmsg = msg;
+#ifdef SIGINT
+		case SIGINT:
+			sigmsg = ("SRB2Kart-Saturn was interrupted prematurely by the user.");
+			signame = "SIGINT";
+			break;
+#endif
+		case SIGILL: // illegal instruction - invalid function image
+			sigmsg = ("SRB2Kart-Saturn has attempted to execute an illegal instruction and needs to close.");
+			signame = "SIGILL";
+			break;
+		case SIGFPE: // mathematical exception
+			sigmsg = ("SRB2Kart-Saturn has encountered a mathematical exception and needs to close.");
+			signame = "SIGFPE";
+			break;
+		case SIGSEGV: // segment violation
+			sigmsg = ("SRB2Kart-Saturn has attempted to access a memory location that it shouldn't and needs to close.");
+			signame = "SIGSEGV";
+			break;
+#ifdef SIGTERM
+		case SIGTERM: // Software termination signal from terminate
+			sigmsg = ("SRB2Kart-Saturn was terminated by a terminate signal.");
+			signame = "SIGTERM";
+			break;
+#endif
+#ifdef SIGKILL
+		case SIGKILL: // Software termination signal from kill
+			sigmsg = ("SRB2Kart-Saturn was terminated by a kill signal.");
+			signame = "SIGKILL";
+			break;
+#endif
+#ifdef SIGBREAK
+		case SIGBREAK: // Ctrl-Break sequence
+			sigmsg =("SIGBREAK - SRB2Kart-Saturn was terminated by a Ctrl-Break sequence.");
+			signame = "SIGBREAK";
+			break;
+#endif
+		case SIGABRT: // abnormal termination triggered by abort call
+			sigmsg = ("SRB2Kart-Saturn was terminated by an abort signal.");
+			signame = "SIGABRT";
+			break;
+		default:
+			sigmsg = "SRB2Kart-Saturn was terminated by an unknown signal.";
+			signame = core_dumped ? "Unknown signal" : va("Signal number %d", signal_num);
+			break;
 	}
 
-	if (coredumped)
+	if (core_dumped)
 	{
 		if (sigmsg)
-			strcpy(msg, sigmsg);
-		strcat(msg, " (core dumped)");
-
-		sigmsg = msg;
+		{
+			snprintf(signal_msg, 512, "%s (core dumped)", sigmsg);
+		}
+		else
+		{
+			strcat(signal_msg, " (core dumped)");
+		}
+	}
+	else
+	{
+		snprintf(signal_msg, 512, "%s", sigmsg);
 	}
 
-	I_OutputMsg("\nProcess killed by signal: %s\n\n", sigmsg);
+	snprintf(signal_name, 128, "%s", signame);
+}
 
+static void I_ReportSignal(int num, int coredumped)
+{
+	char sigmsg[512];
+	char signame[128];
+	char sigttl[512] = "Process killed by signal: ";
+
+	I_PrintSignal(num, coredumped, sigmsg, signame);
+
+	size_t len = strlen(sigmsg);
+	snprintf(sigmsg + len, sizeof(sigmsg) - len, "\n\nCrash report has been saved into %s", CRASH_LOGFILE_NAME);
+
+	strcat(sigttl, signame);
+	I_OutputMsg("\n%s\n\n", sigttl);
+	//I_ShowSimpleErrorBox(sigttl, sigmsg);
 	I_ShowErrorMessageBox(sigmsg,
-#if defined (UNIXBACKTRACE)
+#if defined (HAVE_LIBBACKTRACE)
 		true
-#elif defined (_WIN32)
+#elif defined (DRMINGW)
 		!M_CheckParm("-noexchndl")
 #else
 		false
@@ -454,8 +603,8 @@ static ATTRNORETURN void signal_handler(int32_t num)
 
 	D_QuitNetGame(); // Fix server freezes
 	CL_AbortDownloadResume();
-#ifdef UNIXBACKTRACE
-	write_backtrace(num);
+#ifdef HAVE_LIBBACKTRACE
+	write_backtrace(BT_CRASH_REASON_SIGNAL(num));
 #endif
 	I_ReportSignal(num, 0);
 	signal(num, SIG_DFL);               //default signal action
@@ -856,8 +1005,8 @@ static void I_RegisterSignals (void)
 #ifdef NEWSIGNALHANDLER
 static void signal_handler_child(int32_t num)
 {
-#ifdef UNIXBACKTRACE
-	write_backtrace(num);
+#ifdef HAVE_LIBBACKTRACE
+	write_backtrace(BT_CRASH_REASON_SIGNAL(num));
 #endif
 
 	signal(num, SIG_DFL);               //default signal action
@@ -1626,6 +1775,10 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 	I_OutputMsg("\nI_Error(): %s\n", buffer);
 	// ---
 
+#ifdef HAVE_LIBBACKTRACE
+	write_backtrace(BT_CRASH_REASON_ERRORMSG(buffer));
+#endif
+
 	if (initedvoiceprefs)
 		R_SaveVoicePreferences();
 
@@ -2303,6 +2456,11 @@ uint32_t I_GetFreeMem(uint32_t *total)
 		*total = 48<<20;
 	return 48<<20;
 #endif
+}
+
+const char *I_GetSysName(void)
+{
+	return SDL_GetPlatform();
 }
 
 #endif // HAVE_SDL

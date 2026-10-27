@@ -66,6 +66,14 @@ extern char logfilename[1024];
 
 #define BOOTDEVNAG
 
+#if defined (HAVE_LIBBACKTRACE)
+#define CRASH_LOGFILE_NAME "blankart-crash-log.txt"
+#elif defined (HAVE_DRMINGW)
+#define CRASH_LOGFILE_NAME "blankart-crash-log.RPT"
+#else
+#define CRASH_LOGFILE_NAME "(unknown crash log)"
+#endif
+
 #define BLANNAME "BlanKart"
 
 /* A mod name to further distinguish versions. */

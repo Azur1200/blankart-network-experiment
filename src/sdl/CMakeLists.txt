@@ -127,6 +127,10 @@ else()
 	endif()
 endif()
 
+if(${SRB2_HAVE_LIBBACKTRACE})
+		target_link_libraries(BLANKART PRIVATE ${LIBBACKTRACE_LIBRARIES})
+endif()
+
 # Mac bundle fixup
 # HACK: THIS IS IMPORTANT! See the escaped \${CMAKE_INSTALL_PREFIX}? This
 # makes it so that var is evaluated LATER during cpack, not right now!
