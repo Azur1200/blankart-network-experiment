@@ -115,6 +115,7 @@ static void Got_MapQueuecmd(uint8_t **cp, int32_t playernum);
 static void Got_Cheat(uint8_t **cp, int32_t playernum);
 static void Got_ClanTagSet(uint8_t **cp, int32_t playernum);
 static void Got_ClanTagClear(uint8_t **cp, int32_t playernum);
+static void Got_LiveSoc(uint8_t **cp, int32_t playernum);
 
 static void PointLimit_OnChange(void);
 static void TimeLimit_OnChange(void);
@@ -312,6 +313,12 @@ static void Got_PlaySound(uint8_t **cp, int32_t playernum);
 static void Command_WriteTextmap(void);
 
 static void Command_Eval(void);
+
+static void Command_HideMap_f(void);
+static void Command_UnhideMap_f(void);
+static void Command_HellMap_f(void);
+static void Command_UnhellMap_f(void);
+
 
 // =========================================================================
 //                           CLIENT VARIABLES
@@ -1181,6 +1188,7 @@ const char *netxcmdnames[MAXNETXCMD - 1] =
 	"MAPQUEUE", // XD_MAPQUEUE
 	"CLANTAGSET", // XD_CLANTAGSET
 	"CLANTAGCLEAR", // XD_CLANTAGCLEAR
+	"LIVESOC", // XD_LIVESOC
 };
 
 // =========================================================================
@@ -1462,6 +1470,13 @@ void D_RegisterServerCommands(void)
 	// player restat
 	CV_RegisterVar(&cv_allowrestat);
 	CV_RegisterVar(&cv_notifyrestat);
+
+	// Live-SOC
+	RegisterNetXCmd(XD_LIVESOC, Got_LiveSoc);
+	COM_AddCommand("hidemap", Command_HideMap_f);
+	COM_AddCommand("unhidemap", Command_UnhideMap_f);
+	COM_AddCommand("hellmap", Command_HellMap_f);
+	COM_AddCommand("unhellmap", Command_UnhellMap_f);
 }
 
 // =========================================================================
@@ -10768,3 +10783,159 @@ void Got_DiscordInfo(uint8_t **p, int32_t playernum)
 
 #undef VOTEROWS
 #undef VOTEROWSADDSONE
+
+
+static void HandleLevelHide(mapnum_t mapnum, dboolean hide, dboolean hell)
+{
+	const char *mapname = G_BuildMapName(mapnum);
+
+	if (hell)
+	{
+		if (hide == 1)
+		{
+			mapheaderinfo[mapnum-1]->menuflags |= LF2_HIDEINMENU;
+			CONS_Alert(CONS_NOTICE, "%s has been sent to hell.\n", mapname);
+		}
+		else
+		{
+			mapheaderinfo[mapnum-1]->menuflags &= ~LF2_HIDEINMENU;
+			CONS_Alert(CONS_NOTICE, "%s has been freed from hell.\n", mapname);
+		}
+	}
+	else
+	{
+		if (hide == 1)
+		{
+			mapheaderinfo[mapnum-1]->menuflags |= LF2_HIDEINVOTE;
+			CONS_Alert(CONS_NOTICE, "%s has been hidden.\n", mapname);
+		}
+		else
+		{
+			mapheaderinfo[mapnum-1]->menuflags &= ~LF2_HIDEINVOTE;
+			CONS_Alert(CONS_NOTICE, "%s has been unhidden.\n", mapname);
+		}
+	}
+
+	M_UpdatePlatterList();
+}
+
+static void HandleLiveSOC(dboolean hide, dboolean hell)
+{
+	if (client && !IsPlayerAdmin(consoleplayer))
+	{
+		CONS_Printf(M_GetText("Only the server or a remote admin can use this.\n"));
+		return;
+	}
+
+	char buf[8];
+	char *p = buf;
+
+	size_t first_option = 0;
+	mapnum_t mapnum = NEXTMAP_INVALID;
+	char *mapname = NULL;
+	char *realmapname = NULL;
+
+	if (!(first_option = COM_FirstOption()))
+		first_option = COM_Argc();
+
+	if (first_option < 2)
+	{
+		if (hell)
+		{
+			CONS_Printf("%s <name / number>:\n", hide ? "hellmap" : "unhellmap");
+			CONS_Printf("%s a map, by its name, two character code, with optional \"MAP\" prefix, or by its number (though why would you).\n", hide ? "Hell" : "Unhell");
+		}
+		else
+		{
+			CONS_Printf("%s <name / number>:\n", hide ? "hidemap" : "unhidemap");
+			CONS_Printf("%s a map, by its name, two character code, with optional \"MAP\" prefix, or by its number (though why would you).\n", hide ? "Hide" : "Unhide");
+		}
+
+		return;
+	}
+
+	mapname = ConcatCommandArgv(1, first_option);
+
+	mapnum = G_FindMapByNameOrCode(mapname, &realmapname);
+
+	if (mapnum == 0)
+	{
+		CONS_Alert(CONS_ERROR, M_GetText("Could not find any map described as '%s'.\n"), mapname);
+		Z_Free(mapname);
+		Z_Free(realmapname);
+		return;
+	}
+
+	if (!mapheaderinfo[mapnum-1] || mapheaderinfo[mapnum-1] == NULL || mapheaderinfo[mapnum-1]->lumpnum == LUMPERROR)
+	{
+		CONS_Alert(CONS_WARNING, M_GetText("Invalid mapheaderinfo for Course %s (%s)\n"), realmapname, G_BuildMapName(mapnum));
+		Z_Free(realmapname);
+		Z_Free(mapname);
+		return;
+	}
+
+	if (!Playing())
+	{
+		// Not in a netgame? Do it instantly.
+		HandleLevelHide(mapnum, hide, hell);
+		return;
+	}
+
+	WRITEUINT16(p, mapnum);
+	WRITEUINT8(p, hide);
+	WRITEUINT8(p, hell);
+
+	Z_Free(realmapname);
+	Z_Free(mapname);
+
+	SendNetXCmd(XD_LIVESOC, buf, p - buf);
+}
+
+static void Command_HideMap_f(void)
+{
+	HandleLiveSOC(true, false);
+}
+
+static void Command_UnhideMap_f(void)
+{
+	HandleLiveSOC(false, false);
+}
+
+static void Command_HellMap_f(void)
+{
+	HandleLiveSOC(true, true);
+}
+
+static void Command_UnhellMap_f(void)
+{
+	HandleLiveSOC(false, true);
+}
+
+static void Got_LiveSoc(uint8_t **cp, int32_t playernum)
+{
+	mapnum_t mapnum = READUINT16(*cp);
+	uint8_t hide = READUINT8(*cp);
+	uint8_t hell = READUINT8(*cp);
+
+	if (playernum != serverplayer && !IsPlayerAdmin(playernum))
+	{
+		CONS_Alert(CONS_WARNING,
+				M_GetText ("Illegal LiveSoc received from %s\n"),
+				player_names[playernum]);
+		if (server)
+			SendKick(playernum, KICK_MSG_CON_FAIL);
+		return;
+	}
+
+	if (!mapheaderinfo[mapnum-1] || mapheaderinfo[mapnum-1] == NULL || mapheaderinfo[mapnum-1]->lumpnum == LUMPERROR)
+	{
+		CONS_Alert(CONS_WARNING,
+				   M_GetText ("Illegal LiveSoc map received from %s\n"),
+				   player_names[playernum]);
+		if (server)
+			SendKick(playernum, KICK_MSG_CON_FAIL);
+		return;
+	}
+
+	HandleLevelHide(mapnum, hide, hell);
+}

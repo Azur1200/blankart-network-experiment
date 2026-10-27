@@ -702,6 +702,8 @@ fixed_t M_ReverseTimeFrac(tic_t tics, tic_t duration, timefrac_e level);
 
 fixed_t M_DueFrac(tic_t start, tic_t duration, timefrac_e level);
 
+void M_UpdatePlatterList(void);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

@@ -11913,3 +11913,11 @@ fixed_t M_DueFrac(tic_t start, tic_t duration, timefrac_e level)
 	tic_t n = t - start;
 	return M_TimeFrac(min(n, duration), duration, level);
 }
+
+void M_UpdatePlatterList(void)
+{
+	if (dedicated)
+		return;
+
+	M_UpdateLevelPlatter();
+}

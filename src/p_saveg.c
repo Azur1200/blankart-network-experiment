@@ -4888,6 +4888,83 @@ static dboolean P_NetSyncMisc(savebuffer_t *save, dboolean resending)
 
 	SYNC(cht_debug);
 
+	// Netsync map hidden/hell status
+	// First hidden from voting
+	if (save->write)
+	{
+		for (i = 0; i < (size_t)nummapheaders; i++)
+		{
+			if (!mapheaderinfo[i] || mapheaderinfo[i] == NULL)
+				continue;
+
+			if (mapheaderinfo[i]->menuflags & LF2_HIDEINVOTE)
+			{
+				WRITEUINT8(save->p, true);
+			}
+			else
+			{
+				WRITEUINT8(save->p, false);
+			}
+		}
+	}
+	else
+	{
+		for (i = 0; i < (size_t)nummapheaders; i++)
+		{
+			if (!mapheaderinfo[i] || mapheaderinfo[i] == NULL)
+				continue;
+
+			dboolean hidden = READUINT8(save->p);
+
+			if (hidden)
+			{
+				mapheaderinfo[i]->menuflags |= LF2_HIDEINVOTE;
+			}
+			else
+			{
+				mapheaderinfo[i]->menuflags &= ~LF2_HIDEINVOTE;
+			}
+		}
+	}
+
+	// Time for hell!
+	if (save->write)
+	{
+		for (i = 0; i < (size_t)nummapheaders; i++)
+		{
+			if (!mapheaderinfo[i] || mapheaderinfo[i] == NULL || mapheaderinfo[i]->lumpnum == LUMPERROR)
+				continue;
+
+			if (mapheaderinfo[i]->menuflags & LF2_HIDEINMENU)
+			{
+				WRITEUINT8(save->p, true);
+			}
+			else
+			{
+				WRITEUINT8(save->p, false);
+			}
+		}
+	}
+	else
+	{
+		for (i = 0; i < (size_t)nummapheaders; i++)
+		{
+			if (!mapheaderinfo[i] || mapheaderinfo[i] == NULL || mapheaderinfo[i]->lumpnum == LUMPERROR)
+				continue;
+
+			dboolean hidden = READUINT8(save->p);
+
+			if (hidden)
+			{
+				mapheaderinfo[i]->menuflags |= LF2_HIDEINMENU;
+			}
+			else
+			{
+				mapheaderinfo[i]->menuflags &= ~LF2_HIDEINMENU;
+			}
+		}
+	}
+
 	TracyCZoneEnd(__zone);
 	return true;
 }
