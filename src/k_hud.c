@@ -7244,8 +7244,6 @@ void K_drawKartHUD(void)
 
 			RR_drawRidersFinishTicker();
 		}
-
-		RR_DrawHudFeed();
 	}
 
 	if (!stplyr->spectator && !freecam) // Bottom of the screen elements, don't need in spectate mode
@@ -7464,6 +7462,11 @@ void K_drawKartHUD(void)
 	K_DrawProgressDebugger();
 	K_DrawDirectorDebugger();
 	K_DrawMessageFeed();
+
+	if (!r_splitscreen && !demo.title)
+	{
+		RR_DrawHudFeed();
+	}
 
 	if (stplyrnum == 0)
 		K_DrawBotDebugger(stplyr);

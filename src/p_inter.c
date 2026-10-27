@@ -2095,11 +2095,14 @@ static dboolean P_KillPlayer(player_t *player, mobj_t *inflictor, mobj_t *source
 
 	P_ResetPlayer(player);
 
-	if (player->pitblame > -1)
+	if (!RR_PushPlayerDeathToFeed(source, player->mo, inflictor))
 	{
-		K_TryHurtSoundExchange(player->mo, players[player->pitblame].mo);
-		RR_PushPlayerInteractionToFeed(players[player->pitblame].mo, player->mo, ATTACK_PITFALL, KITEM_NONE);
-		player->pitblame = -1;
+		if (player->pitblame > -1)
+		{
+			K_TryHurtSoundExchange(player->mo, players[player->pitblame].mo);
+			RR_PushPlayerInteractionToFeed(players[player->pitblame].mo, player->mo, ATTACK_PITFALL, KITEM_NONE);
+			player->pitblame = -1;
+		}
 	}
 
 	if (player->spectator == false)

@@ -711,22 +711,22 @@ void RR_PushPlayerDamageToFeed(mobj_t *source, mobj_t *target, mobj_t *inflictor
 			itemConfig,
 			self_hit,
 			isDisplayPlayerAttacker(source_plyr),
-										   isFeedUpdateAboutMainPlayer(source_plyr, target_plyr),
-										   attacker_colour,
-									 victim_colour
+			isFeedUpdateAboutMainPlayer(source_plyr, target_plyr),
+			attacker_colour,
+			victim_colour
 		)
 	);
 }
 
-void RR_PushPlayerDeathToFeed(mobj_t *source, mobj_t *target, mobj_t *inflictor) {
-	if (!canUseHudfeed()) return;
+dboolean RR_PushPlayerDeathToFeed(mobj_t *source, mobj_t *target, mobj_t *inflictor) {
+	if (!canUseHudfeed()) return false;
 
-	if (!inflictor || P_MobjWasRemoved(inflictor)) return;
-	if (!arePlayersValid(source, target)) return;
+	if (!inflictor || P_MobjWasRemoved(inflictor)) return false;
+	if (!arePlayersValid(source, target)) return false;
 
 	ItemConfigForFeedUpdate itemConfig = getItemConfigForFeedKillUpdate(inflictor);
 
-	if (itemConfig.patch.empty()) return;
+	if (itemConfig.patch.empty()) return false;
 
 	player_t* source_plyr = source->player;
 	player_t* target_plyr = target->player;
@@ -747,11 +747,13 @@ void RR_PushPlayerDeathToFeed(mobj_t *source, mobj_t *target, mobj_t *inflictor)
 			itemConfig,
 			self_hit,
 			isDisplayPlayerAttacker(source_plyr),
-										   isFeedUpdateAboutMainPlayer(source_plyr, target_plyr),
-										   attacker_colour,
-									 victim_colour
+			isFeedUpdateAboutMainPlayer(source_plyr, target_plyr),
+			attacker_colour,
+			victim_colour
 		)
 	);
+
+	return true;
 }
 
 void RR_PushPlayerInteractionToFeed(mobj_t *source, mobj_t *target, playerattacks_t attack, kartitemtype_e stolen) {
@@ -787,9 +789,9 @@ void RR_PushPlayerInteractionToFeed(mobj_t *source, mobj_t *target, playerattack
 			itemConfig,
 			self_hit,
 			isDisplayPlayerAttacker(source_plyr),
-										   isFeedUpdateAboutMainPlayer(source_plyr, target_plyr),
-										   attacker_colour,
-									 victim_colour
+			isFeedUpdateAboutMainPlayer(source_plyr, target_plyr),
+			attacker_colour,
+			victim_colour
 		)
 	);
 }
