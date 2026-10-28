@@ -6602,12 +6602,12 @@ void K_DropItems(player_t *player)
 			K_FlipFromObject(drop, player->mo);
 		}
 		// drop reserve item too
-		if (player->itemreserveamount > 0 && !((K_GetItemFlags(player->itemreservetype) & KIF_DESTROYONDROP) || player->itemreservetype == MAXKARTITEMS))
+		if (player->subitemamount > 0 && !((K_GetItemFlags(player->subitemtype) & KIF_DESTROYONDROP) || player->subitemtype == MAXKARTITEMS))
 		{
 			drop = K_CreatePaperItem(
 				player->mo->x, player->mo->y, player->mo->z + player->mo->height/2,
 				player->mo->angle - ANGLE_90, P_MobjFlip(player->mo),
-				player->itemreservetype, player->itemreserveamount
+				player->subitemtype, player->subitemamount
 			);
 
 			K_FlipFromObject(drop, player->mo);
@@ -12931,8 +12931,8 @@ void K_StripItems(player_t *player)
 	player->itemtype = KITEM_NONE;
 	player->equippeditem = KITEM_NONE;
 	player->itemamount = 0;
-	player->itemreservetype = KITEM_NONE;
-	player->itemreserveamount = 0;
+	player->subitemtype = KITEM_NONE;
+	player->subitemamount = 0;
 	player->itemflags &= ~IF_EGGMANOUT;
 	K_DisableSeekingReticule(player);
 	K_UnsetItemOut(player);

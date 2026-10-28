@@ -109,7 +109,7 @@ dboolean P_CanPickupItem(player_t *player, uint8_t weapon)
 				if (player->stealingtimer || player->stolentimer
 					|| player->rocketsneakertimer
 					|| player->eggmanexplode
-					|| (K_SMonitorSlotHogging(player) && player->itemreserveamount > 0)
+					|| (K_SMonitorSlotHogging(player) && player->subitemamount > 0)
 					|| (player->growshrinktimer > 0)
 					|| player->flametimer)
 					return false;
@@ -117,7 +117,7 @@ dboolean P_CanPickupItem(player_t *player, uint8_t weapon)
 				// Item slot already taken up
 				if (player->itemroulette
 					|| (weapon != PICKUPITEM_FLOATING && player->itemamount)
-					|| (weapon == PICKUPITEM_ITEM && player->itemreservetype == KITEM_BONUSITEMROLL)
+					|| (weapon == PICKUPITEM_ITEM && player->subitemtype == KITEM_BONUSITEMROLL)
 					|| (player->itemflags & IF_ITEMOUT))
 					return false;
 				
@@ -305,9 +305,9 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, dboolean heightcheck)
 			if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
 				return;
 
-			if (K_SMonitorSlotHogging(player) && (player->itemreservetype == KITEM_NONE || player->itemreservetype == special->threshold))
+			if (K_SMonitorSlotHogging(player) && (player->subitemtype == KITEM_NONE || player->subitemtype == special->threshold))
 			{
-				K_AddPlayerReserveItem(player, special->threshold, special->movecount);
+				K_AddPlayerSubItem(player, special->threshold, special->movecount);
 			}
 			else
 			{
@@ -1791,9 +1791,9 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, uint8_t damag
 					break;
 				}
 
-				if (K_SMonitorSlotHogging(player) && (player->itemreservetype == KITEM_NONE || player->itemreservetype == target->threshold))
+				if (K_SMonitorSlotHogging(player) && (player->subitemtype == KITEM_NONE || player->subitemtype == target->threshold))
 				{
-					K_AddPlayerReserveItem(player, target->threshold, max(1, target->movecount));
+					K_AddPlayerSubItem(player, target->threshold, max(1, target->movecount));
 				}
 				else
 				{

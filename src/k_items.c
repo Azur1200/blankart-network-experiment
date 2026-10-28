@@ -441,20 +441,20 @@ static sfxenum_t resultfx[] = {
 	[KITEMBLINK_DEBUG] = sfx_dbgsal,
 };
 
-void K_AddPlayerReserveItem(player_t *player, kartitemtype_e type, uint8_t amount)
+void K_AddPlayerSubItem(player_t *player, kartitemtype_e type, uint8_t amount)
 {
 	// will disallow adding non-matching items
-	if (player->itemreservetype != 0 && type != player->itemreservetype)
+	if (player->subitemtype != 0 && type != player->subitemtype)
 	{
 		return;
 	}
 
 	// adds items to the reserve instead of setting
-	player->itemreservetype = type;
-	player->itemreserveamount += amount;
+	player->subitemtype = type;
+	player->subitemamount += amount;
 }
 
-void K_AwardPlayerItemOrReserve(player_t *player, kartitemtype_e type, uint8_t amount, dboolean nodoubles, kartitemblink_e blink)
+void K_AwardPlayerMainOrSubItem(player_t *player, kartitemtype_e type, uint8_t amount, dboolean nodoubles, kartitemblink_e blink)
 {
 	if (player->itemtype == KITEM_NONE && player->itemamount == 0)
 	{
@@ -465,7 +465,7 @@ void K_AwardPlayerItemOrReserve(player_t *player, kartitemtype_e type, uint8_t a
 		if (K_IsAltShrunk(player) && !nodoubles && blink != KITEMBLINK_DEBUG)
 			amount *= 2;
 
-		K_AddPlayerReserveItem(player, type, amount);
+		K_AddPlayerSubItem(player, type, amount);
 	}
 }
 
@@ -493,22 +493,22 @@ void K_AwardPlayerItem(player_t *player, kartitemtype_e type, uint8_t amount, db
 		K_AddItemRollToList((int32_t)(player - players), type, amount);
 }
 
-void K_TransferPlayerReserveItem(player_t *player)
+void K_TransferPlayerSubItem(player_t *player)
 {
-	uint8_t transferamount = player->itemreserveamount;
-	if (transferamount == 0 || player->itemreservetype == 0)
+	uint8_t transferamount = player->subitemamount;
+	if (transferamount == 0 || player->subitemtype == 0)
 		return;
-	if (!P_CanPickupItem(player, PICKUPITEM_RESERVE))
+	if (!P_CanPickupItem(player, PICKUPITEM_SUBITEM))
 		return;
 
 	K_BotResetItemConfirm(player, true);
 	
-	if (K_GetItemFlags(player->itemreservetype) & KIF_SINGLEFROMRESERVE)
+	if (K_GetItemFlags(player->subitemtype) & KIF_SINGLEFROMSUBITEM)
 	{
 		transferamount = 1;
 	}
 
-	if (player->itemreservetype == KITEM_BONUSITEMROLL)
+	if (player->subitemtype == KITEM_BONUSITEMROLL)
 	{
 		S_StartSound(player->mo, sfx_kc2e);
 		K_StartRoulette(player, KROULETTETYPE_BONUS);
@@ -522,18 +522,18 @@ void K_TransferPlayerReserveItem(player_t *player)
 			S_StartSound(NULL, resultfx[0]);
 		}
 
-		player->itemtype = player->itemreservetype;
+		player->itemtype = player->subitemtype;
 		player->itemamount = transferamount;
 
 		if (itemlistactive)
-			K_AddItemRollToList((int32_t)(player - players), player->itemreservetype, player->itemreserveamount);
+			K_AddItemRollToList((int32_t)(player - players), player->subitemtype, player->subitemamount);
 	}
 
 	// update reserve
-	player->itemreserveamount -= transferamount;
-	if (player->itemreserveamount == 0)
+	player->subitemamount -= transferamount;
+	if (player->subitemamount == 0)
 	{
-		player->itemreservetype = 0;
+		player->subitemtype = 0;
 	}
 }
 
@@ -1713,9 +1713,9 @@ void K_StartRoulette(player_t *player, kartroulettetype_e roulettetype)
 	{
 		K_DropItems(player);
 	}
-	else if (roulettetype != KROULETTETYPE_BONUS && K_SMonitorSlotHogging(player) && player->itemreserveamount == 0)
+	else if (roulettetype != KROULETTETYPE_BONUS && K_SMonitorSlotHogging(player) && player->subitemamount == 0)
 	{
-		K_AddPlayerReserveItem(player, KITEM_BONUSITEMROLL, 1);
+		K_AddPlayerSubItem(player, KITEM_BONUSITEMROLL, 1);
 		return;
 	}
 

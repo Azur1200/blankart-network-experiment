@@ -2145,14 +2145,14 @@ static void K_drawKartItem(void)
 	}
 
 	// draw the item reserve
-	if (stplyr->itemreservetype && stplyr->itemreserveamount > 0)
+	if (stplyr->subitemtype && stplyr->subitemamount > 0)
 	{
-		localpatch = K_GetCachedItemPatch(stplyr->itemreservetype, true, stplyr->itemreserveamount);
+		localpatch = K_GetCachedItemPatch(stplyr->subitemtype, true, stplyr->subitemamount);
 
 		if (localpatch == NULL)
 			localpatch = kp_nodraw; // diagnose underflows
 		
-		if (K_GetItemFlags(stplyr->itemreservetype) & KIF_COLPATCH2PLAYER)
+		if (K_GetItemFlags(stplyr->subitemtype) & KIF_COLPATCH2PLAYER)
 		{
 			colmap = R_GetTranslationColormap(TC_DEFAULT, stplyr->skincolor, GTC_CACHE);
 		}
@@ -2165,7 +2165,7 @@ static void K_drawKartItem(void)
 		fy = (fy<<FRACBITS) + ((tiny ? -10 : -7) * info.hudScale);
 		if (!tiny)
 		{
-			dark = K_GetItemFlags(stplyr->itemreservetype) & KIF_DARKBG;
+			dark = K_GetItemFlags(stplyr->subitemtype) & KIF_DARKBG;
 			localbg = K_getItemBoxPatch(true, dark);
 			
 			V_DrawFixedPatch(fx, fy, info.hudScale, boxpatchflags, localbg, colormap);
@@ -2174,9 +2174,9 @@ static void K_drawKartItem(void)
 		V_DrawFixedPatch(fx, fy, info.hudScale, localpatchflags, localpatch, colmap);
 
 		// numbers
-		if (stplyr->itemreserveamount >= K_GetItemNumberDisplayMin(stplyr->itemreservetype, true))
+		if (stplyr->subitemamount >= K_GetItemNumberDisplayMin(stplyr->subitemtype, true))
 		{
-			V_DrawPingNumScaled(fx + (26*(flipamount ? -info.hudScale : info.hudScale)), fy + (26*info.hudScale), info.hudScale, V_ALLOWLOWERCASE|V_HUDTRANS|fflags, stplyr->itemreserveamount, colmap);
+			V_DrawPingNumScaled(fx + (26*(flipamount ? -info.hudScale : info.hudScale)), fy + (26*info.hudScale), info.hudScale, V_ALLOWLOWERCASE|V_HUDTRANS|fflags, stplyr->subitemamount, colmap);
 		}
 	}
 }

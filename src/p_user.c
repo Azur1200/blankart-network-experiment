@@ -4734,7 +4734,7 @@ void P_PlayerThink(player_t *player)
 	// runs before movement and collision checks
 	if (player->playerstate == PST_LIVE && player->respawn == 0)
 	{
-		K_TransferPlayerReserveItem(player);
+		K_TransferPlayerSubItem(player);
 	}
 
 	if (player->mo->reactiontime)

@@ -93,7 +93,7 @@ typedef enum
 	KIF_COLPATCH2PLAYER = 1<<4,  // colourize patch to player
 	KIF_HIDEFROMROULETTE = 1<<5, // don't show this item in the roulette (inversion of xItem's showInRoulette item flag)
 	KIF_HYUCANTSTEAL = 1<<7,     // Prevents the item from being stolen by a Hyudoro
-	KIF_SINGLEFROMRESERVE = 1<<8,// If multiple of this item is in the reserve item slot, transfer them one at a time as they are used instead of all at once
+	KIF_SINGLEFROMSUBITEM = 1<<8,// If multiple of this item is in the reserve item slot, transfer them one at a time as they are used instead of all at once
 	KIF_DESTROYONDROP = 1<<9,	 // Destroy the item entirely when it would be dropped as a pickup
 } ATTRPACK kartitemflags_e;
 
@@ -263,10 +263,10 @@ void K_RemoveEquippedItem(mobj_t *equipmo);
 
 void K_DecrementAndCheckCurrentItem(player_t *player);
 
-void K_AddPlayerReserveItem(player_t *player, kartitemtype_e type, uint8_t amount);
+void K_AddPlayerSubItem(player_t *player, kartitemtype_e type, uint8_t amount);
 void K_AwardPlayerItem(player_t *player, kartitemtype_e type, uint8_t amount, dboolean nodoubles, kartitemblink_e blink);
-void K_AwardPlayerItemOrReserve(player_t *player, kartitemtype_e type, uint8_t amount, dboolean nodoubles, kartitemblink_e blink);
-void K_TransferPlayerReserveItem(player_t *player);
+void K_AwardPlayerMainOrSubItem(player_t *player, kartitemtype_e type, uint8_t amount, dboolean nodoubles, kartitemblink_e blink);
+void K_TransferPlayerSubItem(player_t *player);
 void K_UpdateMobjItemOverlay(mobj_t *part, kartitemtype_e itemType, uint8_t itemCount);
 void K_UpdateItemCooldown(void);
 tic_t K_GetIndirectItemCooldown(void);

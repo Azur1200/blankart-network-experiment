@@ -1011,8 +1011,8 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].keepstuff.growshrinktimer);
 		SYNC(players[i].keepstuff.flametimer);
 
-		SYNC(players[i].itemreservetype);
-		SYNC(players[i].itemreserveamount);
+		SYNC(players[i].subitemtype);
+		SYNC(players[i].subitemamount);
 
 		SYNC(players[i].dashareapower);
 

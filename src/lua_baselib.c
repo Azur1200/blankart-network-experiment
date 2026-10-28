@@ -5849,7 +5849,7 @@ static int lib_kAwardPlayerItem(lua_State *L)
 	return 0;
 }
 
-static int lib_kAwardPlayerItemOrReserve(lua_State *L)
+static int lib_kAwardPlayerMainOrSubItem(lua_State *L)
 {
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
 	kartitemtype_e type = luaL_checkinteger(L, 2);
@@ -5858,18 +5858,18 @@ static int lib_kAwardPlayerItemOrReserve(lua_State *L)
 	kartitemblink_e blink = luaL_optint(L, 5, KITEMBLINK_NORMAL);
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
-	K_AwardPlayerItemOrReserve(player, type, amount, nodoubles, blink);
+	K_AwardPlayerMainOrSubItem(player, type, amount, nodoubles, blink);
 	return 0;
 }
 
-static int lib_kAddPlayerReserveItem(lua_State *L)
+static int lib_kAddPlayerSubItem(lua_State *L)
 {
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
 	kartitemtype_e type = luaL_checkinteger(L, 2);
 	uint8_t amount = luaL_checkinteger(L, 3);
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
-	K_AddPlayerReserveItem(player, type, amount);
+	K_AddPlayerSubItem(player, type, amount);
 	return 0;
 }
 
@@ -6725,8 +6725,8 @@ static luaL_Reg lib[] = {
 
 	// k_items
 	{"K_AwardPlayerItem", lib_kAwardPlayerItem},
-	{"K_AwardPlayerItemOrReserve", lib_kAwardPlayerItemOrReserve},
-	{"K_AddPlayerReserveItem", lib_kAddPlayerReserveItem},
+	{"K_AwardPlayerMainOrSubItem", lib_kAwardPlayerMainOrSubItem},
+	{"K_AddPlayerSubItem", lib_kAddPlayerSubItem},
 	{"K_StartRoulette", lib_kStartRoulette},
 	{"K_SetPlayerItemCooldown", lib_kSetPlayerItemCooldown},
 	{"K_SpawnEquippedItem",lib_kSpawnEquippedItem},

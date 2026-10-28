@@ -492,8 +492,8 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(nulldrifttime) \
 	X(karttilt) \
 	X(karttiltmomentum) \
-	X(itemreservetype) \
-	X(itemreserveamount) \
+	X(subitemtype) \
+	X(subitemamount) \
 	X(clan) \
 	X(rankscore) \
 	X(realrankscore) \
@@ -871,11 +871,11 @@ static int player_get(lua_State *L)
 	case player_itemamount:
 		lua_pushinteger(L, plr->itemamount);
 		break;
-	case player_itemreservetype:
-		lua_pushinteger(L, plr->itemreservetype);
+	case player_subitemtype:
+		lua_pushinteger(L, plr->subitemtype);
 		break;
-	case player_itemreserveamount:
-		lua_pushinteger(L, plr->itemreserveamount);
+	case player_subitemamount:
+		lua_pushinteger(L, plr->subitemamount);
 		break;
 	case player_equippeditem:
 		lua_pushinteger(L, plr->equippeditem);
@@ -1795,11 +1795,11 @@ static int player_set(lua_State *L)
 	case player_itemamount:
 		plr->itemamount = luaL_checkinteger(L, 3);
 		break;
-	case player_itemreservetype:
-		plr->itemreservetype = luaL_checkinteger(L, 3);
+	case player_subitemtype:
+		plr->subitemtype = luaL_checkinteger(L, 3);
 		break;
-	case player_itemreserveamount:
-		plr->itemreserveamount = luaL_checkinteger(L, 3);
+	case player_subitemamount:
+		plr->subitemamount = luaL_checkinteger(L, 3);
 		break;
 	case player_itemusecooldown:
 		plr->itemusecooldown = luaL_checkinteger(L, 3);

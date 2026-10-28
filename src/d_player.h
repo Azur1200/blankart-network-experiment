@@ -886,8 +886,8 @@ struct player_t
 	// Item held stuff
 	uint8_t itemtype;				// KITEM_ constant for item number
 	uint8_t itemamount;			// Amount of said item
-	uint8_t itemreservetype;		// KITEM_ constant for item number in the reserve slot
-	uint8_t itemreserveamount;	// Amount of said item in the reserve slot
+	uint8_t subitemtype;		// KITEM_ constant for item number in the sub item slot
+	uint8_t subitemamount;	// Amount of said item in the reserve slot
 	uint8_t equippeditem;			// Item type that is currently in the equip slot, amount is handled by the player's hnext linked list of mobjs
 	itemflags_t itemflags; 		// holds IF_flags (see itemstate_t)
 	tic_t itemusecooldown;		// timer for which the player is locked out of using an item or mashing the item roulette (implementation of xItemLib setPlayerItemCooldown), doesn't block ring usage
