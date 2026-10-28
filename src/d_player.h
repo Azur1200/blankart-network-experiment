@@ -884,11 +884,11 @@ struct player_t
 	uint8_t roulettetype;				// Used for the roulette, for deciding type (0 = normal, 1 = better, 2 = eggman mark)
 
 	// Item held stuff
-	uint8_t itemtype;				// KITEM_ constant for item number
+	uint8_t itemtype;			// KITEM_ constant for item number
 	uint8_t itemamount;			// Amount of said item
 	uint8_t subitemtype;		// KITEM_ constant for item number in the sub item slot
-	uint8_t subitemamount;	// Amount of said item in the reserve slot
-	uint8_t equippeditem;			// Item type that is currently in the equip slot, amount is handled by the player's hnext linked list of mobjs
+	uint8_t subitemamount;		// Amount of said item in the sub item slot
+	uint8_t equippeditem;		// Item type that is currently in the equip slot, amount is handled by the player's hnext linked list of mobjs
 	itemflags_t itemflags; 		// holds IF_flags (see itemstate_t)
 	tic_t itemusecooldown;		// timer for which the player is locked out of using an item or mashing the item roulette (implementation of xItemLib setPlayerItemCooldown), doesn't block ring usage
 	tic_t itemusecooldownmax;	// most recent highest value for itemusecooldown, mainly used for HUD rendering currently
