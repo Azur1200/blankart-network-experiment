@@ -170,7 +170,7 @@ kartresult_t *K_RegisterResult(const char *name, dboolean alternate)
 			consvar_t *var = Z_Calloc(sizeof(consvar_t), PU_STATIC, &item->altcvar);
 			var->name = cvname;
 			var->defaultvalue = "Legacy";
-			var->flags = CV_NETVAR/*|CV_CALL*/;
+			var->flags = CV_NETVAR|CV_GUARD/*|CV_CALL*/;
 			var->PossibleValue = kartitemvariant_cons_t;
 			var->func = NULL;
 			CV_RegisterVar(var);

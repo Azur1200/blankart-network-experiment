@@ -686,6 +686,18 @@ maprecordpreset_t *G_AllocateMapRecordPreset(maprecord_t *record, const char *pr
 	return preset;
 }
 
+static void SetAltItemsForPreset(strbuf_t *preset, const char *value)
+{
+	for (uint8_t i = 0; i < KITEM_FIRSTFREESLOT; i++)
+	{
+		if (kartitems[i].altcvar != NULL)
+		{
+			strbuf_append(preset, kartitems[i].altcvar->name);
+			strbuf_append(preset, value);
+		}
+	}
+}
+
 // MAKE SURE YOU SAVE DATA BEFORE CALLING THIS
 void G_ClearRecords(void)
 {
@@ -719,6 +731,13 @@ void G_ClearRecords(void)
 	strbuf_append(&pv, "kartbumpspring");
 	strbuf_append(&pv, "No");
 
+	strbuf_append(&pv, "kartbumpspark");
+	strbuf_append(&pv, "Off");
+	strbuf_append(&pv, "kartbumpspring");
+	strbuf_append(&pv, "No");
+	strbuf_append(&pv, "rockshove");
+	strbuf_append(&pv, "Off");
+
 	preset = G_AddRecordPreset("tech", "Tech Mode");
 
 	pv = G_AddRecordPresetVersion(preset, 1);
@@ -746,6 +765,22 @@ void G_ClearRecords(void)
 	strbuf_append(&pv, "On");
 	strbuf_append(&pv, "kartbumpspring");
 	strbuf_append(&pv, "Yes");
+
+	pv = G_AddRecordPresetVersion(preset, 3);
+	strbuf_append(&pv, "kartstacking");
+	strbuf_append(&pv, "Yes");
+	strbuf_append(&pv, "kartchaining");
+	strbuf_append(&pv, "Yes");
+	strbuf_append(&pv, "kartslopeboost");
+	strbuf_append(&pv, "Yes");
+	strbuf_append(&pv, "kartairdrop");
+	strbuf_append(&pv, "Yes");
+	strbuf_append(&pv, "kartbumpspark");
+	strbuf_append(&pv, "On");
+	strbuf_append(&pv, "kartbumpspring");
+	strbuf_append(&pv, "Yes");
+	strbuf_append(&pv, "rockshove");
+	strbuf_append(&pv, "Off");
 
 	preset = G_AddRecordPreset("blankart", "BlanKart Mode");
 
@@ -786,6 +821,35 @@ void G_ClearRecords(void)
 	strbuf_append(&pv, "Remove Charge Only");
 	strbuf_append(&pv, "kartbumpspring");
 	strbuf_append(&pv, "Yes");
+	
+	pv = G_AddRecordPresetVersion(preset, 3);
+	strbuf_append(&pv, "kartrings");
+	strbuf_append(&pv, "Yes");
+	strbuf_append(&pv, "kartpurpledrift");
+	strbuf_append(&pv, "Yes");
+	strbuf_append(&pv, "kartslipdash");
+	strbuf_append(&pv, "Yes");
+	strbuf_append(&pv, "kartstacking");
+	strbuf_append(&pv, "Yes");
+	strbuf_append(&pv, "kartchaining");
+	strbuf_append(&pv, "Yes");
+	strbuf_append(&pv, "kartdrafting");
+	strbuf_append(&pv, "Yes");
+	strbuf_append(&pv, "kartrecoverydash");
+	strbuf_append(&pv, "Yes");
+	strbuf_append(&pv, "kartairthrust");
+	strbuf_append(&pv, "Flash");
+	strbuf_append(&pv, "kartairdrop");
+	strbuf_append(&pv, "Fusion");
+	strbuf_append(&pv, "kartslopeboost");
+	strbuf_append(&pv, "Yes");
+	strbuf_append(&pv, "kartbumpspark");
+	strbuf_append(&pv, "Remove Charge Only");
+	strbuf_append(&pv, "kartbumpspring");
+	strbuf_append(&pv, "Yes");
+	strbuf_append(&pv, "kartkeepstuff");
+	strbuf_append(&pv, "Yes");
+	SetAltItemsForPreset(&pv, "Alternate");
 }
 
 // For easy retrieval of records
