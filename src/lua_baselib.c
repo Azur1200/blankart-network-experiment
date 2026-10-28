@@ -6119,33 +6119,24 @@ static int lib_kGetItemListEntry(lua_State *L)
 // RADIO_FEED
 ////////////
 
-static int lib_rrPushLuaMessageToFeed(lua_State *L)
+// This will be REUSED ALOT...
+static void handlefeedupdate(lua_State *L, int index, LuaConfigForFeedUpdate *config, LuaAnimatedConfig *anim)
 {
-	const char *source = luaL_checkstring(L, 1);
-	int32_t source_color = luaL_checkinteger(L, 2);
-	const char *target = luaL_checkstring(L, 3);
-	int32_t target_color = luaL_checkinteger(L, 4);
-	dboolean displayplayer = luaL_checkdboolean(L, 5);
-	dboolean animvalid = false;
+	luaL_checktype(L, index, LUA_TTABLE);
 
-	LuaAnimatedConfig anim = {0};
-	LuaConfigForFeedUpdate config = {0};
-
-	luaL_checktype(L, 6, LUA_TTABLE);
-
-	lua_rawgeti(L, 6, 1);
-	config.patch = Z_StrDup(luaL_checkstring(L, -1)); // I think thats how I do this? I don't want this being GC'd before I use it.
+	lua_rawgeti(L, index, 1);
+	config->patch = Z_StrDup(luaL_checkstring(L, -1)); // I think thats how I do this? I don't want this being GC'd before I use it.
 	lua_pop(L, 1);
 
-	lua_rawgeti(L, 6, 2);
-	config.width =  luaL_checkinteger(L, -1);
+	lua_rawgeti(L, index, 2);
+	config->width =  luaL_checkinteger(L, -1);
 	lua_pop(L, 1);
 
-	lua_rawgeti(L, 6, 3);
-	config.height =  luaL_checkinteger(L, -1);
+	lua_rawgeti(L, index, 3);
+	config->height =  luaL_checkinteger(L, -1);
 	lua_pop(L, 1);
 
-	lua_rawgeti(L, 6, 4);
+	lua_rawgeti(L, index, 4);
 	luaL_checktype(L, -1, LUA_TTABLE);
 
 	if (lua_objlen(L, -1) > 0)
@@ -6153,63 +6144,138 @@ static int lib_rrPushLuaMessageToFeed(lua_State *L)
 		int animatedindex = lua_gettop(L);
 
 		lua_rawgeti(L, animatedindex, 1);
-		anim.animated = luaL_checkdboolean(L, -1);
+		anim->animated = luaL_checkdboolean(L, -1);
 		lua_pop(L, 1);
 
 		lua_rawgeti(L, animatedindex, 2);
-		anim.should_flash = luaL_checkdboolean(L, -1);
+		anim->should_flash = luaL_checkdboolean(L, -1);
 		lua_pop(L, 1);
 
 		lua_rawgeti(L, animatedindex, 3);
-		anim.animated_frames = luaL_checkinteger(L, -1);
+		anim->animated_frames = luaL_checkinteger(L, -1);
 		lua_pop(L, 1);
 
 		lua_rawgeti(L, animatedindex, 4);
-		anim.tics_per_frame = luaL_checkinteger(L, -1);
+		anim->tics_per_frame = luaL_checkinteger(L, -1);
 		lua_pop(L, 1);
 
 		lua_rawgeti(L, animatedindex, 5);
-		anim.flashing_colour = luaL_checkinteger(L, -1);
+		anim->flashing_colour = luaL_checkinteger(L, -1);
 		lua_pop(L, 1);
 
-		anim.valid = true;
-		animvalid = true;
+		anim->valid = true;
 	}
 
 	lua_pop(L, 1);
 
-	lua_rawgeti(L, 6, 5);
-	config.patch_scale = FixedToFloat(luaL_checkfixed(L, -1));
+	lua_rawgeti(L, index, 5);
+	config->patch_scale = FixedToFloat(luaL_checkfixed(L, -1));
 	lua_pop(L, 1);
 
-	lua_rawgeti(L, 6, 6);
-	config.y_offset = luaL_checkfixed(L, -1);
+	lua_rawgeti(L, index, 6);
+	config->y_offset = luaL_checkfixed(L, -1);
 	lua_pop(L, 1);
 
-	lua_rawgeti(L, 6, 7);
-	config.stolen_item = luaL_checkinteger(L, -1);
+	lua_rawgeti(L, index, 7);
+	config->stolen_item = luaL_checkinteger(L, -1);
 	lua_pop(L, 1);
 
-	lua_rawgeti(L, 6, 8);
-	config.recolour = luaL_checkinteger(L, -1);
+	lua_rawgeti(L, index, 8);
+	config->recolour = luaL_checkinteger(L, -1);
 	lua_pop(L, 1);
 
-	lua_rawgeti(L, 6, 9);
-	config.rainbow = luaL_checkdboolean(L, -1);
+	lua_rawgeti(L, index, 9);
+	config->rainbow = luaL_checkdboolean(L, -1);
 	lua_pop(L, 1);
 
 	lua_pop(L, 1);
+}
 
-	if (animvalid)
-	{
-		config.animation_config = anim;
-	}
-	else
-	{
-		config.animation_config.valid = false;
-	}
+static int lib_rrPushLuaMessageToFeed(lua_State *L)
+{
+	const char *source = luaL_checkstring(L, 1);
+	int32_t source_color = luaL_checkinteger(L, 2);
+	const char *target = luaL_checkstring(L, 3);
+	int32_t target_color = luaL_checkinteger(L, 4);
+	dboolean displayplayer = luaL_checkdboolean(L, 5);
+
+	LuaAnimatedConfig anim = {0};
+	LuaConfigForFeedUpdate config = {0};
+
+	handlefeedupdate(L, 6, &config, &anim);
+
+	config.animation_config = anim;
 
 	RR_PushLuaMessageToFeed(source, source_color, target, target_color, displayplayer, config);
+
+	Z_Free(config.patch);
+
+	return 1;
+}
+
+static int lib_rrPushLuaGlobalEventToFeed(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+
+	LuaAnimatedConfig anim = {0};
+	LuaConfigForFeedUpdate config = {0};
+
+	handlefeedupdate(L, 2, &config, &anim);
+
+	config.animation_config = anim;
+
+	RR_PushLuaGlobalEventToFeed(player, config);
+
+	Z_Free(config.patch);
+
+	return 1;
+}
+
+static int lib_rrPushLuaPlayerMessageToFeed(lua_State *L)
+{
+	player_t *source = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	player_t *target = *((player_t **)luaL_checkudata(L, 2, META_PLAYER));
+
+	if (!source || !target)
+		return LUA_ErrInvalid(L, "player_t");
+
+	LuaAnimatedConfig anim = {0};
+	LuaConfigForFeedUpdate config = {0};
+
+	handlefeedupdate(L, 3, &config, &anim);
+
+	config.animation_config = anim;
+
+	RR_PushLuaPlayerMessageToFeed(source, target, config);
+
+	Z_Free(config.patch);
+
+	return 1;
+}
+
+static int lib_rrPushLuaPlayerFlavourMessageToFeed(lua_State *L)
+{
+	player_t *source = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	dboolean after1 = luaL_checkdboolean(L, 2);
+	const char *flavour1 = luaL_checkstring(L, 3);
+	player_t *target = *((player_t **)luaL_checkudata(L, 4, META_PLAYER));
+	dboolean after2 = luaL_checkdboolean(L, 5);
+	const char *flavour2 = luaL_checkstring(L, 6);
+
+	if (!source || !target)
+		return LUA_ErrInvalid(L, "player_t");
+
+	LuaAnimatedConfig anim = {0};
+	LuaConfigForFeedUpdate config = {0};
+
+	handlefeedupdate(L, 7, &config, &anim);
+
+	config.animation_config = anim;
+
+	RR_PushLuaPlayerFlavourMessageToFeed(source, after1, flavour1, target, after2, flavour2, config);
 
 	Z_Free(config.patch);
 
@@ -6748,6 +6814,9 @@ static luaL_Reg lib[] = {
 
 	// radio_feed
 	{"HF_PushMessageToFeed", lib_rrPushLuaMessageToFeed},
+	{"HF_PushGlobalEventToFeed", lib_rrPushLuaGlobalEventToFeed},
+	{"HF_PushPlayerMessageToFeed", lib_rrPushLuaPlayerMessageToFeed},
+	{"HF_PushPlayerFlavourMessageToFeed", lib_rrPushLuaPlayerFlavourMessageToFeed},
 
 	//g_input
 	//{"G_SetPlayerControllerIndicatorColor", lib_gSetPlayerControllerIndicatorColor},
