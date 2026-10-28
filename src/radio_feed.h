@@ -69,7 +69,10 @@ dboolean RR_PushPlayerDeathToFeed(mobj_t *source, mobj_t *target, mobj_t *inflic
 void RR_PushPlayerInteractionToFeed(mobj_t *source, mobj_t *target, playerattacks_t attack, kartitemtype_e stolen);
 void RR_PushGlobalEventToFeed(player_t* player, globalfeedevent_t event);
 void RR_PushGlobalGradeEventToFeed(player_t* player, ranktier_e rank);
+void RR_PushLuaPlayerMessageToFeed(player_t *source, player_t *target, LuaConfigForFeedUpdate config);
+void RR_PushLuaPlayerFlavourMessageToFeed(player_t *source, dboolean after1, const char *flavour1, player_t *target, dboolean after2, const char *flavour2, LuaConfigForFeedUpdate config);
 void RR_PushLuaMessageToFeed(const char *source, int32_t source_color, const char *target, int32_t target_color, dboolean displayplayer, LuaConfigForFeedUpdate config);
+void RR_PushLuaGlobalEventToFeed(player_t* player, LuaConfigForFeedUpdate config);
 void RR_DrawHudFeed(void);
 void RR_TickHudFeed(void);
 void RR_ClearHudFeed(void);

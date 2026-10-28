@@ -718,6 +718,156 @@ void RR_PushPlayerDamageToFeed(mobj_t *source, mobj_t *target, mobj_t *inflictor
 	);
 }
 
+void RR_PushLuaPlayerMessageToFeed(player_t *source, player_t *target, LuaConfigForFeedUpdate config)
+{
+	if (!canUseHudfeed()) return;
+
+	if (!source || !target) return;
+
+	if (config.patch == nullptr) return;
+
+	ItemAnimatedConfig anim = {0};
+
+	if (config.animation_config.valid)
+	{
+		anim = {.animated = config.animation_config.animated,
+			.should_flash = config.animation_config.should_flash,
+			.animated_frames = config.animation_config.animated_frames,
+			.tics_per_frame = config.animation_config.tics_per_frame,
+			.flashing_colour = config.animation_config.flashing_colour,
+		};
+	}
+
+	ItemConfigForFeedUpdate itemconfig = {.patch = config.patch,
+		.width = config.width,
+		.height = config.height,
+		.animation_config = anim,
+		.patch_scale = config.patch_scale,
+		.y_offset = config.y_offset,
+		.stolen_item = config.stolen_item,
+		.recolour = config.recolour,
+		.rainbow = config.rainbow,
+	};
+
+	std::string attacker = player_names[source-players];
+	std::string victim = player_names[target-players];
+
+	int32_t attacker_colour = getPlayerChatColour(source);
+	int32_t victim_colour = getPlayerChatColour(target);
+
+	const dboolean self_hit = source == target;
+
+	// Push to the feed
+	hudfeed.push(
+		std::make_unique<PlayerFeedUpdate>(
+			victim,
+			attacker,
+			itemconfig,
+			self_hit,
+			isDisplayPlayerAttacker(source),
+			isFeedUpdateAboutMainPlayer(source, target),
+			attacker_colour,
+			victim_colour
+		)
+	);
+}
+
+// Like the previous one but allows for extra text like TF2
+// PLAYER 1 () is DOMINATING PLAYER 2
+// () PLAYER 1  fell to a clumsy, painful death
+void RR_PushLuaPlayerFlavourMessageToFeed(player_t *source, dboolean after1, const char *flavour1, player_t *target, dboolean after2, const char *flavour2, LuaConfigForFeedUpdate config)
+{
+	if (!canUseHudfeed()) return;
+
+	if (!source || !target) return;
+
+	if (config.patch == nullptr) return;
+
+	ItemAnimatedConfig anim = {0};
+
+	if (config.animation_config.valid)
+	{
+		anim = {.animated = config.animation_config.animated,
+			.should_flash = config.animation_config.should_flash,
+			.animated_frames = config.animation_config.animated_frames,
+			.tics_per_frame = config.animation_config.tics_per_frame,
+			.flashing_colour = config.animation_config.flashing_colour,
+		};
+	}
+
+	ItemConfigForFeedUpdate itemconfig = {.patch = config.patch,
+		.width = config.width,
+		.height = config.height,
+		.animation_config = anim,
+		.patch_scale = config.patch_scale,
+		.y_offset = config.y_offset,
+		.stolen_item = config.stolen_item,
+		.recolour = config.recolour,
+		.rainbow = config.rainbow,
+	};
+
+	uint16_t chatcolor1 = skincolors[source->skincolor].chatcolor;
+	char color_prefix1[2];
+
+	uint16_t chatcolor2 = skincolors[target->skincolor].chatcolor;
+	char color_prefix2[2];
+
+	if (chatcolor1 > V_TANMAP)
+	{
+		snprintf(color_prefix1, sizeof(color_prefix1), "%c", '\x80');
+	}
+	else
+	{
+		snprintf(color_prefix1, sizeof(color_prefix1), "%c", '\x80' + (chatcolor1 >> V_CHARCOLORSHIFT));
+	}
+
+	if (chatcolor2 > V_TANMAP)
+	{
+		snprintf(color_prefix2, sizeof(color_prefix1), "%c", '\x80');
+	}
+	else
+	{
+		snprintf(color_prefix2, sizeof(color_prefix1), "%c", '\x80' + (chatcolor2 >> V_CHARCOLORSHIFT));
+	}
+
+	std::string attacker;
+	std::string victim;
+
+	if (after1 == true)
+	{
+		attacker = va("%s%s\x80%s", color_prefix1, player_names[source-players], flavour1);
+	}
+	else
+	{
+		attacker = va("%s%s%s", flavour1, color_prefix1, player_names[source-players]);
+	}
+
+	if (after2 == true)
+	{
+		victim = va("%s%s\x80%s", color_prefix2, player_names[target-players], flavour1);
+	}
+	else
+	{
+		victim = va("%s%s%s",flavour2, color_prefix2, player_names[target-players]);
+	}
+
+	const dboolean self_hit = source == target;
+
+	// Push to the feed
+	hudfeed.push(
+		std::make_unique<PlayerFeedUpdate>(
+			victim,
+			attacker,
+			itemconfig,
+			self_hit,
+			isDisplayPlayerAttacker(source),
+			isFeedUpdateAboutMainPlayer(source, target),
+			0,
+			0
+		)
+	);
+}
+
 void RR_PushLuaMessageToFeed(const char *source, int32_t source_color, const char *target, int32_t target_color, dboolean displayplayer, LuaConfigForFeedUpdate config)
 {
 	if (!canUseHudfeed()) return;
@@ -868,6 +1018,54 @@ void RR_PushGlobalEventToFeed(player_t* player, globalfeedevent_t event) {
 	// Push to the feed
 	hudfeed.push(std::make_unique<GlobalFeedUpdate>(player_name, itemConfig));
 }
+
+void RR_PushLuaGlobalEventToFeed(player_t* player, LuaConfigForFeedUpdate config)
+{
+	if (!canUseHudfeed()) return;
+
+	if (config.patch == nullptr) return;
+
+	ItemAnimatedConfig anim = {0};
+
+	if (config.animation_config.valid)
+	{
+		anim = {.animated = config.animation_config.animated,
+			.should_flash = config.animation_config.should_flash,
+			.animated_frames = config.animation_config.animated_frames,
+			.tics_per_frame = config.animation_config.tics_per_frame,
+			.flashing_colour = config.animation_config.flashing_colour,
+		};
+	}
+
+	ItemConfigForFeedUpdate itemconfig = {.patch = config.patch,
+		.width = config.width,
+		.height = config.height,
+		.animation_config = anim,
+		.patch_scale = config.patch_scale,
+		.y_offset = config.y_offset,
+		.stolen_item = config.stolen_item,
+		.recolour = config.recolour,
+		.rainbow = config.rainbow,
+	};
+
+	uint16_t chatcolor = skincolors[player->skincolor].chatcolor;
+	char color_prefix[2];
+
+	if (chatcolor > V_TANMAP)
+	{
+		snprintf(color_prefix, sizeof(color_prefix), "%c", '\x80');
+	}
+	else
+	{
+		snprintf(color_prefix, sizeof(color_prefix), "%c", '\x80' + (chatcolor >> V_CHARCOLORSHIFT));
+	}
+
+	const std::string player_name = va("%s%s\x80", color_prefix, player_names[player-players]);
+
+	// Push to the feed
+	hudfeed.push(std::make_unique<GlobalFeedUpdate>(player_name, itemconfig));
+}
+
 
 static const char *ranktierpatch_name(ranktier_e rank)
 {
