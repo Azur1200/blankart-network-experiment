@@ -692,8 +692,8 @@ static void SetAltItemsForPreset(strbuf_t *preset, const char *value)
 	{
 		if (kartitems[i].altcvar != NULL)
 		{
-			strbuf_append(preset, kartitems[i].altcvar->name);
-			strbuf_append(preset, value);
+			strbuf_append(&preset, kartitems[i].altcvar->name);
+			strbuf_append(&preset, value);
 		}
 	}
 }
@@ -849,7 +849,7 @@ void G_ClearRecords(void)
 	strbuf_append(&pv, "Yes");
 	strbuf_append(&pv, "kartkeepstuff");
 	strbuf_append(&pv, "Yes");
-	SetAltItemsForPreset(&pv, "Alternate");
+	SetAltItemsForPreset(pv, "Alternative");
 }
 
 // For easy retrieval of records
