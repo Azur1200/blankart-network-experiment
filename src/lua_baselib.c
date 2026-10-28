@@ -46,6 +46,8 @@
 #include "k_terrain.h"
 #include "k_bot.h"
 
+#include "radio_feed.h"
+
 #include "lua_script.h"
 #include "lua_libs.h"
 #include "lua_hud.h" // hud_running errors
@@ -6114,7 +6116,105 @@ static int lib_kGetItemListEntry(lua_State *L)
 	lua_pushinteger(L, K_GetItemListEntry(pid, item_id));
 	return 1;
 }
+// RADIO_FEED
+////////////
 
+static int lib_rrPushLuaMessageToFeed(lua_State *L)
+{
+	const char *source = luaL_checkstring(L, 1);
+	int32_t source_color = luaL_checkinteger(L, 2);
+	const char *target = luaL_checkstring(L, 3);
+	int32_t target_color = luaL_checkinteger(L, 4);
+	dboolean displayplayer = luaL_checkdboolean(L, 5);
+	dboolean animvalid = false;
+
+	LuaAnimatedConfig anim = {0};
+	LuaConfigForFeedUpdate config = {0};
+
+	luaL_checktype(L, 6, LUA_TTABLE);
+
+	lua_rawgeti(L, 6, 1);
+	config.patch = Z_StrDup(luaL_checkstring(L, -1)); // I think thats how I do this? I don't want this being GC'd before I use it.
+	lua_pop(L, 1);
+
+	lua_rawgeti(L, 6, 2);
+	config.width =  luaL_checkinteger(L, -1);
+	lua_pop(L, 1);
+
+	lua_rawgeti(L, 6, 3);
+	config.height =  luaL_checkinteger(L, -1);
+	lua_pop(L, 1);
+
+	lua_rawgeti(L, 6, 4);
+	luaL_checktype(L, -1, LUA_TTABLE);
+
+	if (lua_objlen(L, -1) > 0)
+	{
+		int animatedindex = lua_gettop(L);
+
+		lua_rawgeti(L, animatedindex, 1);
+		anim.animated = luaL_checkdboolean(L, -1);
+		lua_pop(L, 1);
+
+		lua_rawgeti(L, animatedindex, 2);
+		anim.should_flash = luaL_checkdboolean(L, -1);
+		lua_pop(L, 1);
+
+		lua_rawgeti(L, animatedindex, 3);
+		anim.animated_frames = luaL_checkinteger(L, -1);
+		lua_pop(L, 1);
+
+		lua_rawgeti(L, animatedindex, 4);
+		anim.tics_per_frame = luaL_checkinteger(L, -1);
+		lua_pop(L, 1);
+
+		lua_rawgeti(L, animatedindex, 5);
+		anim.flashing_colour = luaL_checkinteger(L, -1);
+		lua_pop(L, 1);
+
+		anim.valid = true;
+		animvalid = true;
+	}
+
+	lua_pop(L, 1);
+
+	lua_rawgeti(L, 6, 5);
+	config.patch_scale = FixedToFloat(luaL_checkfixed(L, -1));
+	lua_pop(L, 1);
+
+	lua_rawgeti(L, 6, 6);
+	config.y_offset = luaL_checkfixed(L, -1);
+	lua_pop(L, 1);
+
+	lua_rawgeti(L, 6, 7);
+	config.stolen_item = luaL_checkinteger(L, -1);
+	lua_pop(L, 1);
+
+	lua_rawgeti(L, 6, 8);
+	config.recolour = luaL_checkinteger(L, -1);
+	lua_pop(L, 1);
+
+	lua_rawgeti(L, 6, 9);
+	config.rainbow = luaL_checkdboolean(L, -1);
+	lua_pop(L, 1);
+
+	lua_pop(L, 1);
+
+	if (animvalid)
+	{
+		config.animation_config = anim;
+	}
+	else
+	{
+		config.animation_config.valid = false;
+	}
+
+	RR_PushLuaMessageToFeed(source, source_color, target, target_color, displayplayer, config);
+
+	Z_Free(config.patch);
+
+	return 1;
+}
 
 
 // G_INPUT
@@ -6645,6 +6745,9 @@ static luaL_Reg lib[] = {
 	{"K_GetItemListSize", lib_kGetItemListSize},
 	{"K_SetItemListEntry", lib_kSetItemListEntry},
 	{"K_GetItemListEntry", lib_kGetItemListEntry},
+
+	// radio_feed
+	{"HF_PushMessageToFeed", lib_rrPushLuaMessageToFeed},
 
 	//g_input
 	//{"G_SetPlayerControllerIndicatorColor", lib_gSetPlayerControllerIndicatorColor},

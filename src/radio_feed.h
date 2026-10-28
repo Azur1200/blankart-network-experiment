@@ -40,11 +40,36 @@ typedef enum
     EVENT_GRADE
 } globalfeedevent_t;
 
+// Basically the same as the ones in the radio_feed.hpp but in C so its usable by Lua.
+typedef struct
+{
+	dboolean valid; // Check for Lua handler if this was used or not
+	dboolean animated; // Animated?
+	dboolean should_flash; // Flashing patch?
+	int animated_frames; // Number of frames to animate
+	int tics_per_frame; // Tics per frame (how long each frame should animate for)
+	skincolornum_t flashing_colour; // The colour to flash
+} LuaAnimatedConfig;
+
+typedef struct
+{
+	char* patch; // Graphic name
+	int width; // Patch width
+	int height; // Patch height
+	LuaAnimatedConfig animation_config; // Animation-related variables
+	float patch_scale; // Graphic scale
+	int y_offset; // Shrink, Eggmark, etc
+	kartitemtype_e stolen_item; // Hyudoro Steal Patch
+	skincolornum_t recolour; // The colour to recolour the item too (usually droptarget)
+	dboolean rainbow; // Rainbow colormap
+} LuaConfigForFeedUpdate;
+
 void RR_PushPlayerDamageToFeed(mobj_t *source, mobj_t *target, mobj_t *inflictor);
 dboolean RR_PushPlayerDeathToFeed(mobj_t *source, mobj_t *target, mobj_t *inflictor);
 void RR_PushPlayerInteractionToFeed(mobj_t *source, mobj_t *target, playerattacks_t attack, kartitemtype_e stolen);
 void RR_PushGlobalEventToFeed(player_t* player, globalfeedevent_t event);
 void RR_PushGlobalGradeEventToFeed(player_t* player, ranktier_e rank);
+void RR_PushLuaMessageToFeed(const char *source, int32_t source_color, const char *target, int32_t target_color, dboolean displayplayer, LuaConfigForFeedUpdate config);
 void RR_DrawHudFeed(void);
 void RR_TickHudFeed(void);
 void RR_ClearHudFeed(void);

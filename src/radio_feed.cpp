@@ -718,6 +718,55 @@ void RR_PushPlayerDamageToFeed(mobj_t *source, mobj_t *target, mobj_t *inflictor
 	);
 }
 
+void RR_PushLuaMessageToFeed(const char *source, int32_t source_color, const char *target, int32_t target_color, dboolean displayplayer, LuaConfigForFeedUpdate config)
+{
+	if (!canUseHudfeed()) return;
+
+	if (config.patch == nullptr) return;
+
+	const dboolean self_hit = fastcmp(source, target);
+
+	ItemAnimatedConfig anim = {0};
+
+	if (config.animation_config.valid)
+	{
+		anim = {.animated = config.animation_config.animated,
+			.should_flash = config.animation_config.should_flash,
+			.animated_frames = config.animation_config.animated_frames,
+			.tics_per_frame = config.animation_config.tics_per_frame,
+			.flashing_colour = config.animation_config.flashing_colour,
+		};
+	}
+
+	ItemConfigForFeedUpdate itemconfig = {.patch = config.patch,
+		.width = config.width,
+		.height = config.height,
+		.animation_config = anim,
+		.patch_scale = config.patch_scale,
+		.y_offset = config.y_offset,
+		.stolen_item = config.stolen_item,
+		.recolour = config.recolour,
+		.rainbow = config.rainbow,
+	};
+
+	std::string source_string = source;
+	std::string target_string = target;
+
+	// Push to the feed
+	hudfeed.push(
+		std::make_unique<PlayerFeedUpdate>(
+			target_string,
+			source_string,
+			itemconfig,
+			self_hit,
+			displayplayer,
+			displayplayer,
+			source_color,
+			target_color
+		)
+	);
+}
+
 dboolean RR_PushPlayerDeathToFeed(mobj_t *source, mobj_t *target, mobj_t *inflictor) {
 	if (!canUseHudfeed()) return false;
 

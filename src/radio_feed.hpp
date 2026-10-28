@@ -50,8 +50,6 @@ const int FEED_MAX_FEED_UPDATES = 4;
 const float FEED_UPDATE_SCALE = .7f;
 const float FEED_UPDATE_ITEM_SCALE = .4f;
 
-const std::string FEED_UPDATE_BACKGROUND_PATCH = "RRHDFDBR";
-
 // ENUMS
 
 typedef enum
