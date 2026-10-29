@@ -851,7 +851,7 @@ void R_GenerateLightTable(extracolormap_t *extra_colormap, dboolean uselookup)
 
 		if (encoremap)
 		{
-			lighttable_t *colormap_p2 = colormap_p;
+			lighttable_t *colormap_p2 = extra_colormap->colormap;
 
 			for (p = 0; p < LIGHTLEVELS; p++)
 			{
@@ -864,7 +864,6 @@ void R_GenerateLightTable(extracolormap_t *extra_colormap, dboolean uselookup)
 			}
 		}
 	}
-
 }
 
 extracolormap_t *R_CreateColormapFromLinedef(char *p1, char *p2, char *p3)
