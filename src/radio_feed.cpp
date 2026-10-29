@@ -844,7 +844,7 @@ void RR_PushLuaPlayerFlavourMessageToFeed(player_t *source, dboolean after1, con
 
 	if (after2 == true)
 	{
-		victim = va("%s%s\x80%s", color_prefix2, player_names[target-players], flavour1);
+		victim = va("%s%s\x80%s", color_prefix2, player_names[target-players], flavour2);
 	}
 	else
 	{
