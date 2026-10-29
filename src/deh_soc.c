@@ -1363,7 +1363,7 @@ void readlevelheader(MYFILE *f, char * name)
 				mapheaderinfo[num]->mobj_scale = get_number(word2);
 			else if (fastcmp(word, "DEFAULTWAYPOINTRADIUS"))
 				mapheaderinfo[num]->default_waypoint_radius = get_number(word2);
-			else if (fastcmp(word, "LIGHTCONTRAST"))
+			else if (fastcmp(word, "LIGHTCONTRAST") || fastcmp(word, "ENCORELIGHTCONTRAST"))
 			{
 				usemaplighting(num, word)->light_contrast = (uint8_t)i;
 				usemaplighting(num, word)->use_custom_light = true;
