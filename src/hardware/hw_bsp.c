@@ -725,12 +725,12 @@ static void HWR_Subsector(size_t num)
 					alpha = HWR_FogBlockAlpha(*gl_frontsector->lightlist[light].lightlevel, rover->master->frontsector->extra_colormap);
 
 					HWR_AddTransparentFloor(0,
-					                       &poly_subsectors[num],
-										   false,
-					                       *rover->bottomheight,
-					                       *gl_frontsector->lightlist[light].lightlevel,
-					                       alpha, rover->master->frontsector, PF_Fog|PF_NoTexture,
-										   true, rover->master->frontsector->extra_colormap);
+											&poly_subsectors[num],
+											false,
+											*rover->bottomheight,
+											*gl_frontsector->lightlist[light].lightlevel,
+											alpha, rover->master->frontsector, PF_Fog|PF_NoTexture,
+											true, rover->master->frontsector->extra_colormap);
 				}
 				else if (rover->fofflags & FOF_TRANSLUCENT
 					&& (rover->alpha < 256 || rover->blend)) // SoM: Flags are more efficient
@@ -740,19 +740,19 @@ static void HWR_Subsector(size_t num)
 					light = R_GetPlaneLight(gl_frontsector, centerHeight, viewz < cullHeight ? true : false);
 
 					HWR_AddTransparentFloor(&levelflats[*rover->bottompic],
-					                       &poly_subsectors[num],
-										   false,
-					                       *rover->bottomheight,
-					                       *gl_frontsector->lightlist[light].lightlevel,
-					                       max(0, min(rover->alpha, 255)), rover->master->frontsector, blendmode,
-					                       false, *gl_frontsector->lightlist[light].extra_colormap);
+											&poly_subsectors[num],
+											false,
+											*rover->bottomheight,
+											*gl_frontsector->lightlist[light].lightlevel,
+											max(0, min(rover->alpha, 255)), rover->master->frontsector, blendmode,
+											false, *gl_frontsector->lightlist[light].extra_colormap);
 				}
 				else
 				{
-					HWR_GetLevelFlat(&levelflats[*rover->bottompic], R_NoEncore(gl_frontsector, &levelflats[*rover->bottompic], false));
+					HWR_GetLevelFlat(&levelflats[*rover->bottompic], R_NoEncore(rover->master->frontsector, &levelflats[*rover->bottompic], true));
 					light = R_GetPlaneLight(gl_frontsector, centerHeight, viewz < cullHeight ? true : false);
 					HWR_RenderPlane(sub, &poly_subsectors[num], false, *rover->bottomheight, HWR_RippleBlend(gl_frontsector, rover, false) | PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, &levelflats[*rover->bottompic],
-					                rover->master->frontsector, 255, *gl_frontsector->lightlist[light].extra_colormap);
+									rover->master->frontsector, 255, *gl_frontsector->lightlist[light].extra_colormap);
 				}
 			}
 
@@ -773,12 +773,12 @@ static void HWR_Subsector(size_t num)
 					alpha = HWR_FogBlockAlpha(*gl_frontsector->lightlist[light].lightlevel, rover->master->frontsector->extra_colormap);
 
 					HWR_AddTransparentFloor(0,
-					                       &poly_subsectors[num],
-										   true,
-					                       *rover->topheight,
-					                       *gl_frontsector->lightlist[light].lightlevel,
-					                       alpha, rover->master->frontsector, PF_Fog|PF_NoTexture,
-										   true, rover->master->frontsector->extra_colormap);
+											&poly_subsectors[num],
+											true,
+											*rover->topheight,
+											*gl_frontsector->lightlist[light].lightlevel,
+											alpha, rover->master->frontsector, PF_Fog|PF_NoTexture,
+											true, rover->master->frontsector->extra_colormap);
 				}
 				else if (rover->fofflags & FOF_TRANSLUCENT
 					&& (rover->alpha < 256 || rover->blend)) // SoM: Flags are more efficient
@@ -788,19 +788,19 @@ static void HWR_Subsector(size_t num)
 					light = R_GetPlaneLight(gl_frontsector, centerHeight, viewz < cullHeight ? true : false);
 
 					HWR_AddTransparentFloor(&levelflats[*rover->toppic],
-					                        &poly_subsectors[num],
+											&poly_subsectors[num],
 											true,
-					                        *rover->topheight,
-					                        *gl_frontsector->lightlist[light].lightlevel,
-					                        max(0, min(rover->alpha, 255)), rover->master->frontsector, blendmode,
-					                        false, *gl_frontsector->lightlist[light].extra_colormap);
+											*rover->topheight,
+											*gl_frontsector->lightlist[light].lightlevel,
+											max(0, min(rover->alpha, 255)), rover->master->frontsector, blendmode,
+											false, *gl_frontsector->lightlist[light].extra_colormap);
 				}
 				else
 				{
-					HWR_GetLevelFlat(&levelflats[*rover->toppic], R_NoEncore(gl_frontsector, &levelflats[*rover->toppic], true));
+					HWR_GetLevelFlat(&levelflats[*rover->toppic], R_NoEncore(rover->master->frontsector, &levelflats[*rover->toppic], false));
 					light = R_GetPlaneLight(gl_frontsector, centerHeight, viewz < cullHeight ? true : false);
 					HWR_RenderPlane(sub, &poly_subsectors[num], true, *rover->topheight, HWR_RippleBlend(gl_frontsector, rover, true) | PF_Occlude, *gl_frontsector->lightlist[light].lightlevel, &levelflats[*rover->toppic],
-					                  rover->master->frontsector, 255, *gl_frontsector->lightlist[light].extra_colormap);
+										rover->master->frontsector, 255, *gl_frontsector->lightlist[light].extra_colormap);
 				}
 			}
 		}
