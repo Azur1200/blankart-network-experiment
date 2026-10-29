@@ -85,7 +85,6 @@
 
 gameaction_t gameaction;
 gamestate_t gamestate = GS_NULL;
-uint8_t ultimatemode = false;
 
 JoyType_t Joystick[MAXSPLITSCREENPLAYERS];
 
@@ -5120,12 +5119,12 @@ static void G_HandleSaveLevel(void)
 					remove(liveeventbackup);
 				cursaveslot = 0;
 			}
-			else if ((!modifiedgame || savemoddata) && !(netgame || multiplayer || ultimatemode || demo.recording || metalrecording || modeattacking))
+			else if ((!modifiedgame || savemoddata) && !(netgame || multiplayer || demo.recording || metalrecording || modeattacking))
 				G_SaveGame((uint32_t)cursaveslot, 0); // TODO when we readd a campaign one day
 		}
 	}
 	// and doing THIS here means you don't lose your progress if you close the game mid-intermission
-	else if (!(ultimatemode || netgame || multiplayer || demo.playback || demo.recording || metalrecording || modeattacking)
+	else if (!(netgame || multiplayer || demo.playback || demo.recording || metalrecording || modeattacking)
 		&& (!modifiedgame || savemoddata) && cursaveslot > 0 && CanSaveLevel(lastmap+1))
 		G_SaveGame((uint32_t)cursaveslot, lastmap+1); // not nextmap+1 to route around special stages
 }

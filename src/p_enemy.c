@@ -1886,13 +1886,7 @@ void A_LobShot(void *thing)
 	if (shot->info->seesound)
 		S_StartSound(shot, shot->info->seesound);
 
-	if (!(actor->flags & MF_BOSS))
-	{
-		if (ultimatemode)
-			actor->reactiontime = actor->info->reactiontime*TICRATE;
-		else
-			actor->reactiontime = actor->info->reactiontime*TICRATE*2;
-	}
+	actor->reactiontime = actor->info->reactiontime*TICRATE*2;
 }
 
 // Function: A_FireShot
@@ -1924,13 +1918,7 @@ void A_FireShot(void *thing)
 
 	P_SpawnXYZMissile(actor, actor->target, locvar1, actor->x, actor->y, z);
 
-	if (!(actor->flags & MF_BOSS))
-	{
-		if (ultimatemode)
-			actor->reactiontime = actor->info->reactiontime*TICRATE;
-		else
-			actor->reactiontime = actor->info->reactiontime*TICRATE*2;
-	}
+	actor->reactiontime = actor->info->reactiontime*TICRATE*2;
 }
 
 // Function: A_SuperFireShot
@@ -1966,13 +1954,7 @@ void A_SuperFireShot(void *thing)
 	if (mo)
 		mo->flags2 |= MF2_SUPERFIRE;
 
-	if (!(actor->flags & MF_BOSS))
-	{
-		if (ultimatemode)
-			actor->reactiontime = actor->info->reactiontime*TICRATE;
-		else
-			actor->reactiontime = actor->info->reactiontime*TICRATE*2;
-	}
+	actor->reactiontime = actor->info->reactiontime*TICRATE*2;
 }
 
 // Function: A_BossFireShot
@@ -3751,27 +3733,12 @@ void A_JetChase(void *thing)
 		return; // got a new target
 	}
 
-	// chase towards player
-	if (ultimatemode)
-		P_Thrust(actor, actor->angle, FixedMul(actor->info->speed/2, actor->scale));
-	else
-		P_Thrust(actor, actor->angle, FixedMul(actor->info->speed/4, actor->scale));
+	P_Thrust(actor, actor->angle, FixedMul(actor->info->speed/4, actor->scale));
 
-	// must adjust height
-	if (ultimatemode)
-	{
-		if (actor->z < (actor->target->z + actor->target->height + FixedMul((64<<FRACBITS), actor->scale)))
-			actor->momz += FixedMul(FRACUNIT/2, actor->scale);
-		else
-			actor->momz -= FixedMul(FRACUNIT/2, actor->scale);
-	}
+	if (actor->z < (actor->target->z + actor->target->height + FixedMul((32<<FRACBITS), actor->scale)))
+		actor->momz += FixedMul(FRACUNIT/2, actor->scale);
 	else
-	{
-		if (actor->z < (actor->target->z + actor->target->height + FixedMul((32<<FRACBITS), actor->scale)))
-			actor->momz += FixedMul(FRACUNIT/2, actor->scale);
-		else
-			actor->momz -= FixedMul(FRACUNIT/2, actor->scale);
-	}
+		actor->momz -= FixedMul(FRACUNIT/2, actor->scale);
 }
 
 // Function: A_JetbThink
@@ -3873,10 +3840,7 @@ void A_JetgShoot(void *thing)
 	A_FaceTarget(actor);
 	P_SpawnMissile(actor, actor->target, (mobjtype_t)actor->info->raisestate);
 
-	if (ultimatemode)
-		actor->reactiontime = actor->info->reactiontime*TICRATE;
-	else
-		actor->reactiontime = actor->info->reactiontime*TICRATE*2;
+	actor->reactiontime = actor->info->reactiontime*TICRATE*2;
 
 	if (actor->info->attacksound)
 		S_StartSound(actor, actor->info->attacksound);
@@ -5956,10 +5920,7 @@ void A_BuzzFly(void *thing)
 		int32_t dist, realspeed;
 		const fixed_t mf = 5*(FRACUNIT/4);
 
-		if (ultimatemode)
-			realspeed = FixedMul(FixedMul(actor->info->speed,mf), actor->scale);
-		else
-			realspeed = FixedMul(actor->info->speed, actor->scale);
+		realspeed = FixedMul(actor->info->speed, actor->scale);
 
 		dist = P_AproxDistance(P_AproxDistance(actor->target->x - actor->x,
 			actor->target->y - actor->y), actor->target->z - actor->z);
@@ -7979,10 +7940,7 @@ void A_MultiShot(void *thing)
 
 	if (!(actor->flags & MF_BOSS))
 	{
-		if (ultimatemode)
-			actor->reactiontime = actor->info->reactiontime*TICRATE;
-		else
-			actor->reactiontime = actor->info->reactiontime*TICRATE*2;
+		actor->reactiontime = actor->info->reactiontime*TICRATE*2;
 	}
 }
 
@@ -9547,10 +9505,7 @@ void A_BrakFireShot(void *thing)
 
 	if (!(actor->flags & MF_BOSS))
 	{
-		if (ultimatemode)
-			actor->reactiontime = actor->info->reactiontime*TICRATE;
-		else
-			actor->reactiontime = actor->info->reactiontime*TICRATE*2;
+		actor->reactiontime = actor->info->reactiontime*TICRATE*2;
 	}
 }
 

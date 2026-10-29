@@ -2187,7 +2187,7 @@ void M_StartControlPanel(void)
 		M_SetItemOn(pi, "CONTINUE");
 
 		// intermission, so gray out stuff.
-		M_SetItemDisabled(pi, "RETRY", !retryallowed /*|| ultimatemode*/);
+		M_SetItemDisabled(pi, "RETRY", !retryallowed);
 	}
 	else // multiplayer
 	{

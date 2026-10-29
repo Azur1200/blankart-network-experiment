@@ -2122,12 +2122,6 @@ void D_SRB2Main(void)
 		return;
 	}
 
-	/*if (M_CheckParm("-ultimatemode"))
-	{
-		autostart = true;
-		ultimatemode = true;
-	}*/
-
 	// rei/miru: bootmap (Idea: starts the game on a predefined map)
 	if (bootmap && !(M_CheckParm("-warp") && M_IsNextParm()))
 	{
