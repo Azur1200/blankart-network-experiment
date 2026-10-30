@@ -5632,7 +5632,8 @@ static void K_drawKartMinimap(void)
 			if (arrow)
 			{
 				// Rotate based on (visual) player angle.
-				rollangle = players[localplayers[i]].drawangle-ANGLE_90;
+				rollangle = players[localplayers[i]].drawangle - ANGLE_90;
+				rollangle *= (encoremode ? -1 : 1);
 			}
 			else if ((K_MinimapIconCanSpinout()) && (players[localplayers[i]].spinoutrot))
 			{
