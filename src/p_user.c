@@ -4801,7 +4801,7 @@ void P_PlayerThink(player_t *player)
 				gmobj->frame &= ~FF_TRANSMASK;
 				if (stacking)
 				{
-					gmobj->frame |= tr_trans40<<FF_TRANSSHIFT;
+					gmobj->frame |= tr_trans90<<FF_TRANSSHIFT;
 				}
 				else
 				{
