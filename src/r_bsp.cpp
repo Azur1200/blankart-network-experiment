@@ -75,7 +75,12 @@ dboolean R_NoEncore(sector_t *sector, levelflat_t *flat, dboolean ceiling)
 		|| flags & SSF_REDPOGOSPRING))
 	{
 		// Automatically handle encore invert for sneaker, water and pogospring panel ssf flags.
-		return true;
+		if (ceiling)
+		{
+			return ((dboolean)(sector->flags & MSF_FLIPSPECIAL_CEILING));
+		}
+
+		return ((dboolean)(sector->flags & MSF_FLIPSPECIAL_FLOOR));
 	}
 
 	if (terrain && (terrain->flags & TRF_REMAP))
