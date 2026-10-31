@@ -446,7 +446,6 @@ consvar_t cv_shrinkme[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("shrinkme4", "Off", CV_CALL, CV_OnOff, weaponPrefChange4)
 };
 
-// Jon's lament
 static CV_PossibleValue_t driftjitter_cons_t[] = {{0, "SRB2Kart"}, {1, "Ring Racers"}, {0, NULL}};
 
 // Drift jitter settings.
