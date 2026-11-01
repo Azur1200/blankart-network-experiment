@@ -1102,31 +1102,15 @@ void V_DrawAffinePatch(fixed_t x, fixed_t y, const affine_t *transform, int32_t 
 	const int32_t scrwidth = vid.width;
 	const int32_t pw = patch->width, ph = patch->height;
 
-	/*
-	fixed_t determinant = FixedMul(a, d) - FixedMul(b, c);
-	if (determinant == 0)
-		return;
-	fixed_t ba = FixedDiv(d, determinant);
-	fixed_t bb = FixedDiv(-b, determinant);
-	fixed_t bc = FixedDiv(-c, determinant);
-	fixed_t bd = FixedDiv(a, determinant);
-
-	fixed_t x1 = FixedMul(ba, -cx)     + FixedMul(bb, -cy) + cx;
-	fixed_t y1 = FixedMul(bc, -cx)     + FixedMul(bd, -cy) + cy;
-	fixed_t x2 = FixedMul(ba, pw*FRACUNIT - cx) + FixedMul(bb, -cy) + cx;
-	fixed_t y2 = FixedMul(bc, pw*FRACUNIT - cx) + FixedMul(bd, -cy) + cy;
-	fixed_t x3 = FixedMul(ba, -cx)     + FixedMul(bb, ph*FRACUNIT - cy) + cx;
-	fixed_t y3 = FixedMul(bc, -cx)     + FixedMul(bd, ph*FRACUNIT - cy) + cy;
-	fixed_t x4 = FixedMul(ba, pw*FRACUNIT - cx) + FixedMul(bb, ph*FRACUNIT - cy) + cx;
-	fixed_t y4 = FixedMul(bc, pw*FRACUNIT - cx) + FixedMul(bd, ph*FRACUNIT - cy) + cy;
-	*/
-
 	int32_t ydiff = (bounds.yup - (transform->oy >> FRACBITS));
 	int32_t xdiff = (bounds.xleft - (transform->ox >> FRACBITS));
 
+	int32_t starty = y - ydiff;
+	int32_t startx = x - xdiff;
+
 	// Get the clipping values, since that can vary per-resolution.
-	int32_t yclip = std::min(y - ydiff, 0) * -1;
-	int32_t xclip = std::min(x - xdiff, 0) * -1;
+	int32_t yclip = std::min(starty, 0) * -1;
+	int32_t xclip = std::min(startx, 0) * -1;
 
 	ydiff -= yclip;
 	xdiff -= xclip;
@@ -1134,8 +1118,8 @@ void V_DrawAffinePatch(fixed_t x, fixed_t y, const affine_t *transform, int32_t 
 	// Get the leftmost and uppermost bounds of the current resolution.
 	const int32_t vw = vid.width, vh = vid.height;
 
-	int32_t yy = CLAMP(y - ydiff, 0, vh);
-	int32_t xx = CLAMP(x - xdiff, 0, vw);
+	int32_t yy = CLAMP(starty, 0, vh);
+	int32_t xx = CLAMP(startx, 0, vw);
 
 	int32_t xmax = std::max(bounds.xlen - xclip, pw), ymax = std::max(bounds.ylen - yclip, ph);
 
@@ -1145,11 +1129,20 @@ void V_DrawAffinePatch(fixed_t x, fixed_t y, const affine_t *transform, int32_t 
 
 	intptr_t dest_y = (intptr_t)(vid.screens[0]) + yy * vw;
 
+	// clipping bounds
+	int32_t left, right, top, bottom;
+	V_GetClipBounds(&left, &right, &top, &bottom);
+
 	uint8_t * const destbase = (uint8_t * const)(dest_y + xx);
 	int32_t dx = 0, dy = 0;
 	uint8_t mypixel = TRANSPARENTPIXEL;
 	for (dy = 0; dy < ymax; dy++)
 	{
+		if (top > starty + dy || starty + dy >= bottom)
+		{
+			continue;
+		}
+
 		// yoinked from NovaSquirrel's mode 7 preview
 		// ...which is in turn yoinked from Mesen's S-PPU code
 		// i can't do matrix math to save my life :face_holding_back_tears:
@@ -1160,6 +1153,11 @@ void V_DrawAffinePatch(fixed_t x, fixed_t y, const affine_t *transform, int32_t 
 
 		for (dx = 0; dx < xmax; dx++, dest++)
 		{
+			if (left > startx + dx || startx + dx >= right)
+			{
+				continue;
+			}
+
 			const int32_t srcx = ux >> FRACBITS;
 			const int32_t srcy = uy >> FRACBITS;
 			ux += a;
@@ -1189,30 +1187,6 @@ void V_DrawAffinePatch(fixed_t x, fixed_t y, const affine_t *transform, int32_t 
 			}
 		}
 	}
-
-	/*
-	fixed_t xsort[4] = { x1, x2, x3, x4 };
-	fixed_t ysort[4] = { y1, y2, y3, y4 };
-	qs22j(xsort, 4, sizeof(*xsort), sortcoords);
-	qs22j(ysort, 4, sizeof(*ysort), sortcoords);
-	fixed_t dx1, dx2;
-	dx1 = FixedDiv(x1 - x2, y2 - y1);
-	dx2 = FixedDiv(x1 - x3, y3 - y1);
-	fixed_t px1 = x*FRACUNIT + x1;
-	fixed_t px2 = x*FRACUNIT + x2;
-	fixed_t py = y*FRACUNIT + y1;
-	for (uint32_t i = 0; i < 10; i++)
-	{
-		for (fixed_t A = px1; A < px2; A += FRACUNIT)
-			V_DrawFixedFill(A, py + i*FRACUNIT, FRACUNIT, FRACUNIT, V_NOSCALESTART | (leveltime&0xff));
-		px1 += dx1;
-		px2 += dx2;
-	}
-	V_DrawFixedFill(x*FRACUNIT + x1, y*FRACUNIT + y1, FRACUNIT, FRACUNIT, V_NOSCALESTART | (leveltime&0xff));
-	V_DrawFixedFill(x*FRACUNIT + x2, y*FRACUNIT + y2, FRACUNIT, FRACUNIT, V_NOSCALESTART | (leveltime&0xff));
-	V_DrawFixedFill(x*FRACUNIT + x3, y*FRACUNIT + y3, FRACUNIT, FRACUNIT, V_NOSCALESTART | (leveltime&0xff));
-	V_DrawFixedFill(x*FRACUNIT + x4, y*FRACUNIT + y4, FRACUNIT, FRACUNIT, V_NOSCALESTART | (leveltime&0xff));
-	*/
 };
 
 // draws a patch rotated counter-clockwise by angle degrees
