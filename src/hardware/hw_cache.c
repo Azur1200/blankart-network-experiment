@@ -791,12 +791,6 @@ static void HWR_PrecacheLevelFlats(void)
 		{
 			sector_t *sec = &sectors[i];
 
-			// sector checked already?
-			if (sec->validcount == validcount)
-				continue;
-
-			sec->validcount = validcount;
-
 			// gotta check sector floor and ceiling
 			for (j = 0; j < 2; j++)
 			{
@@ -834,14 +828,8 @@ static void HWR_PrecacheLevelTextures(void)
 
 	for (i = 0; i < numlines; i++)
 	{
-		line_t *line = &lines[i];
+		const line_t *line = &lines[i];
 		const int noencoremap = ((line->flags & ML_TFERLINE) ? 2 : 1);
-
-		// line checked already?
-		if (line->validcount == validcount)
-			continue;
-
-		line->validcount = validcount;
 
 		// two sides
 		for (j = 0; j < 2; j++)
