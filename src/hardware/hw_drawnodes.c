@@ -18,8 +18,6 @@
 #include "../qs22j.h"
 #include "../z_zone.h"
 
-#define ABS(x) ((x) < 0 ? -(x) : (x))
-
 // A drawnode is something that points to a 3D floor, 3D side, or masked
 // middle texture. This is used for sorting with sprites.
 
@@ -200,7 +198,7 @@ static int CompareDrawNodePlanes(const void *p1, const void *p2)
 	int32_t n1 = *(const int32_t*)p1;
 	int32_t n2 = *(const int32_t*)p2;
 
-	return ABS(cst->drawnodes[n2].u.plane.fixedheight - viewz) - ABS(cst->drawnodes[n1].u.plane.fixedheight - viewz);
+	return abs(cst->drawnodes[n2].u.plane.fixedheight - viewz) - abs(cst->drawnodes[n1].u.plane.fixedheight - viewz);
 }
 
 // Sorts and renders the list of drawnodes for the scene being rendered.
@@ -275,10 +273,14 @@ void HWR_RenderDrawNodes(void)
 			gl_frontsector = NULL;
 
 			if (!(plane->blend & PF_NoTexture))
-				HWR_GetLevelFlat(plane->levelflat, R_NoEncore(plane->FOFSector, plane->levelflat, plane->isceiling));
+			{
+				const dboolean ceiling = plane->FOFSector ? !plane->isceiling : plane->isceiling; // match software!
+				HWR_GetLevelFlat(plane->levelflat, R_NoEncore(plane->FOFSector, plane->levelflat, ceiling));
+			}
+
 			HWR_RenderPlane(NULL, plane->xsub, plane->isceiling, plane->fixedheight,
-				plane->blend, plane->lightlevel, plane->levelflat,
-				plane->FOFSector, plane->alpha, plane->planecolormap);
+							plane->blend, plane->lightlevel, plane->levelflat,
+							plane->FOFSector, plane->alpha, plane->planecolormap);
 		}
 		else if (drawnode->type == DRAWNODE_POLYOBJECT_PLANE)
 		{
@@ -290,9 +292,9 @@ void HWR_RenderDrawNodes(void)
 			if (!(polyplane->blend & PF_NoTexture))
 				HWR_GetLevelFlat(polyplane->levelflat, R_NoEncore(polyplane->FOFSector, polyplane->levelflat, polyplane->isceiling));
 			HWR_RenderPolyObjectPlane(polyplane->polysector,
-				polyplane->isceiling, polyplane->fixedheight, polyplane->blend,
-				polyplane->lightlevel, polyplane->levelflat,
-				polyplane->FOFSector, polyplane->alpha, polyplane->planecolormap);
+										polyplane->isceiling, polyplane->fixedheight, polyplane->blend,
+										polyplane->lightlevel, polyplane->levelflat,
+										polyplane->FOFSector, polyplane->alpha, polyplane->planecolormap);
 		}
 		else if (drawnode->type == DRAWNODE_WALL)
 		{
@@ -301,7 +303,7 @@ void HWR_RenderDrawNodes(void)
 			if (!(wall->blend & PF_NoTexture))
 				HWR_GetTexture(wall->texnum, wall->noencore);
 			HWR_RenderWall(wall->wallVerts, &wall->Surf, wall->blend, wall->fogwall,
-				wall->lightlevel, wall->wallcolormap);
+							wall->lightlevel, wall->wallcolormap);
 		}
 	}
 

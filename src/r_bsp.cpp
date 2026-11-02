@@ -1366,7 +1366,7 @@ void R_Prep3DFloors(sector_t *sector, fixed_t secceilz)
 			rover->lastlight = 0;
 			if (!(rover->fofflags & FOF_EXISTS) || (rover->fofflags & FOF_NOSHADE
 				&& !(rover->fofflags & FOF_CUTLEVEL) && !(rover->fofflags & FOF_CUTSPRITES)))
-			continue;
+				continue;
 
 			heighttest = P_GetFFloorTopZAt(rover, sector->soundorg.x, sector->soundorg.y);
 
