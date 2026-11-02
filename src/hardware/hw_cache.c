@@ -781,7 +781,7 @@ void HWR_FreeMapTextures(void)
 static void HWR_PrecacheLevelFlats(void)
 {
 	levelflat_t levelflat;
-	size_t i, j;
+	size_t i;
 
 	// special case for encore
 	if (encoremap)
@@ -789,6 +789,7 @@ static void HWR_PrecacheLevelFlats(void)
 		// go through all sectors to determine if it should be remapped for encore
 		for (i = 0; i < numsectors; i++)
 		{
+			size_t j;
 			sector_t *sec = &sectors[i];
 
 			// gotta check sector floor and ceiling
@@ -820,37 +821,54 @@ static void HWR_PrecacheLevelTextures(void)
 {
 	char *texturepresent;
 	anim_t *anim;
-	size_t i, j;
+	size_t i, j, f;
 	int32_t h;
 
-	texturepresent = calloc(numtextures, sizeof (*texturepresent));
-	if (texturepresent == NULL) I_Error("%s: Out of memory looking up textures", "HWR_PrecacheLevel");
+	texturepresent = calloc(gl_numtextures, sizeof (*texturepresent));
+	if (texturepresent == NULL)
+		I_Error("%s: Out of memory looking up textures", "HWR_PrecacheLevel");
+
+	// Sky texture is always present.
+	// Note that F_SKY1 is the name used to indicate a sky floor/ceiling as a flat,
+	// while the sky texture is stored like a wall texture, with a skynum dependent name.
+	texturepresent[skytexture] = (noencoresky) ? 2 : 1;
+	HWR_GetTexture(skytexture, noencoresky);
 
 	for (i = 0; i < numlines; i++)
 	{
 		const line_t *line = &lines[i];
-		const int noencoremap = ((line->flags & ML_TFERLINE) ? 2 : 1);
+		const dboolean noencoremap = (encoremap && (line->flags & ML_TFERLINE));
 
 		// two sides
 		for (j = 0; j < 2; j++)
 		{
-			side_t *side = &sides[line->sidenum[j]];
-
 			// Single-side linedef
 			if (line->sidenum[j] == NO_INDEX)
 				continue;
 
-			if (side->toptexture >= 0 && side->toptexture < numtextures)
+			const side_t *side = &sides[line->sidenum[j]];
+			const int32_t sidetex[] = {side->toptexture, side->midtexture, side->bottomtexture};
+
+			// check from top to bottom
+			for (f = 0; f < 3; f++)
 			{
-				texturepresent[side->toptexture] = 1|noencoremap;
-			}
-			if (side->midtexture >= 0 && side->midtexture < numtextures)
-			{
-				texturepresent[side->midtexture] = 1|noencoremap;
-			}
-			if (side->bottomtexture >= 0 && side->bottomtexture < numtextures)
-			{
-				texturepresent[side->bottomtexture] = 1|noencoremap;
+				const int32_t texnum = sidetex[f];
+
+				if (texnum < 0 || (unsigned)texnum >= gl_numtextures)
+					continue;
+
+				if (!(texturepresent[texnum] & 1))
+				{
+					texturepresent[texnum] |= 1;
+					HWR_GetTexture(texnum, false);
+				}
+
+				if (noencoremap
+					&& !(texturepresent[texnum] & 2))
+				{
+					texturepresent[texnum] |= 2;
+					HWR_GetTexture(texnum, true);
+				}
 			}
 		}
 	}
@@ -858,53 +876,27 @@ static void HWR_PrecacheLevelTextures(void)
 	// check for animated textures
 	for (anim = anims; anim < lastanim; anim++)
 	{
-		if (!texturepresent[anim->basepic])
-			continue;
-
 		const char texpresent = texturepresent[anim->basepic];
 
 		if (!texpresent)
 			continue;
 
-		if (texpresent & 1)
+		for (h = 1; h < anim->numpics; h++)
 		{
-			for (h = 1; h < anim->numpics; h++)
-			{
-				HWR_GetTexture(anim->basepic+h, false);
-			}
-		}
+			const int32_t animtexnum = anim->basepic+h;
 
-		if (texpresent & 2)
-		{
-			for (h = 1; h < anim->numpics; h++)
+			if (texpresent & 1)
 			{
-				HWR_GetTexture(anim->basepic+h, true);
+				HWR_GetTexture(animtexnum, false);
+			}
+
+			if (texpresent & 2)
+			{
+				HWR_GetTexture(animtexnum, true);
 			}
 		}
 	}
 
-	// Sky texture is always present.
-	// Note that F_SKY1 is the name used to indicate a sky floor/ceiling as a flat,
-	// while the sky texture is stored like a wall texture, with a skynum dependent name.
-	texturepresent[skytexture] = (noencoresky) ? 2 : 1;
-
-	for (i = 0; i < (unsigned)numtextures; i++)
-	{
-		const char texpresent = texturepresent[i];
-
-		if (!texpresent)
-			continue;
-
-		if (texpresent & 1)
-		{
-			HWR_GetTexture(i, false);
-		}
-
-		if (texpresent & 2)
-		{
-			HWR_GetTexture(i, true);
-		}
-	}
 	free(texturepresent);
 }
 
