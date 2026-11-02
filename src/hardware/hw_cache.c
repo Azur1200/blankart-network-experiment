@@ -617,9 +617,15 @@ void HWR_MakePatch (const patch_t *patch, GLPatch_t *grPatch, GLMipmap_t *grMipm
 //             CACHING HANDLING
 // =================================================
 
+typedef struct
+{
+	GLMapTexture_t normal;
+	GLMapTexture_t encore;
+} GLMapTextureSet_t; // idk i suck at naming things
+
 static size_t gl_numtextures = 0; // Texture count
-static GLMapTexture_t *gl_textures; // For all textures
-static GLMapTexture_t *gl_flats; // For all (texture) flats, as normal flats don't need to be cached
+static GLMapTextureSet_t *gl_textures; // For all textures
+static GLMapTextureSet_t *gl_flats; // For all (texture) flats, as normal flats don't need to be cached
 
 void HWR_FreeTextureData(patch_t *patch)
 {
@@ -751,9 +757,11 @@ void HWR_InitMapTextures(void)
 
 static void FreeMapTexture(GLMapTexture_t *tex)
 {
+	if (!tex)
+		return;
+
 	GL_DeleteTexture(&tex->mipmap);
-	if (tex->mipmap.data)
-		Z_Free(tex->mipmap.data);
+	Z_Free(tex->mipmap.data);
 	tex->mipmap.data = NULL;
 }
 
@@ -761,10 +769,13 @@ void HWR_FreeMapTextures(void)
 {
 	size_t i;
 
-	for (i = 0; i < gl_numtextures*2; i++)
+	for (i = 0; i < gl_numtextures; i++)
 	{
-		FreeMapTexture(&gl_textures[i]);
-		FreeMapTexture(&gl_flats[i]);
+		FreeMapTexture(&gl_textures[i].normal);
+		FreeMapTexture(&gl_textures[i].encore);
+
+		FreeMapTexture(&gl_flats[i].normal);
+		FreeMapTexture(&gl_flats[i].encore);
 	}
 
 	// now the heap don't have any 'user' pointing to our
@@ -997,8 +1008,8 @@ void HWR_LoadMapTextures(size_t pnumtextures)
 	HWR_FreeMapTextures();
 
 	gl_numtextures = pnumtextures;
-	gl_textures = calloc(gl_numtextures, sizeof (*gl_textures)*2); // *2 - 1 for encore-remapped texture and another for noencore texture (unused when not in encore)
-	gl_flats = calloc(gl_numtextures, sizeof(*gl_flats)*2);
+	gl_textures = calloc(gl_numtextures, sizeof(*gl_textures)); // *2 - 1 for encore-remapped texture and another for noencore texture (unused when not in encore), see: GLMapTextureSet_t
+	gl_flats = calloc(gl_numtextures, sizeof(*gl_flats));
 
 	if (gl_textures == NULL || gl_flats == NULL)
 		I_Error("HWR_LoadMapTextures: ran out of memory for OpenGL textures");
@@ -1010,12 +1021,17 @@ void HWR_LoadMapTextures(size_t pnumtextures)
 GLMapTexture_t *HWR_GetTexture(int32_t tex, dboolean noencoremap)
 {
 	GLMapTexture_t *grtex;
-#ifdef PARANOIA
-	if ((unsigned)tex >= gl_numtextures)
-		I_Error("HWR_GetTexture: tex >= numtextures\n");
-#endif
 
-	grtex = &gl_textures[tex*2 + (encoremap && !noencoremap ? 0 : 1)];
+	if (tex < 0 || (unsigned)tex >= gl_numtextures)
+	{
+#ifdef PARANOIA
+		I_Error("HWR_GetTexture: Invalid texture ID %d", tex);
+#else
+		tex = 0;
+#endif
+	}
+
+	grtex = (!noencoremap && encoremap) ? &gl_textures[tex].encore : &gl_textures[tex].normal;
 
 	// Generate texture if missing from the cache
 	if (!grtex->mipmap.data && !grtex->mipmap.downloaded)
@@ -1037,7 +1053,7 @@ GLMapTexture_t *HWR_GetTexture(int32_t tex, dboolean noencoremap)
 
 		// Every texture in memory, stored in the
 		// hardware renderer's bit depth format. Wow!
-		grtexbright = &gl_textures[brightmapnum*2 + (encoremap && !noencoremap ? 0 : 1)];
+		grtexbright = &gl_textures[brightmapnum].normal; // brightmaps do not need extra encore textures as they never remap
 
 		// Generate texture if missing from the cache
 		if (!grtexbright->mipmap.data && !grtexbright->mipmap.downloaded)
@@ -1160,7 +1176,7 @@ void HWR_GetLevelFlat(levelflat_t *levelflat, dboolean noencoremap)
 		return;
 	}
 
-	int32_t texturenum = texturetranslation[levelflat->texture_id];
+	int32_t texturenum = R_GetTextureNum(levelflat->texture_id);
 	int32_t brightmapnum = R_GetTextureBrightmap(texturenum);
 
 	if (texturenum <= 0)
@@ -1169,7 +1185,7 @@ void HWR_GetLevelFlat(levelflat_t *levelflat, dboolean noencoremap)
 		return;
 	}
 
-	GLMapTexture_t *grtex = &gl_flats[texturenum*2 + (encoremap && !noencoremap ? 0 : 1)];
+	GLMapTexture_t *grtex = (!noencoremap && encoremap) ? &gl_flats[texturenum].encore : &gl_flats[texturenum].normal;
 	GLMipmap_t *grMipmap = &grtex->mipmap;
 
 	if (!grMipmap->data && !grMipmap->downloaded)
@@ -1209,7 +1225,7 @@ void HWR_GetLevelFlat(levelflat_t *levelflat, dboolean noencoremap)
 
 	if (brightmapnum)
 	{
-		grtex = &gl_flats[brightmapnum*2 + (encoremap && !noencoremap ? 0 : 1)];
+		grtex = &gl_flats[brightmapnum].normal; // brightmaps do not need extra encore textures as they never remap
 		grMipmap = &grtex->mipmap;
 
 		if (!grMipmap->data && !grMipmap->downloaded)
