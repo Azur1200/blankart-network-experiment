@@ -547,9 +547,11 @@ void HWR_RenderViewpoint(player_t *player, dboolean drawSkyTexture, dboolean is_
 
 	HWR_StartBatching();
 
-	HWR_AddPrecipitationSprites();
-
 	HWR_RenderBSPNode((int32_t)numnodes-1);
+
+	// dont draw precip in skyboxes!
+	if (!is_skybox)
+		HWR_AddPrecipitationSprites();
 
 	// restore portal clipping variables
 	gl_portalcullsector = NULL;
