@@ -3389,7 +3389,7 @@ void R_AddSprites(sector_t *sec, int32_t lightlevel)
 	for (thing = sec->thinglist; thing; thing = thing->snext)
 	{
 		// do not render in skybox
-		if ((thing->renderflags & RF_HIDEINSKYBOX) /*&& portalskipprecipmobjs*/)
+		if (rendering_skybox && (thing->renderflags & RF_HIDEINSKYBOX))
 		{
 			continue;
 		}

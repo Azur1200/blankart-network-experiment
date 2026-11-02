@@ -79,6 +79,7 @@ dboolean skyVisiblePerPlayer[MAXSPLITSCREENPLAYERS]; // saved values of skyVisib
 sector_t *viewsector;
 player_t *viewplayer;
 mobj_t *r_viewmobj;
+dboolean rendering_skybox = false;
 
 int r_splitscreen;
 
@@ -1588,6 +1589,8 @@ static void R_RenderViewpoint(maskcount_t* mask, int32_t cachenum, dboolean draw
 	Mask_Pre(mask);
 
 	curdrawsegs = ds_p;
+
+	rendering_skybox = (drawprecip == false);
 
 	R_RenderFirstBSPNode(cachenum);
 

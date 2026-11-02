@@ -550,6 +550,7 @@ void HWR_RenderViewpoint(player_t *player, dboolean drawSkyTexture, dboolean is_
 	HWR_AddPrecipitationSprites();
 
 	HWR_RenderBSPNode((int32_t)numnodes-1);
+
 	// restore portal clipping variables
 	gl_portalcullsector = NULL;
 	gl_portalclipline = NULL;
