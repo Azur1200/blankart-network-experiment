@@ -2555,8 +2555,8 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	vis->colormap = NULL;
 
-	if (encoremap && !(thing->flags & MF_DONTENCOREMAP))
-		vis->colormap += COLORMAP_REMAPOFFSET;
+	//if (encoremap && !(thing->flags & MF_DONTENCOREMAP))
+		//vis->colormap += COLORMAP_REMAPOFFSET;
 
 	// set top/bottom coords
 	vis->gzt = FIXED_TO_FLOAT(interp.z) + (FIXED_TO_FLOAT(spritecachedinfo[lumpoff].topoffset) * this_scale);
