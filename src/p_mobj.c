@@ -11454,7 +11454,13 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 
 	mobj->radius = info->radius;
 	mobj->height = info->height;
+
+	// Now this? This is cool shit! Try doing this in hardcode before :trollface:
 	mobj->flags = info->flags;
+	mobj->flags2 = info->flags2;
+	mobj->eflags = info->eflags;
+	mobj->renderflags = info->renderflags;
+	mobj->renderflags2 = info->renderflags2;
 
 	mobj->health = (info->spawnhealth ? info->spawnhealth : 1);
 
@@ -12013,7 +12019,11 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 
 	mobj->x = x;
 	mobj->y = y;
+
+	// Now this? This is cool shit! Try doing this in hardcode before :trollface:
 	mobj->flags = info->flags;
+	mobj->renderflags = info->renderflags;
+	mobj->renderflags2 = info->renderflags2;
 
 	// do not set the state with P_SetMobjState,
 	// because action routines can not be called yet

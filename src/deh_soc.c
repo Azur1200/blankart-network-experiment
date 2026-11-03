@@ -377,7 +377,23 @@ void readthing(MYFILE *f, int32_t num)
 			}
 			else if (fastcmp(word, "FLAGS"))
 			{
-				mobjinfo[num].flags = (int32_t)get_number(word2);
+				mobjinfo[num].flags = (uint32_t)get_number(word2);
+			}
+			else if (fastcmp(word, "FLAGS2"))
+			{
+				mobjinfo[num].flags2 = (uint32_t)get_number(word2);
+			}
+			else if (fastcmp(word, "EFLAGS"))
+			{
+				mobjinfo[num].eflags = (uint16_t)get_number(word2);
+			}
+			else if (fastcmp(word, "RENDERFLAGS"))
+			{
+				mobjinfo[num].renderflags = (uint32_t)get_number(word2);
+			}
+			else if (fastcmp(word, "RENDERFLAGS2"))
+			{
+				mobjinfo[num].renderflags2 = (uint32_t)get_number(word2);
 			}
 			else if (fastcmp(word, "RAISESTATE"))
 			{
