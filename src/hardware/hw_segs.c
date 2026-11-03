@@ -18,19 +18,22 @@
 #include "../r_local.h"
 #include "../z_zone.h"
 
-static FUINT HWR_CalcWallLight(FUINT lightnum, seg_t *seg)
+static FUINT HWR_CalcWallLight(FUINT lightnum, seg_t *seg, extracolormap_t *colormap)
 {
-    int16_t finallight = lightnum;
+	int16_t finallight = lightnum;
+	const dboolean paletterender = HWR_ShouldUsePaletteRendering(); // match software!
 
-    if (seg != NULL && P_ApplyLightOffsetFine(lightnum, seg->frontsector))
-    {
-        finallight += seg->hwLightOffset;
+	if (colormap && paletterender)
+		return (FUINT)finallight;
 
-        if (finallight > 255) finallight = 255;
-        if (finallight < 0) finallight = 0;
-    }
+	if (seg != NULL && P_ApplyLightOffsetFine(lightnum, seg->frontsector))
+	{
+		const int16_t offset = (paletterender) ? ((int16_t)seg->lightOffset * 8) : seg->hwLightOffset;
+		finallight += offset;
+		finallight = CLAMP(finallight, 0, 255);
+	}
 
-    return (FUINT)finallight;
+	return (FUINT)finallight;
 }
 
 void HWR_RenderWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, FBITFIELD blend, dboolean fogwall, int32_t lightlevel, extracolormap_t *wallcolormap)
@@ -130,6 +133,7 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, int32_t texnu
 
 	const uint8_t alpha = Surf->PolyColor.s.alpha;
 	FUINT lightnum = sector->lightlevel;
+	lightnum = HWR_CalcWallLight(lightnum, gl_curline, NULL);
 	extracolormap_t *colormap = NULL;
 
 	realtop = top = wallVerts[3].y;
@@ -178,6 +182,8 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, int32_t texnu
 				lightnum = *list[i].lightlevel;
 				colormap = *list[i].extra_colormap;
 			}
+
+			lightnum = HWR_CalcWallLight(lightnum, gl_curline, colormap);
 		}
 
 		dboolean solid = false;
@@ -247,11 +253,11 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, int32_t texnu
 		wallVerts[1].y = endbot;
 
 		if (polyflags & PF_Fog)
-			HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, polyflags, true, HWR_CalcWallLight(lightnum, gl_curline), colormap);
+			HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, polyflags, true, lightnum, colormap);
 		else if (polyflags & PF_EnvironmentTrans)
-			HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, polyflags, false, HWR_CalcWallLight(lightnum, gl_curline), colormap);
+			HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, polyflags, false, lightnum, colormap);
 		else
-			HWR_ProjectWall(wallVerts, Surf, polyflags, HWR_CalcWallLight(lightnum, gl_curline), colormap);
+			HWR_ProjectWall(wallVerts, Surf, polyflags, lightnum, colormap);
 
 		top = bot;
 		endtop = endbot;
@@ -277,11 +283,11 @@ static void HWR_SplitWall(sector_t *sector, FOutVector *wallVerts, int32_t texnu
 	wallVerts[1].y = endbot;
 
 	if (polyflags & PF_Fog)
-		HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, polyflags, true,  HWR_CalcWallLight(lightnum, gl_curline), colormap);
+		HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, polyflags, true, lightnum, colormap);
 	else if (polyflags & PF_EnvironmentTrans)
-		HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, polyflags, false, HWR_CalcWallLight(lightnum, gl_curline), colormap);
+		HWR_AddTransparentWall(wallVerts, Surf, texnum, noencore, polyflags, false, lightnum, colormap);
 	else
-		HWR_ProjectWall(wallVerts, Surf, polyflags, HWR_CalcWallLight(lightnum, gl_curline), colormap);
+		HWR_ProjectWall(wallVerts, Surf, polyflags, lightnum, colormap);
 }
 
 // HWR_DrawSkyWall
@@ -1128,10 +1134,11 @@ static void HWR_ProcessSegFOFsSector(FOutVector *wallVerts, gl_fof_cuts *c,
 
 			blendmode = PF_Fog|PF_NoTexture;
 
-			lightnum = HWR_CalcWallLight(rover->master->frontsector->lightlevel, gl_curline);
+			lightnum = rover->master->frontsector->lightlevel;
 			colormap = rover->master->frontsector->extra_colormap;
+			lightnum = HWR_CalcWallLight(lightnum, gl_curline, colormap);
 
-			Surf.PolyColor.s.alpha = HWR_FogBlockAlpha(rover->master->frontsector->lightlevel, rover->master->frontsector->extra_colormap);
+			Surf.PolyColor.s.alpha = HWR_FogBlockAlpha(lightnum, colormap);
 
 			if (other_sector->numlights)
 				HWR_SplitWall(other_sector, wallVerts, 0, false, &Surf, rover->fofflags, rover, blendmode);
@@ -1261,7 +1268,7 @@ void HWR_ProcessSeg(void) // Sort of like GLWall::Process in GZDoom
 
 	if (tripwire == false)
 	{
-		lightnum = HWR_CalcWallLight(gl_frontsector->lightlevel, gl_curline);
+		lightnum = HWR_CalcWallLight(gl_frontsector->lightlevel, gl_curline, gl_frontsector->extra_colormap);
 	}
 
 	// two sided line

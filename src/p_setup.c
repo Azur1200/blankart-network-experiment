@@ -3970,7 +3970,7 @@ void P_UpdateSegLightOffset(seg_t *li)
 		angle_t liAngle = R_PointToAngle2(0, 0, (li->v1->x - li->v2->x), (li->v1->y - li->v2->y)) - ANGLE_90;
 
 		light = FixedMul(FINECOSINE(liAngle >> ANGLETOFINESHIFT), FINECOSINE(maplighting.angle >> ANGLETOFINESHIFT))
-			+ FixedMul(FINESINE(liAngle >> ANGLETOFINESHIFT), FINESINE(maplighting.angle >> ANGLETOFINESHIFT));
+				+ FixedMul(FINESINE(liAngle >> ANGLETOFINESHIFT), FINESINE(maplighting.angle >> ANGLETOFINESHIFT));
 		light = (light + FRACUNIT) / 2;
 	}
 	else
@@ -3980,7 +3980,7 @@ void P_UpdateSegLightOffset(seg_t *li)
 
 	extralight = -contrastFixed + FixedMul(light, contrastFixed * 2);
 
-	// Between -2 and 2 for software, -16 and 16 for hardware
+	// Between -1 and 1 for software, -8 and 8 for hardware
 	li->lightOffset = FixedFloor((extralight / 8) + (FRACUNIT / 2)) / FRACUNIT;
 #ifdef HWRENDER
 	li->hwLightOffset = FixedFloor(extralight + (FRACUNIT / 2)) / FRACUNIT;
@@ -4047,7 +4047,7 @@ dboolean P_ApplyLightOffsetFine(uint8_t baselightlevel, const sector_t *sector)
 	}
 
 	if (lighting->use_custom_light == false)
-		return (baselightlevel < LIGHTLEVELS-1 && baselightlevel > 0);
+		return (baselightlevel < 255 && baselightlevel > 0);
 
 	if (!P_SectorUsesDirectionalLighting(sector))
 	{

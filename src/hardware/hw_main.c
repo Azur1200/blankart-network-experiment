@@ -194,6 +194,7 @@ void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, int32
 void HWR_Lighting(FSurfaceInfo *Surface, int32_t light_level, extracolormap_t *colormap, const dboolean directional)
 {
 	RGBA_t poly_color, tint_color, fade_color;
+	const dboolean paletterender = HWR_ShouldUsePaletteRendering();
 
 	poly_color.rgba = 0xFFFFFFFF;
 	tint_color.rgba = (colormap != NULL) ? (uint32_t)colormap->rgba : GL_DEFAULTMIX;
@@ -237,14 +238,18 @@ void HWR_Lighting(FSurfaceInfo *Surface, int32_t light_level, extracolormap_t *c
 	}
 
 	// Shift the lightlevel for Palette rendering mode to replicate software´s limited 32 lightlevels
-	if (HWR_ShouldUsePaletteRendering())
+	if (paletterender)
 		light_level = (light_level >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT;
 
 	// Clamp the light level, since it can sometimes go out of the 0-255 range from animations
 	light_level = min(max(light_level, cv_secbright.value), 255);
 
-	V_CubeApply(&tint_color);
-	V_CubeApply(&fade_color);
+	// this is not needed for palette rendering so save a little time
+	if (!paletterender)
+	{
+		V_CubeApply(&tint_color);
+		V_CubeApply(&fade_color);
+	}
 	Surface->PolyColor.rgba = poly_color.rgba;
 	Surface->TintColor.rgba = tint_color.rgba;
 	Surface->FadeColor.rgba = fade_color.rgba;
@@ -256,10 +261,7 @@ void HWR_Lighting(FSurfaceInfo *Surface, int32_t light_level, extracolormap_t *c
 
 	Surface->LightInfo.directional = (maplighting.directional == true && directional == true);
 
-	if (HWR_ShouldUsePaletteRendering())
-		Surface->LightTableId = HWR_GetLightTableID(colormap);
-	else
-		Surface->LightTableId = 0;
+	Surface->LightTableId = paletterender ? HWR_GetLightTableID(colormap) : 0;
 }
 
 uint8_t HWR_FogBlockAlpha(int32_t light, extracolormap_t *colormap) // Let's see if this can work

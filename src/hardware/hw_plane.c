@@ -24,10 +24,10 @@ static FUINT HWR_CalcSlopeLight(FUINT lightnum, pslope_t *slope, const sector_t 
 
 	if (slope != NULL && sector != NULL && P_ApplyLightOffsetFine(lightnum, sector))
 	{
-		finallight += (fof ? -slope->hwLightOffset : slope->hwLightOffset);
+		const int16_t offset = (HWR_ShouldUsePaletteRendering()) ? ((int16_t)slope->lightOffset * 8) : slope->hwLightOffset;
 
-		if (finallight > 255) finallight = 255;
-		if (finallight < 0) finallight = 0;
+		finallight += (fof ? -offset : offset);
+		finallight = CLAMP(finallight, 0, 255);
 	}
 
 	return (FUINT)finallight;
