@@ -932,17 +932,6 @@ consvar_t cv_glanisotropicmode = CVAR_INIT ("gr_anisotropicmode", "1", CV_SAVE|C
 
 consvar_t cv_glsolvetjoin = CVAR_INIT ("gr_solvetjoin", "On", 0, CV_OnOff, NULL);
 
-consvar_t cv_glpolytile = CVAR_INIT ("gr_polytile", "On", 0, CV_OnOff, NULL);
-
-CV_PossibleValue_t grpolyshape_cons_t[] = {
-	{0, "Subsector"},
-	{1, "Fat"},
-	{2, "Trim"},
-	{3, "NotConvex"},
-	{0, NULL}
-};
-consvar_t cv_glpolyshape = CVAR_INIT ("gr_polygon_shape", "Trim", CV_SAVE, grpolyshape_cons_t, NULL);
-
 consvar_t cv_glbatching = CVAR_INIT ("gr_batching", "On", 0, CV_OnOff, NULL);
 
 consvar_t cv_glwireframe = CVAR_INIT ("gr_wireframe", "Off", 0, CV_OnOff, NULL);
@@ -1076,8 +1065,6 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_glfiltermode);
 
 	CV_RegisterVar(&cv_glsolvetjoin);
-	CV_RegisterVar(&cv_glpolytile);
-	CV_RegisterVar(&cv_glpolyshape);
 
 	CV_RegisterVar(&cv_glbatching);
 
@@ -1115,8 +1102,6 @@ void HWR_Startup(void)
 		CONS_Printf("HWR_Startup()...\n");
 
 		textureformat = patchformat = GL_TEXFMT_RGBA;
-
-		HWR_InitPolyPool();
 
 		HWR_AddSessionCommands();
 		HWR_InitMapTextures();
@@ -1169,7 +1154,7 @@ void HWR_Switch(void)
 void HWR_Shutdown(void)
 {
 	CONS_Printf("HWR_Shutdown()\n");
-	HWR_FreePolyPool();
+	HWR_FreeExtraSubsectors();
 	HWR_FreeMapTextures();
 	GL_FlushScreenTextures();
 }
