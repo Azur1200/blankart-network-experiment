@@ -160,6 +160,71 @@ static dboolean SameVertex(polyvertex_t *p1, polyvertex_t *p2)
 	return true;
 }
 
+// Adapted from function in prboom.
+// Point is to rightside of divline when result > 0,
+// but result is multiplied by length of divline.
+// Returns near 0, when point is on, or nearly on, the divline.
+static inline double point_rightside(fdivline_t *dl, polyvertex_t *v4)
+{
+	// Cross product of dl and vector dl->(x,y) to v4,
+	// is > 0 when v4 is to right side of divline.
+	// Viewed along divline from vertex, looking towards positive dx,dy.
+	// If divline is rotated until dy>0 and dx = 0, then true when rotated
+	// vertex position is to the right of the divline (v4->x > dl->x).
+	return ((((double)(v4->x) - (double)(dl->x)) * (double)(dl->dy))
+		 - (((double)(v4->y) - (double)(dl->y)) * (double)(dl->dx)));
+}
+
+// [WDJ] The front and back MUST match the BSP determination, else it will assign
+// this poly to the wrong sector.
+// May have 1 point on the line, and other points might be very close to the line.
+// Can only trust a test of a point that is NOT on the line.
+// Using a tstdist = 0.5f worked, but it might break on very small poly.
+// Avactor.wad had polys with d = 9.09, 5552, 1.64, 1011, 14252, 0.0136, 0.00634, 14655, 3,
+// -0.3044, 7, 1.53, etc..,
+// and one poly with d = -0.023 with the rest of the points d > 0.
+// One 14 point poly with divline len=8, had to test 9 points to find d = 36.
+// Typical: divline len=70 d=6828, divline len=1.0 d=35, divline len=1.414 d=5.
+// The result of point_rightside is proportional to the length of divline.
+// The divline length can be from 1.414 to 14000.
+static void UnsplitPoly(fdivline_t *dlnp, poly_t *poly,
+						poly_t **frontpoly, poly_t **backpoly)
+{
+	int32_t i;
+	double d;
+	const double tstd = hypot((double)dlnp->dx, (double)dlnp->dy) / 2.0;
+	double sumd = 0; // accumulated left or rightness.
+
+	for (i = 0; i < poly->numpts; i++)
+	{
+		// Look for a point that is obviously to the left or right.
+		d = point_rightside(dlnp, &poly->pts[i]);  // d > 0 is right
+		sumd += d;
+
+		if (d > tstd)
+			goto poly_rightside;
+
+		if (d < -tstd)
+			goto poly_leftside;
+	}
+
+	// Did not find an obvious left or right point, then
+	if (sumd < 0)
+		goto poly_leftside;
+
+poly_rightside:
+	// poly is to rightside of divline.
+	*frontpoly = poly;
+	*backpoly = NULL;
+	return;
+
+poly_leftside:
+	// poly is to leftside of divline.
+	*frontpoly = NULL;
+	*backpoly = poly;
+	return;
+}
+
 // split a _CONVEX_ polygon in two convex polygons
 // outputs:
 //   frontpoly : polygon on right side of bsp line
@@ -262,10 +327,7 @@ static void SplitPoly  (fdivline_t *dlnp,        // splitting parametric line
 		// linedefs where each side point the same sector, that is:
 		// the deep water effect with the original Doom
 
-		//TODO: make sure front poly is to front of partition line?
-
-		*frontpoly = poly;
-		*backpoly  = NULL;
+		UnsplitPoly(dlnp, poly, frontpoly, backpoly);
 		return;
 	}
 
@@ -273,16 +335,14 @@ static void SplitPoly  (fdivline_t *dlnp,        // splitting parametric line
 	if (pe < 0)
 	{
 		//I_Error("SplitPoly: only one point for split line (%d %d)", ps, pe);
-		*frontpoly = poly;
-		*backpoly  = NULL;
+		UnsplitPoly(dlnp, poly, frontpoly, backpoly);
 		return;
 	}
 
 	if (pe <= ps)
 	{
 		//I_Error("SplitPoly: invalid splitting line (%d %d)", ps, pe);
-		*frontpoly = poly;
-		*backpoly  = NULL;
+		UnsplitPoly(dlnp, poly, frontpoly, backpoly);
 		return;
 	}
 
@@ -551,10 +611,11 @@ static void loading_status(void)
 	char s[16];
 	int x, y;
 
-	/*if (g_reloadinggamestate)
+	//if ((gamestate == GS_TITLESCREEN && titlemapinaction) || demo.attract == DEMO_ATTRACT_CREDITS || g_reloadinggamestate)
+	if (gamestate == GS_TITLESCREEN && titlemapinaction)
 	{
 		return;
-	}*/
+	}
 
 	I_OsPolling();
 	CON_Drawer();
@@ -649,7 +710,7 @@ static void WalkBSPNode(int32_t bspnum, poly_t *poly, uint16_t *leafnode, fixed_
 #endif
 
 	// Recursively divide front space.
-	if (LIKELY(frontpoly))
+	if (frontpoly)
 	{
 		WalkBSPNode(bsp->children[0], frontpoly, &bsp->children[0],bsp->bbox[0]);
 
@@ -657,7 +718,11 @@ static void WalkBSPNode(int32_t bspnum, poly_t *poly, uint16_t *leafnode, fixed_
 		memcpy(bbox, bsp->bbox[0], 4*sizeof (fixed_t));
 	}
 	else
-		I_Error("WalkBSPNode: no front poly?");
+	{
+		// [WDJ] Having no front poly is as likely as no back poly, since
+		// logic in Split Poly was changed to check poly direction.
+		// I_Error("HWR_WalkBSPNode: no front poly, bspnum= %d\n", bspnum);
+	}
 
 	// Recursively divide back space.
 	if (backpoly)
@@ -667,9 +732,9 @@ static void WalkBSPNode(int32_t bspnum, poly_t *poly, uint16_t *leafnode, fixed_
 
 		// enlarge bbox with second child
 		M_AddToBox(bbox, bsp->bbox[1][BOXLEFT  ],
-		                 bsp->bbox[1][BOXTOP   ]);
+						 bsp->bbox[1][BOXTOP   ]);
 		M_AddToBox(bbox, bsp->bbox[1][BOXRIGHT ],
-		                 bsp->bbox[1][BOXBOTTOM]);
+						 bsp->bbox[1][BOXBOTTOM]);
 	}
 }
 
@@ -1061,7 +1126,7 @@ void HWR_CreatePlanePolygons(int32_t bspnum)
 	// allocate extra data for each subsector present in map
 	num_alloc_extra_subsector = numsubsectors + NUM_EXTRA_SUBSECTORS;
 	extrasubsectors = (extrasubsector_t*)calloc(num_alloc_extra_subsector, sizeof(*extrasubsectors));
-	if (UNLIKELY(!extrasubsectors))
+	if (!extrasubsectors)
 		I_Error("couldn't malloc extrasubsectors num_alloc_extra_subsector %s\n", sizeu1(num_alloc_extra_subsector));
 
 	// number of the first new subsector that might be added
@@ -1085,7 +1150,7 @@ void HWR_CreatePlanePolygons(int32_t bspnum)
 	rootpv->y = FixedToFloat(rootbbox[BOXBOTTOM]);  //ll
 	rootpv++;
 
-	WalkBSPNode(bspnum, rootp, NULL,rootbbox);
+	WalkBSPNode(bspnum, rootp, NULL, rootbbox);
 
 	SolveTProblem();
 
