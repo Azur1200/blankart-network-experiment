@@ -498,11 +498,12 @@ static void I_PrintSignal(int32_t signal_num, dboolean core_dumped, char *signal
 			signame = "SIGILL";
 			break;
 		case SIGFPE: // mathematical exception
-			sigmsg = ("BlanKart has encountered a mathematical exception and needs to close.");
+			sigmsg = ("BlanKart has encountered a mathematical exception and needs to close.\n\nThe most common cause of this is a division by zero in the game's code.");
 			signame = "SIGFPE";
 			break;
 		case SIGSEGV: // segment violation
-			sigmsg = ("BlanKart has attempted to access a memory location that it shouldn't and needs to close.");
+			// Note: say "SIGGY SEGGY" like "CHICKEN JOCKEY"
+			sigmsg = ("\"SIGGY SEGGY!\"\n\nBlanKart has attempted a read or write to a memory location that it isn't allowed to and needs to close.\n\nThis may be due to NULL pointers or garbage data left in memory.");
 			signame = "SIGSEGV";
 			break;
 #ifdef SIGTERM
@@ -524,7 +525,7 @@ static void I_PrintSignal(int32_t signal_num, dboolean core_dumped, char *signal
 			break;
 #endif
 		case SIGABRT: // abnormal termination triggered by abort call
-			sigmsg = ("BlanKart was terminated by an abort signal.");
+			sigmsg = ("BlanKart was terminated by an abort signal.\n\nThis may be caused by abort() calls from external modules or memory allocation errors.");
 			signame = "SIGABRT";
 			break;
 		default:

@@ -418,11 +418,11 @@ static void I_PrintSignal(int32_t signal_num, dboolean core_dumped, char *signal
 			sigmsg = ("SIGILL - BlanKart has attempted to execute an illegal instruction and needs to close.");
 			break;
 		case SIGFPE: // mathematical exception
-			sigmsg = ("SIGFPE - BlanKart has encountered a mathematical exception and needs to close.");
+			sigmsg = ("SIGFPE - BlanKart has encountered a mathematical exception and needs to close.\n\nThe most common cause of this is a division by zero in the game's code.");
 			break;
 		case SIGSEGV: // segment violation
 			// Note: say "SIGGY SEGGY" like "CHICKEN JOCKEY"
-			sigmsg = ("\"SIGGY SEGGY!\"\n\nSIGSEGV - BlanKart has attempted to access a memory location that it shouldn't and needs to close.");
+			sigmsg = ("\"SIGGY SEGGY!\"\n\nSIGSEGV - BlanKart has attempted a read or write to a memory location that it isn't allowed to and needs to close.\n\nThis may be due to NULL pointers or garbage data left in memory.");
 			break;
 #ifdef SIGTERM
 		case SIGTERM: // Software termination signal from terminate
@@ -440,7 +440,7 @@ static void I_PrintSignal(int32_t signal_num, dboolean core_dumped, char *signal
 			break;
 #endif
 		case SIGABRT: // abnormal termination triggered by abort call
-			sigmsg = ("SIGABRT - BlanKart was terminated by an abort signal.");
+			sigmsg = ("SIGABRT - BlanKart was terminated by an abort signal.\n\nThis may be caused by abort() calls from external modules or memory allocation errors.");
 			break;
 		default:
 			snprintf(signal_msg, 512, "Signal number %d", signal_num);
