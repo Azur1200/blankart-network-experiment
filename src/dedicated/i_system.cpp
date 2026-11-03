@@ -411,35 +411,35 @@ static void I_PrintSignal(int32_t signal_num, dboolean core_dumped, char *signal
 	{
 #ifdef SIGINT
 		case SIGINT:
-			sigmsg = ("SIGINT - SRB2Kart-Saturn was interrupted prematurely by the user.");
+			sigmsg = ("SIGINT - BlanKart was interrupted prematurely by the user.");
 			break;
 #endif
 		case SIGILL: // illegal instruction - invalid function image
-			sigmsg = ("SIGILL - SRB2Kart-Saturn has attempted to execute an illegal instruction and needs to close.");
+			sigmsg = ("SIGILL - BlanKart has attempted to execute an illegal instruction and needs to close.");
 			break;
 		case SIGFPE: // mathematical exception
-			sigmsg = ("SIGFPE - SRB2Kart-Saturn has encountered a mathematical exception and needs to close.");
+			sigmsg = ("SIGFPE - BlanKart has encountered a mathematical exception and needs to close.");
 			break;
 		case SIGSEGV: // segment violation
-			sigmsg = ("SIGSEGV - SRB2Kart-Saturn has attempted to access a memory location that it shouldn't and needs to close.");
+			sigmsg = ("SIGSEGV - BlanKart has attempted to access a memory location that it shouldn't and needs to close.");
 			break;
 #ifdef SIGTERM
 		case SIGTERM: // Software termination signal from terminate
-			sigmsg = ("SIGTERM - SRB2Kart-Saturn was terminated by a terminate signal.");
+			sigmsg = ("SIGTERM - BlanKart was terminated by a terminate signal.");
 			break;
 #endif
 #ifdef SIGKILL
 		case SIGKILL: // Software termination signal from kill
-			sigmsg = ("SIGKILL - SRB2Kart-Saturn was terminated by a kill signal.");
+			sigmsg = ("SIGKILL - BlanKart was terminated by a kill signal.");
 			break;
 #endif
 #ifdef SIGBREAK
 		case SIGBREAK: // Ctrl-Break sequence
-			sigmsg =("SIGBREAK - SRB2Kart-Saturn was terminated by a Ctrl-Break sequence.")
+			sigmsg =("SIGBREAK - BlanKart was terminated by a Ctrl-Break sequence.")
 			break;
 #endif
 		case SIGABRT: // abnormal termination triggered by abort call
-			sigmsg = ("SIGABRT - SRB2Kart-Saturn was terminated by an abort signal.");
+			sigmsg = ("SIGABRT - BlanKart was terminated by an abort signal.");
 			break;
 		default:
 			snprintf(signal_msg, 512, "Signal number %d", signal_num);

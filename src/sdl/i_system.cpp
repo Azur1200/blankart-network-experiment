@@ -411,7 +411,7 @@ static void write_backtrace(bt_crash_reason_t reason)
 }
 #endif
 
-static void I_ShowErrorMessageBox(const char *messagefordevelopers, dboolean dumpmade)
+static void I_ShowErrorMessageBox(const char *messagefordevelopers)
 {
 	static char finalmessage[2048];
 	size_t firstimpressionsline = 3; // "BlanKart" has encountered...
@@ -422,13 +422,7 @@ static void I_ShowErrorMessageBox(const char *messagefordevelopers, dboolean dum
 	snprintf(
 		finalmessage,
 		sizeof(finalmessage),
-			"\"BlanKart\" has encountered an unrecoverable error and needs to close.\n"
-			"The %slog file is located at (%s).\n"
-			"\n"
-			"\n"
 			"%s",
-			CRASH_LOGFILE_NAME,
-		logfilename,
 		messagefordevelopers);
 
 	// Rudementary word wrapping.
@@ -495,46 +489,46 @@ static void I_PrintSignal(int32_t signal_num, dboolean core_dumped, char *signal
 	{
 #ifdef SIGINT
 		case SIGINT:
-			sigmsg = ("SRB2Kart-Saturn was interrupted prematurely by the user.");
+			sigmsg = ("BlanKart was interrupted prematurely by the user.");
 			signame = "SIGINT";
 			break;
 #endif
 		case SIGILL: // illegal instruction - invalid function image
-			sigmsg = ("SRB2Kart-Saturn has attempted to execute an illegal instruction and needs to close.");
+			sigmsg = ("BlanKart has attempted to execute an illegal instruction and needs to close.");
 			signame = "SIGILL";
 			break;
 		case SIGFPE: // mathematical exception
-			sigmsg = ("SRB2Kart-Saturn has encountered a mathematical exception and needs to close.");
+			sigmsg = ("BlanKart has encountered a mathematical exception and needs to close.");
 			signame = "SIGFPE";
 			break;
 		case SIGSEGV: // segment violation
-			sigmsg = ("SRB2Kart-Saturn has attempted to access a memory location that it shouldn't and needs to close.");
+			sigmsg = ("BlanKart has attempted to access a memory location that it shouldn't and needs to close.");
 			signame = "SIGSEGV";
 			break;
 #ifdef SIGTERM
 		case SIGTERM: // Software termination signal from terminate
-			sigmsg = ("SRB2Kart-Saturn was terminated by a terminate signal.");
+			sigmsg = ("BlanKart was terminated by a terminate signal.");
 			signame = "SIGTERM";
 			break;
 #endif
 #ifdef SIGKILL
 		case SIGKILL: // Software termination signal from kill
-			sigmsg = ("SRB2Kart-Saturn was terminated by a kill signal.");
+			sigmsg = ("BlanKart was terminated by a kill signal.");
 			signame = "SIGKILL";
 			break;
 #endif
 #ifdef SIGBREAK
 		case SIGBREAK: // Ctrl-Break sequence
-			sigmsg =("SIGBREAK - SRB2Kart-Saturn was terminated by a Ctrl-Break sequence.");
+			sigmsg =("SIGBREAK - BlanKart was terminated by a Ctrl-Break sequence.");
 			signame = "SIGBREAK";
 			break;
 #endif
 		case SIGABRT: // abnormal termination triggered by abort call
-			sigmsg = ("SRB2Kart-Saturn was terminated by an abort signal.");
+			sigmsg = ("BlanKart was terminated by an abort signal.");
 			signame = "SIGABRT";
 			break;
 		default:
-			sigmsg = "SRB2Kart-Saturn was terminated by an unknown signal.";
+			sigmsg = "BlanKart was terminated by an unknown signal.";
 			signame = core_dumped ? "Unknown signal" : va("Signal number %d", signal_num);
 			break;
 	}
@@ -571,16 +565,7 @@ static void I_ReportSignal(int num, int coredumped)
 
 	strcat(sigttl, signame);
 	I_OutputMsg("\n%s\n\n", sigttl);
-	//I_ShowSimpleErrorBox(sigttl, sigmsg);
-	I_ShowErrorMessageBox(sigmsg,
-#if defined (HAVE_LIBBACKTRACE)
-		true
-#elif defined (DRMINGW)
-		!M_CheckParm("-noexchndl")
-#else
-		false
-#endif
-	);
+	I_ShowErrorMessageBox(sigmsg);
 }
 
 dboolean I_In_Exiting_Signal_Handler(void)
@@ -1801,7 +1786,7 @@ FUNCIERROR void ATTRNORETURN I_Error(const char *error, ...)
 	I_ShutdownGraphics();
 	I_ShutdownControllerSystem();
 
-	I_ShowErrorMessageBox(buffer, false);
+	I_ShowErrorMessageBox(buffer);
 
 	// We wait until now to do this so the funny sound can be heard
 	I_ShutdownSound();
