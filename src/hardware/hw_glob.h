@@ -152,10 +152,9 @@ void HWR_ResetClipper(void);
 // hw_map.c
 // --------
 extern extrasubsector_t *extrasubsectors;
-extern size_t num_extrasubsectors;
-
-void HWR_InitPolyPool(void);
-void HWR_FreePolyPool(void);
+#ifdef PARANOIA
+extern size_t num_extra_subsector;
+#endif
 
 void HWR_FreeExtraSubsectors(void);
 
