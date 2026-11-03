@@ -9431,8 +9431,8 @@ dboolean P_LoadLevel(dboolean fromnetsave, dboolean reloadinggamestate)
 #ifdef HWRENDER // not win32 only 19990829 by Kin
 	gl_maploaded = false;
 
-	// Lactozilla: Free poly_subsectors regardless of renderer.
-	HWR_FreePolyPool();
+	// Lactozilla: Free extrasubsectors regardless of renderer.
+	HWR_FreeExtraSubsectors();
 
 	// Create plane polygons.
 	if (rendermode == render_opengl)
