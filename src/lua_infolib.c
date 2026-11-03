@@ -1173,9 +1173,16 @@ static int lib_setMobjInfo(lua_State *L)
 			info->activesound = luaL_checkinteger(L, 3);
 		else if (i == 23 || (str && fastcmp(str,"flags")))
 			info->flags = (int32_t)luaL_checkinteger(L, 3);
-		else if (i == 24 || (str && fastcmp(str,"raisestate"))) {
+		else if (i == 24 || (str && fastcmp(str,"raisestate")))
 			info->raisestate = luaL_checkinteger(L, 3);
-		}
+		else if (i == 25 || (str && fastcmp(str,"flags2")))
+			info->flags2 = (int32_t)luaL_checkinteger(L, 3);
+		else if (i == 26 || (str && fastcmp(str,"eflags")))
+			info->eflags = luaL_checkinteger(L, 3);
+		else if (i == 27 || (str && fastcmp(str,"renderflags")))
+			info->renderflags = (int32_t)luaL_checkinteger(L, 3);
+		else if (i == 28 || (str && fastcmp(str,"renderflags2")))
+			info->renderflags2 = (int32_t)luaL_checkinteger(L, 3);
 		lua_pop(L, 1);
 	}
 	return 0;
