@@ -421,7 +421,8 @@ static void I_PrintSignal(int32_t signal_num, dboolean core_dumped, char *signal
 			sigmsg = ("SIGFPE - BlanKart has encountered a mathematical exception and needs to close.");
 			break;
 		case SIGSEGV: // segment violation
-			sigmsg = ("SIGSEGV - BlanKart has attempted to access a memory location that it shouldn't and needs to close.");
+			// Note: say "SIGGY SEGGY" like "CHICKEN JOCKEY"
+			sigmsg = ("\"SIGGY SEGGY!\"\n\nSIGSEGV - BlanKart has attempted to access a memory location that it shouldn't and needs to close.");
 			break;
 #ifdef SIGTERM
 		case SIGTERM: // Software termination signal from terminate
