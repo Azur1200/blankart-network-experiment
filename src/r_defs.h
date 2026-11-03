@@ -793,8 +793,6 @@ struct seg_t
 	void *pv1; // polyvertex_t
 	void *pv2; // polyvertex_t
 	float flength; // length of the seg, used by hardware renderer
-
-	lightmap_t *lightmaps; // for static lightmap
 #endif
 
 	// Why slow things down by calculating lightlists for every thick side?
