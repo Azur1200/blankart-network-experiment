@@ -9078,9 +9078,15 @@ void P_FreeLevelState(void)
 	//R_FlushTranslationColormapCache();
 
 #ifdef HWRENDER
-	// Free GPU textures before freeing patches.
-	if (rendermode == render_opengl && (vid.glstate == VID_GL_LIBRARY_LOADED))
-		HWR_ClearAllTextures();
+	if (vid.glstate == VID_GL_LIBRARY_LOADED)
+	{
+		// Free GPU textures before freeing patches.
+		if (rendermode == render_opengl)
+			HWR_ClearAllTextures();
+
+		// Delete light table textures
+		HWR_ClearLightTables();
+	}
 #endif
 
 	Patch_FreeTag(PU_PATCH_LOWPRIORITY);
