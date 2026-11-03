@@ -95,7 +95,7 @@ static void HWR_FreePoly(poly_t *poly)
 //
 static dboolean fracdivline(fdivline_t *partline, polyvertex_t *v1, polyvertex_t *v2)
 {
-	double frac1, frac2;
+	double frac;
 	double num; // numerator
 	double den; // denominator
 	double v1x, v1y, v1dx, v1dy; // polygon side vector, v1->v2
@@ -115,30 +115,29 @@ static dboolean fracdivline(fdivline_t *partline, polyvertex_t *v1, polyvertex_t
 
 	den = v3dy*v1dx - v3dx*v1dy;
 
-	if (fabs(den) < 1.0E-36) // avoid check of float for exact 0
+	if (fabs(den) < 1.0E-36f) // avoid check of float for exact 0
 		return false;  // partline and polygon side are effectively parallel
 
 	// first check the frac along the polygon segment,
 	// (do not accept hit with the extensions)
 	num = (v3x - v1x)*v3dy + (v1y - v3y)*v3dx;
-	frac1 = num / den;
+	frac = num / den;
 
 	// 0= cross at v1, 1.0= cross at v2
-	if (frac1 < 0.0 || frac1 > 1.0)  // double
+	if (frac < 0.0 || frac > 1.0)  // double
 		return false;  // not within the polygon side
 
 	// now get the frac along the BSP line
 	// which is useful to determine what is left, what is right
 	num = (v3x - v1x)*v1dy + (v1y - v3y)*v1dx;
-	frac2 = num / den;
 
-	partline->divfrac = frac2;  // how far along partline vector
+	partline->divfrac = num / den;  // how far along partline vector
 
 	// [WDJ] find the interception point along the segment.
 	// It should be slightly more accurate because it is always closer to the
 	// crossing point than arbitrary positions on the partition line.
-	partline->divpt.x = v1x + v1dx*frac1;
-	partline->divpt.y = v1y + v1dy*frac1;
+	partline->divpt.x = v1x + v1dx*frac;
+	partline->divpt.y = v1y + v1dy*frac;
 
 	return true;
 }
@@ -427,6 +426,10 @@ static poly_t *CutOutSubsecPoly(seg_t *lseg, int32_t segcount, poly_t *poly)
 	vertex_t *v1, *v2;
 	fdivline_t cutseg; // x, y, dx, dy as start of node_t struct
 
+	// empty poly? just save us some time then
+	if (poly->numpts <= 0)
+		return frontpoly;
+
 	// for each seg of the subsector
 	for (; segcount--; lseg++)
 	{
@@ -526,6 +529,23 @@ static poly_t *CutOutSubsecPoly(seg_t *lseg, int32_t segcount, poly_t *poly)
 			// need 2 points
 			if (pe >= 0)
 			{
+				// Cuts that miss the polygon.
+				if (ps_frac < 0.0 && cutseg.divfrac < 0.0)
+					continue;
+
+				if (ps_frac > 1.0 && cutseg.divfrac > 1.0)
+					continue;
+#define FRAC_EP 0.01f
+				// Reject cuts that could make the polygon non-convex.
+
+				// Cannot make normal cut, ps_frac end is loose.
+				if ((ps_frac < (0.0 - FRAC_EP)) || (ps_frac > (1.0f + FRAC_EP)))
+					continue;
+
+				// Cannot make normal cut, cutseg.divfrac end is loose.
+				if ((cutseg.divfrac < (0.0 - FRAC_EP)) || (cutseg.divfrac > (1.0f + FRAC_EP)))
+					continue;
+#undef FRAC_EP
 				// generate FRONT poly
 				frontpoly = HWR_AllocPoly(poly_num_pts);
 
