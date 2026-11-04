@@ -70,6 +70,7 @@ extern int32_t gameovertics;
 extern uint8_t ammoremovaltics;
 extern tic_t timeinmap; // Ticker for time spent in level (used for levelcard display)
 extern int32_t pausedelay;
+extern int32_t retrytime;
 
 extern dboolean promptactive;
 
@@ -269,9 +270,7 @@ void G_SetRetryFlag(void);
 void G_ClearRetryFlag(void);
 dboolean G_GetRetryFlag(void);
 
-void G_SetModeAttackRetryFlag(void);
-void G_ClearModeAttackRetryFlag(void);
-dboolean G_GetModeAttackRetryFlag(void);
+dboolean G_IsModeAttackRetrying(void);
 
 void G_LoadGameData(void);
 void G_LoadGameSettings(void);

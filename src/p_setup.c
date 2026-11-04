@@ -9089,6 +9089,7 @@ void P_FreeLevelState(void)
 	}
 #endif
 
+	G_FreeGhosts(); // ghosts are allocated with PU_LEVEL
 	Patch_FreeTag(PU_PATCH_LOWPRIORITY);
 	Patch_FreeTag(PU_PATCH_ROTATED);
 	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
@@ -9188,22 +9189,11 @@ dboolean P_LoadLevel(dboolean fromnetsave, dboolean reloadinggamestate)
 
 	// Special stage & record attack retry fade to white
 	// This is handled BEFORE sounds are stopped.
-	if (G_GetModeAttackRetryFlag())
+	if (G_IsModeAttackRetrying() && !demo.playback)
 	{
-		if (modeattacking && !demo.playback)
-		{
-			ranspecialwipe = 2;
-			//wipestyleflags |= (WSF_FADEOUT|WSF_TOWHITE);
-		}
-		G_ClearModeAttackRetryFlag();
+		ranspecialwipe = 2;
+		//wipestyleflags |= (WSF_FADEOUT|WSF_TOWHITE);
 	}
-	/*
-	else if (rendermode != render_none && G_IsSpecialStage(gamemap))
-	{
-		P_RunSpecialStageWipe();
-		ranspecialwipe = 1;
-	}
-	*/
 
 	// Make sure all sounds are stopped before Z_FreeTags.
 	S_StopSounds();
@@ -9223,6 +9213,7 @@ dboolean P_LoadLevel(dboolean fromnetsave, dboolean reloadinggamestate)
 			if (ranspecialwipe == 2)
 			{
 				pausedelay = -3; // preticker plus one
+				retrytime = 0;
 				S_StartSound(NULL, sfx_s3k73);
 			}
 
