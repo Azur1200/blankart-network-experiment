@@ -939,7 +939,7 @@ const char *blancredits[] = {
 	"AJ \"Tyron\" Martinez", // Horncode, PT_SAY, RRID, Virtual Keyboard
 	"\"Superstarxalien\"", // Horncode
 	"\"Freaky Mutant Man\"", // Color profiles menu
-	"\"blondedradio\"", // Screen-tracking item roulette, Sonic Riders Race ticker
+	"\"blondedradio\"", // Screen-tracking item roulette, Sonic Riders Race ticker, HUD Feed
 	"\"Antoine De Grandpré\"", // Zero Deadzone fix
 	"\"Skirlez\"", // PT_SAY packet fixes
 	"Sally \"TehRealSalt\" Cochenour", // Map Buffer rewrite, Voting rewrites
@@ -956,7 +956,6 @@ const char *blancredits[] = {
 	"",
 	"\1Design Support",
 	"\"Rim Jobless\"",
-	"\"JonUD\"",
 	"\"luna\"",
 	"\"White Mage (guy who picked up controller)\"",
 	"\"minenice\"",
@@ -965,8 +964,8 @@ const char *blancredits[] = {
 	"\"Sunflower\" aka \"AnimeSonic\"",
 	"",
 	"\1New Item Art",
-	"\"Spee\"",
-	"\"Jin\"",
+	"\"Spee\"", // Double jawz, the various bananas, the icons from HitList, new landmine sprite
+	"\"Jin\"", // Double Sneakers
 	"\"NepDisk\"",
 	"\"Mayo\"",
 	"\"yama\"",
@@ -987,7 +986,7 @@ const char *blancredits[] = {
 	"\"RetroStation\"",
 	"\"StarrydustNova\"",
 	"\"joshyflip\"",
-	"\"Chuckles troll\"", // Timer icons for: Attraction Shield, S-Monitor
+	"\"Chuckles troll\"", // Timer icon for: S-Monitor
 	"",
 	"\1New Misc Art",
 	"\"scizor300\"",
@@ -1036,7 +1035,6 @@ const char *blancredits[] = {
 	"\"Indev\"",
 	"\"GenericHeroGuy\"",
 	"\"Sunflower\" aka \"AnimeSonic\"",
-	"\"JonUD\"",
 	"\"MotoBugger\"",
 	"\"Toad The Fungus\"",
 	"\"yama\"",

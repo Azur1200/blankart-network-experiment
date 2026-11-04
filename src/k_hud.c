@@ -51,6 +51,7 @@
 #include "k_cluster.hpp"
 
 #include "radio_finish.h"
+#include "radio_feed.h"
 
 #include "k_hud_message.h"
 
@@ -385,6 +386,12 @@ void K_RegisterKartHUDStuff(void)
 
 	// radio_finish.cpp
 	CV_RegisterVar(&cv_show_riders_finish_ticker);
+
+	// radio_feed.cpp
+	CV_RegisterVar(&cv_hudfeed_enabled);
+	CV_RegisterVar(&cv_hudfeed_show_grades);
+	CV_RegisterVar(&cv_hudfeed_position);
+	RR_FeedCom();
 }
 
 void K_LoadKartHUDGraphics(void)
@@ -2138,14 +2145,14 @@ static void K_drawKartItem(void)
 	}
 
 	// draw the item reserve
-	if (stplyr->itemreservetype && stplyr->itemreserveamount > 0)
+	if (stplyr->subitemtype && stplyr->subitemamount > 0)
 	{
-		localpatch = K_GetCachedItemPatch(stplyr->itemreservetype, true, stplyr->itemreserveamount);
+		localpatch = K_GetCachedItemPatch(stplyr->subitemtype, true, stplyr->subitemamount);
 
 		if (localpatch == NULL)
 			localpatch = kp_nodraw; // diagnose underflows
 		
-		if (K_GetItemFlags(stplyr->itemreservetype) & KIF_COLPATCH2PLAYER)
+		if (K_GetItemFlags(stplyr->subitemtype) & KIF_COLPATCH2PLAYER)
 		{
 			colmap = R_GetTranslationColormap(TC_DEFAULT, stplyr->skincolor, GTC_CACHE);
 		}
@@ -2158,7 +2165,7 @@ static void K_drawKartItem(void)
 		fy = (fy<<FRACBITS) + ((tiny ? -10 : -7) * info.hudScale);
 		if (!tiny)
 		{
-			dark = K_GetItemFlags(stplyr->itemreservetype) & KIF_DARKBG;
+			dark = K_GetItemFlags(stplyr->subitemtype) & KIF_DARKBG;
 			localbg = K_getItemBoxPatch(true, dark);
 			
 			V_DrawFixedPatch(fx, fy, info.hudScale, boxpatchflags, localbg, colormap);
@@ -2167,9 +2174,9 @@ static void K_drawKartItem(void)
 		V_DrawFixedPatch(fx, fy, info.hudScale, localpatchflags, localpatch, colmap);
 
 		// numbers
-		if (stplyr->itemreserveamount >= K_GetItemNumberDisplayMin(stplyr->itemreservetype, true))
+		if (stplyr->subitemamount >= K_GetItemNumberDisplayMin(stplyr->subitemtype, true))
 		{
-			V_DrawPingNumScaled(fx + (26*(flipamount ? -info.hudScale : info.hudScale)), fy + (26*info.hudScale), info.hudScale, V_ALLOWLOWERCASE|V_HUDTRANS|fflags, stplyr->itemreserveamount, colmap);
+			V_DrawPingNumScaled(fx + (26*(flipamount ? -info.hudScale : info.hudScale)), fy + (26*info.hudScale), info.hudScale, V_ALLOWLOWERCASE|V_HUDTRANS|fflags, stplyr->subitemamount, colmap);
 		}
 	}
 }
@@ -5625,7 +5632,8 @@ static void K_drawKartMinimap(void)
 			if (arrow)
 			{
 				// Rotate based on (visual) player angle.
-				rollangle = players[localplayers[i]].drawangle-ANGLE_90;
+				rollangle = players[localplayers[i]].drawangle - ANGLE_90;
+				rollangle *= (encoremode ? -1 : 1);
 			}
 			else if ((K_MinimapIconCanSpinout()) && (players[localplayers[i]].spinoutrot))
 			{
@@ -7202,38 +7210,41 @@ void K_drawKartHUD(void)
 		K_drawKartItem();
 
 	// If not splitscreen, draw...
-	if (!r_splitscreen && !demo.title && gametype != GT_FREEROAM)
+	if (!r_splitscreen && !demo.title)
 	{
-		// Draw the timestamp
-		// this branching code sucks now gotta fix later :,)
-		if (LUA_HudEnabled(hud_time))
+		if (gametype != GT_FREEROAM)
 		{
-			if (!(K_GetRaceSplitsToggle() || K_doDrawSplits()))
+			// Draw the timestamp
+			// this branching code sucks now gotta fix later :,)
+			if (LUA_HudEnabled(hud_time))
 			{
-				K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap-1, 0);
-			}
-			else
-			{
-				// Draw splits
-				if (cv_lapemblemmode.value)
+				if (!(K_GetRaceSplitsToggle() || K_doDrawSplits()))
 				{
-					if (K_doDrawSplits())
-						K_drawLapSplitTimestamp();
-					else
-						K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap-1, 0);
+					K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap-1, 0);
 				}
 				else
 				{
-					K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap-1, 0);
-					// mine: moved this here to avoid redundant comparisions
-					K_drawLapSplitComparison();
+					// Draw splits
+					if (cv_lapemblemmode.value)
+					{
+						if (K_doDrawSplits())
+							K_drawLapSplitTimestamp();
+						else
+							K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap-1, 0);
+					}
+					else
+					{
+						K_drawKartTimestamp(stplyr->realtime, TIME_X, TIME_Y, gamemap-1, 0);
+						// mine: moved this here to avoid redundant comparisions
+						K_drawLapSplitComparison();
+					}
 				}
 			}
+
+			islonesome = K_drawKartPositionFaces();
+
+			RR_drawRidersFinishTicker();
 		}
-
-		islonesome = K_drawKartPositionFaces();
-
-		RR_drawRidersFinishTicker();
 	}
 
 	if (!stplyr->spectator && !freecam) // Bottom of the screen elements, don't need in spectate mode
@@ -7452,6 +7463,11 @@ void K_drawKartHUD(void)
 	K_DrawProgressDebugger();
 	K_DrawDirectorDebugger();
 	K_DrawMessageFeed();
+
+	if (!r_splitscreen && !demo.title)
+	{
+		RR_DrawHudFeed();
+	}
 
 	if (stplyrnum == 0)
 		K_DrawBotDebugger(stplyr);

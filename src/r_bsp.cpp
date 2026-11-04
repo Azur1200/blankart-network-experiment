@@ -69,16 +69,21 @@ dboolean R_NoEncore(sector_t *sector, levelflat_t *flat, dboolean ceiling)
 	const terrain_t *terrain = (flat != NULL ? flat->terrain : NULL);
 	const sectorspecialflags_t flags = sector->specialflags;
 
-	if (!(flags & SSF_SNEAKERPANEL
+	if ((flags & SSF_SNEAKERPANEL
 		|| flags & SSF_WATERPANEL
 		|| flags & SSF_YELLOWPOGOSPRING
 		|| flags & SSF_REDPOGOSPRING))
 	{
-		// Automatically handle encore invert for sneaker, water and pogospring panels.
-		return invertEncore;
+		// Automatically handle encore invert for sneaker, water and pogospring panel ssf flags.
+		if (ceiling)
+		{
+			return ((dboolean)(sector->flags & MSF_FLIPSPECIAL_CEILING));
+		}
+
+		return ((dboolean)(sector->flags & MSF_FLIPSPECIAL_FLOOR));
 	}
 
-	if ((terrain == NULL) || (terrain->flags & TRF_REMAP))
+	if (terrain && (terrain->flags & TRF_REMAP))
 	{
 		return invertEncore;
 	}
@@ -1361,7 +1366,7 @@ void R_Prep3DFloors(sector_t *sector, fixed_t secceilz)
 			rover->lastlight = 0;
 			if (!(rover->fofflags & FOF_EXISTS) || (rover->fofflags & FOF_NOSHADE
 				&& !(rover->fofflags & FOF_CUTLEVEL) && !(rover->fofflags & FOF_CUTSPRITES)))
-			continue;
+				continue;
 
 			heighttest = P_GetFFloorTopZAt(rover, sector->soundorg.x, sector->soundorg.y);
 

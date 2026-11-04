@@ -336,6 +336,7 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(crash_reorient_start) \
 	X(crash_rot) \
 	X(crash_bumpme) \
+	X(crash_speed) \
 	X(instashield) \
 	X(wipeoutslow) \
 	X(justbumped) \
@@ -431,6 +432,7 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(growshrinktimer) \
 	X(growcancel) \
 	X(squishedtimer) \
+	X(forceoldsquish) \
 	X(arrowbullet) \
 	X(inarrowbullet) \
 	X(rocketsneakertimer) \
@@ -490,8 +492,8 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(nulldrifttime) \
 	X(karttilt) \
 	X(karttiltmomentum) \
-	X(itemreservetype) \
-	X(itemreserveamount) \
+	X(subitemtype) \
+	X(subitemamount) \
 	X(clan) \
 	X(rankscore) \
 	X(realrankscore) \
@@ -500,7 +502,8 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(ranklog) \
 	X(rankscorefactor) \
 	X(playerid) \
-	X(cansliptide)
+	X(cansliptide) \
+	X(pitblame)
 
 enum player_e
 {
@@ -706,6 +709,9 @@ static int player_get(lua_State *L)
 	case player_crash_bumpme:
 		lua_pushdboolean(L, plr->crash_bumpme);
 		break;
+	case player_crash_speed:
+		lua_pushinteger(L, plr->crash_speed);
+		break;
 	case player_instashield:
 		lua_pushinteger(L, plr->instashield);
 		break;
@@ -865,11 +871,11 @@ static int player_get(lua_State *L)
 	case player_itemamount:
 		lua_pushinteger(L, plr->itemamount);
 		break;
-	case player_itemreservetype:
-		lua_pushinteger(L, plr->itemreservetype);
+	case player_subitemtype:
+		lua_pushinteger(L, plr->subitemtype);
 		break;
-	case player_itemreserveamount:
-		lua_pushinteger(L, plr->itemreserveamount);
+	case player_subitemamount:
+		lua_pushinteger(L, plr->subitemamount);
 		break;
 	case player_equippeditem:
 		lua_pushinteger(L, plr->equippeditem);
@@ -996,6 +1002,9 @@ static int player_get(lua_State *L)
 		break;
 	case player_squishedtimer:
 		lua_pushinteger(L, plr->squishedtimer);
+		break;
+	case player_forceoldsquish:
+		lua_pushdboolean(L, plr->forceoldsquish);
 		break;
 	case player_arrowbullet:
 		LUA_PushUserdata(L, plr->arrowbullet, META_MOBJ);
@@ -1359,6 +1368,9 @@ static int player_get(lua_State *L)
 	case player_cansliptide:
 		lua_pushdboolean(L, plr->cansliptide);
 		break;
+	case player_pitblame:
+		lua_pushinteger(L, plr->pitblame);
+		break;
 #ifdef HWRENDER
 	case player_fovadd:
 		lua_pushfixed(L, plr->fovadd);
@@ -1611,6 +1623,9 @@ static int player_set(lua_State *L)
 	case player_crash_bumpme:
 		plr->crash_bumpme = luaL_checkdboolean(L, 3);
 		break;
+	case player_crash_speed:
+		plr->crash_speed = luaL_checkinteger(L, 3);
+		break;
 	case player_instashield:
 		plr->instashield = luaL_checkinteger(L, 3);
 		break;
@@ -1780,11 +1795,11 @@ static int player_set(lua_State *L)
 	case player_itemamount:
 		plr->itemamount = luaL_checkinteger(L, 3);
 		break;
-	case player_itemreservetype:
-		plr->itemreservetype = luaL_checkinteger(L, 3);
+	case player_subitemtype:
+		plr->subitemtype = luaL_checkinteger(L, 3);
 		break;
-	case player_itemreserveamount:
-		plr->itemreserveamount = luaL_checkinteger(L, 3);
+	case player_subitemamount:
+		plr->subitemamount = luaL_checkinteger(L, 3);
 		break;
 	case player_itemusecooldown:
 		plr->itemusecooldown = luaL_checkinteger(L, 3);
@@ -1916,6 +1931,9 @@ static int player_set(lua_State *L)
 		plr->squishedtimer = squishtimer;
 		break;
 	}
+	case player_forceoldsquish:
+		plr->forceoldsquish = lua_todboolean(L, 3);
+		break;
 	case player_arrowbullet:
 		return NOSET;
 	case player_inarrowbullet:
@@ -2247,6 +2265,9 @@ static int player_set(lua_State *L)
 		break;
 	case player_cansliptide:
 		plr->cansliptide = lua_todboolean(L, 3);
+		break;
+	case player_pitblame:
+		plr->pitblame = lua_tointeger(L, 3);
 		break;
 #ifdef HWRENDER
 	case player_fovadd:

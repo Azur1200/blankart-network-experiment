@@ -46,6 +46,8 @@
 #include "acs/interface.h"
 #include "k_itemlist.hpp"
 
+#include "radio_feed.h"
+
 // CTF player names
 #define CTFTEAMCODE(pl) pl->ctfteam ? (pl->ctfteam == 1 ? "\x85" : "\x84") : ""
 #define CTFTEAMENDCODE(pl) pl->ctfteam ? "\x80" : ""
@@ -107,7 +109,7 @@ dboolean P_CanPickupItem(player_t *player, uint8_t weapon)
 				if (player->stealingtimer || player->stolentimer
 					|| player->rocketsneakertimer
 					|| player->eggmanexplode
-					|| (K_SMonitorSlotHogging(player) && player->itemreserveamount > 0)
+					|| (K_SMonitorSlotHogging(player) && player->subitemamount > 0)
 					|| (player->growshrinktimer > 0)
 					|| player->flametimer)
 					return false;
@@ -115,7 +117,7 @@ dboolean P_CanPickupItem(player_t *player, uint8_t weapon)
 				// Item slot already taken up
 				if (player->itemroulette
 					|| (weapon != PICKUPITEM_FLOATING && player->itemamount)
-					|| (weapon == PICKUPITEM_ITEM && player->itemreservetype == KITEM_BONUSITEMROLL)
+					|| (weapon == PICKUPITEM_ITEM && player->subitemtype == KITEM_BONUSITEMROLL)
 					|| (player->itemflags & IF_ITEMOUT))
 					return false;
 				
@@ -303,9 +305,9 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, dboolean heightcheck)
 			if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0)
 				return;
 
-			if (K_SMonitorSlotHogging(player) && (player->itemreservetype == KITEM_NONE || player->itemreservetype == special->threshold))
+			if (K_SMonitorSlotHogging(player) && (player->subitemtype == KITEM_NONE || player->subitemtype == special->threshold))
 			{
-				K_AddPlayerReserveItem(player, special->threshold, special->movecount);
+				K_AddPlayerSubItem(player, special->threshold, special->movecount);
 			}
 			else
 			{
@@ -1789,9 +1791,9 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, uint8_t damag
 					break;
 				}
 
-				if (K_SMonitorSlotHogging(player) && (player->itemreservetype == KITEM_NONE || player->itemreservetype == target->threshold))
+				if (K_SMonitorSlotHogging(player) && (player->subitemtype == KITEM_NONE || player->subitemtype == target->threshold))
 				{
-					K_AddPlayerReserveItem(player, target->threshold, max(1, target->movecount));
+					K_AddPlayerSubItem(player, target->threshold, max(1, target->movecount));
 				}
 				else
 				{
@@ -2093,6 +2095,16 @@ static dboolean P_KillPlayer(player_t *player, mobj_t *inflictor, mobj_t *source
 
 	P_ResetPlayer(player);
 
+	if (!RR_PushPlayerDeathToFeed(source, player->mo, inflictor))
+	{
+		if (player->pitblame > -1)
+		{
+			K_TryHurtSoundExchange(player->mo, players[player->pitblame].mo);
+			RR_PushPlayerInteractionToFeed(players[player->pitblame].mo, player->mo, ATTACK_PITFALL, KITEM_NONE);
+			player->pitblame = -1;
+		}
+	}
+
 	if (player->spectator == false)
 	{
 		player->mo->renderflags &= ~RF_DONTDRAW;
@@ -2362,6 +2374,10 @@ dboolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t
 					K_DoInstashield(player);
 					return false;
 				}
+				else if (target->eflags & MFE_ALREADYHIT) // do not deal extra damage in the same tic
+				{
+					return false;
+				}
 
 				// Alt. Shrink: Tank non-explosion hits, as long as you're in Arrow Bullet mode.
 				if ((explosioncombo == false) && (intercept == false) && (K_AltShrinkArrowBulletCondition(player)))
@@ -2435,6 +2451,14 @@ dboolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t
 			{
 				// Self hit; not a hazard
 				hithazard = false;
+			}
+
+			if (source && source != player->mo && source->player)
+			{
+				if (damagetype != DMG_DEATHPIT)
+				{
+					player->pitblame = source->player - players;
+				}
 			}
 
 			if (type == DMG_EXPLODE || type == DMG_KARMA || type == DMG_SQUISH ||
@@ -2562,12 +2586,16 @@ dboolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t
 					K_KartPainEnergyFling(player);
 					break;
 				case DMG_VOLTAGE:
+					RR_PushPlayerInteractionToFeed(source, target, ATTACK_THUNDER_SHIELD, KITEM_NONE);
+				/* FALLTHRU */
 				case DMG_NORMAL:
 				default:
 					K_SpinPlayer(player, inflictor, source, KSPIN_SPINOUT);
 					LUA_HookPlayerSpin(target, inflictor, source, damage, damagetype);
 					break;
 			}
+
+			RR_PushPlayerDamageToFeed(source, target, inflictor);
 
 			// Have a shield? You get hit, but don't lose your rings!
 			if (K_GetShieldFromPlayer(player) != KSHIELD_NONE)
@@ -2629,6 +2657,9 @@ dboolean P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int32_t
 			}
 
 			player->instashield = 15;
+
+			if (type == DMG_EXPLODE)
+				target->eflags |= MFE_ALREADYHIT;
 
 			return true;
 		}

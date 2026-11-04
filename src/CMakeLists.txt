@@ -161,6 +161,7 @@ add_executable(BLANKART MACOSX_BUNDLE WIN32
 	k_dialogue.cpp
 	h_timers.cpp
 	radio_finish.cpp
+	radio_feed.cpp
 	stun.c
 	lonesha256.c
 )
@@ -657,25 +658,27 @@ if(SRB2_CONFIG_PROFILEMODE AND "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
 endif()
 
 if(SRB2_CONFIG_LTO AND NOT SRB2_CONFIG_DEBUGMODE)
+	target_compile_options(BLANKART PUBLIC -g1)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g1")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g1")
 	set_property(TARGET BLANKART PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
 endif()
 
 # strip debug symbols into separate file when using gcc or clang.
-# to be consistent with Makefile, don't generate for OS X.
-if((CMAKE_COMPILER_IS_GNUCC OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")  AND NOT ("${CMAKE_SYSTEM_NAME}" MATCHES Darwin))
-	if((${CMAKE_BUILD_TYPE} MATCHES Debug) OR (${CMAKE_BUILD_TYPE} MATCHES RelWithDebInfo))
-		if(${CMAKE_BUILD_TYPE} MATCHES Debug)
-			set(OBJCOPY_ONLY_KEEP_DEBUG "--only-keep-debug")
-		endif()
-		message(STATUS "Will make separate debug symbols in *.debug")
-		add_custom_command(TARGET BLANKART POST_BUILD
-			COMMAND ${CMAKE_OBJCOPY} ${OBJCOPY_ONLY_KEEP_DEBUG} $<TARGET_FILE:BLANKART> $<TARGET_FILE:BLANKART>.debug
-			# mold linker: .gnu_debuglink is present by default, so --add-gnu-debuglink would fail
-			COMMAND ${CMAKE_OBJCOPY} --strip-debug --remove-section=.gnu_debuglink $<TARGET_FILE:BLANKART>
-			COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=$<TARGET_FILE:BLANKART>.debug $<TARGET_FILE:BLANKART>
-		)
-	endif()
-endif()
+#if((CMAKE_COMPILER_IS_GNUCC OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")  AND NOT ("${CMAKE_SYSTEM_NAME}" MATCHES Darwin))
+#	if((${CMAKE_BUILD_TYPE} MATCHES Debug) OR (${CMAKE_BUILD_TYPE} MATCHES RelWithDebInfo))
+#		if(${CMAKE_BUILD_TYPE} MATCHES Debug)
+#			set(OBJCOPY_ONLY_KEEP_DEBUG "--only-keep-debug")
+#		endif()
+#		message(STATUS "Will make separate debug symbols in *.debug")
+#		add_custom_command(TARGET BLANKART POST_BUILD
+#			COMMAND ${CMAKE_OBJCOPY} ${OBJCOPY_ONLY_KEEP_DEBUG} $<TARGET_FILE:BLANKART> $<TARGET_FILE:BLANKART>.debug
+#			# mold linker: .gnu_debuglink is present by default, so --add-gnu-debuglink would fail
+#			COMMAND ${CMAKE_OBJCOPY} --strip-debug --remove-section=.gnu_debuglink $<TARGET_FILE:BLANKART>
+#			COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=$<TARGET_FILE:BLANKART>.debug $<TARGET_FILE:BLANKART>
+#		)
+#	endif()
+#endif()
 
 # copy DLLs to bin/ directory if building internal shared on windows
 if("${CMAKE_SYSTEM_NAME}" STREQUAL Windows AND NOT "${SRB2_CONFIG_INTERNAL_LIBRARIES}" AND "${SRB2_CONFIG_SHARED_INTERNAL_LIBRARIES}")

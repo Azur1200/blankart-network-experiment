@@ -459,6 +459,7 @@ typedef enum
 	XD_MAPQUEUE,	// 38
 	XD_CLANTAGSET,	// 39
 	XD_CLANTAGCLEAR,// 40
+	XD_LIVESOC, // 41
 
 	MAXNETXCMD
 } netxcmd_t;

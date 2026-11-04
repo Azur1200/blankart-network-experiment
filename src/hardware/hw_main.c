@@ -194,6 +194,7 @@ void HWR_ObjectLightLevelPost(gl_vissprite_t *spr, const sector_t *sector, int32
 void HWR_Lighting(FSurfaceInfo *Surface, int32_t light_level, extracolormap_t *colormap, const dboolean directional)
 {
 	RGBA_t poly_color, tint_color, fade_color;
+	const dboolean paletterender = HWR_ShouldUsePaletteRendering();
 
 	poly_color.rgba = 0xFFFFFFFF;
 	tint_color.rgba = (colormap != NULL) ? (uint32_t)colormap->rgba : GL_DEFAULTMIX;
@@ -237,14 +238,18 @@ void HWR_Lighting(FSurfaceInfo *Surface, int32_t light_level, extracolormap_t *c
 	}
 
 	// Shift the lightlevel for Palette rendering mode to replicate software´s limited 32 lightlevels
-	if (HWR_ShouldUsePaletteRendering())
+	if (paletterender)
 		light_level = (light_level >> LIGHTSEGSHIFT) << LIGHTSEGSHIFT;
 
 	// Clamp the light level, since it can sometimes go out of the 0-255 range from animations
 	light_level = min(max(light_level, cv_secbright.value), 255);
 
-	V_CubeApply(&tint_color);
-	V_CubeApply(&fade_color);
+	// this is not needed for palette rendering so save a little time
+	if (!paletterender)
+	{
+		V_CubeApply(&tint_color);
+		V_CubeApply(&fade_color);
+	}
 	Surface->PolyColor.rgba = poly_color.rgba;
 	Surface->TintColor.rgba = tint_color.rgba;
 	Surface->FadeColor.rgba = fade_color.rgba;
@@ -256,10 +261,7 @@ void HWR_Lighting(FSurfaceInfo *Surface, int32_t light_level, extracolormap_t *c
 
 	Surface->LightInfo.directional = (maplighting.directional == true && directional == true);
 
-	if (HWR_ShouldUsePaletteRendering())
-		Surface->LightTableId = HWR_GetLightTableID(colormap);
-	else
-		Surface->LightTableId = 0;
+	Surface->LightTableId = paletterender ? HWR_GetLightTableID(colormap) : 0;
 }
 
 uint8_t HWR_FogBlockAlpha(int32_t light, extracolormap_t *colormap) // Let's see if this can work
@@ -547,9 +549,12 @@ void HWR_RenderViewpoint(player_t *player, dboolean drawSkyTexture, dboolean is_
 
 	HWR_StartBatching();
 
-	HWR_AddPrecipitationSprites();
-
 	HWR_RenderBSPNode((int32_t)numnodes-1);
+
+	// dont draw precip in skyboxes!
+	if (!is_skybox)
+		HWR_AddPrecipitationSprites();
+
 	// restore portal clipping variables
 	gl_portalcullsector = NULL;
 	gl_portalclipline = NULL;
@@ -927,17 +932,6 @@ consvar_t cv_glanisotropicmode = CVAR_INIT ("gr_anisotropicmode", "1", CV_SAVE|C
 
 consvar_t cv_glsolvetjoin = CVAR_INIT ("gr_solvetjoin", "On", 0, CV_OnOff, NULL);
 
-consvar_t cv_glpolytile = CVAR_INIT ("gr_polytile", "On", 0, CV_OnOff, NULL);
-
-CV_PossibleValue_t grpolyshape_cons_t[] = {
-	{0, "Subsector"},
-	{1, "Fat"},
-	{2, "Trim"},
-	{3, "NotConvex"},
-	{0, NULL}
-};
-consvar_t cv_glpolyshape = CVAR_INIT ("gr_polygon_shape", "Trim", CV_SAVE, grpolyshape_cons_t, NULL);
-
 consvar_t cv_glbatching = CVAR_INIT ("gr_batching", "On", 0, CV_OnOff, NULL);
 
 consvar_t cv_glwireframe = CVAR_INIT ("gr_wireframe", "Off", 0, CV_OnOff, NULL);
@@ -1071,8 +1065,6 @@ void HWR_AddCommands(void)
 	CV_RegisterVar(&cv_glfiltermode);
 
 	CV_RegisterVar(&cv_glsolvetjoin);
-	CV_RegisterVar(&cv_glpolytile);
-	CV_RegisterVar(&cv_glpolyshape);
 
 	CV_RegisterVar(&cv_glbatching);
 
@@ -1110,8 +1102,6 @@ void HWR_Startup(void)
 		CONS_Printf("HWR_Startup()...\n");
 
 		textureformat = patchformat = GL_TEXFMT_RGBA;
-
-		HWR_InitPolyPool();
 
 		HWR_AddSessionCommands();
 		HWR_InitMapTextures();
@@ -1164,7 +1154,7 @@ void HWR_Switch(void)
 void HWR_Shutdown(void)
 {
 	CONS_Printf("HWR_Shutdown()\n");
-	HWR_FreePolyPool();
+	HWR_FreeExtraSubsectors();
 	HWR_FreeMapTextures();
 	GL_FlushScreenTextures();
 }

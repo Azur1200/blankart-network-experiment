@@ -85,7 +85,6 @@
 
 gameaction_t gameaction;
 gamestate_t gamestate = GS_NULL;
-uint8_t ultimatemode = false;
 
 JoyType_t Joystick[MAXSPLITSCREENPLAYERS];
 
@@ -208,7 +207,6 @@ uint8_t currentrecordpresetversion = 1;
 
 static dboolean exitgame = false;
 static dboolean retrying = false;
-static dboolean retryingmodeattack = false;
 
 uint8_t stagefailed; // Used for GEMS BONUS? Also to see if you beat the stage.
 
@@ -447,7 +445,6 @@ consvar_t cv_shrinkme[MAXSPLITSCREENPLAYERS] = {
 	CVAR_INIT ("shrinkme4", "Off", CV_CALL, CV_OnOff, weaponPrefChange4)
 };
 
-// Jon's lament
 static CV_PossibleValue_t driftjitter_cons_t[] = {{0, "SRB2Kart"}, {1, "Ring Racers"}, {0, NULL}};
 
 // Drift jitter settings.
@@ -686,6 +683,18 @@ maprecordpreset_t *G_AllocateMapRecordPreset(maprecord_t *record, const char *pr
 	return preset;
 }
 
+static void SetAltItemsForPreset(strbuf_t *preset, const char *value)
+{
+	for (uint8_t i = 0; i < KITEM_FIRSTFREESLOT; i++)
+	{
+		if (kartitems[i].altcvar != NULL)
+		{
+			strbuf_append(&preset, kartitems[i].altcvar->name);
+			strbuf_append(&preset, value);
+		}
+	}
+}
+
 // MAKE SURE YOU SAVE DATA BEFORE CALLING THIS
 void G_ClearRecords(void)
 {
@@ -719,6 +728,13 @@ void G_ClearRecords(void)
 	strbuf_append(&pv, "kartbumpspring");
 	strbuf_append(&pv, "No");
 
+	strbuf_append(&pv, "kartbumpspark");
+	strbuf_append(&pv, "Off");
+	strbuf_append(&pv, "kartbumpspring");
+	strbuf_append(&pv, "No");
+	strbuf_append(&pv, "rockshove");
+	strbuf_append(&pv, "Off");
+
 	preset = G_AddRecordPreset("tech", "Tech Mode");
 
 	pv = G_AddRecordPresetVersion(preset, 1);
@@ -746,6 +762,22 @@ void G_ClearRecords(void)
 	strbuf_append(&pv, "On");
 	strbuf_append(&pv, "kartbumpspring");
 	strbuf_append(&pv, "Yes");
+
+	pv = G_AddRecordPresetVersion(preset, 3);
+	strbuf_append(&pv, "kartstacking");
+	strbuf_append(&pv, "Yes");
+	strbuf_append(&pv, "kartchaining");
+	strbuf_append(&pv, "Yes");
+	strbuf_append(&pv, "kartslopeboost");
+	strbuf_append(&pv, "Yes");
+	strbuf_append(&pv, "kartairdrop");
+	strbuf_append(&pv, "Yes");
+	strbuf_append(&pv, "kartbumpspark");
+	strbuf_append(&pv, "On");
+	strbuf_append(&pv, "kartbumpspring");
+	strbuf_append(&pv, "Yes");
+	strbuf_append(&pv, "rockshove");
+	strbuf_append(&pv, "Off");
 
 	preset = G_AddRecordPreset("blankart", "BlanKart Mode");
 
@@ -786,6 +818,35 @@ void G_ClearRecords(void)
 	strbuf_append(&pv, "Remove Charge Only");
 	strbuf_append(&pv, "kartbumpspring");
 	strbuf_append(&pv, "Yes");
+
+	pv = G_AddRecordPresetVersion(preset, 3);
+	strbuf_append(&pv, "kartrings");
+	strbuf_append(&pv, "Yes");
+	strbuf_append(&pv, "kartpurpledrift");
+	strbuf_append(&pv, "Yes");
+	strbuf_append(&pv, "kartslipdash");
+	strbuf_append(&pv, "Yes");
+	strbuf_append(&pv, "kartstacking");
+	strbuf_append(&pv, "Yes");
+	strbuf_append(&pv, "kartchaining");
+	strbuf_append(&pv, "Yes");
+	strbuf_append(&pv, "kartdrafting");
+	strbuf_append(&pv, "Yes");
+	strbuf_append(&pv, "kartrecoverydash");
+	strbuf_append(&pv, "Yes");
+	strbuf_append(&pv, "kartairthrust");
+	strbuf_append(&pv, "Flash");
+	strbuf_append(&pv, "kartairdrop");
+	strbuf_append(&pv, "Fusion");
+	strbuf_append(&pv, "kartslopeboost");
+	strbuf_append(&pv, "Yes");
+	strbuf_append(&pv, "kartbumpspark");
+	strbuf_append(&pv, "Remove Charge Only");
+	strbuf_append(&pv, "kartbumpspring");
+	strbuf_append(&pv, "Yes");
+	strbuf_append(&pv, "kartkeepstuff");
+	strbuf_append(&pv, "Yes");
+	SetAltItemsForPreset(pv, "Alternative");
 }
 
 // For easy retrieval of records
@@ -1328,7 +1389,7 @@ retrygetcontrol:
 		deviceID = 0;
 		goto retrygetcontrol;
 	}
-	
+
 	if (value > deadzone)
 	{
 		return value;
@@ -1348,14 +1409,14 @@ vector3_t G_PlayerInputSensor(uint8_t p, motionsensortype_e sensor)
 #endif
 		return out;
 	}
-	
+
 	deviceID = I_GetControllerSlotfromID(I_GetControllerIDForPlayer(p));
 	if (deviceID >= MAXDEVICES)
 		return out;
 
 	if (deviceID == INVALID_DEVICE || deviceID == KEYBOARD_MOUSE_DEVICE)
 		return out;
-	
+
 	switch (sensor)
 	{
 		case ACCELEROMETER:
@@ -1566,7 +1627,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, int32_t realtics, uint8_t ssplayer)
 	if (cv_tiltcontrol[forplayer].value == TILTCONTROL_STEER || cv_tiltcontrol[forplayer].value == TILTCONTROL_ON)
 	{
 		fixed_t rate = FixedDiv(abs(joystickvector.xaxis), JOYAXISRANGE);
-		accelerometertilt = 
+		accelerometertilt =
 			(FixedMul(rate, joystickvector.xaxis*FRACUNIT)/FRACUNIT) +
 			(FixedMul(FRACUNIT-rate, G_GetGamepadTilt(forplayer)*FRACUNIT)/FRACUNIT);
 	}
@@ -1835,7 +1896,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, int32_t realtics, uint8_t ssplayer)
 		cmd->turning = KART_FULLTURN;
 	else if (cmd->turning < -KART_FULLTURN)
 		cmd->turning = -KART_FULLTURN;
-		
+
 	if (!spectating)
 	{
 		if (cmd->angle > KART_FULLTURN)
@@ -2016,7 +2077,7 @@ void G_DoLoadLevelEx(dboolean resetplayer, gamestate_t newstate)
 	{
 		if (camera[i].chase)
 			P_ResetCamera(&players[displayplayers[i]], &camera[i]);
-		
+
 		// reset freelook stuff
 		camera[i].freelook_held = false;
 		camera[i].freelook_pitch = 0;
@@ -2102,6 +2163,7 @@ dboolean G_IsTitleCardAvailable(void)
 }
 
 int32_t pausedelay = 0;
+int32_t retrytime  = 0;
 static int32_t camtoggledelay[MAXSPLITSCREENPLAYERS];
 static int32_t spectatedelay[MAXSPLITSCREENPLAYERS];
 static int32_t respawndelay[MAXSPLITSCREENPLAYERS];
@@ -2273,29 +2335,12 @@ dboolean G_Responder(event_t *ev)
 		}
 	}
 
-	// update keys current state
-	G_MapEventsToControls(ev);
-
 	switch (ev->type)
 	{
 		case ev_keydown:
 			if (G_ControlBoundToKey(0, gc_pause, ev->data1, true))
 			{
-				if (modeattacking && !demo.playback && (gamestate == GS_LEVEL))
-				{
-					if (menustack[0] || pausedelay < 0 || leveltime < 2)
-						return true;
-
-					if (pausedelay < 1+(NEWTICRATE/2))
-						pausedelay = 1+(NEWTICRATE/2);
-					else if (++pausedelay > 1+(NEWTICRATE/2)+(NEWTICRATE/3))
-					{
-						G_SetModeAttackRetryFlag();
-						return true;
-					}
-					pausedelay++; // counteract subsequent subtraction this frame
-				}
-				else
+				if (!(modeattacking && !demo.playback && (gamestate == GS_LEVEL)))
 				{
 					int32_t oldpausedelay = pausedelay;
 					pausedelay = (NEWTICRATE/7);
@@ -2894,6 +2939,24 @@ void G_Ticker(dboolean run)
 				pausedelay++;
 		}
 
+		if (modeattacking && !demo.playback && (gamestate == GS_LEVEL) && !G_GetRetryFlag() && leveltime > 2)
+		{
+			if (G_PlayerInputDown(0, gc_pause, false, DEADZONE_BUTTON))
+			{
+				retrytime++;
+
+				if (retrytime > 1+(NEWTICRATE/2)+(NEWTICRATE/3))
+				{
+					if (!G_GetRetryFlag())
+						G_SetRetryFlag();
+				}
+			}
+			else if (retrytime > 0)
+			{
+				retrytime--;
+			}
+		}
+
 		for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 		{
 			if (camtoggledelay[i])
@@ -3090,8 +3153,8 @@ void G_PlayerReborn(int32_t player, dboolean betweenmaps)
 	// SRB2kart
 	int32_t itemtype;
 	int32_t itemamount;
-	int32_t itemreservetype;
-	int32_t itemreserveamount;
+	int32_t subitemtype;
+	int32_t subitemamount;
 	int32_t itemroulette;
 	int32_t previtemroulette;
 	int32_t roulettetype;
@@ -3211,8 +3274,8 @@ void G_PlayerReborn(int32_t player, dboolean betweenmaps)
 		roulettetype = KROULETTETYPE_NORMAL;
 		itemtype = 0;
 		itemamount = 0;
-		itemreservetype = 0;
-		itemreserveamount = 0;
+		subitemtype = 0;
+		subitemamount = 0;
 		growshrinktimer = 0;
 		bubblehealth = 0;
 		bumper = ((gametypes[gametype]->rules & GTR_BUMPERS) ? K_StartingBumperCount() : 0);
@@ -3289,7 +3352,7 @@ void G_PlayerReborn(int32_t player, dboolean betweenmaps)
 
 			notifyrestat = (
 				randomrestat ||
-				kartspeedrestat != players[player].kartspeed || 
+				kartspeedrestat != players[player].kartspeed ||
 				kartweightrestat != players[player].kartweight
 			) && cv_notifyrestat.value;
 		}
@@ -3297,7 +3360,7 @@ void G_PlayerReborn(int32_t player, dboolean betweenmaps)
 		{
 			kartspeed = skins[players[player].skin]->kartspeed;
 			kartweight = skins[players[player].skin]->kartweight;
-			
+
 			notifyrestat = (
 				players[player].kartspeed != skins[players[player].skin]->kartspeed ||
 				players[player].kartweight != skins[players[player].skin]->kartweight
@@ -3321,8 +3384,8 @@ void G_PlayerReborn(int32_t player, dboolean betweenmaps)
 			itemamount = players[player].itemamount;
 		}
 
-		itemreservetype = players[player].itemreservetype;
-		itemreserveamount = players[player].itemreserveamount;
+		subitemtype = players[player].subitemtype;
+		subitemamount = players[player].subitemamount;
 
 		// Keep Shrink status, remove Grow status
 		// Alt. Shrink is a powerup, so don't keep that.
@@ -3511,8 +3574,8 @@ void G_PlayerReborn(int32_t player, dboolean betweenmaps)
 	p->roulettetype = roulettetype;
 	p->itemtype = itemtype;
 	p->itemamount = itemamount;
-	p->itemreservetype = itemreservetype;
-	p->itemreserveamount = itemreserveamount;
+	p->subitemtype = subitemtype;
+	p->subitemamount = subitemamount;
 	p->growshrinktimer = growshrinktimer;
 	p->bubblehealth = bubblehealth;
 	p->bumper = bumper;
@@ -3545,6 +3608,8 @@ void G_PlayerReborn(int32_t player, dboolean betweenmaps)
 	p->ringvolume = 255;
 	p->ringtransparency = 255;
 	p->spinoutrot = 0;
+
+	p->pitblame = -1;
 
 	p->spectatorreentry = spectatorreentry;
 	p->grieftime = grieftime;
@@ -4163,10 +4228,11 @@ void G_FinishExitLevel(void)
 	{
 		G_ResetAllControllerRumbles();
 
+		const dboolean worknetgame = (demo.playback ? demo.netgame : netgame);
 		if (g_exit.retry)
 		{
 			// Restart cup here whenever we do Online GP
-			if (!netgame)
+			if (!worknetgame)
 			{
 				// We have lives, just redo this one course.
 				G_SetRetryFlag();
@@ -4177,14 +4243,29 @@ void G_FinishExitLevel(void)
 		{
 			// We were in a Special Stage.
 			// We can still progress to the podium when we game over here.
-			const dboolean special = grandprixinfo.gp == true && grandprixinfo.eventmode == GPEVENT_SPECIAL;
+			const dboolean special = grandprixinfo.gp == true && grandprixinfo.cup != NULL && grandprixinfo.eventmode == GPEVENT_SPECIAL;
 
-			if (!netgame && !special)
+			if (demo.playback && !worknetgame)
+			{
+				// Guarantee conclusion to Special Stage
+				G_SetRetryFlag();
+				return;
+			}
+
+			if (!worknetgame && !special)
 			{
 				// Back to the menu with you.
-				D_QuitNetGame();
-				CL_Reset();
-				D_StartTitle();
+				if (restoremenustack[0])
+				{
+					M_RestoreMenuStack(false);
+				}
+				else
+				{
+					D_QuitNetGame();
+					CL_Reset();
+					D_StartTitle();
+				}
+
 				return;
 			}
 		}
@@ -4971,7 +5052,7 @@ void G_AddMapToBuffer(mapnum_t map)
 			{
 				mapheaderinfo[i]->justPlayed = upperJustPlayedLimit;
 			}
-			
+
 			if (mapheaderinfo[i]->justPlayed > 0)
 			{
 				mapheaderinfo[i]->justPlayed--;
@@ -5054,12 +5135,12 @@ static void G_HandleSaveLevel(void)
 					remove(liveeventbackup);
 				cursaveslot = 0;
 			}
-			else if ((!modifiedgame || savemoddata) && !(netgame || multiplayer || ultimatemode || demo.recording || metalrecording || modeattacking))
+			else if ((!modifiedgame || savemoddata) && !(netgame || multiplayer || demo.recording || metalrecording || modeattacking))
 				G_SaveGame((uint32_t)cursaveslot, 0); // TODO when we readd a campaign one day
 		}
 	}
 	// and doing THIS here means you don't lose your progress if you close the game mid-intermission
-	else if (!(ultimatemode || netgame || multiplayer || demo.playback || demo.recording || metalrecording || modeattacking)
+	else if (!(netgame || multiplayer || demo.playback || demo.recording || metalrecording || modeattacking)
 		&& (!modifiedgame || savemoddata) && cursaveslot > 0 && CanSaveLevel(lastmap+1))
 		G_SaveGame((uint32_t)cursaveslot, lastmap+1); // not nextmap+1 to route around special stages
 }
@@ -5509,8 +5590,10 @@ static void G_DoCompleted(void)
 {
 	int32_t i, j = 0;
 
-	if (modeattacking && pausedelay)
-		pausedelay = 0;
+	S_StopSounds();
+
+	if (modeattacking && retrytime)
+		retrytime = 0;
 
 	gameaction = ga_nothing;
 
@@ -5587,8 +5670,6 @@ static void G_DoCompleted(void)
 
 	if (automapactive)
 		AM_Stop();
-
-	S_StopSounds();
 
 	prevmap = (mapnum_t)(gamemap-1);
 
@@ -7021,20 +7102,9 @@ dboolean G_GetRetryFlag(void)
 	return retrying;
 }
 
-void G_SetModeAttackRetryFlag(void)
+dboolean G_IsModeAttackRetrying(void)
 {
-	retryingmodeattack = true;
-	G_SetRetryFlag();
-}
-
-void G_ClearModeAttackRetryFlag(void)
-{
-	retryingmodeattack = false;
-}
-
-dboolean G_GetModeAttackRetryFlag(void)
-{
-	return retryingmodeattack;
+	return retrying && modeattacking != ATTACKING_NONE;
 }
 
 // Time utility functions

@@ -52,6 +52,7 @@
 #include "k_hud_message.h"
 
 #include "radio_finish.h"
+#include "radio_feed.h"
 
 #include "i_gamepad.h"
 
@@ -1164,6 +1165,7 @@ void P_Ticker(dboolean run)
 	if (run && !levelloading && leveltime && (!dedicated))
 	{
 		RR_ridersFinishTick();
+		RR_TickHudFeed();
 	}
 
 	if (run && !levelloading && leveltime)

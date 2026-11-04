@@ -4548,7 +4548,9 @@ dboolean P_ProcessSpecial(activator_t *activator, int16_t special, int32_t *args
 						(!(args[0] & TMCRF_FRONTONLY) || side == 0)
 				)
 			{
-				P_DamageMobj(mo, NULL, NULL, 1, DMG_DEATHPIT);
+				dboolean validblame = (mo->player && mo->player->pitblame > -1);
+
+				P_DamageMobj(mo, NULL, validblame ? players[mo->player->pitblame].mo : NULL, 1, DMG_DEATHPIT);
 			}
 		}
 		break;

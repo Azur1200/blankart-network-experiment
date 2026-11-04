@@ -2194,7 +2194,7 @@ void M_StartControlPanel(void)
 		M_SetItemOn(pi, "CONTINUE");
 
 		// intermission, so gray out stuff.
-		M_SetItemDisabled(pi, "RETRY", !retryallowed /*|| ultimatemode*/);
+		M_SetItemDisabled(pi, "RETRY", !retryallowed);
 	}
 	else // multiplayer
 	{
@@ -9181,7 +9181,7 @@ void MD_DrawConnectMenu(menupanelinst_t *pi)
 		mservflags = mservflags|highlightflags|V_30TRANS;
 	else
 		mservflags = mservflags|warningflags;
-	V_DrawRightAlignedSmallString(BASEVIDWIDTH - pi->x/FRACUNIT, pi->y/FRACUNIT + 3 + M_GetMenuItem(pi, "REFRESH")->y,
+	V_DrawRightAlignedSmallString(BASEVIDWIDTH - pi->x/FRACUNIT, pi->y/FRACUNIT + 3 + M_GetMenuItem(pi, "REFRESH")->y/FRACUNIT,
 								  mservflags, va("MS: %s", cv_masterserver.string));
 
 	// When switching pages, slide the old page and the
@@ -11903,3 +11903,28 @@ void MD_DrawDiscordRequests(menupanelinst_t *pi)
 	}
 }
 #endif
+
+fixed_t M_TimeFrac(tic_t tics, tic_t duration, timefrac_e level)
+{
+	return tics < duration ? (tics * FRACUNIT + R_GetTimeFrac(level)) / duration : FRACUNIT;
+}
+
+fixed_t M_ReverseTimeFrac(tic_t tics, tic_t duration, timefrac_e level)
+{
+	return FRACUNIT - M_TimeFrac(duration - tics, duration, level);
+}
+
+fixed_t M_DueFrac(tic_t start, tic_t duration, timefrac_e level)
+{
+	tic_t t = I_GetTime();
+	tic_t n = t - start;
+	return M_TimeFrac(min(n, duration), duration, level);
+}
+
+void M_UpdatePlatterList(void)
+{
+	if (dedicated)
+		return;
+
+	M_UpdateLevelPlatter();
+}

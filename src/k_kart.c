@@ -1020,6 +1020,13 @@ static void K_SetPlayerBumped(player_t *player, mobj_t *comparemobj)
 	player->rmomx = player->mo->momx - player->cmomx;
 	player->rmomy = player->mo->momy - player->cmomy;
 	player->justbumped = bumptime;
+	// Set to 1 to allow bumping pitblame
+	player->incontrol = 1;
+
+	if (comparemobj->player)
+	{
+		player->pitblame = comparemobj->player - players;
+	}
 
 	if (comparemobj->player && player->ranklog.ijustgothitasshole < (7 * TICRATE))
 	{
@@ -4475,11 +4482,9 @@ void K_RemoveGrowShrink(player_t *player)
 
 void K_SquishPlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 {
-	(void)source;
-
 	if (player->crash_state)
 	{
-		// Getting squished while crashing; kill the crash and let explosion damage take over
+		// Getting squished while crashing; kill the crash and let squish damage take over
 		K_ResetCrashData(player);
 		K_ResetCrashOffsetData(player);
 	}
@@ -4503,13 +4508,20 @@ void K_SquishPlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
 		
 		player->mo->momx = (inflictor->momx / 10) + (player->mo->momx / 3);
 		player->mo->momy = (inflictor->momy / 10) + (player->mo->momy / 3);
-		K_SetPlayerBumped(player, source);
+		if (source)
+		{
+			K_SetPlayerBumped(player, source);
+		}
 	}
 	else
 	{
 		player->mo->momx = 0;
 		player->mo->momy = 0;
-		K_SetPlayerBumped(player, source);
+		player->forceoldsquish = true;
+		if (source)
+		{
+			K_SetPlayerBumped(player, source);
+		}
 	}
 
 	player->mo->flags |= MF_NOCLIP;
@@ -6590,12 +6602,12 @@ void K_DropItems(player_t *player)
 			K_FlipFromObject(drop, player->mo);
 		}
 		// drop reserve item too
-		if (player->itemreserveamount > 0 && !((K_GetItemFlags(player->itemreservetype) & KIF_DESTROYONDROP) || player->itemreservetype == MAXKARTITEMS))
+		if (player->subitemamount > 0 && !((K_GetItemFlags(player->subitemtype) & KIF_DESTROYONDROP) || player->subitemtype == MAXKARTITEMS))
 		{
 			drop = K_CreatePaperItem(
 				player->mo->x, player->mo->y, player->mo->z + player->mo->height/2,
 				player->mo->angle - ANGLE_90, P_MobjFlip(player->mo),
-				player->itemreservetype, player->itemreserveamount
+				player->subitemtype, player->subitemamount
 			);
 
 			K_FlipFromObject(drop, player->mo);
@@ -8775,6 +8787,25 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->itemblink = 0;
 	}
 
+	if (P_PlayerInPain(player))
+	{
+		if (player->incontrol > 0)
+			player->incontrol = 0;
+		player->incontrol--;
+	}
+	else
+	{
+		if (player->incontrol < 0)
+			player->incontrol = 0;
+		player->incontrol++;
+	}
+
+	player->incontrol = min(player->incontrol, 5*TICRATE);
+	player->incontrol = max(player->incontrol, -5*TICRATE);
+
+	if (player->incontrol == 3*TICRATE)
+		player->pitblame = -1;
+
 	K_UpdateTripwire(player);
 
 	if (P_IsObjectOnGround(player->mo))
@@ -8940,12 +8971,14 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			// le no clipping cheat.
 			player->mo->flags &= ~MF_NOCLIP;
 		}
+
+		player->forceoldsquish = false;
 	}
 	else
 	{
-		player->mo->flags |= MF_NOCLIP;
-		if (!cv_kartfloatysquish.value)
+		if (!cv_kartfloatysquish.value || player->forceoldsquish)
 		{
+			player->mo->flags |= MF_NOCLIP;
 			player->mo->momx = 0;
 			player->mo->momy = 0;
 		}
@@ -12898,8 +12931,8 @@ void K_StripItems(player_t *player)
 	player->itemtype = KITEM_NONE;
 	player->equippeditem = KITEM_NONE;
 	player->itemamount = 0;
-	player->itemreservetype = KITEM_NONE;
-	player->itemreserveamount = 0;
+	player->subitemtype = KITEM_NONE;
+	player->subitemamount = 0;
 	player->itemflags &= ~IF_EGGMANOUT;
 	K_DisableSeekingReticule(player);
 	K_UnsetItemOut(player);

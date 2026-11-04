@@ -65,6 +65,7 @@
 #include "g_party.h"
 
 #include "radio_finish.h"
+#include "radio_feed.h"
 
 #include "m_easing.h" // Arrow Bullet aura
 
@@ -1467,6 +1468,11 @@ void P_DoPlayerExit(player_t* player, pflags_t flags)
 			if ((!cannotrank) && (players_racing > 1))
 			{
 				P_DoRankedRaceFinish(player, losing);
+
+				if (!(modeattacking||dedicated))
+				{
+					RR_PushGlobalGradeEventToFeed(player, player->ranktier);
+				}
 			}
 
 			K_CalculateLapGrading(player);
@@ -1510,7 +1516,9 @@ void P_DoPlayerExit(player_t* player, pflags_t flags)
 			K_UpdateAllPlayerPositions();
 
 			if (!(modeattacking||dedicated))
+			{
 				RR_addPlayerToFinshTicker(player);
+			}
 
 			losing = K_IsPlayerLosing(player); // HEY!!!! Set it AFTER K_UpdateAllPlayerPositions!!!!
 
@@ -4726,7 +4734,7 @@ void P_PlayerThink(player_t *player)
 	// runs before movement and collision checks
 	if (player->playerstate == PST_LIVE && player->respawn == 0)
 	{
-		K_TransferPlayerReserveItem(player);
+		K_TransferPlayerSubItem(player);
 	}
 
 	if (player->mo->reactiontime)
@@ -4793,7 +4801,7 @@ void P_PlayerThink(player_t *player)
 				gmobj->frame &= ~FF_TRANSMASK;
 				if (stacking)
 				{
-					gmobj->frame |= tr_trans40<<FF_TRANSSHIFT;
+					gmobj->frame |= tr_trans90<<FF_TRANSSHIFT;
 				}
 				else
 				{

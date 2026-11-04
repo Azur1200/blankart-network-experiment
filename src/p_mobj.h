@@ -274,7 +274,7 @@ typedef enum
 	//      = 1<<13,
 	// Slope physics sent you airborne
 	MFE_SLOPELAUNCHED     = 1<<14,
-	// free: to and including 1<<15
+	MFE_ALREADYHIT = 1<<15,
 } mobjeflag_t;
 
 //

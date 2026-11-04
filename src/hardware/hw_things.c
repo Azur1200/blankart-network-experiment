@@ -1477,7 +1477,6 @@ void HWR_DrawSprites(void)
 // HWR_AddSprites
 // During BSP traversal, this adds sprites by sector.
 // --------------------------------------------------------------------------
-static uint8_t sectorlight;
 void HWR_AddSprites(sector_t *sec)
 {
 	mobj_t *thing;
@@ -1493,14 +1492,17 @@ void HWR_AddSprites(sector_t *sec)
 	// Well, now it will be done.
 	sec->validcount = validcount;
 
-	// sprite lighting
-	sectorlight = sec->lightlevel & 0xff;
-
 	// Handle all things in sector.
 	// If a limit exists, handle things a tiny bit different.
 	limit_dist = (fixed_t)(cv_drawdist.value) * mapobjectscale;
 	for (thing = sec->thinglist; thing; thing = thing->snext)
 	{
+		// do not render in skybox
+		if (gl_rendering_skybox && (thing->renderflags & RF_HIDEINSKYBOX))
+		{
+			continue;
+		}
+
 		if (R_ThingWithinDist(thing, limit_dist))
 		{
 			if (R_ThingVisible(thing))
@@ -2553,8 +2555,8 @@ static void HWR_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 	vis->colormap = NULL;
 
-	if (encoremap && !(thing->flags & MF_DONTENCOREMAP))
-		vis->colormap += COLORMAP_REMAPOFFSET;
+	//if (encoremap && !(thing->flags & MF_DONTENCOREMAP))
+		//vis->colormap += COLORMAP_REMAPOFFSET;
 
 	// set top/bottom coords
 	vis->gzt = FIXED_TO_FLOAT(interp.z) + (FIXED_TO_FLOAT(spritecachedinfo[lumpoff].topoffset) * this_scale);

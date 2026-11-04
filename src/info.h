@@ -134,6 +134,10 @@ struct mobjinfo_t
 	int32_t damage;
 	sfxenum_t activesound;
 	uint32_t flags;
+	uint32_t flags2;
+	uint16_t eflags;
+	uint32_t renderflags;
+	uint32_t renderflags2;
 	statenum_t raisestate;
 	dboolean compatmode;
 };

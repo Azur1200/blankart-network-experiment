@@ -782,6 +782,9 @@ struct player_t
 	uint16_t flipovertimer;   // Flipped over by a player.
 	angle_t flipoverangle;  // Movement angle for a flipped-over player.
 
+	int16_t incontrol; // -1 to -175 when in pain, 1 to 175 when not.
+	int8_t pitblame; // Index of last player that hit you, resets after being in control for a bit. If you deathpit, credit the old attacker!
+
 	crashstate_e crash_state; // Current state of the crash animation
 	uint16_t crashtimer;		// Crashing and tumbling due to an Orbinaut or other wipeout item
 	tic_t crash_elapsed;	// How long you've spent tumbling
@@ -881,11 +884,11 @@ struct player_t
 	uint8_t roulettetype;				// Used for the roulette, for deciding type (0 = normal, 1 = better, 2 = eggman mark)
 
 	// Item held stuff
-	uint8_t itemtype;				// KITEM_ constant for item number
+	uint8_t itemtype;			// KITEM_ constant for item number
 	uint8_t itemamount;			// Amount of said item
-	uint8_t itemreservetype;		// KITEM_ constant for item number in the reserve slot
-	uint8_t itemreserveamount;	// Amount of said item in the reserve slot
-	uint8_t equippeditem;			// Item type that is currently in the equip slot, amount is handled by the player's hnext linked list of mobjs
+	uint8_t subitemtype;		// KITEM_ constant for item number in the sub item slot
+	uint8_t subitemamount;		// Amount of said item in the sub item slot
+	uint8_t equippeditem;		// Item type that is currently in the equip slot, amount is handled by the player's hnext linked list of mobjs
 	itemflags_t itemflags; 		// holds IF_flags (see itemstate_t)
 	tic_t itemusecooldown;		// timer for which the player is locked out of using an item or mashing the item roulette (implementation of xItemLib setPlayerItemCooldown), doesn't block ring usage
 	tic_t itemusecooldownmax;	// most recent highest value for itemusecooldown, mainly used for HUD rendering currently
@@ -959,6 +962,7 @@ struct player_t
 	int16_t growshrinktimer;			// > 0 = Big, < 0 = small
 	int16_t growcancel;				// Duration of grow canceling
 	int16_t squishedtimer;			// Duration of being squished
+	dboolean forceoldsquish;		// Forces old squish regardless of floaty squish status
 
 	int16_t altshrinktimeshit;		// (Alt. Shrink) How many times were you flipped over while shrunk?
 	dboolean inarrowbullet;			// (Alt. Shrink) Are we in the Arrow Bullet state?

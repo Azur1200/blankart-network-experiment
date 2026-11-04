@@ -68,7 +68,6 @@ void GL_SetShaderInfo(hwdshaderinfo_t info, int32_t value);
 
 void GL_SetPaletteLookup(uint8_t *lut);
 uint32_t GL_CreateLightTable(RGBA_t *hw_lighttable);
-void GL_UpdateLightTable(uint32_t id, RGBA_t *hw_lighttable);
 void GL_ClearLightTables(void);
 void GL_SetScreenPalette(RGBA_t *palette);
 

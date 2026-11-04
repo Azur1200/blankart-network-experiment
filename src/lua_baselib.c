@@ -46,6 +46,8 @@
 #include "k_terrain.h"
 #include "k_bot.h"
 
+#include "radio_feed.h"
+
 #include "lua_script.h"
 #include "lua_libs.h"
 #include "lua_hud.h" // hud_running errors
@@ -5847,7 +5849,7 @@ static int lib_kAwardPlayerItem(lua_State *L)
 	return 0;
 }
 
-static int lib_kAwardPlayerItemOrReserve(lua_State *L)
+static int lib_kAwardPlayerMainOrSubItem(lua_State *L)
 {
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
 	kartitemtype_e type = luaL_checkinteger(L, 2);
@@ -5856,18 +5858,18 @@ static int lib_kAwardPlayerItemOrReserve(lua_State *L)
 	kartitemblink_e blink = luaL_optint(L, 5, KITEMBLINK_NORMAL);
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
-	K_AwardPlayerItemOrReserve(player, type, amount, nodoubles, blink);
+	K_AwardPlayerMainOrSubItem(player, type, amount, nodoubles, blink);
 	return 0;
 }
 
-static int lib_kAddPlayerReserveItem(lua_State *L)
+static int lib_kAddPlayerSubItem(lua_State *L)
 {
 	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
 	kartitemtype_e type = luaL_checkinteger(L, 2);
 	uint8_t amount = luaL_checkinteger(L, 3);
 	if (!player)
 		return LUA_ErrInvalid(L, "player_t");
-	K_AddPlayerReserveItem(player, type, amount);
+	K_AddPlayerSubItem(player, type, amount);
 	return 0;
 }
 
@@ -6114,7 +6116,171 @@ static int lib_kGetItemListEntry(lua_State *L)
 	lua_pushinteger(L, K_GetItemListEntry(pid, item_id));
 	return 1;
 }
+// RADIO_FEED
+////////////
 
+// This will be REUSED ALOT...
+static void handlefeedupdate(lua_State *L, int index, LuaConfigForFeedUpdate *config, LuaAnimatedConfig *anim)
+{
+	luaL_checktype(L, index, LUA_TTABLE);
+
+	lua_rawgeti(L, index, 1);
+	config->patch = Z_StrDup(luaL_checkstring(L, -1)); // I think thats how I do this? I don't want this being GC'd before I use it.
+	lua_pop(L, 1);
+
+	lua_rawgeti(L, index, 2);
+	config->width =  luaL_checkinteger(L, -1);
+	lua_pop(L, 1);
+
+	lua_rawgeti(L, index, 3);
+	config->height =  luaL_checkinteger(L, -1);
+	lua_pop(L, 1);
+
+	lua_rawgeti(L, index, 4);
+	luaL_checktype(L, -1, LUA_TTABLE);
+
+	if (lua_objlen(L, -1) > 0)
+	{
+		int animatedindex = lua_gettop(L);
+
+		lua_rawgeti(L, animatedindex, 1);
+		anim->animated = luaL_checkdboolean(L, -1);
+		lua_pop(L, 1);
+
+		lua_rawgeti(L, animatedindex, 2);
+		anim->should_flash = luaL_checkdboolean(L, -1);
+		lua_pop(L, 1);
+
+		lua_rawgeti(L, animatedindex, 3);
+		anim->animated_frames = luaL_checkinteger(L, -1);
+		lua_pop(L, 1);
+
+		lua_rawgeti(L, animatedindex, 4);
+		anim->tics_per_frame = luaL_checkinteger(L, -1);
+		lua_pop(L, 1);
+
+		lua_rawgeti(L, animatedindex, 5);
+		anim->flashing_colour = luaL_checkinteger(L, -1);
+		lua_pop(L, 1);
+
+		anim->valid = true;
+	}
+
+	lua_pop(L, 1);
+
+	lua_rawgeti(L, index, 5);
+	config->patch_scale = FixedToFloat(luaL_checkfixed(L, -1));
+	lua_pop(L, 1);
+
+	lua_rawgeti(L, index, 6);
+	config->y_offset = luaL_checkfixed(L, -1);
+	lua_pop(L, 1);
+
+	lua_rawgeti(L, index, 7);
+	config->stolen_item = luaL_checkinteger(L, -1);
+	lua_pop(L, 1);
+
+	lua_rawgeti(L, index, 8);
+	config->recolour = luaL_checkinteger(L, -1);
+	lua_pop(L, 1);
+
+	lua_rawgeti(L, index, 9);
+	config->rainbow = luaL_checkdboolean(L, -1);
+	lua_pop(L, 1);
+
+	lua_pop(L, 1);
+}
+
+static int lib_rrPushLuaMessageToFeed(lua_State *L)
+{
+	const char *source = luaL_checkstring(L, 1);
+	int32_t source_color = luaL_checkinteger(L, 2);
+	const char *target = luaL_checkstring(L, 3);
+	int32_t target_color = luaL_checkinteger(L, 4);
+	dboolean displayplayer = luaL_checkdboolean(L, 5);
+
+	LuaAnimatedConfig anim = {0};
+	LuaConfigForFeedUpdate config = {0};
+
+	handlefeedupdate(L, 6, &config, &anim);
+
+	config.animation_config = anim;
+
+	RR_PushLuaMessageToFeed(source, source_color, target, target_color, displayplayer, config);
+
+	Z_Free(config.patch);
+
+	return 1;
+}
+
+static int lib_rrPushLuaGlobalEventToFeed(lua_State *L)
+{
+	player_t *player = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+
+	if (!player)
+		return LUA_ErrInvalid(L, "player_t");
+
+	LuaAnimatedConfig anim = {0};
+	LuaConfigForFeedUpdate config = {0};
+
+	handlefeedupdate(L, 2, &config, &anim);
+
+	config.animation_config = anim;
+
+	RR_PushLuaGlobalEventToFeed(player, config);
+
+	Z_Free(config.patch);
+
+	return 1;
+}
+
+static int lib_rrPushLuaPlayerMessageToFeed(lua_State *L)
+{
+	player_t *source = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	player_t *target = *((player_t **)luaL_checkudata(L, 2, META_PLAYER));
+
+	if (!source || !target)
+		return LUA_ErrInvalid(L, "player_t");
+
+	LuaAnimatedConfig anim = {0};
+	LuaConfigForFeedUpdate config = {0};
+
+	handlefeedupdate(L, 3, &config, &anim);
+
+	config.animation_config = anim;
+
+	RR_PushLuaPlayerMessageToFeed(source, target, config);
+
+	Z_Free(config.patch);
+
+	return 1;
+}
+
+static int lib_rrPushLuaPlayerFlavourMessageToFeed(lua_State *L)
+{
+	player_t *source = *((player_t **)luaL_checkudata(L, 1, META_PLAYER));
+	dboolean after1 = luaL_checkdboolean(L, 2);
+	const char *flavour1 = luaL_checkstring(L, 3);
+	player_t *target = *((player_t **)luaL_checkudata(L, 4, META_PLAYER));
+	dboolean after2 = luaL_checkdboolean(L, 5);
+	const char *flavour2 = luaL_checkstring(L, 6);
+
+	if (!source || !target)
+		return LUA_ErrInvalid(L, "player_t");
+
+	LuaAnimatedConfig anim = {0};
+	LuaConfigForFeedUpdate config = {0};
+
+	handlefeedupdate(L, 7, &config, &anim);
+
+	config.animation_config = anim;
+
+	RR_PushLuaPlayerFlavourMessageToFeed(source, after1, flavour1, target, after2, flavour2, config);
+
+	Z_Free(config.patch);
+
+	return 1;
+}
 
 
 // G_INPUT
@@ -6625,8 +6791,8 @@ static luaL_Reg lib[] = {
 
 	// k_items
 	{"K_AwardPlayerItem", lib_kAwardPlayerItem},
-	{"K_AwardPlayerItemOrReserve", lib_kAwardPlayerItemOrReserve},
-	{"K_AddPlayerReserveItem", lib_kAddPlayerReserveItem},
+	{"K_AwardPlayerMainOrSubItem", lib_kAwardPlayerMainOrSubItem},
+	{"K_AddPlayerSubItem", lib_kAddPlayerSubItem},
 	{"K_StartRoulette", lib_kStartRoulette},
 	{"K_SetPlayerItemCooldown", lib_kSetPlayerItemCooldown},
 	{"K_SpawnEquippedItem",lib_kSpawnEquippedItem},
@@ -6645,6 +6811,12 @@ static luaL_Reg lib[] = {
 	{"K_GetItemListSize", lib_kGetItemListSize},
 	{"K_SetItemListEntry", lib_kSetItemListEntry},
 	{"K_GetItemListEntry", lib_kGetItemListEntry},
+
+	// radio_feed
+	{"HF_PushMessageToFeed", lib_rrPushLuaMessageToFeed},
+	{"HF_PushGlobalEventToFeed", lib_rrPushLuaGlobalEventToFeed},
+	{"HF_PushPlayerMessageToFeed", lib_rrPushLuaPlayerMessageToFeed},
+	{"HF_PushPlayerFlavourMessageToFeed", lib_rrPushLuaPlayerFlavourMessageToFeed},
 
 	//g_input
 	//{"G_SetPlayerControllerIndicatorColor", lib_gSetPlayerControllerIndicatorColor},

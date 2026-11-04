@@ -617,9 +617,15 @@ void HWR_MakePatch (const patch_t *patch, GLPatch_t *grPatch, GLMipmap_t *grMipm
 //             CACHING HANDLING
 // =================================================
 
+typedef struct
+{
+	GLMapTexture_t normal;
+	GLMapTexture_t encore;
+} GLMapTextureSet_t; // idk i suck at naming things
+
 static size_t gl_numtextures = 0; // Texture count
-static GLMapTexture_t *gl_textures; // For all textures
-static GLMapTexture_t *gl_flats; // For all (texture) flats, as normal flats don't need to be cached
+static GLMapTextureSet_t *gl_textures; // For all textures
+static GLMapTextureSet_t *gl_flats; // For all (texture) flats, as normal flats don't need to be cached
 
 void HWR_FreeTextureData(patch_t *patch)
 {
@@ -751,9 +757,11 @@ void HWR_InitMapTextures(void)
 
 static void FreeMapTexture(GLMapTexture_t *tex)
 {
+	if (!tex)
+		return;
+
 	GL_DeleteTexture(&tex->mipmap);
-	if (tex->mipmap.data)
-		Z_Free(tex->mipmap.data);
+	Z_Free(tex->mipmap.data);
 	tex->mipmap.data = NULL;
 }
 
@@ -761,10 +769,13 @@ void HWR_FreeMapTextures(void)
 {
 	size_t i;
 
-	for (i = 0; i < gl_numtextures*2; i++)
+	for (i = 0; i < gl_numtextures; i++)
 	{
-		FreeMapTexture(&gl_textures[i]);
-		FreeMapTexture(&gl_flats[i]);
+		FreeMapTexture(&gl_textures[i].normal);
+		FreeMapTexture(&gl_textures[i].encore);
+
+		FreeMapTexture(&gl_flats[i].normal);
+		FreeMapTexture(&gl_flats[i].encore);
 	}
 
 	// now the heap don't have any 'user' pointing to our
@@ -781,7 +792,7 @@ void HWR_FreeMapTextures(void)
 static void HWR_PrecacheLevelFlats(void)
 {
 	levelflat_t levelflat;
-	size_t i, j;
+	size_t i;
 
 	// special case for encore
 	if (encoremap)
@@ -789,13 +800,8 @@ static void HWR_PrecacheLevelFlats(void)
 		// go through all sectors to determine if it should be remapped for encore
 		for (i = 0; i < numsectors; i++)
 		{
+			size_t j;
 			sector_t *sec = &sectors[i];
-
-			// sector checked already?
-			if (sec->validcount == validcount)
-				continue;
-
-			sec->validcount = validcount;
 
 			// gotta check sector floor and ceiling
 			for (j = 0; j < 2; j++)
@@ -826,43 +832,54 @@ static void HWR_PrecacheLevelTextures(void)
 {
 	char *texturepresent;
 	anim_t *anim;
-	size_t i, j;
+	size_t i, j, f;
 	int32_t h;
 
-	texturepresent = calloc(numtextures, sizeof (*texturepresent));
-	if (texturepresent == NULL) I_Error("%s: Out of memory looking up textures", "HWR_PrecacheLevel");
+	texturepresent = calloc(gl_numtextures, sizeof (*texturepresent));
+	if (texturepresent == NULL)
+		I_Error("%s: Out of memory looking up textures", "HWR_PrecacheLevel");
+
+	// Sky texture is always present.
+	// Note that F_SKY1 is the name used to indicate a sky floor/ceiling as a flat,
+	// while the sky texture is stored like a wall texture, with a skynum dependent name.
+	texturepresent[skytexture] = (noencoresky) ? 2 : 1;
+	HWR_GetTexture(skytexture, noencoresky);
 
 	for (i = 0; i < numlines; i++)
 	{
-		line_t *line = &lines[i];
-		const int noencoremap = ((line->flags & ML_TFERLINE) ? 2 : 1);
-
-		// line checked already?
-		if (line->validcount == validcount)
-			continue;
-
-		line->validcount = validcount;
+		const line_t *line = &lines[i];
+		const dboolean noencoremap = (encoremap && (line->flags & ML_TFERLINE));
 
 		// two sides
 		for (j = 0; j < 2; j++)
 		{
-			side_t *side = &sides[line->sidenum[j]];
-
 			// Single-side linedef
 			if (line->sidenum[j] == NO_INDEX)
 				continue;
 
-			if (side->toptexture >= 0 && side->toptexture < numtextures)
+			const side_t *side = &sides[line->sidenum[j]];
+			const int32_t sidetex[] = {side->toptexture, side->midtexture, side->bottomtexture};
+
+			// check from top to bottom
+			for (f = 0; f < 3; f++)
 			{
-				texturepresent[side->toptexture] = 1|noencoremap;
-			}
-			if (side->midtexture >= 0 && side->midtexture < numtextures)
-			{
-				texturepresent[side->midtexture] = 1|noencoremap;
-			}
-			if (side->bottomtexture >= 0 && side->bottomtexture < numtextures)
-			{
-				texturepresent[side->bottomtexture] = 1|noencoremap;
+				const int32_t texnum = sidetex[f];
+
+				if (texnum <= 0 || (unsigned)texnum >= gl_numtextures)
+					continue;
+
+				if (!(texturepresent[texnum] & 1))
+				{
+					texturepresent[texnum] |= 1;
+					HWR_GetTexture(texnum, false);
+				}
+
+				if (noencoremap
+					&& !(texturepresent[texnum] & 2))
+				{
+					texturepresent[texnum] |= 2;
+					HWR_GetTexture(texnum, true);
+				}
 			}
 		}
 	}
@@ -870,53 +887,27 @@ static void HWR_PrecacheLevelTextures(void)
 	// check for animated textures
 	for (anim = anims; anim < lastanim; anim++)
 	{
-		if (!texturepresent[anim->basepic])
-			continue;
-
 		const char texpresent = texturepresent[anim->basepic];
 
 		if (!texpresent)
 			continue;
 
-		if (texpresent & 1)
+		for (h = 1; h < anim->numpics; h++)
 		{
-			for (h = 1; h < anim->numpics; h++)
-			{
-				HWR_GetTexture(anim->basepic+h, false);
-			}
-		}
+			const int32_t animtexnum = anim->basepic+h;
 
-		if (texpresent & 2)
-		{
-			for (h = 1; h < anim->numpics; h++)
+			if (texpresent & 1)
 			{
-				HWR_GetTexture(anim->basepic+h, true);
+				HWR_GetTexture(animtexnum, false);
+			}
+
+			if (texpresent & 2)
+			{
+				HWR_GetTexture(animtexnum, true);
 			}
 		}
 	}
 
-	// Sky texture is always present.
-	// Note that F_SKY1 is the name used to indicate a sky floor/ceiling as a flat,
-	// while the sky texture is stored like a wall texture, with a skynum dependent name.
-	texturepresent[skytexture] = (noencoresky) ? 2 : 1;
-
-	for (i = 0; i < (unsigned)numtextures; i++)
-	{
-		const char texpresent = texturepresent[i];
-
-		if (!texpresent)
-			continue;
-
-		if (texpresent & 1)
-		{
-			HWR_GetTexture(i, false);
-		}
-
-		if (texpresent & 2)
-		{
-			HWR_GetTexture(i, true);
-		}
-	}
 	free(texturepresent);
 }
 
@@ -1017,8 +1008,8 @@ void HWR_LoadMapTextures(size_t pnumtextures)
 	HWR_FreeMapTextures();
 
 	gl_numtextures = pnumtextures;
-	gl_textures = calloc(gl_numtextures, sizeof (*gl_textures)*2); // *2 - 1 for encore-remapped texture and another for noencore texture (unused when not in encore)
-	gl_flats = calloc(gl_numtextures, sizeof(*gl_flats)*2);
+	gl_textures = calloc(gl_numtextures, sizeof(*gl_textures)); // *2 - 1 for encore-remapped texture and another for noencore texture (unused when not in encore), see: GLMapTextureSet_t
+	gl_flats = calloc(gl_numtextures, sizeof(*gl_flats));
 
 	if (gl_textures == NULL || gl_flats == NULL)
 		I_Error("HWR_LoadMapTextures: ran out of memory for OpenGL textures");
@@ -1030,12 +1021,17 @@ void HWR_LoadMapTextures(size_t pnumtextures)
 GLMapTexture_t *HWR_GetTexture(int32_t tex, dboolean noencoremap)
 {
 	GLMapTexture_t *grtex;
-#ifdef PARANOIA
-	if ((unsigned)tex >= gl_numtextures)
-		I_Error("HWR_GetTexture: tex >= numtextures\n");
-#endif
 
-	grtex = &gl_textures[tex*2 + (encoremap && !noencoremap ? 0 : 1)];
+	if (tex < 0 || (unsigned)tex >= gl_numtextures)
+	{
+#ifdef PARANOIA
+		I_Error("HWR_GetTexture: Invalid texture ID %d", tex);
+#else
+		tex = 0;
+#endif
+	}
+
+	grtex = (!noencoremap && encoremap) ? &gl_textures[tex].encore : &gl_textures[tex].normal;
 
 	// Generate texture if missing from the cache
 	if (!grtex->mipmap.data && !grtex->mipmap.downloaded)
@@ -1057,7 +1053,7 @@ GLMapTexture_t *HWR_GetTexture(int32_t tex, dboolean noencoremap)
 
 		// Every texture in memory, stored in the
 		// hardware renderer's bit depth format. Wow!
-		grtexbright = &gl_textures[brightmapnum*2 + (encoremap && !noencoremap ? 0 : 1)];
+		grtexbright = &gl_textures[brightmapnum].normal; // brightmaps do not need extra encore textures as they never remap
 
 		// Generate texture if missing from the cache
 		if (!grtexbright->mipmap.data && !grtexbright->mipmap.downloaded)
@@ -1180,7 +1176,7 @@ void HWR_GetLevelFlat(levelflat_t *levelflat, dboolean noencoremap)
 		return;
 	}
 
-	int32_t texturenum = texturetranslation[levelflat->texture_id];
+	int32_t texturenum = R_GetTextureNum(levelflat->texture_id);
 	int32_t brightmapnum = R_GetTextureBrightmap(texturenum);
 
 	if (texturenum <= 0)
@@ -1189,7 +1185,7 @@ void HWR_GetLevelFlat(levelflat_t *levelflat, dboolean noencoremap)
 		return;
 	}
 
-	GLMapTexture_t *grtex = &gl_flats[texturenum*2 + (encoremap && !noencoremap ? 0 : 1)];
+	GLMapTexture_t *grtex = (!noencoremap && encoremap) ? &gl_flats[texturenum].encore : &gl_flats[texturenum].normal;
 	GLMipmap_t *grMipmap = &grtex->mipmap;
 
 	if (!grMipmap->data && !grMipmap->downloaded)
@@ -1229,7 +1225,7 @@ void HWR_GetLevelFlat(levelflat_t *levelflat, dboolean noencoremap)
 
 	if (brightmapnum)
 	{
-		grtex = &gl_flats[brightmapnum*2 + (encoremap && !noencoremap ? 0 : 1)];
+		grtex = &gl_flats[brightmapnum].normal; // brightmaps do not need extra encore textures as they never remap
 		grMipmap = &grtex->mipmap;
 
 		if (!grMipmap->data && !grMipmap->downloaded)

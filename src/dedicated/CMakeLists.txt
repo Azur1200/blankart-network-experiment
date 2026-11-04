@@ -9,3 +9,7 @@ target_sources(BLANKART PRIVATE
 	endtxt.c
 	dosstr.c
 )
+
+if(${SRB2_HAVE_LIBBACKTRACE})
+	target_link_libraries(BLANKART PRIVATE ${LIBBACKTRACE_LIBRARIES})
+endif()

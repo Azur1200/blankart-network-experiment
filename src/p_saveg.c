@@ -737,6 +737,9 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].flipovertimer);
 		SYNC(players[i].flipoverangle);
 		SYNC(players[i].squishedtimer);
+		SYNC(players[i].forceoldsquish);
+		SYNC(players[i].incontrol);
+		SYNC(players[i].pitblame);
 		SYNC(players[i].crash_state);
 		SYNC(players[i].crash_rot);
 		SYNC(players[i].crash_yaw);
@@ -1008,8 +1011,8 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].keepstuff.growshrinktimer);
 		SYNC(players[i].keepstuff.flametimer);
 
-		SYNC(players[i].itemreservetype);
-		SYNC(players[i].itemreserveamount);
+		SYNC(players[i].subitemtype);
+		SYNC(players[i].subitemamount);
 
 		SYNC(players[i].dashareapower);
 
@@ -4885,6 +4888,83 @@ static dboolean P_NetSyncMisc(savebuffer_t *save, dboolean resending)
 	}
 
 	SYNC(cht_debug);
+
+	// Netsync map hidden/hell status
+	// First hidden from voting
+	if (save->write)
+	{
+		for (i = 0; i < (size_t)nummapheaders; i++)
+		{
+			if (!mapheaderinfo[i] || mapheaderinfo[i] == NULL)
+				continue;
+
+			if (mapheaderinfo[i]->menuflags & LF2_HIDEINVOTE)
+			{
+				WRITEUINT8(save->p, true);
+			}
+			else
+			{
+				WRITEUINT8(save->p, false);
+			}
+		}
+	}
+	else
+	{
+		for (i = 0; i < (size_t)nummapheaders; i++)
+		{
+			if (!mapheaderinfo[i] || mapheaderinfo[i] == NULL)
+				continue;
+
+			dboolean hidden = READUINT8(save->p);
+
+			if (hidden)
+			{
+				mapheaderinfo[i]->menuflags |= LF2_HIDEINVOTE;
+			}
+			else
+			{
+				mapheaderinfo[i]->menuflags &= ~LF2_HIDEINVOTE;
+			}
+		}
+	}
+
+	// Time for hell!
+	if (save->write)
+	{
+		for (i = 0; i < (size_t)nummapheaders; i++)
+		{
+			if (!mapheaderinfo[i] || mapheaderinfo[i] == NULL || mapheaderinfo[i]->lumpnum == LUMPERROR)
+				continue;
+
+			if (mapheaderinfo[i]->menuflags & LF2_HIDEINMENU)
+			{
+				WRITEUINT8(save->p, true);
+			}
+			else
+			{
+				WRITEUINT8(save->p, false);
+			}
+		}
+	}
+	else
+	{
+		for (i = 0; i < (size_t)nummapheaders; i++)
+		{
+			if (!mapheaderinfo[i] || mapheaderinfo[i] == NULL || mapheaderinfo[i]->lumpnum == LUMPERROR)
+				continue;
+
+			dboolean hidden = READUINT8(save->p);
+
+			if (hidden)
+			{
+				mapheaderinfo[i]->menuflags |= LF2_HIDEINMENU;
+			}
+			else
+			{
+				mapheaderinfo[i]->menuflags &= ~LF2_HIDEINMENU;
+			}
+		}
+	}
 
 	TracyCZoneEnd(__zone);
 	return true;

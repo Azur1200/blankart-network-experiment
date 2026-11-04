@@ -79,6 +79,7 @@
 #include "k_vote.h"
 
 #include "radio_finish.h"
+#include "radio_feed.h"
 
 // for MapLoad hook
 #include "lua_script.h"
@@ -3969,7 +3970,7 @@ void P_UpdateSegLightOffset(seg_t *li)
 		angle_t liAngle = R_PointToAngle2(0, 0, (li->v1->x - li->v2->x), (li->v1->y - li->v2->y)) - ANGLE_90;
 
 		light = FixedMul(FINECOSINE(liAngle >> ANGLETOFINESHIFT), FINECOSINE(maplighting.angle >> ANGLETOFINESHIFT))
-			+ FixedMul(FINESINE(liAngle >> ANGLETOFINESHIFT), FINESINE(maplighting.angle >> ANGLETOFINESHIFT));
+				+ FixedMul(FINESINE(liAngle >> ANGLETOFINESHIFT), FINESINE(maplighting.angle >> ANGLETOFINESHIFT));
 		light = (light + FRACUNIT) / 2;
 	}
 	else
@@ -3979,7 +3980,7 @@ void P_UpdateSegLightOffset(seg_t *li)
 
 	extralight = -contrastFixed + FixedMul(light, contrastFixed * 2);
 
-	// Between -2 and 2 for software, -16 and 16 for hardware
+	// Between -1 and 1 for software, -8 and 8 for hardware
 	li->lightOffset = FixedFloor((extralight / 8) + (FRACUNIT / 2)) / FRACUNIT;
 #ifdef HWRENDER
 	li->hwLightOffset = FixedFloor(extralight + (FRACUNIT / 2)) / FRACUNIT;
@@ -4046,7 +4047,7 @@ dboolean P_ApplyLightOffsetFine(uint8_t baselightlevel, const sector_t *sector)
 	}
 
 	if (lighting->use_custom_light == false)
-		return (baselightlevel < LIGHTLEVELS-1 && baselightlevel > 0);
+		return (baselightlevel < 255 && baselightlevel > 0);
 
 	if (!P_SectorUsesDirectionalLighting(sector))
 	{
@@ -4075,9 +4076,6 @@ static void P_InitializeSeg(seg_t *seg)
 
 #ifdef HWRENDER
 	seg->pv1 = seg->pv2 = NULL;
-
-	//Hurdler: 04/12/2000: for now, only used in hardware mode
-	seg->lightmaps = NULL; // list of static lightmap for this seg
 #endif
 
 	seg->numlights = 0;
@@ -9080,11 +9078,18 @@ void P_FreeLevelState(void)
 	//R_FlushTranslationColormapCache();
 
 #ifdef HWRENDER
-	// Free GPU textures before freeing patches.
-	if (rendermode == render_opengl && (vid.glstate == VID_GL_LIBRARY_LOADED))
-		HWR_ClearAllTextures();
+	if (vid.glstate == VID_GL_LIBRARY_LOADED)
+	{
+		// Free GPU textures before freeing patches.
+		if (rendermode == render_opengl)
+			HWR_ClearAllTextures();
+
+		// Delete light table textures
+		HWR_ClearLightTables();
+	}
 #endif
 
+	G_FreeGhosts(); // ghosts are allocated with PU_LEVEL
 	Patch_FreeTag(PU_PATCH_LOWPRIORITY);
 	Patch_FreeTag(PU_PATCH_ROTATED);
 	Z_FreeTags(PU_LEVEL, PU_PURGELEVEL - 1);
@@ -9184,22 +9189,11 @@ dboolean P_LoadLevel(dboolean fromnetsave, dboolean reloadinggamestate)
 
 	// Special stage & record attack retry fade to white
 	// This is handled BEFORE sounds are stopped.
-	if (G_GetModeAttackRetryFlag())
+	if (G_IsModeAttackRetrying() && !demo.playback)
 	{
-		if (modeattacking && !demo.playback)
-		{
-			ranspecialwipe = 2;
-			//wipestyleflags |= (WSF_FADEOUT|WSF_TOWHITE);
-		}
-		G_ClearModeAttackRetryFlag();
+		ranspecialwipe = 2;
+		//wipestyleflags |= (WSF_FADEOUT|WSF_TOWHITE);
 	}
-	/*
-	else if (rendermode != render_none && G_IsSpecialStage(gamemap))
-	{
-		P_RunSpecialStageWipe();
-		ranspecialwipe = 1;
-	}
-	*/
 
 	// Make sure all sounds are stopped before Z_FreeTags.
 	S_StopSounds();
@@ -9219,6 +9213,7 @@ dboolean P_LoadLevel(dboolean fromnetsave, dboolean reloadinggamestate)
 			if (ranspecialwipe == 2)
 			{
 				pausedelay = -3; // preticker plus one
+				retrytime = 0;
 				S_StartSound(NULL, sfx_s3k73);
 			}
 
@@ -9270,6 +9265,7 @@ dboolean P_LoadLevel(dboolean fromnetsave, dboolean reloadinggamestate)
 
 	// This ticker isn't EVER supposed to run for dedis, but just in case...
 	RR_resetRidersFinishTicker();
+	RR_ClearHudFeed();
 
 	if (!fromnetsave && savedata.lives > 0)
 	{
@@ -9426,8 +9422,8 @@ dboolean P_LoadLevel(dboolean fromnetsave, dboolean reloadinggamestate)
 #ifdef HWRENDER // not win32 only 19990829 by Kin
 	gl_maploaded = false;
 
-	// Lactozilla: Free poly_subsectors regardless of renderer.
-	HWR_FreePolyPool();
+	// Lactozilla: Free extrasubsectors regardless of renderer.
+	HWR_FreeExtraSubsectors();
 
 	// Create plane polygons.
 	if (rendermode == render_opengl)
@@ -9490,7 +9486,7 @@ dboolean P_LoadLevel(dboolean fromnetsave, dboolean reloadinggamestate)
 		if (!lastmaploaded) // Start a new game?
 		{
 			// I'd love to do this in the menu code instead of here, but everything's a mess and I can't guarantee saving proper player struct info before the first act's started. You could probably refactor it, but it'd be a lot of effort. Easier to just work off known good code. ~toast 22/06/2020
-			if (!(ultimatemode || netgame || multiplayer || demo.playback || demo.recording || metalrecording || modeattacking || marathonmode)
+			if (!(netgame || multiplayer || demo.playback || demo.recording || metalrecording || modeattacking || marathonmode)
 			&& (!modifiedgame || savemoddata) && cursaveslot > 0)
 				G_SaveGame((uint32_t)cursaveslot, gamemap);
 			// If you're looking for saving sp file progression (distinct from G_SaveGameOver), check G_DoCompleted.

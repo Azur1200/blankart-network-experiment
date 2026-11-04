@@ -39,6 +39,12 @@ FILE *logstream = NULL;
 char logfilename[1024];
 #endif
 
+#ifdef HAVE_LIBBACKTRACE
+#include <backtrace.h>
+
+struct backtrace_state *bt_state = NULL;
+#endif
+
 #ifndef DOXYGEN
 #ifndef O_TEXT
 #define O_TEXT 0
@@ -180,6 +186,19 @@ int main(int argc, char **argv)
 	myargv = argv; /// \todo pull out path to exe from this string
 
 	dedicated = true;
+
+#ifdef HAVE_LIBBACKTRACE
+	bt_state = backtrace_create_state(
+		argv[0],
+#ifdef HAVE_THREADS
+		1,
+#else
+		0,
+#endif
+		NULL,
+		NULL
+	);
+#endif
 
 #ifdef _WIN32
 	ChDirToExe();

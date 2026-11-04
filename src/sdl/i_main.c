@@ -33,6 +33,11 @@
 
 #include "time.h" // For log timestamps
 
+#ifdef HAVE_LIBBACKTRACE
+#include <backtrace.h>
+struct backtrace_state *bt_state = NULL;
+#endif
+
 #ifdef HAVE_SDL
 
 #if defined (_WIN32) && !defined (main)
@@ -183,6 +188,19 @@ int main(int argc, char **argv)
 {
 	myargc = argc;
 	myargv = argv; /// \todo pull out path to exe from this string
+
+#ifdef HAVE_LIBBACKTRACE
+	bt_state = backtrace_create_state(
+		argv[0],
+#ifdef HAVE_THREADS
+		1,
+#else
+		0,
+#endif
+		NULL,
+		NULL
+	);
+#endif
 
 #ifdef _WIN32
 	ChDirToExe();

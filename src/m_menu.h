@@ -25,6 +25,7 @@
 #include "r_skins.h" // for SKINNAMESIZE
 #include "m_textinput.h"
 #include "g_input.h"
+#include "r_fps.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -694,6 +695,14 @@ void M_InitPlayerSetupColors(void);
 void M_FreePlayerSetupColors(void);
 
 extern consvar_t cv_dummyreplaysearch;
+
+fixed_t M_TimeFrac(tic_t tics, tic_t duration, timefrac_e level);
+
+fixed_t M_ReverseTimeFrac(tic_t tics, tic_t duration, timefrac_e level);
+
+fixed_t M_DueFrac(tic_t start, tic_t duration, timefrac_e level);
+
+void M_UpdatePlatterList(void);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -31,6 +31,8 @@ extern fixed_t viewcos, viewsin;
 extern int32_t viewheight;
 extern int32_t centerx, centery;
 
+extern dboolean rendering_skybox;
+
 extern fixed_t centerxfrac;
 extern fixed_t centeryfrac;
 extern fixed_t projection[MAXSPLITSCREENPLAYERS];

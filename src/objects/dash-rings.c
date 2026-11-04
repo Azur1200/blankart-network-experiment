@@ -169,6 +169,8 @@ void Obj_DashRingTouch(mobj_t *ring, player_t *player)
 	{
 		P_SetPlayerAngle(player, ring->angle);
 		player->mo->angle = ring->angle;
+		// Set boostangle during dash rings so spinout doesn't toss you to the side.
+		player->boostangle = ring->angle;
 	}
 
 	player->pflags |= PF_NOSCALEGRAVITY;

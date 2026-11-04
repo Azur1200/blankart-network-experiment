@@ -10797,7 +10797,7 @@ void P_MobjThinker(mobj_t *mobj)
 	if ((mobj->flags & MF_BOSS) && (bossdisabled & (1 << mobj->args[0])))
 		return;
 
-	mobj->eflags &= ~(MFE_PUSHED|MFE_SPRUNG|MFE_JUSTBOUNCEDWALL|MFE_SLOPELAUNCHED);
+	mobj->eflags &= ~(MFE_PUSHED|MFE_SPRUNG|MFE_JUSTBOUNCEDWALL|MFE_SLOPELAUNCHED|MFE_ALREADYHIT);
 
 	// sal: what the hell? is there any reason this isn't done, like, literally ANYWHERE else?
 	P_SetTarget(&g_tm.floorthing, NULL);
@@ -11002,7 +11002,9 @@ void P_MobjThinker(mobj_t *mobj)
 	if (mobj->flags & (MF_ENEMY|MF_BOSS) && mobj->health
 		&& P_CheckDeathPitCollide(mobj)) // extra pit check in case these didn't have momz
 	{
-		P_KillMobj(mobj, NULL, NULL, DMG_DEATHPIT);
+		dboolean validblame = (mobj->player && mobj->player->pitblame > -1);
+
+		P_DamageMobj(mobj, NULL, validblame ? players[mobj->player->pitblame].mo : NULL, 1, DMG_DEATHPIT);
 		return;
 	}
 
@@ -11452,7 +11454,13 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 
 	mobj->radius = info->radius;
 	mobj->height = info->height;
+
+	// Now this? This is cool shit! Try doing this in hardcode before :trollface:
 	mobj->flags = info->flags;
+	mobj->flags2 = info->flags2;
+	mobj->eflags = info->eflags;
+	mobj->renderflags = info->renderflags;
+	mobj->renderflags2 = info->renderflags2;
 
 	mobj->health = (info->spawnhealth ? info->spawnhealth : 1);
 
@@ -12011,7 +12019,11 @@ static precipmobj_t *P_SpawnPrecipMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype
 
 	mobj->x = x;
 	mobj->y = y;
+
+	// Now this? This is cool shit! Try doing this in hardcode before :trollface:
 	mobj->flags = info->flags;
+	mobj->renderflags = info->renderflags;
+	mobj->renderflags2 = info->renderflags2;
 
 	// do not set the state with P_SetMobjState,
 	// because action routines can not be called yet

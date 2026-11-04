@@ -379,6 +379,22 @@ void readthing(MYFILE *f, int32_t num)
 			{
 				mobjinfo[num].flags = (int32_t)get_number(word2);
 			}
+			else if (fastcmp(word, "FLAGS2"))
+			{
+				mobjinfo[num].flags2 = (int32_t)get_number(word2);
+			}
+			else if (fastcmp(word, "EFLAGS"))
+			{
+				mobjinfo[num].eflags = get_number(word2);
+			}
+			else if (fastcmp(word, "RENDERFLAGS"))
+			{
+				mobjinfo[num].renderflags = (int32_t)get_number(word2);
+			}
+			else if (fastcmp(word, "RENDERFLAGS2"))
+			{
+				mobjinfo[num].renderflags2 = (int32_t)get_number(word2);
+			}
 			else if (fastcmp(word, "RAISESTATE"))
 			{
 				mobjinfo[num].raisestate = get_number(word2);
@@ -1363,7 +1379,7 @@ void readlevelheader(MYFILE *f, char * name)
 				mapheaderinfo[num]->mobj_scale = get_number(word2);
 			else if (fastcmp(word, "DEFAULTWAYPOINTRADIUS"))
 				mapheaderinfo[num]->default_waypoint_radius = get_number(word2);
-			else if (fastcmp(word, "LIGHTCONTRAST"))
+			else if (fastcmp(word, "LIGHTCONTRAST") || fastcmp(word, "ENCORELIGHTCONTRAST"))
 			{
 				usemaplighting(num, word)->light_contrast = (uint8_t)i;
 				usemaplighting(num, word)->use_custom_light = true;
