@@ -3581,7 +3581,11 @@ static char *G_GetDemoDate(menudemo_t *pdemo)
 	time_t demo_date = 0;
 
 	demo_date = longtime;
+#if defined(_WIN32)
+	localtime_s(&tm_buf, &demo_date);
+#else
 	localtime_r(&demo_date, &tm_buf);
+#endif
 
 	// cant believe we ended up in 1970
 	if (tm_buf.tm_year == 70)
