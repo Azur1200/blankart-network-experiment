@@ -6271,6 +6271,10 @@ menudemo_t *demolist = NULL;
 // Locked behind Lock_search_state
 menudemo_t *demolist_all; // All replays
 dboolean replaynamesloaded = false;
+// Whenever we start a replay load thread, we increment this number and then thread will remember current value,
+// and by the end it will compare it with current value, and if it is equal it means thread can store data it has loaded.
+// If it's not equal, that means we started more than one thread (left and re-entered menu for example)
+size_t replaythreadnum = 0;
 
 #ifdef HAVE_THREADS
 I_mutex replayquerymutex;
@@ -6327,12 +6331,14 @@ static void CreateReplayItems(menupanelinst_t *pi)
 
 static void ReplayNamesLoadThread(void* userdata)
 {
+	(void)userdata;
+
 	Lock_search_state();
 
 	size_t demolist_all_size = sizedirmenu;
 	menudemo_t *demolist_all_local = (menudemo_t*)malloc(sizeof(menudemo_t)*sizedirmenu);
 	memcpy(demolist_all_local, demolist_all, sizeof(menudemo_t)*sizedirmenu);
-	char *replaydirpath = (char*)userdata;
+	size_t localreplaythreadnum = replaythreadnum;
 
 	Unlock_search_state();
 
@@ -6352,7 +6358,7 @@ static void ReplayNamesLoadThread(void* userdata)
 
 	Lock_search_state();
 
-	if (strcmp(menupath, replaydirpath) == 0)
+	if (replaythreadnum == localreplaythreadnum && demolist_all)
 	{
 		memcpy(demolist_all, demolist_all_local, sizeof(menudemo_t)*sizedirmenu);
 		replaynamesloaded = true;
@@ -6361,22 +6367,20 @@ static void ReplayNamesLoadThread(void* userdata)
 	Unlock_search_state();
 
 	// Was allocated before thread start, we need to free it
-	free(replaydirpath);
 	free(demolist_all_local);
 }
 
 static void LoadReplayNames(void)
 {
-	char *replaydirpath = strdup(menupath);
-
 	Lock_search_state();
+	replaythreadnum++;
 	replaynamesloaded = false;
 	Unlock_search_state();
 
 #ifdef HAVE_THREADS
-	I_spawn_thread("replay-names-load", ReplayNamesLoadThread, replaydirpath);
+	I_spawn_thread("replay-names-load", ReplayNamesLoadThread, NULL);
 #else
-	ReplayNamesLoadThread(replaydirpath);
+	ReplayNamesLoadThread(NULL);
 #endif
 }
 
@@ -6415,7 +6419,11 @@ static void M_HutCheckReplays(size_t maxnum)
 		// Mark as done
 		replayqueryfound = replayquerycheck = sizedirmenu;
 
+		Lock_search_state();
+
 		memcpy(demolist, demolist_all, sizeof(menudemo_t) * sizedirmenu);
+
+		Unlock_search_state();
 
 		return;
 	}
