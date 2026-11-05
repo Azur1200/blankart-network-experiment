@@ -3805,6 +3805,23 @@ fixed_t K_GetNewSpeed(const player_t *player)
 	return finalspeed;
 }
 
+// Derivative of K_GetNewSpeed
+// https://www.desmos.com/calculator/iamlt5jwmu
+fixed_t K_GetDerivativeOfNewSpeed(const player_t *player)
+{
+	const fixed_t accelmax = 4000;
+	fixed_t p_accel = K_GetKartAccel(player);
+
+	if (K_PlayerUsesBotMovement(player) == true && player->botvars.rubberband > 0)
+	{
+		// Acceleration is tied to top speed...
+		// so if we want JUST a top speed boost, we have to do this...
+		p_accel = FixedDiv(p_accel, player->botvars.rubberband);
+	}
+
+	return FixedDiv(accelmax - p_accel, FixedMul(accelmax, K_PlayerBaseFriction(player, ORIG_FRICTION)));
+}
+
 fixed_t K_3dKartMovement(const player_t *player, dboolean onground, int8_t forwardmove)
 {
 	fixed_t finalspeed = K_GetNewSpeed(player);
