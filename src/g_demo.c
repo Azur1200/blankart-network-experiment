@@ -11,6 +11,9 @@
 /// \file  g_demo.c
 /// \brief Demo recording and playback
 
+#include <time.h>
+#include <locale.h>
+
 #include "command.h"
 #include "doomdef.h"
 #include "console.h"
@@ -3538,6 +3541,68 @@ uint8_t G_CmpDemoTime(char *oldname, char *newname)
 	return c;
 }
 
+static char *G_GetDemoDate(menudemo_t *pdemo)
+{
+	char *datetime;
+	datetime = malloc(sizeof(pdemo->date)); // mallocma balls
+
+	// no mallocma balls... :c
+	if (!datetime)
+	{
+		free(datetime);
+		return NULL;
+	}
+
+	// get the actual filename Zzz...
+	const char *filename;
+
+	filename = strrchr(pdemo->filepath, '/');
+	if (!filename)
+		filename = strrchr(pdemo->filepath, '\\');
+
+	if (!filename)
+	{
+		free(datetime);
+		return NULL;
+	}
+
+	filename = filename + 1; // filename, filename, filename, filename.....
+
+	// get only the first 10 characters (time before conversion)
+	char timestr[10];
+	strncpy(timestr , filename, 10);
+
+	// convert it to long Zzz....
+	long longtime = 0;
+	longtime = strtol(timestr, NULL, 10);
+
+	// then throw it into localtime to get an actual human readable format lmao
+	struct tm tm_buf;
+	time_t demo_date = 0;
+
+	demo_date = longtime;
+	localtime_r(&demo_date, &tm_buf);
+
+	// cant believe we ended up in 1970
+	if (tm_buf.tm_year == 70)
+	{
+		free(datetime);
+		return NULL;
+	}
+
+	const char *format;
+
+	// US ppl are special (:
+	if (strstr(setlocale(LC_TIME, NULL), "en_US"))
+		format = "%m.%d.%Y";
+	else
+		format = "%d.%m.%Y";
+
+	strftime(datetime, sizeof(pdemo->date), format, &tm_buf);
+
+	return datetime;
+}
+
 void G_LoadDemoInfo(menudemo_t *pdemo, dboolean nameonly)
 {
 	CLEANUP(Z_Pfree) uint8_t *infobuffer = NULL;
@@ -3554,6 +3619,8 @@ void G_LoadDemoInfo(menudemo_t *pdemo, dboolean nameonly)
 
 	if (!nameonly)
 		pdemo->type = MD_LOADED;
+
+	memset(pdemo->date, 0, sizeof(pdemo->date));
 
 	CLEANUP(G_FreeDemoHeader) demoheader_t header;
 	switch (G_ReadDemoHeader(infobuffer, &header, nameonly))
@@ -3584,6 +3651,13 @@ void G_LoadDemoInfo(menudemo_t *pdemo, dboolean nameonly)
 	}
 
 	strlcpy(pdemo->title, header.demotitle, sizeof(pdemo->title));
+
+	// demo date
+	char *demodate;
+	demodate = G_GetDemoDate(pdemo);
+	if (demodate)
+		strlcpy(pdemo->date, demodate, sizeof(pdemo->date));
+	free(demodate);
 
 	if (nameonly)
 		return;

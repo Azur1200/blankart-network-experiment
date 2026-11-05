@@ -88,6 +88,8 @@ struct menudemo_t {
 	menudemotype_e type;
 
 	char title[65]; // Null-terminated for string prints
+	char date[11]; // date when replay was recorded
+
 	uint16_t map;
 	uint8_t addonstatus; // What do we need to do addon-wise to play this demo?
 	uint8_t gametype;

@@ -6777,8 +6777,26 @@ void MP_TickReplayHutInfoForeground(menupanelinst_t *pi)
 				M_SetItemText(pi, "MAPNAME", mapname);
 				Z_Free(mapname);
 
+				char lapstr[512] = {0};
 				int32_t laps = mdemo->numlaps;
-				M_SetItemText(pi, "NUMLAPS", laps ? va("(%d laps)", laps) : "");
+
+				if ((mdemo->date[0] != '\0') && (laps))
+				{
+					strlcpy(lapstr, laps ? va("(%d laps)", laps) : "", sizeof(lapstr));
+					M_SetItemText(pi, "DATEANDLAPS", va("%s %s", mdemo->date, lapstr));
+				}
+				else if ((mdemo->date[0] != '\0'))
+				{
+					M_SetItemText(pi, "DATEANDLAPS", va("%s", mdemo->date));
+				}
+				else if (laps)
+				{
+					M_SetItemText(pi, "DATEANDLAPS", va("(%d laps)", laps));
+				}
+				else
+				{
+					M_SetItemText(pi, "DATEANDLAPS", "");
+				}
 
 				M_SetItemText(pi, "GAMETYPE", mdemo->gametype == GT_RACE
 				? va("Race (%s speed)", kartspeed_cons_t[(mdemo->kartspeed & ~DF_ENCORE) + 1].strvalue)
