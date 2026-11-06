@@ -11,8 +11,8 @@
 /// \file  g_demo.c
 /// \brief Demo recording and playback
 
+// for replay dates
 #include <time.h>
-#include <locale.h>
 
 #include "command.h"
 #include "doomdef.h"
@@ -3547,7 +3547,9 @@ uint8_t G_CmpDemoTime(char *oldname, char *newname)
 #if defined (_WIN32)
 // return the file creation time
 // useful for demos that were renamed
-static long G_GetCreationTime(char *filepath)
+// windows only, as file creation times are
+// very unreliable (or non existant depending on fs) on linux
+static time_t G_GetCreationTime(char *filepath)
 {
 	struct stat fileinfo;
 
@@ -3558,99 +3560,97 @@ static long G_GetCreationTime(char *filepath)
 }
 #endif
 
-static char *G_GetDemoDate(menudemo_t *pdemo)
+static char *G_GetDemoDate(menudemo_t *pdemo, const char *dateformat)
 {
-	char *datetime;
-	datetime = malloc(sizeof(pdemo->date)); // mallocma balls
-
-	// no mallocma balls... :c
-	if (!datetime)
-	{
-		return NULL;
-	}
-
+	char *endPos = NULL;
+	char *datetime = NULL;
 	time_t file_time = 0;
+	struct tm tm_buf = {0};
+	CLEANUP(pfree) char *filename = NULL;
 
 	// get le filepath
-	char *filename;
 	filename = strdup(pdemo->filepath);
 
-#if defined (_WIN32)
 	if (!filename)
-	{
-		// if we cant get a filename try just getting the file create time
-		file_time = G_GetCreationTime(pdemo->filepath);
-		goto skipfilenametime;
-	}
-#else
-	if (!filename)
-	{
-		free(datetime);
 		return NULL;
-	}
-	#endif
 
 	// get the actual filename Zzz...
 	nameonly(filename);
 
-	// convert it to long Zzz....
-	file_time = strtol(filename, NULL, 10);
-	free(filename); // dont need this anymore a
-
-#if defined (_WIN32)
-skipfilenametime:
-#endif
-
-	// then throw it into localtime to get an actual human readable format lmao
-	struct tm *tm_buf = NULL;
-	tm_buf = localtime(&file_time);
-
-	// cant believe we ended up in 1970
-	if (tm_buf == NULL || tm_buf->tm_year <= 110)
+	// the first 10 characters of a replay name is a unix timestamp
+	if (strlen(filename) < 10)
 	{
 #if defined (_WIN32)
-		// uh ohh, we got an invalid time
-		// try one more time getting the creation time
+		// try to get file creation time
 		file_time = G_GetCreationTime(pdemo->filepath);
-		tm_buf = localtime(&file_time);
-
-		if (tm_buf == NULL || tm_buf->tm_year <= 110)
-		{
-			free(datetime);
-			return NULL;
-		}
-
-		goto gotcreationtime;
+		goto skipfilenametime;
 #else
-		free(datetime);
 		return NULL;
 #endif
 	}
 
+#ifndef AVOID_ERRNO
+	errno = 0;
+#endif
+	// get the timestamp as actual numbers lul
+	file_time = strtol(filename, &endPos, 10);
+
+	if (endPos == filename // Empty string
+#ifndef AVOID_ERRNO
+		|| errno == ERANGE // Number out-of-range
+#endif
+		|| file_time < 0) // Number is not positive
+	{
 #if defined (_WIN32)
-gotcreationtime:
+		// just try and get the creation time then
+		file_time = G_GetCreationTime(pdemo->filepath);
+#else
+		return NULL;
+#endif
+	}
+
+	// then throw it into localtime to get an actual human readable format lmao
+#if defined(_WIN32)
+skipfilenametime:
+	if ((localtime_s(&tm_buf, &file_time) != 0) ||
+		(tm_buf.tm_year <= 110)) // cant believe we ended up in 1970
+	{
+		// uh ohh, we got an invalid time
+		// try one more time getting the creation time
+		file_time = G_GetCreationTime(pdemo->filepath);
+
+		if ((localtime_s(&tm_buf, &file_time) != 0) ||
+			(tm_buf.tm_year <= 110))
+			return NULL;
+	}
+#else
+	if ((localtime_r(&file_time, &tm_buf) == NULL) ||
+		(tm_buf.tm_year <= 110)) // cant believe we ended up in 1970
+		return NULL;
 #endif
 
-	const char *format;
+	datetime = malloc(sizeof(pdemo->date)); // mallocma balls
 
-	// US ppl are special (:
-	if (cv_demodateformat.value == 2)
-		format = "%m.%d.%Y";
-	else if (cv_demodateformat.value == 1)
-		format = "%d.%m.%Y";
-	else
-		format = strstr(setlocale(LC_TIME, NULL), "en_US") ? "%m.%d.%Y" : "%d.%m.%Y";
+	// no mallocma balls... :c
+	if (!datetime)
+		return NULL;
 
-	strftime(datetime, sizeof(pdemo->date), format, tm_buf);
+	if (strftime(datetime, sizeof(datetime), dateformat, &tm_buf) == 0)
+	{
+		free(datetime);
+		return NULL;
+	}
 
 	return datetime;
 }
 
 
-void G_LoadDemoInfo(menudemo_t *pdemo, dboolean nameonly)
+void G_LoadDemoInfo(menudemo_t *pdemo, dboolean nameonly, const char *dateformat)
 {
 	CLEANUP(Z_Pfree) uint8_t *infobuffer = NULL;
 	const uint8_t *extrainfo_p;
+
+	memset(pdemo->date, 0, sizeof(pdemo->date));
 
 	if (!FIL_ReadFile(pdemo->filepath, &infobuffer))
 	{
@@ -3663,8 +3663,6 @@ void G_LoadDemoInfo(menudemo_t *pdemo, dboolean nameonly)
 
 	if (!nameonly)
 		pdemo->type = MD_LOADED;
-
-	memset(pdemo->date, 0, sizeof(pdemo->date));
 
 	CLEANUP(G_FreeDemoHeader) demoheader_t header;
 	switch (G_ReadDemoHeader(infobuffer, &header, nameonly))
@@ -3698,10 +3696,12 @@ void G_LoadDemoInfo(menudemo_t *pdemo, dboolean nameonly)
 
 	// demo date
 	char *demodate;
-	demodate = G_GetDemoDate(pdemo);
+	demodate = G_GetDemoDate(pdemo, dateformat);
 	if (demodate)
+	{
 		strlcpy(pdemo->date, demodate, sizeof(pdemo->date));
-	free(demodate);
+		free(demodate);
+	}
 
 	if (nameonly)
 		return;

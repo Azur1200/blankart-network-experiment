@@ -6276,6 +6276,10 @@ dboolean replaynamesloaded = false;
 // If it's not equal, that means we started more than one thread (left and re-entered menu for example)
 size_t replaythreadnum = 0;
 
+// for replay dates
+#include <locale.h>
+const char *demodateformat = "%d.%m.%Y";
+
 #ifdef HAVE_THREADS
 I_mutex replayquerymutex;
 
@@ -6339,6 +6343,7 @@ static void ReplayNamesLoadThread(void* userdata)
 	menudemo_t *demolist_all_local = (menudemo_t*)malloc(sizeof(menudemo_t)*sizedirmenu);
 	memcpy(demolist_all_local, demolist_all, sizeof(menudemo_t)*sizedirmenu);
 	size_t localreplaythreadnum = replaythreadnum;
+	const char *localdemodateformat = demodateformat;
 
 	Unlock_search_state();
 
@@ -6346,13 +6351,7 @@ static void ReplayNamesLoadThread(void* userdata)
 	{
 		if (demolist_all_local[i].type != MD_SUBDIR)
 		{
-			G_LoadDemoInfo(&demolist_all_local[i], true);
-
-			// this is fucking horrid, but i wanna be able to search for dates
-			/*if (demolist_all_local[i].date[0] != '\0')
-			{
-				snprintf(demolist_all_local[i].title, sizeof(demolist_all_local[i].title), "%s %s", demolist_all_local[i].title, demolist_all_local[i].date);
-			}*/
+			G_LoadDemoInfo(&demolist_all_local[i], true, localdemodateformat);
 		}
 	}
 
@@ -6375,6 +6374,18 @@ static void LoadReplayNames(void)
 	Lock_search_state();
 	replaythreadnum++;
 	replaynamesloaded = false;
+	if (cv_demodateformat.value == 2)
+		demodateformat = "%m.%d.%Y";
+	else if (cv_demodateformat.value == 1)
+		demodateformat = "%d.%m.%Y";
+	else
+	{
+		// get the date format here
+		// setlocale reads/writes global state
+		const char *locale = setlocale(LC_TIME, NULL);
+		// US ppl are special (:
+		demodateformat = (locale && strstr(locale, "en_US")) ? "%m.%d.%Y" : "%d.%m.%Y";
+	}
 	Unlock_search_state();
 
 #ifdef HAVE_THREADS
