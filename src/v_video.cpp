@@ -3267,9 +3267,10 @@ static void V_GetFontSpecification(int fontno, int32_t flags, fontspec_t *result
 				case V_OLDSPACING:
 					result->chw    = 5;
 					break;
-				case V_6WIDTHSPACE:
-					result->spacew = 3;
-					break;
+				// Out of video flags, so we're reusing this for alternate charwidth instead
+				/*case V_6WIDTHSPACE:
+					result->spacew = 3;*/
+					//break;
 			}
 			break;
 		case LT_FONT:
