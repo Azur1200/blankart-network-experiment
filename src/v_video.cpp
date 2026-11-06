@@ -1105,12 +1105,9 @@ void V_DrawAffinePatch(fixed_t x, fixed_t y, const affine_t *transform, int32_t 
 	int32_t ydiff = (bounds.yup - (transform->oy >> FRACBITS));
 	int32_t xdiff = (bounds.xleft - (transform->ox >> FRACBITS));
 
-	int32_t starty = y - ydiff;
-	int32_t startx = x - xdiff;
-
 	// Get the clipping values, since that can vary per-resolution.
-	int32_t yclip = std::min(starty, 0) * -1;
-	int32_t xclip = std::min(startx, 0) * -1;
+	int32_t yclip = std::min(y - ydiff, 0) * -1;
+	int32_t xclip = std::min(x - xdiff, 0) * -1;
 
 	ydiff -= yclip;
 	xdiff -= xclip;
@@ -1118,8 +1115,8 @@ void V_DrawAffinePatch(fixed_t x, fixed_t y, const affine_t *transform, int32_t 
 	// Get the leftmost and uppermost bounds of the current resolution.
 	const int32_t vw = vid.width, vh = vid.height;
 
-	int32_t yy = CLAMP(starty, 0, vh);
-	int32_t xx = CLAMP(startx, 0, vw);
+	int32_t yy = CLAMP(y - ydiff, 0, vh);
+	int32_t xx = CLAMP(x - xdiff, 0, vw);
 
 	int32_t xmax = std::max(bounds.xlen - xclip, pw), ymax = std::max(bounds.ylen - yclip, ph);
 
@@ -1130,6 +1127,8 @@ void V_DrawAffinePatch(fixed_t x, fixed_t y, const affine_t *transform, int32_t 
 	intptr_t dest_y = (intptr_t)(vid.screens[0]) + yy * vw;
 
 	// clipping bounds
+	int32_t starty = y - ydiff;
+	int32_t startx = x - xdiff;
 	int32_t left, right, top, bottom;
 	V_GetClipBounds(&left, &right, &top, &bottom);
 
