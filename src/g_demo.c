@@ -3566,6 +3566,7 @@ static char *G_GetDemoDate(menudemo_t *pdemo, const char *dateformat)
 {
 	char *endPos = NULL;
 	char *datetime = NULL;
+	size_t datetime_size = 0;
 	time_t file_time = 0;
 	struct tm tm_buf = {0};
 	CLEANUP(pfree) char *filename = NULL;
@@ -3632,12 +3633,13 @@ skipfilenametime:
 #endif
 
 	datetime = malloc(sizeof(pdemo->date)); // mallocma balls
+	datetime_size = sizeof(pdemo->date); // mallocma nuts
 
 	// no mallocma balls... :c
 	if (!datetime)
 		return NULL;
 
-	if (strftime(datetime, sizeof(datetime), dateformat, &tm_buf) == 0)
+	if (strftime(datetime, datetime_size, dateformat, &tm_buf) == 0)
 	{
 		free(datetime);
 		return NULL;
