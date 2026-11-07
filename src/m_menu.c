@@ -7009,12 +7009,14 @@ void MP_TickReplayHutDemoList(menupanelinst_t *pi)
 
 	CreateReplayItems(pi);
 
+	const char *localdemodateformat = demodateformat;
+
 	for (i = 0; i < 50; i++)
 	{
 		size_t demoi = pi->itemon + (i/2 * (i & 1 ? -1 : 1));
 		if (demoi < replayqueryfound && demolist[demoi].type == MD_NOTLOADED)
 		{
-			G_LoadDemoInfo(&demolist[demoi], false);
+			G_LoadDemoInfo(&demolist[demoi], false, localdemodateformat);
 			break;
 		}
 	}
