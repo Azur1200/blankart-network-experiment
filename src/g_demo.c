@@ -16,6 +16,11 @@
 // for replay dates
 #include <time.h>
 
+#ifdef _WIN32
+#include <sys/types.h>
+#include <sys/stat.h>
+#endif
+
 #include "command.h"
 #include "doomdef.h"
 #include "console.h"
@@ -3546,7 +3551,7 @@ uint8_t G_CmpDemoTime(char *oldname, char *newname)
 	return c;
 }
 
-#if defined (_WIN32)
+#ifdef _WIN32
 // return the file creation time
 // useful for demos that were renamed
 // windows only, as file creation times are
