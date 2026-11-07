@@ -368,9 +368,9 @@ target_link_libraries(BLANKART PRIVATE Tracy::TracyClient)
 
 if(NOT "${SRB2_CONFIG_SYSTEM_LIBRARIES}" AND NOT SRB2_CONFIG_DEDICATED)
 target_link_libraries(BLANKART PRIVATE sndfile)
-target_link_libraries(BLANKART PRIVATE Vorbis::vorbis Vorbis::vorbisenc)
-target_link_libraries(BLANKART PRIVATE Opus::opus)
-target_link_libraries(BLANKART PRIVATE Ogg::ogg)
+#target_link_libraries(BLANKART PRIVATE Vorbis::vorbis Vorbis::vorbisenc)
+#target_link_libraries(BLANKART PRIVATE Opus::opus)
+#target_link_libraries(BLANKART PRIVATE Ogg::ogg)
 endif()
 
 if(SRB2_CONFIG_UPNP)
