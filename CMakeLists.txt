@@ -145,6 +145,10 @@ if("${SRB2_CONFIG_SYSTEM_LIBRARIES}")
 	endif()
 endif()
 
+if (NOT SRB2_CONFIG_DEDICATED)
+	find_package(sndfile REQUIRED)
+endif()
+
 if(${SRB2_CONFIG_LIBBACKTRACE})
 	if(${SRB2_CONFIG_USE_INTERNAL_LIBRARIES})
         if(${SRB2_SYSTEM_BITS} EQUAL 64)

@@ -34,7 +34,7 @@ This is still in active development and things are going to change. If you find 
 - libgme (Client only, Linux/OS X only)
 - libopenmpt (Client only, Linux/OS X only)
 - SDL3 (Client only, Linux/OS X only)
-- libsndfile (Client only, Linux/OS X only)
+- libsndfile (Client only, Windows/Linux/OS X)
 - OpenAL-Soft (Client only, Linux/OS X only)
 - patch (Client only, Windows Only, MSYS2)
 
