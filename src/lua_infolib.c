@@ -35,41 +35,54 @@ extern uint8_t skincolor_modified[];
 dboolean LUA_CallAction(enum actionnum actionnum, mobj_t *actor);
 state_t *astate = NULL;
 
-enum sfxinfo_read {
-	sfxinfor_name = 0,
-	sfxinfor_singular,
-	sfxinfor_priority,
-	sfxinfor_flags, // "pitch"
-	sfxinfor_volume,
-	sfxinfor_caption,
-	sfxinfor_skinsound,
-	sfxinfor_string,
-};
-const char *const sfxinfo_ropt[] = {
-	"name",
-	"singular",
-	"priority",
-	"flags",
-	"volume",
-	"caption",
-	"skinsound",
-	"string",
-	NULL};
+// sfxinfor_ fields
+#define SFXINFORFIELDS(X) \
+	X(name) \
+	X(singular) \
+	X(priority) \
+	X(flags) \
+	X(volume) \
+	X(caption) \
+	X(skinsound) \
+	X(string)
 
-enum sfxinfo_write {
-	sfxinfow_singular = 0,
-	sfxinfow_priority,
-	sfxinfow_flags, // "pitch"
-	sfxinfow_volume,
-	sfxinfow_caption
+enum sfxinfo_read
+{
+#define ENUMITEM(name) sfxinfor_##name,
+	SFXINFORFIELDS(ENUMITEM)
+	NUMSFXINFORFIELDS,
 };
-const char *const sfxinfo_wopt[] = {
-	"singular",
-	"priority",
-	"flags",
-	"volume",
-	"caption",
-	NULL};
+
+static const char *const sfxinfo_ropt[] = {
+#define ENUMITEMNAME(name) #name,
+	SFXINFORFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
+
+// sfxinfow_ fields
+#define SFXINFO_WRITEFIELDS(X) \
+	X(singular) \
+	X(priority) \
+	X(flags) \
+	X(volume) \
+	X(caption)
+
+enum sfxinfo_write
+{
+#define ENUMITEM(name) sfxinfow_##name,
+	SFXINFO_WRITEFIELDS(ENUMITEM)
+	NUMSFXINFOWFIELDS,
+};
+
+static const char *const sfxinfo_wopt[] = {
+#define ENUMITEMNAME(name) #name,
+	SFXINFORFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
 dboolean actionsoverridden[NUMACTIONS] = {false};
 
@@ -466,20 +479,45 @@ static int lib_spriteinfolen(lua_State *L)
 	return 1;
 }
 
+// spriteinfo_ fields
+#define SPRITEINFOFIELDS(X) \
+	X(pivot) \
+	X(brightmap)
+
+enum spriteinfo_e
+{
+#define ENUMITEM(name) spriteinfo_##name,
+	SPRITEINFOFIELDS(ENUMITEM)
+	NUMSPRITEINFORFIELDS,
+};
+
+static const char *const spriteinfo_opt[] = {
+#define ENUMITEMNAME(name) #name,
+	SPRITEINFOFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
+
+int spriteinfo_fields_ref = LUA_NOREF;
+
 // spriteinfo_t
 static int spriteinfo_get(lua_State *L)
 {
-	const char *field = luaL_checkstring(L, 2);
+	enum spriteinfo_e field = Lua_optoption(L, 2, -1, spriteinfo_fields_ref);
 
 	luaL_checkudata(L, 1, META_SPRITEINFO);
 
 	// push spriteframepivot_t userdata
-	if (fastcmp(field, "pivot"))
-		return PushCast(L, META_PIVOTLIST);
-	else if (fastcmp(field, "brightmap"))
-		return PushCast(L, META_SPRITEBRIGHTLIST);
-	else
-		return luaL_error(L, LUA_QL("spriteinfo_t") " has no field named " LUA_QS, field);
+	switch (field)
+	{
+		case spriteinfo_pivot:
+			return PushCast(L, META_PIVOTLIST);
+		case spriteinfo_brightmap:
+			return PushCast(L, META_SPRITEBRIGHTLIST);
+		default:
+			return luaL_error(L, LUA_QL("spriteinfo_t") " has no field named " LUA_QS, lua_tostring(L, 2));
+	}
 
 	return 0;
 }
@@ -487,7 +525,7 @@ static int spriteinfo_get(lua_State *L)
 static int spriteinfo_set(lua_State *L)
 {
 	spriteinfo_t *sprinfo = *((spriteinfo_t **)luaL_checkudata(L, 1, META_SPRITEINFO));
-	const char *field = luaL_checkstring(L, 2);
+	enum spriteinfo_e field = Lua_optoption(L, 2, -1, spriteinfo_fields_ref);
 
 	if (!lua_lumploading)
 		return luaL_error(L, "Do not alter spriteinfo_t from within a hook or coroutine!");
@@ -502,20 +540,26 @@ static int spriteinfo_set(lua_State *L)
 	lua_remove(L, 1); // remove field
 	lua_settop(L, 1); // leave only one value
 
-	if (fastcmp(field, "pivot"))
+	switch (field)
 	{
-		// pivot[] is a table
-		if (lua_istable(L, 1))
-			return PopPivotTable(sprinfo, L, 1);
-		// pivot[] is userdata
-		else if (lua_isuserdata(L, 1))
+		case spriteinfo_pivot:
 		{
-			spriteinfo_t *copyinfo = *((spriteinfo_t **)luaL_checkudata(L, 1, META_PIVOTLIST));
-			memcpy(sprinfo, copyinfo, sizeof(spriteinfo_t));
+			// pivot[] is a table
+			if (lua_istable(L, 1))
+				return PopPivotTable(sprinfo, L, 1);
+			// pivot[] is userdata
+			else if (lua_isuserdata(L, 1))
+			{
+				spriteinfo_t *copyinfo = *((spriteinfo_t **)luaL_checkudata(L, 1, META_PIVOTLIST));
+				memcpy(sprinfo, copyinfo, sizeof(spriteinfo_t));
+			}
+			break;
 		}
+		case spriteinfo_brightmap:
+			return luaL_error(L, va("Field %s cannot be set in spriteinfo_t", lua_tostring(L, 2)));
+		default:
+			return luaL_error(L, va("Field %s does not exist in spriteinfo_t", lua_tostring(L, 2)));
 	}
-	else
-		return luaL_error(L, va("Field %s does not exist in spriteinfo_t", field));
 
 	return 0;
 }
@@ -587,20 +631,47 @@ static int pivotlist_num(lua_State *L)
 	return 1;
 }
 
+// framepivot_ fields
+#define FRAMEPIVOTFIELDS(X) \
+	X(x) \
+	X(y)
+
+enum framepivot_e
+{
+#define ENUMITEM(name) framepivot_##name,
+	FRAMEPIVOTFIELDS(ENUMITEM)
+	NUMFRAMEPIVOTFIELDS,
+};
+
+static const char *const framepivot_opt[] = {
+#define ENUMITEMNAME(name) #name,
+	FRAMEPIVOTFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
+
+int framepivot_fields_ref = LUA_NOREF;
+
 static int framepivot_get(lua_State *L)
 {
 	struct PivotFrame *container = luaL_checkudata(L, 1, META_FRAMEPIVOT);
 	spriteframepivot_t *framepivot = &container->sprinfo->pivot[container->frame];
-	const char *field = luaL_checkstring(L, 2);
+	enum framepivot_e field = Lua_optoption(L, 2, -1, framepivot_fields_ref);
 
 	I_Assert(framepivot != NULL);
 
-	if (fastcmp("x", field))
-		lua_pushinteger(L, framepivot->x);
-	else if (fastcmp("y", field))
-		lua_pushinteger(L, framepivot->y);
-	else
-		return luaL_error(L, va("Field %s does not exist in spriteframepivot_t", field));
+	switch (field)
+	{
+		case framepivot_x:
+			lua_pushinteger(L, framepivot->x);
+			break;
+		case framepivot_y:
+			lua_pushinteger(L, framepivot->y);
+			break;
+		default:
+			return luaL_error(L, va("Field %s does not exist in spriteframepivot_t",  lua_tostring(L, 2)));
+	}
 
 	return 1;
 }
@@ -610,7 +681,7 @@ static int framepivot_set(lua_State *L)
 	struct PivotFrame *container = luaL_checkudata(L, 1, META_FRAMEPIVOT);
 	spriteframepivot_t *framepivot = &container->sprinfo->pivot[container->frame];
 	uint8_t *available = container->sprinfo->available;
-	const char *field = luaL_checkstring(L, 2);
+	enum framepivot_e field = Lua_optoption(L, 2, -1, framepivot_fields_ref);
 
 	if (!lua_lumploading)
 		return luaL_error(L, "Do not alter spriteframepivot_t from within a hook or coroutine!");
@@ -621,18 +692,18 @@ static int framepivot_set(lua_State *L)
 
 	I_Assert(framepivot != NULL);
 
-	if (fastcmp("x", field))
+	switch (field)
 	{
-		framepivot->x = luaL_checkinteger(L, 3);
-		set_bit_array(available, container->frame);
+		case framepivot_x:
+			framepivot->x = luaL_checkinteger(L, 3);
+			set_bit_array(available, container->frame);
+			break;
+		case framepivot_y:
+			framepivot->y = luaL_checkinteger(L, 3);
+			set_bit_array(available, container->frame);
+		default:
+			return luaL_error(L, va("Field %s does not exist in spriteframepivot_t",  lua_tostring(L, 2)));
 	}
-	else if (fastcmp("y", field))
-	{
-		framepivot->y = luaL_checkinteger(L, 3);
-		set_bit_array(available, container->frame);
-	}
-	else
-		return luaL_error(L, va("Field %s does not exist in spriteframepivot_t", field));
 
 	return 0;
 }
@@ -911,81 +982,130 @@ dboolean LUA_CallAction(enum actionnum actionnum, mobj_t *actor)
 	return true; // action successfully called.
 }
 
+// state_ fields
+#define STATEFIELDS(X) \
+	X(sprite) \
+	X(frame) \
+	X(tics) \
+	X(action) \
+	X(actionname) \
+	X(var1) \
+	X(var2) \
+	X(nextstate) \
+	X(string) \
+
+enum state_e
+{
+#define ENUMITEM(name) state_##name,
+	STATEFIELDS(ENUMITEM)
+	NUMSTATEFIELDS,
+};
+
+static const char *const state_opt[] = {
+#define ENUMITEMNAME(name) #name,
+	STATEFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
+
+int state_fields_ref = LUA_NOREF;
+
 // state_t *, field -> number
 static int state_get(lua_State *L)
 {
 	state_t *st = *((state_t **)luaL_checkudata(L, 1, META_STATE));
-	const char *field = luaL_checkstring(L, 2);
+	enum state_e field = Lua_optoption(L, 2, -1, state_fields_ref);
 	lua_Integer number;
 
-	if (fastcmp(field,"sprite"))
-		number = st->sprite;
-	else if (fastcmp(field,"frame"))
-		number = st->frame;
-	else if (fastcmp(field,"tics"))
-		number = st->tics;
-	else if (fastcmp(field,"action")) {
-		const char *name;
-		if (!st->action) // Action is NULL.
-			return 0; // return nil.
-		if (st->action == (actionf_p1)A_Lua) { // This is a Lua function?
-			lua_getfield(L, LUA_REGISTRYINDEX, LREG_STATEACTION);
-			I_Assert(lua_istable(L, -1));
-			lua_pushlightuserdata(L, st); // Push the state pointer and
-			lua_rawget(L, -2); // use it to get the actual Lua function.
-			lua_remove(L, -2); // pop LREG_STATEACTION
-			return 1; // Return the Lua function.
-		}
-		name = LUA_GetActionName(&st->action); // find a hardcoded function name
-		if (!name) // If it's not a hardcoded function and it's not a Lua function...
-			return 0; // Just what is this??
-		// get the function from the global
-		// because the metatable will trigger.
-		lua_getglobal(L, name); // actually gets from LREG_ACTIONS if applicable, and pushes a META_ACTION userdata if not.
-		return 1; // return just the function
-#ifdef DEVELOP
-	} else if (fastcmp(field,"actionname")) {
-		if (!st->action) { // Action is NULL.
-			lua_pushstring(L, "NULL");
-		} else if (st->action == (actionf_p1)A_Lua) { // This is a Lua function?
-			lua_Debug ar;
-			lua_getfield(L, LUA_REGISTRYINDEX, LREG_STATEACTION);
-			I_Assert(lua_istable(L, -1));
-			lua_pushlightuserdata(L, st); // Push the state pointer and
-			lua_rawget(L, -2); // use it to get the actual Lua function.
-			lua_remove(L, -2); // pop LREG_STATEACTION
-			// This normally doesn't get a function's name because the same Lua function can have many names.
-			// It only works because of a hack called 'canonicalname' in blua/lparser.c, which records the
-			// name a GLOBAL function was defined with. This does not work for local functions! (Lua actions
-			// are almost always global functions though.)
-			lua_getinfo(L, ">n", &ar);
-			lua_pushstring(L, ar.name);
-		} else {
-			lua_pushstring(L, LUA_GetActionName(&st->action)); // find a hardcoded function name
-		}
-		return 1;
-#endif
-	} else if (fastcmp(field,"var1"))
-		number = st->var1;
-	else if (fastcmp(field,"var2"))
-		number = st->var2;
-	else if (fastcmp(field,"nextstate"))
-		number = st->nextstate;
-	else if (fastcmp(field,"string"))
+	switch (field)
 	{
-		statenum_t id = st-states;
-		if (id < NUMSTATES)
+		case state_sprite:
+			number = st->sprite;
+			break;
+		case state_frame:
+			number = st->frame;
+			break;
+		case state_tics:
+			number = st->tics;
+			break;
+		case state_action:
 		{
-			lua_pushstring(L, DEH_StateName(id));
+			const char *name;
+			if (!st->action) // Action is NULL.
+				return 0; // return nil.
+			if (st->action == (actionf_p1)A_Lua) { // This is a Lua function?
+				lua_getfield(L, LUA_REGISTRYINDEX, LREG_STATEACTION);
+				I_Assert(lua_istable(L, -1));
+				lua_pushlightuserdata(L, st); // Push the state pointer and
+				lua_rawget(L, -2); // use it to get the actual Lua function.
+				lua_remove(L, -2); // pop LREG_STATEACTION
+				return 1; // Return the Lua function.
+			}
+
+			name = LUA_GetActionName(&st->action); // find a hardcoded function name
+
+			if (!name) // If it's not a hardcoded function and it's not a Lua function...
+				return 0; // Just what is this??
+
+			// get the function from the global
+			// because the metatable will trigger.
+			lua_getglobal(L, name); // actually gets from LREG_ACTIONS if applicable, and pushes a META_ACTION userdata if not.
+			return 1; // return just the function
+		}
+#ifdef DEVELOP
+		case state_actionname:
+		{
+			if (!st->action) { // Action is NULL.
+				lua_pushstring(L, "NULL");
+			} else if (st->action == (actionf_p1)A_Lua) { // This is a Lua function?
+				lua_Debug ar;
+				lua_getfield(L, LUA_REGISTRYINDEX, LREG_STATEACTION);
+				I_Assert(lua_istable(L, -1));
+				lua_pushlightuserdata(L, st); // Push the state pointer and
+				lua_rawget(L, -2); // use it to get the actual Lua function.
+				lua_remove(L, -2); // pop LREG_STATEACTION
+				// This normally doesn't get a function's name because the same Lua function can have many names.
+				// It only works because of a hack called 'canonicalname' in blua/lparser.c, which records the
+				// name a GLOBAL function was defined with. This does not work for local functions! (Lua actions
+				// are almost always global functions though.)
+				lua_getinfo(L, ">n", &ar);
+				lua_pushstring(L, ar.name);
+			} else {
+				lua_pushstring(L, LUA_GetActionName(&st->action)); // find a hardcoded function name
+			}
 			return 1;
 		}
+#endif
+		case state_var1:
+			number = st->var1;
+			break;
+		case state_var2:
+			number = st->var2;
+			break;
+		case state_nextstate:
+			number = st->nextstate;
+			break;
+		case state_string:
+		{
+			statenum_t id = st-states;
+			if (id < NUMSTATES)
+			{
+				lua_pushstring(L, DEH_StateName(id));
+				return 1;
+			}
 
-		return 0;
+			return 0;
+		}
+		default:
+		{
+			if (devparm)
+				return luaL_error(L, LUA_QL("state_t") " has no field named " LUA_QS, lua_tostring(L, 2));
+			else
+				return 0;
+			break;
+		}
 	}
-	else if (devparm)
-		return luaL_error(L, LUA_QL("state_t") " has no field named " LUA_QS, field);
-	else
-		return 0;
 
 	lua_pushinteger(L, number);
 	return 1;
@@ -995,7 +1115,7 @@ static int state_get(lua_State *L)
 static int state_set(lua_State *L)
 {
 	state_t *st = *((state_t **)luaL_checkudata(L, 1, META_STATE));
-	const char *field = luaL_checkstring(L, 2);
+	enum state_e field = Lua_optoption(L, 2, -1, state_fields_ref);
 	lua_Integer value;
 
 	if (hud_running)
@@ -1003,57 +1123,71 @@ static int state_set(lua_State *L)
 	if (hook_cmd_running)
 		return luaL_error(L, "Do not alter states in CMD building code!");
 
-	if (fastcmp(field,"sprite")) {
-		value = luaL_checknumber(L, 3);
-		if (value < SPR_NULL || value >= NUMSPRITES)
-			return luaL_error(L, "sprite number %d is invalid.", value);
-		st->sprite = (spritenum_t)value;
-	} else if (fastcmp(field,"frame"))
-		st->frame = (uint32_t)luaL_checknumber(L, 3);
-	else if (fastcmp(field,"tics"))
-		st->tics = (int32_t)luaL_checknumber(L, 3);
-	else if (fastcmp(field,"action")) {
-		switch(lua_type(L, 3))
+	switch (field)
+	{
+		case state_sprite:
 		{
-		case LUA_TNIL: // Null? Set the action to nothing, then.
-			st->action = NULL;
+			value = luaL_checknumber(L, 3);
+			if (value < SPR_NULL || value >= NUMSPRITES)
+				return luaL_error(L, "sprite number %d is invalid.", value);
+			st->sprite = (spritenum_t)value;
+		}
+		case state_frame:
+			st->frame = (uint32_t)luaL_checknumber(L, 3);
 			break;
-		case LUA_TSTRING: // It's a string, expect the name of a built-in action
-			LUA_SetActionByName(st, lua_tostring(L, 3));
+		case state_tics:
+			st->tics = (int32_t)luaL_checknumber(L, 3);
 			break;
-		case LUA_TUSERDATA: // It's a userdata, expect META_ACTION of a built-in action
+		case state_action:
 		{
-			actionf_p1 *action = *((actionf_p1 **)luaL_checkudata(L, 3, META_ACTION));
+			switch(lua_type(L, 3))
+			{
+				case LUA_TNIL: // Null? Set the action to nothing, then.
+					st->action = NULL;
+					break;
+				case LUA_TSTRING: // It's a string, expect the name of a built-in action
+					LUA_SetActionByName(st, lua_tostring(L, 3));
+					break;
+				case LUA_TUSERDATA: // It's a userdata, expect META_ACTION of a built-in action
+				{
+					actionf_p1 *action = *((actionf_p1 **)luaL_checkudata(L, 3, META_ACTION));
 
-			if (!action)
-				return luaL_error(L, "not a valid action?");
+					if (!action)
+						return luaL_error(L, "not a valid action?");
 
-			st->action = *action;
+					st->action = *action;
+					break;
+				}
+				case LUA_TFUNCTION: // It's a function (a Lua function or a C function? either way!)
+					lua_getfield(L, LUA_REGISTRYINDEX, LREG_STATEACTION);
+					I_Assert(lua_istable(L, -1));
+					lua_pushlightuserdata(L, st); // We'll store this function by the state's pointer in the registry.
+					lua_pushvalue(L, 3); // Bring it to the top of the stack
+					lua_rawset(L, -3); // Set it in the registry
+					lua_pop(L, 1); // pop LREG_STATEACTION
+					st->action = (actionf_p1)A_Lua; // Set the action for the userdata.
+					break;
+				default: // ?!
+					return luaL_typerror(L, 3, "function");
+			}
+		}
+		case state_var1:
+			st->var1 = (int32_t)luaL_checknumber(L, 3);
+			break;
+		case state_var2:
+			st->var2 = (int32_t)luaL_checknumber(L, 3);
+			break;
+		case state_nextstate:
+		{
+			value = luaL_checkinteger(L, 3);
+			if (value < S_NULL || value >= NUMSTATES)
+				return luaL_error(L, "nextstate number %d is invalid.", value);
+			st->nextstate = (statenum_t)value;
 			break;
 		}
-		case LUA_TFUNCTION: // It's a function (a Lua function or a C function? either way!)
-			lua_getfield(L, LUA_REGISTRYINDEX, LREG_STATEACTION);
-			I_Assert(lua_istable(L, -1));
-			lua_pushlightuserdata(L, st); // We'll store this function by the state's pointer in the registry.
-			lua_pushvalue(L, 3); // Bring it to the top of the stack
-			lua_rawset(L, -3); // Set it in the registry
-			lua_pop(L, 1); // pop LREG_STATEACTION
-			st->action = (actionf_p1)A_Lua; // Set the action for the userdata.
-			break;
-		default: // ?!
-			return luaL_typerror(L, 3, "function");
-		}
-	} else if (fastcmp(field,"var1"))
-		st->var1 = (int32_t)luaL_checknumber(L, 3);
-	else if (fastcmp(field,"var2"))
-		st->var2 = (int32_t)luaL_checknumber(L, 3);
-	else if (fastcmp(field,"nextstate")) {
-		value = luaL_checkinteger(L, 3);
-		if (value < S_NULL || value >= NUMSTATES)
-			return luaL_error(L, "nextstate number %d is invalid.", value);
-		st->nextstate = (statenum_t)value;
-	} else
-		return luaL_error(L, LUA_QL("state_t") " has no field named " LUA_QS, field);
+		default:
+			return luaL_error(L, LUA_QL("state_t") " has no field named " LUA_QS, lua_tostring(L, 2));
+	}
 
 	return 0;
 }
@@ -1195,86 +1329,178 @@ static int lib_mobjinfolen(lua_State *L)
 	return 1;
 }
 
+// mobjinfo_ fields
+#define MOBJINFOFIELDS(X) \
+	X(doomednum) \
+	X(spawnstate) \
+	X(spawnhealth) \
+	X(seestate) \
+	X(seesound) \
+	X(reactiontime) \
+	X(attacksound) \
+	X(painstate) \
+	X(painchance) \
+	X(painsound) \
+	X(meleestate) \
+	X(missilestate) \
+	X(deathstate) \
+	X(xdeathstate) \
+	X(deathsound) \
+	X(speed) \
+	X(radius) \
+	X(height) \
+	X(dispoffset) \
+	X(mass) \
+	X(damage) \
+	X(activesound) \
+	X(flags) \
+	X(flags2) \
+	X(eflags) \
+	X(renderflags) \
+	X(renderflags2) \
+	X(raisestate) \
+	X(string)
+
+enum mobjinfo_e
+{
+#define ENUMITEM(name) mobjinfo_##name,
+	MOBJINFOFIELDS(ENUMITEM)
+	NUMMOBJINFOFIELDS,
+};
+
+static const char *const mobjinfo_opt[] = {
+#define ENUMITEMNAME(name) #name,
+	MOBJINFOFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
+
+int mobjinfo_fields_ref = LUA_NOREF;
+
 // mobjinfo_t *, field -> number
 static int mobjinfo_get(lua_State *L)
 {
 	mobjinfo_t *info = *((mobjinfo_t **)luaL_checkudata(L, 1, META_MOBJINFO));
-	const char *field = luaL_checkstring(L, 2);
+	enum mobjinfo_e field = Lua_optoption(L, 2, -1, mobjinfo_fields_ref);
 
 	I_Assert(info != NULL);
 	I_Assert(info >= mobjinfo);
 
-	if (fastcmp(field,"doomednum"))
-		lua_pushinteger(L, info->doomednum);
-	else if (fastcmp(field,"spawnstate"))
-		lua_pushinteger(L, info->spawnstate);
-	else if (fastcmp(field,"spawnhealth"))
-		lua_pushinteger(L, info->spawnhealth);
-	else if (fastcmp(field,"seestate"))
-		lua_pushinteger(L, info->seestate);
-	else if (fastcmp(field,"seesound"))
-		lua_pushinteger(L, info->seesound);
-	else if (fastcmp(field,"reactiontime"))
-		lua_pushinteger(L, info->reactiontime);
-	else if (fastcmp(field,"attacksound"))
-		lua_pushinteger(L, info->attacksound);
-	else if (fastcmp(field,"painstate"))
-		lua_pushinteger(L, info->painstate);
-	else if (fastcmp(field,"painchance"))
-		lua_pushinteger(L, info->painchance);
-	else if (fastcmp(field,"painsound"))
-		lua_pushinteger(L, info->painsound);
-	else if (fastcmp(field,"meleestate"))
-		lua_pushinteger(L, info->meleestate);
-	else if (fastcmp(field,"missilestate"))
-		lua_pushinteger(L, info->missilestate);
-	else if (fastcmp(field,"deathstate"))
-		lua_pushinteger(L, info->deathstate);
-	else if (fastcmp(field,"xdeathstate"))
-		lua_pushinteger(L, info->xdeathstate);
-	else if (fastcmp(field,"deathsound"))
-		lua_pushinteger(L, info->deathsound);
-	else if (fastcmp(field,"speed"))
-		lua_pushinteger(L, info->speed); // sometimes it's fixed_t, sometimes it's not...
-	else if (fastcmp(field,"radius"))
-		lua_pushfixed(L, info->radius);
-	else if (fastcmp(field,"height"))
-		lua_pushfixed(L, info->height);
-	else if (fastcmp(field,"dispoffset"))
-		lua_pushinteger(L, info->dispoffset);
-	else if (fastcmp(field,"mass"))
-		lua_pushinteger(L, info->mass);
-	else if (fastcmp(field,"damage"))
-		lua_pushinteger(L, info->damage);
-	else if (fastcmp(field,"activesound"))
-		lua_pushinteger(L, info->activesound);
-	else if (fastcmp(field,"flags"))
-		lua_pushinteger(L, info->flags);
-	else if (fastcmp(field,"raisestate"))
-		lua_pushinteger(L, info->raisestate);
-	else if (fastcmp(field,"string")) {
-		mobjtype_t id = info-mobjinfo;
-		if (id < NUMMOBJTYPES)
+	switch (field)
+	{
+		case mobjinfo_doomednum:
+			lua_pushinteger(L, info->doomednum);
+			break;
+		case mobjinfo_spawnstate:
+			lua_pushinteger(L, info->spawnstate);
+			break;
+		case mobjinfo_spawnhealth:
+			lua_pushinteger(L, info->spawnhealth);
+			break;
+		case mobjinfo_seestate:
+			lua_pushinteger(L, info->seestate);
+			break;
+		case mobjinfo_seesound:
+			lua_pushinteger(L, info->seesound);
+			break;
+		case mobjinfo_reactiontime:
+			lua_pushinteger(L, info->reactiontime);
+			break;
+		case mobjinfo_attacksound:
+			lua_pushinteger(L, info->attacksound);
+			break;
+		case mobjinfo_painstate:
+			lua_pushinteger(L, info->painstate);
+			break;
+		case mobjinfo_painchance:
+			lua_pushinteger(L, info->painchance);
+			break;
+		case mobjinfo_painsound:
+			lua_pushinteger(L, info->painsound);
+			break;
+		case mobjinfo_meleestate:
+			lua_pushinteger(L, info->meleestate);
+			break;
+		case mobjinfo_missilestate:
+			lua_pushinteger(L, info->missilestate);
+			break;
+		case mobjinfo_deathstate:
+			lua_pushinteger(L, info->deathstate);
+			break;
+		case mobjinfo_xdeathstate:
+			lua_pushinteger(L, info->xdeathstate);
+			break;
+		case mobjinfo_deathsound:
+			lua_pushinteger(L, info->deathsound);
+			break;
+		case mobjinfo_speed:
+			lua_pushinteger(L, info->speed); // sometimes it's fixed_t, sometimes it's not...
+			break;
+		case mobjinfo_radius:
+			lua_pushfixed(L, info->radius);
+			break;
+		case mobjinfo_height:
+			lua_pushfixed(L, info->height);
+			break;
+		case mobjinfo_dispoffset:
+			lua_pushinteger(L, info->dispoffset);
+			break;
+		case mobjinfo_mass:
+			lua_pushinteger(L, info->mass);
+			break;
+		case mobjinfo_damage:
+			lua_pushinteger(L, info->damage);
+			break;
+		case mobjinfo_activesound:
+			lua_pushinteger(L, info->activesound);
+			break;
+		case mobjinfo_flags:
+			lua_pushinteger(L, info->flags);
+			break;
+		case mobjinfo_flags2:
+			lua_pushinteger(L, info->flags2);
+			break;
+		case mobjinfo_eflags:
+			lua_pushinteger(L, info->eflags);
+			break;
+		case mobjinfo_renderflags:
+			lua_pushinteger(L, info->renderflags);
+			break;
+		case mobjinfo_renderflags2:
+			lua_pushinteger(L, info->renderflags2);
+			break;
+		case mobjinfo_raisestate:
+			lua_pushinteger(L, info->raisestate);
+			break;
+		case mobjinfo_string:
 		{
-			lua_pushstring(L, DEH_MobjtypeName(id));
-			return 1;
-		}
+			mobjtype_t id = info-mobjinfo;
+			if (id < NUMMOBJTYPES)
+			{
+				lua_pushstring(L, DEH_MobjtypeName(id));
+				return 1;
+			}
 
-		return 0;
-	}
-	else {
-		lua_getfield(L, LUA_REGISTRYINDEX, LREG_EXTVARS);
-		I_Assert(lua_istable(L, -1));
-		lua_pushlightuserdata(L, info);
-		lua_rawget(L, -2);
-		if (!lua_istable(L, -1)) { // no extra values table
-			CONS_Debug(DBG_LUA, M_GetText("'%s' has no field named '%s'; returning nil.\n"), "mobjinfo_t", field);
 			return 0;
 		}
-		lua_getfield(L, -1, field);
-		if (lua_isnil(L, -1)) // no value for this field
-			CONS_Debug(DBG_LUA, M_GetText("'%s' has no field named '%s'; returning nil.\n"), "mobjinfo_t", field);
+		default:
+		{
+			lua_getfield(L, LUA_REGISTRYINDEX, LREG_EXTVARS);
+			I_Assert(lua_istable(L, -1));
+			lua_pushlightuserdata(L, info);
+			lua_rawget(L, -2);
+			if (!lua_istable(L, -1)) { // no extra values table
+				CONS_Debug(DBG_LUA, M_GetText("'%s' has no field named '%s'; returning nil.\n"), "mobjinfo_t", lua_tostring(L, 2));
+				return 0;
+			}
+			lua_getfield(L, -1, lua_tostring(L, 2));
+			if (lua_isnil(L, -1)) // no value for this field
+				CONS_Debug(DBG_LUA, M_GetText("'%s' has no field named '%s'; returning nil.\n"), "mobjinfo_t", lua_tostring(L, 2));
+			break;
+		}
 	}
+
 	return 1;
 }
 
@@ -1282,7 +1508,7 @@ static int mobjinfo_get(lua_State *L)
 static int mobjinfo_set(lua_State *L)
 {
 	mobjinfo_t *info = *((mobjinfo_t **)luaL_checkudata(L, 1, META_MOBJINFO));
-	const char *field = luaL_checkstring(L, 2);
+	enum mobjinfo_e field = Lua_optoption(L, 2, -1, mobjinfo_fields_ref);
 
 	if (hud_running)
 		return luaL_error(L, "Do not alter mobjinfo in HUD rendering code!");
@@ -1292,74 +1518,114 @@ static int mobjinfo_set(lua_State *L)
 	I_Assert(info != NULL);
 	I_Assert(info >= mobjinfo);
 
-	if (fastcmp(field,"doomednum"))
-		info->doomednum = (int32_t)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"spawnstate"))
-		info->spawnstate = luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"spawnhealth"))
-		info->spawnhealth = (int32_t)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"seestate"))
-		info->seestate = luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"seesound"))
-		info->seesound = luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"reactiontime"))
-		info->reactiontime = (int32_t)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"attacksound"))
-		info->attacksound = luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"painstate"))
-		info->painstate = luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"painchance"))
-		info->painchance = (int32_t)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"painsound"))
-		info->painsound = luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"meleestate"))
-		info->meleestate = luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"missilestate"))
-		info->missilestate = luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"deathstate"))
-		info->deathstate = luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"xdeathstate"))
-		info->xdeathstate = luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"deathsound"))
-		info->deathsound = luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"speed"))
-		info->speed = luaL_checkfixed(L, 3);
-	else if (fastcmp(field,"radius"))
-		info->radius = luaL_checkfixed(L, 3);
-	else if (fastcmp(field,"height"))
-		info->height = luaL_checkfixed(L, 3);
-	else if (fastcmp(field,"dispoffset"))
-		info->dispoffset = (int32_t)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"mass"))
-		info->mass = (int32_t)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"damage"))
-		info->damage = (int32_t)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"activesound"))
-		info->activesound = luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"flags"))
-		info->flags = (int32_t)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"raisestate"))
-		info->raisestate = luaL_checkinteger(L, 3);
-	else {
-		lua_getfield(L, LUA_REGISTRYINDEX, LREG_EXTVARS);
-		I_Assert(lua_istable(L, -1));
-		lua_pushlightuserdata(L, info);
-		lua_rawget(L, -2);
-		if (lua_isnil(L, -1)) {
-			// This index doesn't have a table for extra values yet, let's make one.
-			lua_pop(L, 1);
-			CONS_Debug(DBG_LUA, M_GetText("'%s' has no field named '%s'; adding it as Lua data.\n"), "mobjinfo_t", field);
-			lua_newtable(L);
+	switch (field)
+	{
+		case mobjinfo_doomednum:
+			info->doomednum = (int32_t)luaL_checkinteger(L, 3);
+			break;
+		case mobjinfo_spawnstate:
+			info->spawnstate = luaL_checkinteger(L, 3);
+			break;
+		case mobjinfo_spawnhealth:
+			info->spawnhealth = (int32_t)luaL_checkinteger(L, 3);
+			break;
+		case mobjinfo_seestate:
+			info->seestate = luaL_checkinteger(L, 3);
+			break;
+		case mobjinfo_seesound:
+			info->seesound = luaL_checkinteger(L, 3);
+			break;
+		case mobjinfo_reactiontime:
+			info->reactiontime = (int32_t)luaL_checkinteger(L, 3);
+			break;
+		case mobjinfo_attacksound:
+			info->attacksound = luaL_checkinteger(L, 3);
+			break;
+		case mobjinfo_painstate:
+			info->painstate = luaL_checkinteger(L, 3);
+			break;
+		case mobjinfo_painchance:
+			info->painchance = (int32_t)luaL_checkinteger(L, 3);
+			break;
+		case mobjinfo_painsound:
+			info->painsound = luaL_checkinteger(L, 3);
+			break;
+		case mobjinfo_meleestate:
+			info->meleestate = luaL_checkinteger(L, 3);
+			break;
+		case mobjinfo_missilestate:
+			info->missilestate = luaL_checkinteger(L, 3);
+			break;
+		case mobjinfo_deathstate:
+			info->deathstate = luaL_checkinteger(L, 3);
+			break;
+		case mobjinfo_xdeathstate:
+			info->xdeathstate = luaL_checkinteger(L, 3);
+			break;
+		case mobjinfo_deathsound:
+			info->deathsound = luaL_checkinteger(L, 3);
+			break;
+		case mobjinfo_speed:
+			info->speed = luaL_checkfixed(L, 3);
+			break;
+		case mobjinfo_radius:
+			info->radius = luaL_checkfixed(L, 3);
+			break;
+		case mobjinfo_height:
+			info->height = luaL_checkfixed(L, 3);
+			break;
+		case mobjinfo_dispoffset:
+			info->dispoffset = (int32_t)luaL_checkinteger(L, 3);
+			break;
+		case mobjinfo_mass:
+			info->mass = (int32_t)luaL_checkinteger(L, 3);
+			break;
+		case mobjinfo_damage:
+			info->damage = (int32_t)luaL_checkinteger(L, 3);
+			break;
+		case mobjinfo_activesound:
+			info->activesound = luaL_checkinteger(L, 3);
+			break;
+		case mobjinfo_flags:
+			info->flags = (int32_t)luaL_checkinteger(L, 3);
+			break;
+		case mobjinfo_flags2:
+			info->flags2 = (int32_t)luaL_checkinteger(L, 3);
+			break;
+		case mobjinfo_eflags:
+			info->eflags = (int32_t)luaL_checkinteger(L, 3);
+			break;
+		case mobjinfo_renderflags:
+			info->renderflags = (int32_t)luaL_checkinteger(L, 3);
+			break;
+		case mobjinfo_renderflags2:
+			info->renderflags2 = (int32_t)luaL_checkinteger(L, 3);
+			break;
+		case mobjinfo_raisestate:
+			info->raisestate = luaL_checkinteger(L, 3);
+			break;
+		default:
+		{
+			lua_getfield(L, LUA_REGISTRYINDEX, LREG_EXTVARS);
+			I_Assert(lua_istable(L, -1));
 			lua_pushlightuserdata(L, info);
-			lua_pushvalue(L, -2); // ext value table
-			lua_rawset(L, -4); // LREG_EXTVARS table
+			lua_rawget(L, -2);
+			if (lua_isnil(L, -1)) {
+				// This index doesn't have a table for extra values yet, let's make one.
+				lua_pop(L, 1);
+				CONS_Debug(DBG_LUA, M_GetText("'%s' has no field named '%s'; adding it as Lua data.\n"), "mobjinfo_t", lua_tostring(L, 2));
+				lua_newtable(L);
+				lua_pushlightuserdata(L, info);
+				lua_pushvalue(L, -2); // ext value table
+				lua_rawset(L, -4); // LREG_EXTVARS table
+			}
+			lua_pushvalue(L, 3); // value to store
+			lua_setfield(L, -2, lua_tostring(L, 2));
+			lua_pop(L, 2);
+			break;
 		}
-		lua_pushvalue(L, 3); // value to store
-		lua_setfield(L, -2, field);
-		lua_pop(L, 2);
 	}
-	//else
-		//return luaL_error(L, LUA_QL("mobjinfo_t") " has no field named " LUA_QS, field);
+
 	return 0;
 }
 
@@ -1736,31 +2002,68 @@ static int lib_skincolorslen(lua_State *L)
 	return 1;
 }
 
+// skincolor_ fields
+#define SKINCOLORFIELDS(X) \
+	X(name) \
+	X(ramp) \
+	X(invcolor) \
+	X(invshade) \
+	X(chatcolor) \
+	X(accessible)
+
+enum skincolor_e
+{
+#define ENUMITEM(name) skincolor_##name,
+	SKINCOLORFIELDS(ENUMITEM)
+	NUMSKINCOLORFIELDS,
+};
+
+static const char *const skincolor_opt[] = {
+#define ENUMITEMNAME(name) #name,
+	SKINCOLORFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
+
+int skincolors_fields_ref = LUA_NOREF;
+
 // skincolor_t *, field -> number
 static int skincolor_get(lua_State *L)
 {
 	skincolor_t *info = *((skincolor_t **)luaL_checkudata(L, 1, META_SKINCOLOR));
-	const char *field = luaL_checkstring(L, 2);
+	enum skincolor_e field = Lua_optoption(L, 2, -1, skincolors_fields_ref);
+	lua_settop(L, 2);
 
 	I_Assert(info != NULL);
 	I_Assert(info >= skincolors);
 
-	if (fastcmp(field,"name"))
-		lua_pushstring(L, info->name);
-	else if (fastcmp(field,"ramp"))
-		LUA_PushUserdata(L, info->ramp, META_COLORRAMP);
-	else if (fastcmp(field,"invcolor"))
-		lua_pushinteger(L, info->invcolor);
-	else if (fastcmp(field,"invshade"))
-		lua_pushinteger(L, info->invshade);
-	else if (fastcmp(field,"chatcolor"))
-		lua_pushinteger(L, info->chatcolor);
-	else if (fastcmp(field,"accessible"))
-		lua_pushdboolean(L, info->accessible);
-	else {
-		CONS_Debug(DBG_LUA, M_GetText("'%s' has no field named '%s'; returning nil.\n"), "skincolor_t", field);
-		return 0;
+	switch (field)
+	{
+		case skincolor_name:
+			lua_pushstring(L, info->name);
+			break;
+		case skincolor_ramp:
+			LUA_PushUserdata(L, info->ramp, META_COLORRAMP);
+			break;
+		case skincolor_invcolor:
+			lua_pushinteger(L, info->invcolor);
+			break;
+		case skincolor_invshade:
+			lua_pushinteger(L, info->invshade);
+			break;
+		case skincolor_chatcolor:
+			lua_pushinteger(L, info->chatcolor);
+			break;
+		case skincolor_accessible:
+			lua_pushdboolean(L, info->accessible);
+			break;
+		default:
+			CONS_Debug(DBG_LUA, M_GetText("'%s' has no field named '%s'; returning nil.\n"), "skincolor_t", lua_tostring(L, 2));
+			return 0;
+			break;
 	}
+
 	return 1;
 }
 
@@ -1769,7 +2072,7 @@ static int skincolor_set(lua_State *L)
 {
 	uint32_t i;
 	skincolor_t *info = *((skincolor_t **)luaL_checkudata(L, 1, META_SKINCOLOR));
-	const char *field = luaL_checkstring(L, 2);
+	enum skincolor_e field = Lua_optoption(L, 2, -1, skincolors_fields_ref);
 	uint16_t cnum = (uint16_t)(info-skincolors);
 
 	I_Assert(info != NULL);
@@ -1778,48 +2081,67 @@ static int skincolor_set(lua_State *L)
 	if (!cnum || cnum >= numskincolors)
 		return luaL_error(L, "skincolors[] index %d out of range (1 - %d)", cnum, numskincolors-1);
 
-	if (fastcmp(field,"name")) {
-		const char* n = luaL_checkstring(L, 3);
-		strlcpy(info->name, n, MAXCOLORNAME+1);
-		if (strlen(n) > MAXCOLORNAME)
-			CONS_Alert(CONS_WARNING, "skincolor_t field 'name' ('%s') longer than %d chars; clipped to %s.\n", n, MAXCOLORNAME, info->name);
-#if 0
-		if (strchr(info->name, ' ') != NULL)
-			CONS_Alert(CONS_WARNING, "skincolor_t field 'name' ('%s') contains spaces.\n", info->name);
-#endif
-
-		if (info->name[0] != '\0') // don't check empty string for dupe
+	switch (field)
+	{
+		case skincolor_name:
 		{
-			uint16_t dupecheck = R_GetColorByName(info->name);
-			if (fasticmp(info->name, skincolors[SKINCOLOR_NONE].name) || (dupecheck && (dupecheck != cnum)))
-				CONS_Alert(CONS_WARNING, "skincolor_t field 'name' ('%s') is a duplicate of another skincolor's name.\n", info->name);
+			const char* n = luaL_checkstring(L, 3);
+			strlcpy(info->name, n, MAXCOLORNAME+1);
+			if (strlen(n) > MAXCOLORNAME)
+				CONS_Alert(CONS_WARNING, "skincolor_t field 'name' ('%s') longer than %d chars; clipped to %s.\n", n, MAXCOLORNAME, info->name);
+			#if 0
+			if (strchr(info->name, ' ') != NULL)
+				CONS_Alert(CONS_WARNING, "skincolor_t field 'name' ('%s') contains spaces.\n", info->name);
+			#endif
+
+			if (info->name[0] != '\0') // don't check empty string for dupe
+			{
+				uint16_t dupecheck = R_GetColorByName(info->name);
+				if (fasticmp(info->name, skincolors[SKINCOLOR_NONE].name) || (dupecheck && (dupecheck != cnum)))
+					CONS_Alert(CONS_WARNING, "skincolor_t field 'name' ('%s') is a duplicate of another skincolor's name.\n", info->name);
+			}
+			break;
 		}
-	} else if (fastcmp(field,"ramp")) {
-		if (!lua_istable(L, 3) && luaL_checkudata(L, 3, META_COLORRAMP) == NULL)
-			return luaL_error(L, LUA_QL("skincolor_t") " field 'ramp' must be a table or array.");
-		else if (lua_istable(L, 3))
-			setRamp(L, info);
-		else
-			for (i=0; i<COLORRAMPSIZE; i++)
-				info->ramp[i] = (*((uint8_t **)luaL_checkudata(L, 3, META_COLORRAMP)))[i];
-		skincolor_modified[cnum] = true;
-	} else if (fastcmp(field,"invcolor")) {
-		uint16_t v = (uint16_t)luaL_checkinteger(L, 3);
-		if (v >= numskincolors)
-			return luaL_error(L, "skincolor_t field 'invcolor' out of range (1 - %d)", numskincolors-1);
-		info->invcolor = v;
-	} else if (fastcmp(field,"invshade"))
-		info->invshade = (uint8_t)luaL_checkinteger(L, 3)%COLORRAMPSIZE;
-	else if (fastcmp(field,"chatcolor"))
-		info->chatcolor = (uint16_t)luaL_checkinteger(L, 3);
-	else if (fastcmp(field,"accessible")) {
-		dboolean v = lua_todboolean(L, 3);
-		if (cnum < FIRSTSUPERCOLOR && v != skincolors[cnum].accessible)
-			return luaL_error(L, "skincolors[] index %d is a standard color; accessibility changes are prohibited.", cnum);
-		else
-			info->accessible = v;
-	} else
-		CONS_Debug(DBG_LUA, M_GetText("'%s' has no field named '%s'; returning nil.\n"), "skincolor_t", field);
+		case skincolor_ramp:
+		{
+			if (!lua_istable(L, 3) && luaL_checkudata(L, 3, META_COLORRAMP) == NULL)
+				return luaL_error(L, LUA_QL("skincolor_t") " field 'ramp' must be a table or array.");
+			else if (lua_istable(L, 3))
+				setRamp(L, info);
+			else
+				for (i=0; i<COLORRAMPSIZE; i++)
+					info->ramp[i] = (*((uint8_t **)luaL_checkudata(L, 3, META_COLORRAMP)))[i];
+			skincolor_modified[cnum] = true;
+			break;
+		}
+		case skincolor_invcolor:
+		{
+			uint16_t v = (uint16_t)luaL_checkinteger(L, 3);
+			if (v >= numskincolors)
+				return luaL_error(L, "skincolor_t field 'invcolor' out of range (1 - %d)", numskincolors-1);
+			info->invcolor = v;
+			break;
+		}
+		case skincolor_invshade:
+			info->invshade = (uint8_t)luaL_checkinteger(L, 3)%COLORRAMPSIZE;
+			break;
+		case skincolor_chatcolor:
+			info->chatcolor = (uint16_t)luaL_checkinteger(L, 3);
+			break;
+		case skincolor_accessible:
+		{
+			dboolean v = lua_todboolean(L, 3);
+			if (cnum < FIRSTSUPERCOLOR && v != skincolors[cnum].accessible)
+				return luaL_error(L, "skincolors[] index %d is a standard color; accessibility changes are prohibited.", cnum);
+			else
+				info->accessible = v;
+			break;
+		}
+		default:
+			CONS_Debug(DBG_LUA, M_GetText("'%s' has no field named '%s'; returning nil.\n"), "skincolor_t", lua_tostring(L, 2));
+			break;
+	}
+
 	return 1;
 }
 
@@ -1950,27 +2272,48 @@ static int lib_precippropslen(lua_State *L)
 	return 1;
 }
 
+// mobjinfo_ fields
+#define PRECIPPROPSFIELDS(X) \
+	X(type) \
+	X(effects)
+
+enum precipprops_e
+{
+	#define ENUMITEM(name) precipprops_##name,
+	PRECIPPROPSFIELDS(ENUMITEM)
+	NUMPRECIPPROPSFIELDS,
+};
+
+static const char *const precipprops_opt[] = {
+	#define ENUMITEMNAME(name) #name,
+	PRECIPPROPSFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
+
+int precipprops_fields_ref = LUA_NOREF;
+
 // precipprops_t *, field -> number
 static int precipprops_get(lua_State *L)
 {
 	precipprops_t *props = *((precipprops_t **)luaL_checkudata(L, 1, META_PRECIPPROPS));
-	const char *field = luaL_checkstring(L, 2);
+	enum precipprops_e field = Lua_optoption(L, 2, -1, precipprops_fields_ref);
 
 	I_Assert(props != NULL);
 	I_Assert(props >= precipprops);
 
-	if (fastcmp(field, "type"))
+	switch (field)
 	{
-		lua_pushinteger(L, props->type);
-	}
-	else if (fastcmp(field,"effects"))
-	{
-		lua_pushinteger(L, props->effects);
-	}
-	else
-	{
-		CONS_Debug(DBG_LUA, M_GetText("'%s' has no field named '%s'; returning nil.\n"), "precipprops_t", field);
-		return 0;
+		case precipprops_type:
+			lua_pushinteger(L, props->type);
+			break;
+		case precipprops_effects:
+			lua_pushinteger(L, props->effects);
+			break;
+		default:
+			CONS_Debug(DBG_LUA, M_GetText("'%s' has no field named '%s'; returning nil.\n"), "precipprops_t", lua_tostring(L, 2));
+			return 0;
 	}
 
 	return 1;
@@ -1980,7 +2323,7 @@ static int precipprops_get(lua_State *L)
 static int precipprops_set(lua_State *L)
 {
 	precipprops_t *props = *((precipprops_t **)luaL_checkudata(L, 1, META_PRECIPPROPS));
-	const char *field = luaL_checkstring(L, 2);
+	enum precipprops_e field = Lua_optoption(L, 2, -1, precipprops_fields_ref);
 
 	if (hud_running)
 		return luaL_error(L, "Do not alter precipprops in HUD rendering code!");
@@ -1990,17 +2333,17 @@ static int precipprops_set(lua_State *L)
 	I_Assert(props != NULL);
 	I_Assert(props >= precipprops);
 
-	if (fastcmp(field, "type"))
+	switch (field)
 	{
-		props->type = luaL_checkinteger(L, 3);
-	}
-	else if (fastcmp(field, "effects"))
-	{
-		props->effects = luaL_checkinteger(L, 3);
-	}
-	else
-	{
-		return luaL_error(L, LUA_QL("precipprops_t") " has no field named " LUA_QS, field);
+		case precipprops_type:
+			props->type = luaL_checkinteger(L, 3);
+			break;
+		case precipprops_effects:
+			props->effects = luaL_checkinteger(L, 3);
+			break;
+		default:
+			return luaL_error(L, LUA_QL("precipprops_t") " has no field named " LUA_QS, lua_tostring(L, 2));
+			return 0;
 	}
 
 	return 0;
@@ -2033,8 +2376,14 @@ int LUA_InfoLib(lua_State *L)
 	lua_newtable(L);
 	lua_setfield(L, LUA_REGISTRYINDEX, LREG_ACTIONS);
 
+	skincolors_fields_ref = Lua_CreateFieldTable(L, skincolor_opt);
+	spriteinfo_fields_ref = Lua_CreateFieldTable(L, spriteinfo_opt);
+	framepivot_fields_ref = Lua_CreateFieldTable(L, framepivot_opt);
+	state_fields_ref = Lua_CreateFieldTable(L, state_opt);
+	mobjinfo_fields_ref = Lua_CreateFieldTable(L, mobjinfo_opt);
 	sfxinfow_fields_ref = Lua_CreateFieldTable(L, sfxinfo_wopt);
 	sfxinfor_fields_ref = Lua_CreateFieldTable(L, sfxinfo_ropt);
+	precipprops_fields_ref = Lua_CreateFieldTable(L, precipprops_opt);
 
 	luaL_newmetatable(L, META_STATE);
 		lua_pushcfunction(L, state_get);
