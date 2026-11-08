@@ -20,50 +20,43 @@
 #define NOHUD if (hud_running)\
 return luaL_error(L, "HUD rendering code should not call this function!");
 
-enum polyobj_e {
-	// properties
-	polyobj_valid = 0,
-	polyobj_id,
-	polyobj_parent,
-	polyobj_vertices,
-	polyobj_lines,
-	polyobj_sector,
-	polyobj_angle,
-	polyobj_damage,
-	polyobj_thrust,
-	polyobj_flags,
-	polyobj_translucency,
-	polyobj_triggertag,
-	// special functions - utility
-	polyobj_pointInside,
-	polyobj_mobjTouching,
-	polyobj_mobjInside,
-	// special functions - manipulation
-	polyobj_moveXY,
-	polyobj_rotate
+// polyobj_ fields
+#define POLYOBJFIELDS(X) \
+	/* properties*/ \
+	X(valid) \
+	X(id) \
+	X(parent) \
+	X(vertices) \
+	X(lines) \
+	X(sector) \
+	X(angle) \
+	X(damage) \
+	X(thrust) \
+	X(flags) \
+	X(translucency) \
+	X(triggertag) \
+	/* special functions - utility */ \
+	X(pointInside) \
+	X(mobjTouching) \
+	X(mobjInside) \
+	/* special functions - manipulation */ \
+	X(moveXY) \
+	X(rotate) \
+
+enum polyobj_e
+{
+#define ENUMITEM(name) polyobj_##name,
+	POLYOBJFIELDS(ENUMITEM)
+	NUMPOLYOBJFIELDS,
 };
+
 static const char *const polyobj_opt[] = {
-	// properties
-	"valid",
-	"id",
-	"parent",
-	"vertices",
-	"lines",
-	"sector",
-	"angle",
-	"damage",
-	"thrust",
-	"flags",
-	"translucency",
-	"triggertag",
-	// special functions - utility
-	"pointInside",
-	"mobjTouching",
-	"mobjInside",
-	// special functions - manipulation
-	"moveXY",
-	"rotate",
-	NULL};
+#define ENUMITEMNAME(name) #name,
+	POLYOBJFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
 static const char *const valid_opt[] ={"valid",NULL};
 
