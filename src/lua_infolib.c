@@ -50,7 +50,6 @@ enum sfxinfo_read
 {
 #define ENUMITEM(name) sfxinfor_##name,
 	SFXINFORFIELDS(ENUMITEM)
-	NUMSFXINFORFIELDS,
 };
 
 static const char *const sfxinfo_ropt[] = {
@@ -73,7 +72,6 @@ enum sfxinfo_write
 {
 #define ENUMITEM(name) sfxinfow_##name,
 	SFXINFO_WRITEFIELDS(ENUMITEM)
-	NUMSFXINFOWFIELDS,
 };
 
 static const char *const sfxinfo_wopt[] = {
@@ -488,7 +486,6 @@ enum spriteinfo_e
 {
 #define ENUMITEM(name) spriteinfo_##name,
 	SPRITEINFOFIELDS(ENUMITEM)
-	NUMSPRITEINFORFIELDS,
 };
 
 static const char *const spriteinfo_opt[] = {
@@ -640,7 +637,6 @@ enum framepivot_e
 {
 #define ENUMITEM(name) framepivot_##name,
 	FRAMEPIVOTFIELDS(ENUMITEM)
-	NUMFRAMEPIVOTFIELDS,
 };
 
 static const char *const framepivot_opt[] = {
@@ -998,7 +994,6 @@ enum state_e
 {
 #define ENUMITEM(name) state_##name,
 	STATEFIELDS(ENUMITEM)
-	NUMSTATEFIELDS,
 };
 
 static const char *const state_opt[] = {
@@ -1365,7 +1360,6 @@ enum mobjinfo_e
 {
 #define ENUMITEM(name) mobjinfo_##name,
 	MOBJINFOFIELDS(ENUMITEM)
-	NUMMOBJINFOFIELDS,
 };
 
 static const char *const mobjinfo_opt[] = {
@@ -2015,7 +2009,6 @@ enum skincolor_e
 {
 #define ENUMITEM(name) skincolor_##name,
 	SKINCOLORFIELDS(ENUMITEM)
-	NUMSKINCOLORFIELDS,
 };
 
 static const char *const skincolor_opt[] = {
@@ -2279,13 +2272,12 @@ static int lib_precippropslen(lua_State *L)
 
 enum precipprops_e
 {
-	#define ENUMITEM(name) precipprops_##name,
+#define ENUMITEM(name) precipprops_##name,
 	PRECIPPROPSFIELDS(ENUMITEM)
-	NUMPRECIPPROPSFIELDS,
 };
 
 static const char *const precipprops_opt[] = {
-	#define ENUMITEMNAME(name) #name,
+#define ENUMITEMNAME(name) #name,
 	PRECIPPROPSFIELDS(ENUMITEMNAME)
 	NULL,
 };

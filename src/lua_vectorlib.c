@@ -29,7 +29,6 @@ enum vectorfield_e
 {
 #define ENUMITEM(name) vectorfield_##name,
 	VECTORFIELDS(ENUMITEM)
-	NUMVECTORFIELDS,
 };
 
 static const char *const vectorfield_opt[] = {

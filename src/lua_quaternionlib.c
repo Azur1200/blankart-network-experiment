@@ -124,7 +124,6 @@ enum quaternionfield_e
 {
 #define ENUMITEM(name) quaternionfield_##name,
 	QUATERNIONFIELDS(ENUMITEM)
-	NUMQUATERNIONSFIELDS,
 };
 
 static const char *const quaternionfield_opt[] = {

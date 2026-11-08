@@ -39,7 +39,6 @@ enum voicevars
 {
 #define ENUMITEM(name) voicevars_##name,
 	VOICEVARSFIELDS(ENUMITEM)
-	NUMVOICEVARSFIELDS,
 };
 
 static const char *const voicevars_opt[] = {

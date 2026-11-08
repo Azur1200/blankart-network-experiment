@@ -36,7 +36,6 @@ enum waypointvars
 {
 #define ENUMITEM(name) waypointvars_##name,
 	WAYPOINTVARSFIELDS(ENUMITEM)
-	NUMWAYPOINTVARSFIELDS,
 };
 
 static const char *const waypointvars_opt[] = {

@@ -33,7 +33,6 @@ enum itemvars
 {
 #define ENUMITEM(name) itemvars_##name,
 	ITEMVARSFIELDS(ENUMITEM)
-	NUMITEMVARSFIELDS,
 };
 
 static const char *const itemvars_opt[] = {
@@ -113,7 +112,6 @@ enum resultvars
 {
 #define ENUMITEM(name) resultvars_##name,
 	RESULTVARSFIELDS(ENUMITEM)
-	NUMRESULTVARSFIELDS,
 };
 
 static const char *const resultvars_opt[] = {

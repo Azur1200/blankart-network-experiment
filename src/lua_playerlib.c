@@ -2990,7 +2990,6 @@ enum ticcmd_e
 {
 #define ENUMITEM(name) ticcmd_##name,
 	TICCMDFIELDS(ENUMITEM)
-	NUMTICCMDFIELDS,
 };
 
 static const char *const ticcmd_opt[] = {
@@ -3121,7 +3120,6 @@ enum sonicloopvars
 {
 #define ENUMITEM(name) sonicloopvars_##name,
 	SONICLOOPVARSFIELDS(ENUMITEM)
-	NUMSONICLOOPVARSFIELDS,
 };
 
 static const char *const sonicloopvars_opt[] = {
@@ -3208,7 +3206,6 @@ enum sonicloopcamvars
 {
 #define ENUMITEM(name) sonicloopcamvars_##name,
 	SONICLOOPCAMVARSFIELDS(ENUMITEM)
-	NUMSONICLOOPCAMVARSFIELDS,
 };
 
 static const char *const sonicloopcamvars_opt[] = {
@@ -3279,7 +3276,6 @@ enum boostinfo
 {
 #define ENUMITEM(name) boostinfo_##name,
 	BOOSTINFOFIELDS(ENUMITEM)
-	NUMBOOSTINFOFIELDS,
 };
 
 static const char *const boostinfo_opt[] = {
@@ -3435,7 +3431,6 @@ enum plranklog
 {
 #define ENUMITEM(name) ranklog_##name,
 	RANKLOGFIELDS(ENUMITEM)
-	NUMRANKLOGFIELDS,
 };
 
 static const char *const ranklog_opt[] = {
@@ -3650,7 +3645,6 @@ enum rankscorefac
 {
 #define ENUMITEM(name) rankscorefactor_##name,
 	RANKSCOREFACFIELDS(ENUMITEM)
-	NUMRANKSCOREFACFIELDS,
 };
 
 static const char *const rankscorefac_opt[] = {

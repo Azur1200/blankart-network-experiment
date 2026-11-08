@@ -106,7 +106,6 @@ enum matrixfield_e
 {
 #define ENUMITEM(name) matrixfield_##name,
 	MATRIXFIELDS(ENUMITEM)
-	NUMMATRIXFIELDS,
 };
 
 static const char *const matrixfield_opt[] = {

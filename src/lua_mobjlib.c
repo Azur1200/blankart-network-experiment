@@ -128,7 +128,6 @@ enum mobj_e
 {
 #define ENUMITEM(name) mobj_##name,
 	MOBJFIELDS(ENUMITEM)
-	NUMMOBJFIELDS,
 };
 
 static const char *const mobj_opt[] = {

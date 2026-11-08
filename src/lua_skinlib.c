@@ -45,7 +45,6 @@ enum skin
 {
 #define ENUMITEM(name) skin_##name,
 	SKINFIELDS(ENUMITEM)
-	NUMSKINFIELDS,
 };
 
 static const char *const skin_opt[] = {

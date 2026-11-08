@@ -47,7 +47,6 @@ enum polyobj_e
 {
 #define ENUMITEM(name) polyobj_##name,
 	POLYOBJFIELDS(ENUMITEM)
-	NUMPOLYOBJFIELDS,
 };
 
 static const char *const polyobj_opt[] = {
