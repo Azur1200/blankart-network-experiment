@@ -21,211 +21,123 @@
 #include "lua_hud.h" // hud_running errors
 #include "lua_hook.h" // hook_cmd_running errors
 
-enum mobj_e {
-	mobj_valid = 0,
-	mobj_x,
-	mobj_y,
-	mobj_z,
-	mobj_snext,
-	mobj_sprev,
-	mobj_angle,
-	mobj_pitch,
-	mobj_roll,
-	mobj_slopepitch,
-	mobj_sloperoll,
-	mobj_rollangle,
-	mobj_sprite,
-	mobj_frame,
-	mobj_sprite2,
-	mobj_anim_duration,
-	mobj_spritexscale,
-	mobj_spriteyscale,
-	mobj_realxscale,
-	mobj_realyscale,
-	mobj_spritexoffset,
-	mobj_spriteyoffset,
-	mobj_realxoffset,
-	mobj_realyoffset,
-	mobj_floorspriteslope,
-	mobj_lightlevel,
-	mobj_sectors,
-	mobj_subsector,
-	mobj_floorz,
-	mobj_ceilingz,
-	mobj_floorrover,
-	mobj_ceilingrover,
-	mobj_radius,
-	mobj_height,
-	mobj_momx,
-	mobj_momy,
-	mobj_momz,
-	mobj_pmomz,
-	mobj_tics,
-	mobj_state,
-	mobj_flags,
-	mobj_flags2,
-	mobj_eflags,
-	mobj_renderflags,
-	mobj_renderflags2,
-	mobj_skin,
-	mobj_voice,
-	mobj_color,
-	mobj_bnext,
-	mobj_bprev,
-	mobj_hnext,
-	mobj_hprev,
-	mobj_type,
-	mobj_info,
-	mobj_health,
-	mobj_movedir,
-	mobj_movecount,
-	mobj_target,
-	mobj_reactiontime,
-	mobj_threshold,
-	mobj_player,
-	mobj_lastlook,
-	mobj_spawnpoint,
-	mobj_tracer,
-	mobj_friction,
-	mobj_movefactor,
-	mobj_gravity,
-	mobj_fuse,
-	mobj_watertop,
-	mobj_waterbottom,
-	mobj_mobjnum,
-	mobj_scale,
-	mobj_destscale,
-	mobj_scalespeed,
-	mobj_extravalue1,
-	mobj_extravalue2,
-	mobj_extravalue3,
-	mobj_cusval,
-	mobj_cvmem,
-	mobj_mobjlifetime,
-	mobj_standingslope,
-	mobj_colorized,
-	mobj_mirrored,
-	mobj_shadowscale,
-	mobj_whiteshadow,
-	mobj_sprxoff,
-	mobj_spryoff,
-	mobj_sprzoff,
-	mobj_bakexoff,
-	mobj_bakeyoff,
-	mobj_bakezoff,
-	mobj_bakexpiv,
-	mobj_bakeypiv,
-	mobj_bakezpiv,
-	mobj_terrain,
-	mobj_dispoffset,
-	mobj_tid,
-	mobj_special,
-	mobj_args,
-	mobj_stringargs
+// mobj_ fields
+#define MOBJFIELDS(X) \
+	X(valid) \
+	X(x) \
+	X(y) \
+	X(z) \
+	X(snext) \
+	X(sprev) \
+	X(angle) \
+	X(pitch) \
+	X(roll) \
+	X(slopepitch) \
+	X(sloperoll) \
+	X(rollangle) \
+	X(sprite) \
+	X(frame) \
+	X(sprite2) \
+	X(anim_duration) \
+	X(spritexscale) \
+	X(spriteyscale) \
+	X(realxscale) \
+	X(realyscale) \
+	X(spritexoffset) \
+	X(spriteyoffset) \
+	X(realxoffset) \
+	X(realyoffset) \
+	X(floorspriteslope) \
+	X(lightlevel) \
+	X(sectors) \
+	X(subsector) \
+	X(floorz) \
+	X(ceilingz) \
+	X(floorrover) \
+	X(ceilingrover) \
+	X(radius) \
+	X(height) \
+	X(momx) \
+	X(momy) \
+	X(momz) \
+	X(pmomz) \
+	X(tics) \
+	X(state) \
+	X(flags) \
+	X(flags2) \
+	X(eflags) \
+	X(renderflags) \
+	X(renderflags2) \
+	X(skin) \
+	X(voice) \
+	X(color) \
+	X(bnext) \
+	X(bprev) \
+	X(hnext) \
+	X(hprev) \
+	X(type) \
+	X(info) \
+	X(health) \
+	X(movedir) \
+	X(movecount) \
+	X(target) \
+	X(reactiontime) \
+	X(threshold) \
+	X(player) \
+	X(lastlook) \
+	X(spawnpoint) \
+	X(tracer) \
+	X(friction) \
+	X(movefactor) \
+	X(gravity) \
+	X(fuse) \
+	X(watertop) \
+	X(waterbottom) \
+	X(mobjnum) \
+	X(scale) \
+	X(destscale) \
+	X(scalespeed) \
+	X(extravalue1) \
+	X(extravalue2) \
+	X(extravalue3) \
+	X(cusval) \
+	X(cvmem) \
+	X(mobjlifetime) \
+	X(standingslope) \
+	X(colorized) \
+	X(mirrored) \
+	X(shadowscale) \
+	X(whiteshadow) \
+	X(sprxoff) \
+	X(spryoff) \
+	X(sprzoff) \
+	X(bakexoff) \
+	X(bakeyoff) \
+	X(bakezoff) \
+	X(bakexpiv) \
+	X(bakeypiv) \
+	X(bakezpiv) \
+	X(terrain) \
+	X(dispoffset) \
+	X(tid) \
+	X(special) \
+	X(args) \
+	X(stringargs)
+
+enum mobj_e
+{
+#define ENUMITEM(name) mobj_##name,
+	MOBJFIELDS(ENUMITEM)
+	NUMMOBJFIELDS,
 };
 
 static const char *const mobj_opt[] = {
-	"valid",
-	"x",
-	"y",
-	"z",
-	"snext",
-	"sprev",
-	"angle",
-	"pitch",
-	"roll",
-	"slopepitch",
-	"sloperoll",
-	"rollangle",
-	"sprite",
-	"frame",
-	"sprite2",
-	"anim_duration",
-	"spritexscale",
-	"spriteyscale",
-	"realxscale",
-	"realyscale",
-	"spritexoffset",
-	"spriteyoffset",
-	"realxoffset",
-	"realyoffset",
-	"floorspriteslope",
-	"lightlevel",
-	"sectors",
-	"subsector",
-	"floorz",
-	"ceilingz",
-	"floorrover",
-	"ceilingrover",
-	"radius",
-	"height",
-	"momx",
-	"momy",
-	"momz",
-	"pmomz",
-	"tics",
-	"state",
-	"flags",
-	"flags2",
-	"eflags",
-	"renderflags",
-	"renderflags2",
-	"skin",
-	"voice",
-	"color",
-	"bnext",
-	"bprev",
-	"hnext",
-	"hprev",
-	"type",
-	"info",
-	"health",
-	"movedir",
-	"movecount",
-	"target",
-	"reactiontime",
-	"threshold",
-	"player",
-	"lastlook",
-	"spawnpoint",
-	"tracer",
-	"friction",
-	"movefactor",
-	"gravity",
-	"fuse",
-	"watertop",
-	"waterbottom",
-	"mobjnum",
-	"scale",
-	"destscale",
-	"scalespeed",
-	"extravalue1",
-	"extravalue2",
-	"extravalue3",
-	"cusval",
-	"cvmem",
-	"mobjlifetime",
-	"standingslope",
-	"colorized",
-	"mirrored",
-	"shadowscale",
-	"whiteshadow",
-	"sprxoff",
-	"spryoff",
-	"sprzoff",
-	"bakexoff",
-	"bakeyoff",
-	"bakezoff",
-	"bakexpiv",
-	"bakeypiv",
-	"bakezpiv",
-	"terrain",
-	"dispoffset",
-	"tid",
-	"special",
-	"args",
-	"stringargs",
-	NULL};
+#define ENUMITEMNAME(name) #name,
+	MOBJFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
 #define UNIMPLEMENTED luaL_error(L, LUA_QL("mobj_t") " field " LUA_QS " is not implemented for Lua and cannot be accessed.", mobj_opt[field])
 
