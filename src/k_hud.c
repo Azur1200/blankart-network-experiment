@@ -2822,7 +2822,7 @@ static dboolean K_drawKartPositionFaces(void)
 				V_DrawRotatedFixedPatch((FACE_X + offsets.x)<<FRACBITS, (Y + offsets.y)<<FRACBITS, rollangle, hires ? FRACUNIT / 2 : FRACUNIT, smntrhudtrans|V_SNAPTOLEFT|V_ADD, facerank, colormap);
 			}
 
-			if (LUA_HudEnabled(hud_battlebumpers))
+			if (LUA_HudEnabled(hud_battlerankingsbumpers))
 			{
 				if ((gametypes[gametype]->rules & GTR_BUMPERS) && players[rankplayer[i]].bumper > 0)
 				{
@@ -7175,7 +7175,7 @@ void K_drawKartHUD(void)
 				K_drawKartPlayerCheck();
 
 		// nametags
-		if (LUA_HudEnabled(hud_names))
+		if (LUA_HudEnabled(hud_nametags))
 			K_drawKartNameTags();
 
 		// Draw WANTED status

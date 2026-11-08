@@ -19,37 +19,39 @@
 extern "C" {
 #endif
 
-enum hud {
-	hud_stagetitle = 0,
-	hud_textspectator,
-	hud_crosshair,
-	// Singleplayer / Co-op
-	hud_score,
-	hud_time,
-	hud_gametypeinfo,
-	hud_minimap,
-	hud_item,
-	hud_position,
-	hud_names,			// online nametags
-	hud_check,			// "CHECK" f-zero indicator
-	hud_minirankings,	// Rankings to the left
-	hud_battlebumpers,	// mini rankings battle bumpers.
-	hud_battlefullscreen,	// battle huge text (WAIT, WIN, LOSE ...) + karma comeback time
-	hud_battlecomebacktimer,	// comeback timer in battlefullscreen. separated for ease of use.
-	hud_wanted,
-	hud_speedometer,
-	hud_rings,
-	hud_lives,
-	hud_freeplay,
-	hud_rankings,		// Tab rankings
-	hud_lapsplits,
-	hud_itemtimers,
+#define HUDFIELDS(X) \
+	X(stagetitle) \
+	X(textspectator) \
+	X(crosshair) \
+	X(scores) \
+	X(time) \
+	X(gametypeinfo) /* Bumpers / Karma / Laps depending on gametype */ \
+	X(minimap) \
+	X(item) \
+	X(position) \
+	X(nametags) \
+	X(check)	/* "CHECK" f-zero indicator */ \
+	X(minirankings) /* Gametype rankings to the left */ \
+	X(battlerankingsbumpers) /* bumper drawer for battle. Useful if you want to make a custom battle gamemode without bumpers being involved. */ \
+	X(battlefullscreen) /* battlefullscreen func (WAIT, ATTACK OR PROTECT ...) */ \
+	X(battlecomebacktimer) /* come back timer in battlefullscreen */ \
+	X(wanted) \
+	X(speedometer) \
+	X(rings) \
+	X(lives) \
+	X(freeplay) \
+	X(rankings) \
+	X(lapsplits) \
+	X(itemtimers) \
+	X(intermissiontally) \
+	X(intermissionmessages)
 
-	// Intermission
-	hud_intermissiontally,
-	hud_intermissionmessages,
+enum hud {
+#define ENUMITEM(name) hud_##name,
+	HUDFIELDS(ENUMITEM)
 	hud_MAX
 };
+#undef ENUMITEM
 
 extern dboolean hud_running;
 
