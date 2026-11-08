@@ -95,19 +95,27 @@ static luaL_Reg matrix[] = {
 // MEMBERS //
 /////////////
 
-enum matrixfield_e {
-	matrixfield_clone = 0,
-	matrixfield_getvalue,
-	matrixfield_setvalue,
-	matrixfield_mulXYZ,
+// matrixfield_ fields
+#define MATRIXFIELDS(X) \
+	X(clone) \
+	X(getvalue) \
+	X(setvalue) \
+	X(mulXYZ)
+
+enum matrixfield_e
+{
+#define ENUMITEM(name) matrixfield_##name,
+	MATRIXFIELDS(ENUMITEM)
+	NUMMATRIXFIELDS,
 };
 
 static const char *const matrixfield_opt[] = {
-	"clone",
-	"get",
-	"set",
-	"mulXYZ",
-	NULL};
+#define ENUMITEMNAME(name) #name,
+	MATRIXFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
 static int matrix_clone(lua_State *L)
 {

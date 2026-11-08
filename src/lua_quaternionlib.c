@@ -111,23 +111,29 @@ static int vector4_toMatrix(lua_State *L)
 	return 1;
 }
 
-enum quaternionfield_e {
-	quaternionfield_clone = 0,
-	quaternionfield_toMatrix,
-	quaternionfield_x,
-	quaternionfield_y,
-	quaternionfield_z,
-	quaternionfield_w,
+// matrixfield_ fields
+#define QUATERNIONFIELDS(X) \
+	X(clone) \
+	X(toMatrix) \
+	X(x) \
+	X(y) \
+	X(z) \
+	X(w)
+
+enum quaternionfield_e
+{
+#define ENUMITEM(name) quaternionfield_##name,
+	QUATERNIONFIELDS(ENUMITEM)
+	NUMQUATERNIONSFIELDS,
 };
 
 static const char *const quaternionfield_opt[] = {
-	"clone",
-	"toMatrix",
-	"x",
-	"y",
-	"z",
-	"w",
-	NULL};
+#define ENUMITEMNAME(name) #name,
+	QUATERNIONFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
 int quaternionfield_fields_ref = LUA_NOREF;
 

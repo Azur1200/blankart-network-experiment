@@ -14,25 +14,31 @@
 #include "lua_libs.h"
 
 // shared by both Vector2D and Vector3D
-enum vectorfield_e {
-	vectorfield_clone = 0,
-	vectorfield_opposite,
-	vectorfield_x,
-	vectorfield_y,
-	vectorfield_z,
-	vectorfield_length,
-	vectorfield_normalized,
+
+// vectorfield_ fields
+#define VECTORFIELDS(X) \
+	X(clone) \
+	X(opposite) \
+	X(x) \
+	X(y) \
+	X(z) \
+	X(length) \
+	X(normalized)
+
+enum vectorfield_e
+{
+#define ENUMITEM(name) vectorfield_##name,
+	VECTORFIELDS(ENUMITEM)
+	NUMVECTORFIELDS,
 };
 
 static const char *const vectorfield_opt[] = {
-	"vector_clone",
-	"vector_opposite",
-	"x",
-	"y",
-	"z",
-	"vector_length",
-	"vector_normalized",
-	NULL};
+#define ENUMITEMNAME(name) #name,
+	VECTORFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
 ////////////////////////////
 // VECTOR2 STATIC MEMBERS //
