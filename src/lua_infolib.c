@@ -76,7 +76,7 @@ enum sfxinfo_write
 
 static const char *const sfxinfo_wopt[] = {
 #define ENUMITEMNAME(name) #name,
-	SFXINFORFIELDS(ENUMITEMNAME)
+	SFXINFO_WRITEFIELDS(ENUMITEMNAME)
 	NULL,
 };
 #undef ENUMITEM
