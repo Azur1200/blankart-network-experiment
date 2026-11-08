@@ -16,135 +16,124 @@
 #include "lua_libs.h"
 #include "k_terrain.h"
 
-enum terrain {
-	terrain_valid = 0,
-	terrain_name,
-	terrain_hash,
-	terrain_splashid,
-	terrain_footstepid,
-	terrain_overlayid,
-	terrain_friction,
-	terrain_offroad,
-	terrain_damagetype,
-	terrain_pogospring,
-	terrain_pogospringmin,
-	terrain_pogospringmax,
-	terrain_speedpad,
-	terrain_speedpadangle,
-	terrain_springstrength,
-	terrain_outrun,
-	terrain_floorclip,
-	terrain_flags
-};
+// terrain_ fields
+#define TERRAINFIELDS(X) \
+	X(valid) \
+	X(name) \
+	X(hash) \
+	X(splashid) \
+	X(footstepid) \
+	X(overlayid) \
+	X(friction) \
+	X(offroad) \
+	X(damagetype) \
+	X(pogospring) \
+	X(pogospringmin) \
+	X(pogospringmax) \
+	X(speedpad) \
+	X(speedpadangle) \
+	X(springstrength) \
+	X(outrun) \
+	X(floorclip) \
+	X(flags)
 
-enum splash {
-	splash_valid = 0,
-	splash_name,
-	splash_hash,
-	splash_mobjtype,
-	splash_sfx,
-	splash_scale,
-	splash_color,
-	splash_pushH,
-	splash_pushV,
-	splash_spread,
-	splash_cone,
-	splash_numparticles
-};
-
-enum footstep {
-	footstep_valid = 0,
-	footstep_name,
-	footstep_hash,
-	footstep_mobjtype,
-	footstep_sfx,
-	footstep_scale,
-	footstep_color,
-	footstep_pushH,
-	footstep_pushV,
-	footstep_spread,
-	footstep_cone,
-	footstep_sfxfreq,
-	footstep_frequency,
-	footstep_requiredspeed
-};
-
-enum overlay {
-	overlay_valid = 0,
-	overlay_name,
-	overlay_hash,
-	overlay_states,
-	overlay_scale,
-	overlay_color,
-	overlay_speed
+enum terrain
+{
+#define ENUMITEM(name) terrain_##name,
+	TERRAINFIELDS(ENUMITEM)
 };
 
 static const char *const terrain_opt[] = {
-	"valid",
-	"name",
-	"hash",
-	"splashid",
-	"footstepid",
-	"overlayid",
-	"friction",
-	"offroad",
-	"damagetype",
-	"pogospring",
-	"pogospringmin",
-	"pogospringmax",
-	"speedpad",
-	"speedpadangle",
-	"springstrength",
-	"outrun",
-	"floorclip",
-	"flags",
-	NULL
+#define ENUMITEMNAME(name) #name,
+	TERRAINFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
+
+// splash_ fields
+#define SPLASHFIELDS(X) \
+	X(valid) \
+	X(name) \
+	X(hash) \
+	X(mobjtype) \
+	X(sfx) \
+	X(scale) \
+	X(color) \
+	X(pushh) \
+	X(pushv) \
+	X(spread) \
+	X(cone) \
+	X(numparticles)
+
+enum splash
+{
+#define ENUMITEM(name) splash_##name,
+	SPLASHFIELDS(ENUMITEM)
 };
 
 static const char *const splash_opt[] = {
-	"valid",
-	"name",
-	"hash",
-	"mobjtype",
-	"sfx",
-	"scale",
-	"color",
-	"pushh",
-	"pushv",
-	"spread",
-	"cone",
-	"numparticles",
-	NULL
+#define ENUMITEMNAME(name) #name,
+	SPLASHFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
+
+// footstep_ fields
+#define FOOTSTEPFIELDS(X) \
+	X(valid) \
+	X(name) \
+	X(hash) \
+	X(mobjtype) \
+	X(sfx) \
+	X(scale) \
+	X(color) \
+	X(pushh) \
+	X(pushv) \
+	X(spread) \
+	X(cone) \
+	X(sfxfreq) \
+	X(frequency) \
+	X(requiredspeed)
+
+enum footstep
+{
+#define ENUMITEM(name) footstep_##name,
+	FOOTSTEPFIELDS(ENUMITEM)
 };
 
 static const char *const footstep_opt[] = {
-	"valid",
-	"name",
-	"hash",
-	"mobjtype",
-	"sfx",
-	"scale",
-	"color",
-	"pushh",
-	"pushv",
-	"spread",
-	"cone",
-	"sfxfreq",
-	"frequency",
-	"requiredspeed",
-	NULL
+#define ENUMITEMNAME(name) #name,
+	FOOTSTEPFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
+
+// overlay_ fields
+#define OVERLAYFIELDS(X) \
+	X(valid) \
+	X(name) \
+	X(hash) \
+	X(states) \
+	X(scale) \
+	X(color) \
+	X(speed)
+
+enum overlay
+{
+#define ENUMITEM(name) overlay_##name,
+	OVERLAYFIELDS(ENUMITEM)
 };
 
 static const char *const overlay_opt[] = {
-	"valid",
-	"name",
-	"hash",
-	"states",
-	"scale",
-	"color",
-	"speed",
-	NULL
+#define ENUMITEMNAME(name) #name,
+	OVERLAYFIELDS(ENUMITEMNAME)
+	NULL,
 };
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
 int splash_fields_ref = LUA_NOREF;
 
@@ -188,10 +177,10 @@ static int splash_get(lua_State *L)
 	case splash_color:
 		lua_pushnumber(L, splash->color);
 		break;
-	case splash_pushH:
+	case splash_pushh:
 		lua_pushfixed(L, splash->pushH);
 		break;
-	case splash_pushV:
+	case splash_pushv:
 		lua_pushfixed(L, splash->pushV);
 		break;
 	case splash_spread:
@@ -335,10 +324,10 @@ static int footstep_get(lua_State *L)
 	case footstep_color:
 		lua_pushnumber(L, footstep->color);
 		break;
-	case footstep_pushH:
+	case footstep_pushh:
 		lua_pushfixed(L, footstep->pushH);
 		break;
-	case footstep_pushV:
+	case footstep_pushv:
 		lua_pushfixed(L, footstep->pushV);
 		break;
 	case footstep_spread:
