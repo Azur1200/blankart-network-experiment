@@ -3944,9 +3944,10 @@ static void P_PlayerMobjThinker(mobj_t *mobj)
 	// momentum movement
 	mobj->eflags &= ~MFE_JUSTSTEPPEDDOWN;
 
+	dboolean zoomtube = (mobj->player->carry == CR_ZOOMTUBE && mobj->tracer && !P_MobjWasRemoved(mobj->tracer));
+
 	// Zoom tube
-	if ((mobj->player->carry == CR_ZOOMTUBE && mobj->tracer && !P_MobjWasRemoved(mobj->tracer))
-		|| mobj->player->loop.radius != 0)
+	if (zoomtube || mobj->player->loop.radius != 0)
 	{
 		P_HitSpecialLines(mobj, mobj->x, mobj->y, mobj->momx, mobj->momy);
 		P_UnsetThingPosition(mobj);
@@ -3957,7 +3958,10 @@ static void P_PlayerMobjThinker(mobj_t *mobj)
 		P_CheckPosition(mobj, mobj->x, mobj->y, NULL);
 		mobj->floorz = g_tm.floorz;
 		mobj->ceilingz = g_tm.ceilingz;
-		mobj->standingslope = NULL;
+		if ((mapnamespace != MNS_SRB2KART ) || (mapnamespace == MNS_SRB2KART && !zoomtube))
+		{
+			mobj->standingslope = NULL;
+		}
 		mobj->terrain = NULL;
 		goto animonly;
 	}
