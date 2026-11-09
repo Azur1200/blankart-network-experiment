@@ -2601,11 +2601,25 @@ void M_UpdateMenuCMD(uint8_t i, dboolean bailrequired)
 				menucmd[i].buttons |= MBT_CONFIRM;
 				break;
 
+			case 'y':
+				if (messagebox.active)
+				{
+					menucmd[i].buttons |= MBT_CONFIRM;
+				}
+				break;
+
 			case KEY_ESCAPE:
 				if (menustack[0])
 					menucmd[i].buttons |= MBT_CANCEL;
 				else
 					menucmd[i].buttons |= MBT_HOME;
+				break;
+
+			case 'n':
+				if (messagebox.active)
+				{
+					menucmd[i].buttons |= MBT_CANCEL;
+				}
 				break;
 
 			case KEY_SPACE:
