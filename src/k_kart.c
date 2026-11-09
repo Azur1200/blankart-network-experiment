@@ -11682,7 +11682,7 @@ int32_t K_GetDriftAngleOffset(player_t *player)
 	}
 	else if (player->drift != 0 && onground)
 	{
-		a = (ANGLE_45 / 5) * player->drift;
+		a = (ANGLE_45 / 5) * CLAMP(player->drift + intsign(player->drift), -5, 5);
 	}
 
 	return a;
