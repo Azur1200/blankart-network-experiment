@@ -519,7 +519,7 @@ void readskincolor(MYFILE *f, int32_t num, dboolean mainfile)
 			}
 			else if (fastcmp(word, "ACCESSIBLE"))
 			{
-				if (mainfile || num > FIRSTSUPERCOLOR)
+				//if (mainfile || num > FIRSTSUPERCOLOR)
 					skincolors[num].accessible = (dboolean)(atoi(word2) || word2[0] == 'T' || word2[0] == 'Y');
 			}
 			else

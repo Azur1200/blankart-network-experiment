@@ -283,7 +283,11 @@ int32_t DEH_ReadFreeslot(const char *type, const char *word, int32_t *out)
 	{
 		*out = DEH_FindSkincolor(word);
 		if (*out != MAXSKINCOLORS)
+		{
+			if (*out < FIRSTSUPERCOLOR)
+				CONS_Alert(CONS_WARNING, "Attempted to freeslot over standard color SKINCOLOR_%s, ignoring. This might be a color conflict!\n", DEH_SkincolorName(*out ));
 			return 0; // already allocated
+		}
 
 		if (numskincolors == MAXSKINCOLORS) {
 			CONS_Alert(CONS_WARNING, "Ran out of free skincolor slots!\n");

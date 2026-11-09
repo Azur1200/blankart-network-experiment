@@ -1979,9 +1979,9 @@ static int lib_setSkinColor(lua_State *L)
 			info->chatcolor = (uint16_t)luaL_checkinteger(L, 3);
 		else if (i == 6 || (str && fastcmp(str,"accessible"))) {
 			dboolean v = lua_todboolean(L, 3);
-			if (cnum < FIRSTSUPERCOLOR && v != skincolors[cnum].accessible)
+			/*if (cnum < FIRSTSUPERCOLOR && v != skincolors[cnum].accessible)
 				return luaL_error(L, "skincolors[] index %d is a standard color; accessibility changes are prohibited.", cnum);
-			else
+			else*/
 				info->accessible = v;
 		}
 		lua_pop(L, 1);
