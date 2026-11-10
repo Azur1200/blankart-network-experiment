@@ -5011,7 +5011,9 @@ int32_t K_GetMinimapTransFlags(void)
 			return 0;
 
 		const tic_t length = TICRATE/2;
-		minimaptrans = (((int32_t)lt_exitticker)*minimaptrans)/((int32_t)length);
+
+		if (lt_exitticker < length)
+			minimaptrans = (((int32_t)lt_exitticker)*minimaptrans)/((int32_t)length);
 		
 		// If the minimap is fully transparent, just get your 0 back. Bail out with this.
 		if (!minimaptrans)
