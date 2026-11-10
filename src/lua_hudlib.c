@@ -774,10 +774,10 @@ static int libd_drawOnMinimap(lua_State *L)
 
 	// variables used to replicate k_kart's mmap drawer:
 	int32_t mx, my;
-	int32_t splitflags, minimaptrans = 0;
+	int32_t splitflags = 0, minimaptrans = cv_kartminimap.value;
 
 	// variables used for actually drawing the icon:
-	fixed_t amnumxpos, amnumypos;
+	position_t amnumpos;
 	int32_t amxpos, amypos;
 
 	fixed_t patchw, patchh;
@@ -812,33 +812,17 @@ static int libd_drawOnMinimap(lua_State *L)
 	K_getMinimapDrawinfo(&info);
 	mx = info.x;
 	my = info.y;
+
+	minimaptrans = K_GetMinimapTransFlags();
+	if (!minimaptrans) return 0; // Exit early if it wouldn't draw anyway.
+
 	splitflags = info.flags;
 
-	if (r_splitscreen < 2) // 1/2P right aligned
+	if ((r_splitscreen < 2)||(r_splitscreen == 3)) // 1/2P right aligned
 	{
-		const tic_t length = TICRATE/2;
-
 		if (!lt_exitticker)
 			return 0;
-		if (lt_exitticker < length)
-			minimaptrans = (((int32_t)lt_exitticker)*minimaptrans)/((int32_t)length);
-
 	}
-	else if (r_splitscreen == 3) // 4P centered
-	{
-		const tic_t length = TICRATE/2;
-
-		if (!lt_exitticker)
-			return 0;
-		if (lt_exitticker < length)
-			minimaptrans = (((int32_t)lt_exitticker)*minimaptrans)/((int32_t)length);
-	}
-	// 3P lives in the middle of the bottom right player and shouldn't fade in OR slide
-
-	if (!minimaptrans)
-		return 0;
-
-	minimaptrans = ((10-minimaptrans)<<FF_TRANSSHIFT);
 
 	// let offsets transfer to the heads, too!
 	if (encoremode)
@@ -846,14 +830,6 @@ static int libd_drawOnMinimap(lua_State *L)
 	else
 		mx -= minimapinfo.minimap_pic->leftoffset;
 	my -= minimapinfo.minimap_pic->topoffset;
-
-	// now that we have replicated this behavior, we can draw an icon from our supplied x, y coordinates by replicating k_kart.c's totally understandable uncommented code!!!
-
-	amnumxpos = (FixedMul(x, minimapinfo.zoom) - minimapinfo.offs_x);
-	amnumypos = -(FixedMul(y, minimapinfo.zoom) - minimapinfo.offs_y);
-
-	if (encoremode)
-		amnumxpos = -amnumxpos;
 
 	if (cv_minihead.value)
 		scale /= 2;
@@ -865,8 +841,9 @@ static int libd_drawOnMinimap(lua_State *L)
 	if (centered)
 		patchw = patchh = 0;	// patch is supposedly already centered, don't butt in.
 
-	amxpos = amnumxpos + ((mx + minimapinfo.minimap_pic->width/2)<<FRACBITS) - patchw;
-	amypos = amnumypos + ((my + minimapinfo.minimap_pic->height/2)<<FRACBITS) - patchh;
+	// now that we have replicated this behavior, we can draw an icon from our supplied x, y coordinates by replicating k_kart.c's totally understandable uncommented code!!!
+	amxpos = amnumpos.x + ((mx + minimapinfo.minimap_pic->width/2)<<FRACBITS) - patchw;
+	amypos = amnumpos.y + ((my + minimapinfo.minimap_pic->height/2)<<FRACBITS) - patchh;
 
 	// and NOW we can FINALLY DRAW OUR GOD DAMN PATCH :V
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
