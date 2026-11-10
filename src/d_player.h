@@ -953,6 +953,8 @@ struct player_t
 	uint8_t floorboost;		// (0 to 3) - Prevents Sneaker sounds for a brief duration when triggered by a floor panel
 	uint16_t chaintimer;		// Stores current chain timer length.
 
+	uint16_t panelgraze; // Set when a player grazes a Sneaker Panel (only when panel collision is set to "Graze")
+
 	uint8_t boostcharge; 		// Charge during race start
 
 	fixed_t slopeboost; // Handle slopeboost speed

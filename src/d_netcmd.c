@@ -749,6 +749,10 @@ consvar_t cv_playerbump = CVAR_INIT ("playerbump", "Standard", CV_NETVAR|CV_CALL
 
 consvar_t cv_rockshove = CVAR_INIT ("rockshove", "On", CV_NETVAR|CV_GUARD, CV_OnOff, NULL);
 
+static CV_PossibleValue_t panelcollide_cons_t[] = {{PANELCOL_CENTER, "Center"}, {PANELCOL_HITBOX, "Hitbox"}, {PANELCOL_GRAZE, "Graze"},  {0, NULL}};
+
+consvar_t cv_sneakerpanelcollide = CVAR_INIT ("sneakerpanel_collidemode", "Hitbox", CV_NETVAR|CV_GUARD, panelcollide_cons_t, NULL);
+
 #define ANTIBUMP_MAX (UINT32_MAX / TICRATE)
 static CV_PossibleValue_t antibump_cons_t[] = {{0, "MIN"}, {ANTIBUMP_MAX, "MAX"}, {0, NULL}};
 consvar_t cv_kartantibump = CVAR_INIT ("kartantibump", "0", CV_NETVAR|CV_CALL|CV_NOINIT, antibump_cons_t, KartAntiBump_OnChange);

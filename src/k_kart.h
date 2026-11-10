@@ -395,7 +395,17 @@ typedef enum
 	SNEAKERTYPE_WATERPANEL,
 } sneakertype_t;
 
+typedef enum
+{
+	PANELCOL_CENTER = 0,
+	PANELCOL_HITBOX,
+	PANELCOL_GRAZE // PANELCOL_CENTER, but add to a "panel graze" ticker for potential funny VFX :^)
+} sneakerpanelcollide_t;
+
+extern consvar_t cv_sneakerpanelcollide;
+
 void K_DoSneaker(player_t *player, int32_t type);
+void K_DoSneakerPanel(player_t *player, dboolean iswaterpanel);
 
 void K_DoPogoSpring(mobj_t *mo, fixed_t vertispeed, uint8_t sound);
 fixed_t K_GetSpeedPercentage(const player_t *player);

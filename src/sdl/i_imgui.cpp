@@ -279,6 +279,8 @@ static void PlayerDisplay(player_t *player, int32_t recursive_mobj, int32_t recu
 
 	ImGui::Text("Chain Timer: %d", player->chaintimer);
 
+	ImGui::Text("Panel Graze Timer: %d", (int32_t)(player->panelgraze));
+
 	ImGui::Text("Boost Charge: %d", player->boostcharge);
 
 	ImGui::Text("Slope Boost: %d", player->slopeboost);

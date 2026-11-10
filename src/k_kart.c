@@ -709,6 +709,8 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_playerbump);
 
 	CV_RegisterVar(&cv_rockshove);
+
+	CV_RegisterVar(&cv_sneakerpanelcollide);
 }
 
 //}
@@ -1418,6 +1420,140 @@ static void K_UpdateOffroad(player_t *player)
 	}
 	else
 		player->offroad = 0;
+}
+
+/**	\brief	Checks that the player is on a subsector with the given terrain for realsies, and returns the relevant flags.
+			What can I say? Sneaker panel grazing sucks!
+
+	\param	mo	player mobj object
+
+	\return	terrain_flags_t
+*/
+static terrain_flags_t K_GetTouchingSectorTerrainFlags(mobj_t *mo, terrain_flags_t flagstohunt)
+{
+	// Check for sectors in touching_sectorlist
+	msecnode_t *node = NULL; // touching_sectorlist iter
+	sector_t *s = NULL;		 // main sector shortcut
+	sector_t *s2 = NULL;	 // FOF sector shortcut
+	ffloor_t *rover = NULL;	 // FOF
+	terrain_t *terrain = NULL;
+
+	int32_t pic = 0;
+
+	fixed_t flr;
+	fixed_t cel;	// floor & ceiling for height checks to make sure we're touching the offroad sector.
+
+	I_Assert(mo != NULL);
+	I_Assert(!P_MobjWasRemoved(mo));
+
+	for (node = mo->touching_sectorlist; node; node = node->m_sectorlist_next)
+	{
+		if (!node->m_sector)
+			break;	// shouldn't happen.
+
+		s = node->m_sector;
+		// 1: Check for the main sector, make sure we're on the floor of that sector and see if we can apply offroad.
+		// Make arbitrary Z checks because we want to check for 1 sector in particular, we don't want to affect the player if the offroad sector is way below them and they're lineriding a normal sector above.
+
+		flr = P_MobjFloorZ(mo, s, s, mo->x, mo->y, NULL, false, true);
+		cel = P_MobjCeilingZ(mo, s, s, mo->x, mo->y, NULL, true, true);	// get Z coords of both floors and ceilings for this sector (this accounts for slopes properly.)
+		// NOTE: we don't use P_GetZAt with our x/y directly because the mobj won't have the same height because of its hitbox on the slope. Complex garbage but tldr it doesn't work.
+
+		if ( ((s->flags & MSF_FLIPSPECIAL_FLOOR) && mo->z == flr)	// floor check
+			|| ((mo->eflags & MFE_VERTICALFLIP && (s->flags & MSF_FLIPSPECIAL_CEILING) && (mo->z + mo->height) == cel)) )	// ceiling check.
+		{
+			pic = (mo->eflags & MFE_VERTICALFLIP ? s->ceilingpic : s->floorpic);
+
+			terrain = K_GetTerrainForFlatNum(pic);
+
+			if (terrain)
+			{
+				if ((flagstohunt == 0) || (terrain->flags & flagstohunt))
+					return terrain->flags;
+			}
+		}
+
+		// 2: If we're here, we haven't found anything. So let's try looking for FOFs in the sectors using the same logic.
+		for (rover = s->ffloors; rover; rover = rover->next)
+		{
+			if (!(rover->fofflags & FOF_EXISTS))	// This FOF doesn't exist anymore.
+				continue;
+
+			s2 = &sectors[rover->secnum];	// makes things easier for us
+
+			flr = P_GetFOFBottomZ(mo, s, rover, mo->x, mo->y, NULL);
+			cel = P_GetFOFTopZ(mo, s, rover, mo->x, mo->y, NULL);	// Z coords for fof top/bottom.
+
+			// we will do essentially the same checks as above instead of bothering with top/bottom height of the FOF.
+			// Reminder that an FOF's floor is its bottom, silly!
+			if ( ((s2->flags & MSF_FLIPSPECIAL_FLOOR) && mo->z == cel)	// "floor" check
+				|| ((s2->flags & MSF_FLIPSPECIAL_CEILING) && (mo->z + mo->height) == flr) )	// "ceiling" check.
+			{
+				pic = (mo->eflags & MFE_VERTICALFLIP ? s2->ceilingpic : s2->floorpic);
+
+				terrain = K_GetTerrainForFlatNum(pic);
+
+				if (terrain)
+				{
+					if ((flagstohunt == 0) || (terrain->flags & flagstohunt))
+						return terrain->flags;
+				}
+			}
+		}
+	}
+
+	return 0; // couldn't find any terrain
+}
+
+static void K_UpdateSneakerPanel(player_t *player)
+{
+	const sneakerpanelcollide_t panelcoltype = cv_sneakerpanelcollide.value;
+
+	if (player->panelgraze)
+		player->panelgraze--;
+
+	if ((panelcoltype == PANELCOL_HITBOX) || (panelcoltype == PANELCOL_GRAZE))
+	{
+		terrain_t *terrain = player->mo->terrain;
+
+		terrain_flags_t terrainflags = 0;
+		if (terrain != NULL && K_AffectingTerrainActive())
+		{
+			terrainflags = terrain->flags;
+		}
+
+		if (!(terrainflags & (TRF_SNEAKERPANEL|TRF_WATERRUNPANEL)))
+		{
+			// Search all the sectors for any flags we might be touching
+			terrainflags = K_GetTouchingSectorTerrainFlags(player->mo, (TRF_SNEAKERPANEL|TRF_WATERRUNPANEL));
+		}
+
+		// Sneaker panel
+		if (terrainflags & TRF_SNEAKERPANEL)
+		{
+			if (panelcoltype == PANELCOL_HITBOX)
+			{
+				K_DoSneakerPanel(player, false);
+			}
+			else
+			{
+				player->panelgraze = 8;
+			}
+		}
+
+		// WaterRun Panel
+		if (terrainflags & TRF_WATERRUNPANEL)
+		{
+			if (panelcoltype == PANELCOL_HITBOX)
+			{
+				K_DoSneakerPanel(player, true);
+			}
+			else
+			{
+				player->panelgraze = 8;
+			}
+		}
+	}
 }
 
 static void K_UpdateDashArea(player_t *player)
@@ -5974,6 +6110,16 @@ void K_DoSneaker(player_t *player, int32_t type)
 	player->boostangle = player->mo->angle;
 }
 
+void K_DoSneakerPanel(player_t *player, dboolean iswaterpanel)
+{
+	if (player->floorboost == 0)
+		player->floorboost = 3;
+	else
+		player->floorboost = 2;
+
+	K_DoSneaker(player, (iswaterpanel) ? SNEAKERTYPE_WATERPANEL : SNEAKERTYPE_PANEL);
+}
+
 void K_DoPogoSpring(mobj_t *mo, fixed_t vertispeed, uint8_t sound)
 {
 	fixed_t objscale = mo->scale;
@@ -8241,6 +8387,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->mo->sprzoff += FixedMul(player->mo->height, FSIN(pitch));
 	}
 
+	K_UpdateSneakerPanel(player);
 	K_UpdateOffroad(player);
 	K_UpdateDashArea(player);
 	K_UpdateDraft(player);

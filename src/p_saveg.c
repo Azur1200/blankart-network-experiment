@@ -883,6 +883,7 @@ static void P_NetSyncPlayers(savebuffer_t *save)
 		SYNC(players[i].realsneakertimer);
 		SYNC(players[i].floorboost);
 		SYNC(players[i].chaintimer);
+		SYNC(players[i].panelgraze);
 
 		SYNC(players[i].boostcharge);
 
