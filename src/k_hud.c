@@ -2819,7 +2819,7 @@ static dboolean K_drawKartPositionFaces(void)
 				colormap = R_GetTranslationColormap(TC_BLINK, K_SMonitorColor(leveltime / 2), GTC_CACHE);
 				smntrhudtrans = K_SMonitorHUDVisibility(players[rankplayer[i]].smonitortimer);
 
-				V_DrawRotatedFixedPatch((FACE_X + offsets.x)<<FRACBITS, (Y + offsets.y)<<FRACBITS, rollangle, hires ? FRACUNIT / 2 : FRACUNIT, smntrhudtrans|V_SNAPTOLEFT|V_ADD, facerank, colormap);
+				V_DrawRotatedFixedPatch((FACE_X<<FRACBITS) + offsets.x, (Y<<FRACBITS) + offsets.y, rollangle, hires ? FRACUNIT / 2 : FRACUNIT, smntrhudtrans|V_SNAPTOLEFT|V_ADD, facerank, colormap);
 			}
 
 			if (LUA_HudEnabled(hud_battlerankingsbumpers))
