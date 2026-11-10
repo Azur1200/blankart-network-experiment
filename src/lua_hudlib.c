@@ -777,7 +777,7 @@ static int libd_drawOnMinimap(lua_State *L)
 	int32_t splitflags = 0, minimaptrans = cv_kartminimap.value;
 
 	// variables used for actually drawing the icon:
-	position_t amnumpos;
+	position_t amnumpos = {0};
 	int32_t amxpos, amypos;
 
 	fixed_t patchw, patchh;
@@ -842,6 +842,8 @@ static int libd_drawOnMinimap(lua_State *L)
 		patchw = patchh = 0;	// patch is supposedly already centered, don't butt in.
 
 	// now that we have replicated this behavior, we can draw an icon from our supplied x, y coordinates by replicating k_kart.c's totally understandable uncommented code!!!
+	amnumpos = K_GetKartObjectPosToMinimapPos(x, y);
+
 	amxpos = amnumpos.x + ((mx + minimapinfo.minimap_pic->width/2)<<FRACBITS) - patchw;
 	amypos = amnumpos.y + ((my + minimapinfo.minimap_pic->height/2)<<FRACBITS) - patchh;
 
