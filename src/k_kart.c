@@ -1466,10 +1466,22 @@ static terrain_flags_t K_GetTouchingSectorTerrainFlags(mobj_t *mo, terrain_flags
 
 			terrain = K_GetTerrainForFlatNum(pic);
 
-			if (terrain)
+			if (terrain && K_AffectingTerrainActive())
 			{
 				if ((flagstohunt == 0) || (terrain->flags & flagstohunt))
 					return terrain->flags;
+			}
+			else
+			{
+				// Hunt for specific sector specials, return a fake terrain if we find one
+				if (s->specialflags & SSF_WATERPANEL)
+				{
+					return TRF_WATERRUNPANEL;
+				}
+				else if (s->specialflags & SSF_SNEAKERPANEL)
+				{
+					return TRF_SNEAKERPANEL;
+				}
 			}
 		}
 
@@ -1493,10 +1505,22 @@ static terrain_flags_t K_GetTouchingSectorTerrainFlags(mobj_t *mo, terrain_flags
 
 				terrain = K_GetTerrainForFlatNum(pic);
 
-				if (terrain)
+				if (terrain && K_AffectingTerrainActive())
 				{
 					if ((flagstohunt == 0) || (terrain->flags & flagstohunt))
 						return terrain->flags;
+				}
+				else
+				{
+					// Hunt for specific sector specials, return a fake terrain if we find one
+					if (s2->specialflags & SSF_WATERPANEL)
+					{
+						return TRF_WATERRUNPANEL;
+					}
+					else if (s2->specialflags & SSF_SNEAKERPANEL)
+					{
+						return TRF_SNEAKERPANEL;
+					}
 				}
 			}
 		}
