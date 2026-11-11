@@ -141,7 +141,7 @@ void HWR_AddTransparentWall(FOutVector *wallVerts, FSurfaceInfo *pSurf, int32_t 
 }
 
 // This will likely turn into a copy of HWR_Add3DWater and replace it.
-void HWR_AddTransparentFloor(levelflat_t *levelflat, extrasubsector_t *xsub, dboolean isceiling, fixed_t fixedheight, int32_t lightlevel, int32_t alpha, sector_t *FOFSector, FBITFIELD blend, dboolean fogplane, extracolormap_t *planecolormap)
+void HWR_AddTransparentFloor(levelflat_t *levelflat, extrasubsector_t *xsub, dboolean isceiling, fixed_t fixedheight, int32_t lightlevel, int32_t alpha, sector_t *FOFSector, FBITFIELD blend, dboolean fogplane, extracolormap_t *planecolormap, subsector_t *subsector)
 {
 	planeinfo_t *planeinfo = HWR_CreateDrawNode(DRAWNODE_PLANE);
 
@@ -155,6 +155,11 @@ void HWR_AddTransparentFloor(levelflat_t *levelflat, extrasubsector_t *xsub, dbo
 	planeinfo->blend = blend;
 	planeinfo->fogplane = fogplane;
 	planeinfo->planecolormap = planecolormap;
+
+	// horizonplanes need to be drawn BEFORE skywalls, so lets hope this works without too many issues....
+	HWR_RenderFOFHorizonPlane(subsector, planeinfo->xsub, planeinfo->isceiling, planeinfo->fixedheight,
+								planeinfo->blend, planeinfo->lightlevel, planeinfo->levelflat,
+								planeinfo->FOFSector, planeinfo->alpha, planeinfo->planecolormap);
 }
 
 // Adding this for now until I can create extrasubsector info for polyobjects

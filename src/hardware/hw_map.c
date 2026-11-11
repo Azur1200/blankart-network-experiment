@@ -414,7 +414,7 @@ static void SplitPoly  (fdivline_t *dlnp,        // splitting parametric line
 //  segcount : number of seg in the array
 // Return frontpoly, which may be new or ptr to poly.
 // Called from: HWR_SubsecPoly
-static poly_t *CutOutSubsecPoly(seg_t *lseg, int32_t segcount, poly_t *poly)
+static poly_t *CutOutSubsecPoly(seg_t *lseg, int32_t segcount, poly_t *poly, subsector_t *sub)
 {
 	int32_t i, j;
 	poly_t* frontpoly = poly;  // default, return same poly
@@ -426,10 +426,6 @@ static poly_t *CutOutSubsecPoly(seg_t *lseg, int32_t segcount, poly_t *poly)
 	vertex_t *v1, *v2;
 	fdivline_t cutseg; // x, y, dx, dy as start of node_t struct
 
-	// empty poly? just save us some time then
-	if (poly->numpts <= 0)
-		return frontpoly;
-
 	// for each seg of the subsector
 	for (; segcount--; lseg++)
 	{
@@ -438,6 +434,11 @@ static poly_t *CutOutSubsecPoly(seg_t *lseg, int32_t segcount, poly_t *poly)
 
 		if (!line || lseg->glseg)
 			continue;
+
+		// check if the current subsector has a horizonline
+		// this is purely for performance reasons
+		if (line->special == HORIZONSPECIAL)
+			sub->hashorizon = true;
 
 		if (line->sidenum[1] != NO_INDEX)
 		{
@@ -600,7 +601,7 @@ static inline void HWR_SubsecPoly(int32_t ssindex, poly_t *poly)
 
 	if (poly)
 	{
-		poly = CutOutSubsecPoly(lseg, segcount, poly);
+		poly = CutOutSubsecPoly(lseg, segcount, poly, sub);
 #ifdef DEBUG_HWBSP
 		totalsubsecpolys++;
 #endif

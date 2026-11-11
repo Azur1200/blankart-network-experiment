@@ -725,7 +725,7 @@ static void HWR_Subsector(size_t num)
 											*rover->bottomheight,
 											*gl_frontsector->lightlist[light].lightlevel,
 											alpha, rover->master->frontsector, PF_Fog|PF_NoTexture,
-											true, rover->master->frontsector->extra_colormap);
+											true, rover->master->frontsector->extra_colormap, sub);
 				}
 				else if (rover->fofflags & FOF_TRANSLUCENT
 					&& (rover->alpha < 256 || rover->blend)) // SoM: Flags are more efficient
@@ -740,7 +740,7 @@ static void HWR_Subsector(size_t num)
 											*rover->bottomheight,
 											*gl_frontsector->lightlist[light].lightlevel,
 											max(0, min(rover->alpha, 255)), rover->master->frontsector, blendmode,
-											false, *gl_frontsector->lightlist[light].extra_colormap);
+											false, *gl_frontsector->lightlist[light].extra_colormap, sub);
 				}
 				else
 				{
@@ -773,7 +773,7 @@ static void HWR_Subsector(size_t num)
 											*rover->topheight,
 											*gl_frontsector->lightlist[light].lightlevel,
 											alpha, rover->master->frontsector, PF_Fog|PF_NoTexture,
-											true, rover->master->frontsector->extra_colormap);
+											true, rover->master->frontsector->extra_colormap, sub);
 				}
 				else if (rover->fofflags & FOF_TRANSLUCENT
 					&& (rover->alpha < 256 || rover->blend)) // SoM: Flags are more efficient
@@ -788,7 +788,7 @@ static void HWR_Subsector(size_t num)
 											*rover->topheight,
 											*gl_frontsector->lightlist[light].lightlevel,
 											max(0, min(rover->alpha, 255)), rover->master->frontsector, blendmode,
-											false, *gl_frontsector->lightlist[light].extra_colormap);
+											false, *gl_frontsector->lightlist[light].extra_colormap, sub);
 				}
 				else
 				{
