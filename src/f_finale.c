@@ -112,7 +112,6 @@ static patch_t *ttkflash; // flash screen
 // ttmode blan
 static patch_t *ttblanlogo;
 static patch_t *ttblanoverlay;
-static patch_t *ttblanback;
 static patch_t *ttblanpieces[8];
 static patch_t *ttblanchara[3];
 
@@ -279,6 +278,9 @@ void F_TitleBGScroll(int32_t scrollspeed, int32_t ticker)
 
 void F_BlanTitleBG(int32_t ticker)
 {
+	patch_t *ttblanback;
+	ttblanback = W_CachePatchName("BKBACK00", PU_CACHE);
+
 	int32_t w = (vid.scaledwidth << FRACBITS);
 	int32_t h = (vid.scaledheight << FRACBITS);
 	fixed_t horzscale = FixedDiv(w, LSBF_SHORT(ttblanback->width)<<FRACBITS);
@@ -286,6 +288,8 @@ void F_BlanTitleBG(int32_t ticker)
 	
 	V_DrawFixedPatch(0, 0, max(horzscale, vertscale), V_SNAPTOTOP|V_SNAPTOLEFT, ttblanback, 
 		R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_NAVY, GTC_MENUCACHE));
+	
+	W_UnlockCachedPatch(ttblanback);
 }
 
 // =============
@@ -1438,7 +1442,6 @@ void F_CacheTitleScreen(void)
 		case TTMODE_BLAN:
 			ttblanlogo = W_CachePatchName("BKLOGOMN", PU_PATCH_LOWPRIORITY);
 			ttblanoverlay = W_CachePatchName("BKLOGOOV", PU_PATCH_LOWPRIORITY);
-			ttblanback = W_CachePatchName("BKBACK00", PU_PATCH_LOWPRIORITY);
 
 			const char* patchNames[] = {
 				"BKLOGO00",
