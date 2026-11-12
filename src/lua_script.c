@@ -293,7 +293,6 @@ enum global_e
 {
 #define ENUMITEM(name) global_##name,
 	GLOBALFIELDS(ENUMITEM)
-	NUMGLOBALFIELDS,
 };
 
 const char *const global_opt[] = {

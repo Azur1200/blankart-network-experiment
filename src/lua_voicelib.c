@@ -22,33 +22,32 @@
 #include "lua_hud.h" // hud_running errors
 #include "lua_hook.h" // hook_cmd_running errors
 
+// voicevars_ fields
+#define VOICEVARSFIELDS(X) \
+	X(id) \
+	X(name) \
+	X(win) \
+	X(lose) \
+	X(pain) \
+	X(attack) \
+	X(boost) \
+	X(overtake) \
+	X(hitem) \
+	X(power)
+
 enum voicevars
 {
-	voicevars_id = 0,
-	voicevars_name,
-	voicevars_win,
-	voicevars_lose,
-	voicevars_pain,
-	voicevars_attack,
-	voicevars_boost,
-	voicevars_overtake,
-	voicevars_hitem,
-	voicevars_power
+#define ENUMITEM(name) voicevars_##name,
+	VOICEVARSFIELDS(ENUMITEM)
 };
 
 static const char *const voicevars_opt[] = {
-	"id",
-	"name",
-	"win",
-	"lose",
-	"pain",
-	"attack",
-	"boost",
-	"overtake",
-	"hitem",
-	"power",
-	NULL
+#define ENUMITEMNAME(name) #name,
+	VOICEVARSFIELDS(ENUMITEMNAME)
+	NULL,
 };
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
 #define RNOFIELD luaL_error(L, LUA_QL("kartvoice_t") " has no field named " LUA_QS, field)
 #define RNOGET luaL_error(L, LUA_QL("kartvoice_t") " field " LUA_QS " cannot be get.", field)

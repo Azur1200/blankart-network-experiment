@@ -702,6 +702,9 @@ struct subsector_t
 	uint32_t firstline;
 	polyobj_t *polyList; // haleyjd 02/19/06: list of polyobjects
 	size_t validcount;
+#ifdef HWRENDER
+	dboolean hashorizon; // not really needed for software, this stuff works differently there
+#endif
 };
 
 // Sector list node showing all sectors an object appears in.

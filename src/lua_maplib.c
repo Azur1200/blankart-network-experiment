@@ -29,395 +29,384 @@
 #include "dehacked.h"
 #include "doomstat.h"
 
-enum sector_e {
-	sector_valid = 0,
-	sector_floorheight,
-	sector_ceilingheight,
-	sector_floorpic,
-	sector_ceilingpic,
-	sector_lightlevel,
-	sector_floorlightlevel,
-	sector_floorlightabsolute,
-	sector_ceilinglightlevel,
-	sector_ceilinglightabsolute,
-	sector_special,
-	sector_tag,
-	sector_taglist,
-	sector_thinglist,
-	sector_mobjs,
-	sector_heightsec,
-	sector_camsec,
-	sector_lines,
-	sector_ffloors,
-	sector_fslope,
-	sector_cslope,
-	sector_colormap,
-	sector_flags,
-	sector_specialflags,
-	sector_damagetype,
-	sector_offroad,
-	sector_triggertag,
-	sector_triggerer,
-	sector_friction,
-	sector_gravity,
-	sector_botcontroller,
-	sector_action,
-	sector_args,
-	sector_stringargs,
-	sector_activation,
+// sector_ fields
+#define SECTORFIELDS(X) \
+	X(valid) \
+	X(floorheight) \
+	X(ceilingheight) \
+	X(floorpic) \
+	X(ceilingpic) \
+	X(lightlevel) \
+	X(floorlightlevel) \
+	X(floorlightabsolute) \
+	X(ceilinglightlevel) \
+	X(ceilinglightabsolute) \
+	X(special) \
+	X(tag) \
+	X(taglist) \
+	X(thinglist) \
+	X(mobjs) \
+	X(heightsec) \
+	X(camsec) \
+	X(lines) \
+	X(ffloors) \
+	X(f_slope) \
+	X(c_slope) \
+	X(colormap) \
+	X(flags) \
+	X(specialflags) \
+	X(damagetype) \
+	X(offroad) \
+	X(triggertag) \
+	X(triggerer) \
+	X(friction) \
+	X(gravity) \
+	X(botcontroller) \
+	X(action) \
+	X(args) \
+	X(stringargs) \
+	X(activation)
+
+enum sector_e
+{
+#define ENUMITEM(name) sector_##name,
+	SECTORFIELDS(ENUMITEM)
 };
 
 static const char *const sector_opt[] = {
-	"valid",
-	"floorheight",
-	"ceilingheight",
-	"floorpic",
-	"ceilingpic",
-	"lightlevel",
-	"floorlightlevel",
-	"floorlightabsolute",
-	"ceilinglightlevel",
-	"ceilinglightabsolute",
-	"special",
-	"tag",
-	"taglist",
-	"thinglist",
-	"mobjs",
-	"heightsec",
-	"camsec",
-	"lines",
-	"ffloors",
-	"f_slope",
-	"c_slope",
-	"colormap",
-	"flags",
-	"specialflags",
-	"damagetype",
-	"offroad",
-	"triggertag",
-	"triggerer",
-	"friction",
-	"gravity",
-	"botcontroller",
-	"action",
-	"args",
-	"stringargs",
-	"activation",
-	NULL};
+#define ENUMITEMNAME(name) #name,
+	SECTORFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
-enum subsector_e {
-	subsector_valid = 0,
-	subsector_sector,
-	subsector_numlines,
-	subsector_firstline,
-	subsector_polyList
+// subsector_ fields
+#define SUBSECTORFIELDS(X) \
+	X(valid) \
+	X(sector) \
+	X(numlines) \
+	X(firstline) \
+	X(polyList)
+
+enum subsector_e
+{
+#define ENUMITEM(name) subsector_##name,
+	SUBSECTORFIELDS(ENUMITEM)
 };
 
 static const char *const subsector_opt[] = {
-	"valid",
-	"sector",
-	"numlines",
-	"firstline",
-	"polyList",
-	NULL};
+#define ENUMITEMNAME(name) #name,
+	SUBSECTORFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
-enum line_e {
-	line_valid = 0,
-	line_v1,
-	line_v2,
-	line_dx,
-	line_dy,
-	line_angle,
-	line_flags,
-	line_activation,
-	line_special,
-	line_tag,
-	line_taglist,
-	line_args,
-	line_stringargs,
-	line_sidenum,
-	line_frontside,
-	line_backside,
-	line_alpha,
-	line_executordelay,
-	line_slopetype,
-	line_frontsector,
-	line_backsector,
-	line_polyobj,
-	line_text,
-	line_callcount
+// line_ fields
+#define LINEFIELDS(X) \
+	X(valid) \
+	X(v1) \
+	X(v2) \
+	X(dx) \
+	X(dy) \
+	X(angle) \
+	X(flags) \
+	X(activation) \
+	X(special) \
+	X(tag) \
+	X(taglist) \
+	X(args) \
+	X(stringargs) \
+	X(sidenum) \
+	X(frontside) \
+	X(backside) \
+	X(alpha) \
+	X(executordelay) \
+	X(slopetype) \
+	X(frontsector) \
+	X(backsector) \
+	X(polyobj) \
+	X(text) \
+	X(callcount)
+
+enum line_e
+{
+#define ENUMITEM(name) line_##name,
+	LINEFIELDS(ENUMITEM)
 };
 
 static const char *const line_opt[] = {
-	"valid",
-	"v1",
-	"v2",
-	"dx",
-	"dy",
-	"angle",
-	"flags",
-	"activation",
-	"special",
-	"tag",
-	"taglist",
-	"args",
-	"stringargs",
-	"sidenum",
-	"frontside",
-	"backside",
-	"alpha",
-	"executordelay",
-	"slopetype",
-	"frontsector",
-	"backsector",
-	"polyobj",
-	"text",
-	"callcount",
-	NULL};
+#define ENUMITEMNAME(name) #name,
+	LINEFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
-enum side_e {
-	side_valid = 0,
-	side_textureoffset,
-	side_rowoffset,
-	side_offsetx_top,
-	side_offsety_top,
-	side_offsetx_mid,
-	side_offsety_mid,
-	side_offsetx_bot,
-	side_offsety_bot,
-	side_toptexture,
-	side_bottomtexture,
-	side_midtexture,
-	side_line,
-	side_sector,
-	side_special,
-	side_repeatcnt,
-	side_text
+// side_ fields
+#define SIDEFIELDS(X) \
+	X(valid) \
+	X(textureoffset) \
+	X(rowoffset) \
+	X(offsetx_top) \
+	X(offsety_top) \
+	X(offsetx_mid) \
+	X(offsety_mid) \
+	X(offsetx_bot) \
+	X(offsety_bot) \
+	X(toptexture) \
+	X(bottomtexture) \
+	X(midtexture) \
+	X(line) \
+	X(sector) \
+	X(special) \
+	X(repeatcnt) \
+	X(text)
+
+enum side_e
+{
+#define ENUMITEM(name) side_##name,
+	SIDEFIELDS(ENUMITEM)
 };
 
 static const char *const side_opt[] = {
-	"valid",
-	"textureoffset",
-	"rowoffset",
-	"offsetx_top",
-	"offsety_top",
-	"offsetx_mid",
-	"offsety_mid",
-	"offsetx_bot",
-	"offsety_bot",
-	"toptexture",
-	"bottomtexture",
-	"midtexture",
-	"line",
-	"sector",
-	"special",
-	"repeatcnt",
-	"text",
-	NULL};
+#define ENUMITEMNAME(name) #name,
+	SIDEFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
-enum vertex_e {
-	vertex_valid = 0,
-	vertex_x,
-	vertex_y,
-	vertex_floorz,
-	vertex_floorzset,
-	vertex_ceilingz,
-	vertex_ceilingzset
+// vertex_ fields
+#define VERTEXFIELDS(X) \
+	X(valid) \
+	X(x) \
+	X(y) \
+	X(floorz) \
+	X(floorzset) \
+	X(ceilingz) \
+	X(ceilingzset)
+
+enum vertex_e
+{
+#define ENUMITEM(name) vertex_##name,
+	VERTEXFIELDS(ENUMITEM)
 };
 
 static const char *const vertex_opt[] = {
-	"valid",
-	"x",
-	"y",
-	"floorz",
-	"floorzset",
-	"ceilingz",
-	"ceilingzset",
-	NULL};
+#define ENUMITEMNAME(name) #name,
+	VERTEXFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
-enum ffloor_e {
-	ffloor_valid = 0,
-	ffloor_topheight,
-	ffloor_toppic,
-	ffloor_toplightlevel,
-	ffloor_bottomheight,
-	ffloor_bottompic,
-	ffloor_tslope,
-	ffloor_bslope,
-	ffloor_sector,
-	ffloor_fofflags,
-	ffloor_flags,
-	ffloor_master,
-	ffloor_target,
-	ffloor_next,
-	ffloor_prev,
-	ffloor_alpha,
-	ffloor_blend,
-	ffloor_bustflags,
-	ffloor_busttype,
-	ffloor_busttag,
-	ffloor_sinkspeed,
-	ffloor_friction,
-	ffloor_bouncestrength,
+// ffloor_ fields
+#define FFLOORFIELDS(X) \
+	X(valid) \
+	X(topheight) \
+	X(toppic) \
+	X(toplightlevel) \
+	X(bottomheight) \
+	X(bottompic) \
+	X(t_slope) \
+	X(b_slope) \
+	X(sector) /* secnum pushed as control sector userdata */  \
+	X(fofflags) \
+	X(flags) \
+	X(master) /* control linedef */ \
+	X(target) /* target sector */ \
+	X(next) \
+	X(prev) \
+	X(alpha) \
+	X(blend) \
+	X(bustflags) \
+	X(busttype) \
+	X(busttag) \
+	X(sinkspeed) \
+	X(friction) \
+	X(bouncestrength)
+
+enum ffloor_e
+{
+#define ENUMITEM(name) ffloor_##name,
+	FFLOORFIELDS(ENUMITEM)
 };
 
 static const char *const ffloor_opt[] = {
-	"valid",
-	"topheight",
-	"toppic",
-	"toplightlevel",
-	"bottomheight",
-	"bottompic",
-	"t_slope",
-	"b_slope",
-	"sector", // secnum pushed as control sector userdata
-	"fofflags",
-	"flags",
-	"master", // control linedef
-	"target", // target sector
-	"next",
-	"prev",
-	"alpha",
-	"blend",
-	"bustflags",
-	"busttype",
-	"busttag",
-	"sinkspeed",
-	"friction",
-	"bouncestrength",
-	NULL};
+#define ENUMITEMNAME(name) #name,
+	FFLOORFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
 #ifdef HAVE_LUA_SEGS
-enum seg_e {
-	seg_valid = 0,
-	seg_v1,
-	seg_v2,
-	seg_side,
-	seg_offset,
-	seg_angle,
-	seg_sidedef,
-	seg_linedef,
-	seg_frontsector,
-	seg_backsector,
-	seg_polyseg
+// seg_ fields
+#define SEGFIELDS(X) \
+	X(valid) \
+	X(v1) \
+	X(v2) \
+	X(side) \
+	X(offset) \
+	X(angle) \
+	X(sidedef) \
+	X(linedef) \
+	X(frontsector) \
+	X(backsector) \
+	X(polyseg)
+
+enum seg_e
+{
+#define ENUMITEM(name) seg_##name,
+	SEGFIELDS(ENUMITEM)
 };
 
 static const char *const seg_opt[] = {
-	"valid",
-	"v1",
-	"v2",
-	"side",
-	"offset",
-	"angle",
-	"sidedef",
-	"linedef",
-	"frontsector",
-	"backsector",
-	"polyseg",
-	NULL};
+#define ENUMITEMNAME(name) #name,
+	SEGFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
-enum node_e {
-	node_valid = 0,
-	node_x,
-	node_y,
-	node_dx,
-	node_dy,
-	node_bbox,
-	node_children,
+// node_ fields
+#define NODEFIELDS(X) \
+	X(valid) \
+	X(x) \
+	X(y) \
+	X(dx) \
+	X(dy) \
+	X(bbox) \
+	X(children)
+
+enum node_e
+{
+#define ENUMITEM(name) node_##name,
+	NODEFIELDS(ENUMITEM)
 };
 
 static const char *const node_opt[] = {
-	"valid",
-	"x",
-	"y",
-	"dx",
-	"dy",
-	"bbox",
-	"children",
-	NULL};
+#define ENUMITEMNAME(name) #name,
+	NODEFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
-enum nodechild_e {
-	nodechild_valid = 0,
-	nodechild_right,
-	nodechild_left,
+// nodechild_ fields
+#define NODECHILDFIELDS(X) \
+	X(valid) \
+	X(right) \
+	X(left)
+
+enum nodechild_e
+{
+#define ENUMITEM(name) nodechild_##name,
+	NODECHILDFIELDS(ENUMITEM)
 };
 
 static const char *const nodechild_opt[] = {
-	"valid",
-	"right",
-	"left",
-	NULL};
+#define ENUMITEMNAME(name) #name,
+	NODECHILDFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
+
 #endif
 
-enum bbox_e {
-	bbox_valid = 0,
-	bbox_top,
-	bbox_bottom,
-	bbox_left,
-	bbox_right,
+// bbox_ fields
+#define BBOXFIELDS(X) \
+	X(valid) \
+	X(top) \
+	X(bottom) \
+	X(left) \
+	X(right)
+
+enum bbox_e
+{
+#define ENUMITEM(name) bbox_##name,
+	BBOXFIELDS(ENUMITEM)
 };
 
 static const char *const bbox_opt[] = {
-	"valid",
-	"top",
-	"bottom",
-	"left",
-	"right",
-	NULL};
+#define ENUMITEMNAME(name) #name,
+	BBOXFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
-enum slope_e {
-	slope_valid = 0,
-	slope_o,
-	slope_d,
-	slope_zdelta,
-	slope_normal,
-	slope_zangle,
-	slope_xydirection,
-	slope_flags
+// slope_ fields
+#define SLOPEFIELDS(X) \
+	X(valid) \
+	X(o) \
+	X(d) \
+	X(zdelta) \
+	X(normal) \
+	X(zangle) \
+	X(xydirection) \
+	X(flags)
+
+enum slope_e
+{
+#define ENUMITEM(name) slope_##name,
+	SLOPEFIELDS(ENUMITEM)
 };
 
 static const char *const slope_opt[] = {
-	"valid",
-	"o",
-	"d",
-	"zdelta",
-	"normal",
-	"zangle",
-	"xydirection",
-	"flags",
-	NULL};
+#define ENUMITEMNAME(name) #name,
+	SLOPEFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
-enum activator_e {
-	activator_valid = 0,
-	activator_mo,
-	activator_line,
-	activator_side,
-	activator_sector,
-	activator_po
+// activator_ fields
+#define ACTIVATORFIELDS(X) \
+	X(valid) \
+	X(mo) \
+	X(line) \
+	X(side) \
+	X(sector) \
+	X(po)
+
+enum activator_e
+{
+#define ENUMITEM(name) activator_##name,
+	ACTIVATORFIELDS(ENUMITEM)
 };
 
 static const char *const activator_opt[] = {
-	"valid",
-	"mo",
-	"line",
-	"side",
-	"sector",
-	"po",
-	NULL};
-	
-enum botcontroller_e {
-	botcontroller_valid = 0,
-	//botcontroller_trick,
-	botcontroller_flags,
-	botcontroller_forceangle,
+#define ENUMITEMNAME(name) #name,
+	ACTIVATORFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
+
+// botcontroller_ fields
+#define BOTCONTROLLERFIELDS(X) \
+	X(valid) \
+	/*X(trick)*/ \
+	X(flags) \
+	X(forceangle)
+
+enum botcontroller_e
+{
+#define ENUMITEM(name) botcontroller_##name,
+	BOTCONTROLLERFIELDS(ENUMITEM)
 };
 
 static const char *const botcontroller_opt[] = {
-	"valid",
-	//"trick",
-	"flags",
-	"forceangle",
-	NULL};
+#define ENUMITEMNAME(name) #name,
+	BOTCONTROLLERFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
 static const char *const array_opt[] ={"iterate",NULL};
 static const char *const valid_opt[] ={"valid",NULL};
@@ -800,10 +789,10 @@ static int sector_get(lua_State *L)
 		LUA_PushUserdata(L, sector->ffloors, META_FFLOOR);
 		lua_pushcclosure(L, sector_iterate, 2); // push lib_iterateFFloors and sector->ffloors as upvalues for the function
 		return 1;
-	case sector_fslope: // f_slope
+	case sector_f_slope: // f_slope
 		LUA_PushUserdata(L, sector->f_slope, META_SLOPE);
 		return 1;
-	case sector_cslope: // c_slope
+	case sector_c_slope: // c_slope
 		LUA_PushUserdata(L, sector->c_slope, META_SLOPE);
 		return 1;
 	case sector_colormap: // extra_colormap
@@ -873,8 +862,8 @@ static int sector_set(lua_State *L)
 	case sector_camsec: // camsec
 	case sector_lines: // lines
 	case sector_ffloors: // ffloors
-	case sector_fslope: // f_slope
-	case sector_cslope: // c_slope
+	case sector_f_slope: // f_slope
+	case sector_c_slope: // c_slope
 	case sector_friction: // friction
 	case sector_args: // args
 	case sector_stringargs: // stringargs
@@ -2194,10 +2183,10 @@ static int ffloor_get(lua_State *L)
 		lua_pushlstring(L, levelflat->name, i);
 		return 1;
 	}
-	case ffloor_tslope:
+	case ffloor_t_slope:
 		LUA_PushUserdata(L, *ffloor->t_slope, META_SLOPE);
 		return 1;
-	case ffloor_bslope:
+	case ffloor_b_slope:
 		LUA_PushUserdata(L, *ffloor->b_slope, META_SLOPE);
 		return 1;
 	case ffloor_sector:
@@ -2347,8 +2336,8 @@ static int ffloor_set(lua_State *L)
 	switch(field)
 	{
 	case ffloor_valid: // valid
-	case ffloor_tslope: // t_slope
-	case ffloor_bslope: // b_slope
+	case ffloor_t_slope: // t_slope
+	case ffloor_b_slope: // b_slope
 	case ffloor_sector: // sector
 	case ffloor_master: // master
 	case ffloor_target: // target
@@ -2619,119 +2608,217 @@ static int lib_nummapheaders(lua_State *L)
 // mapheader_t //
 /////////////////
 
+// botcontroller_ fields
+#define MAPHEADERINFOFIELDS(X) \
+	X(lumpname) \
+	X(lumpnamehash) \
+	X(lumpnum) \
+	X(lvlttl) \
+	X(subttl) \
+	X(zonttl) \
+	X(actnum) \
+	X(typeoflevel) \
+	X(keywords) \
+	X(musname) /*we create a table here because it saves us from a userdata nightmare*/  \
+	X(encoremusname) /* we create a table here because it saves us from a userdata nightmare */ \
+	X(mustrack) \
+	X(muspos) \
+	X(musname_size) \
+	X(encoremusname_size) \
+	X(weather) \
+	X(skytexture) \
+	X(skybox_scalex) \
+	X(skybox_scaley) \
+	X(skybox_scalez) \
+	X(runsoc) \
+	X(scriptname) \
+	X(precutscenenum) \
+	X(cutscenenum) \
+	X(palette) \
+	X(numlaps) \
+	X(lapspersection) \
+	X(unlockrequired) \
+	X(levelselect) \
+	X(levelflags) \
+	X(menuflags) \
+	X(mobj_scale) \
+	X(default_waypoint_radius) \
+	X(gravity) \
+	X(use_walltransfer) \
+	X(use_terrain)
+
+enum mapheaderinfo_e
+{
+#define ENUMITEM(name) mapheaderinfo_##name,
+	MAPHEADERINFOFIELDS(ENUMITEM)
+};
+
+static const char *const mapheaderinfo_opt[] = {
+#define ENUMITEMNAME(name) #name,
+	MAPHEADERINFOFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
+
+int mapheaderinfo_fields_ref = LUA_NOREF;
+
 static int mapheaderinfo_get(lua_State *L)
 {
 	mapheader_t *header = *((mapheader_t **)luaL_checkudata(L, 1, META_MAPHEADER));
-	const char *field = luaL_checkstring(L, 2);
-	if (fastcmp(field,"lumpname"))
-		lua_pushstring(L, header->lumpname);
-	else if (fastcmp(field,"lumpnamehash"))
-		lua_pushinteger(L, header->lumpnamehash);
-	else if (fastcmp(field,"lumpnum"))
-		lua_pushinteger(L, header->lumpnum);
-	else if (fastcmp(field,"lvlttl"))
-		lua_pushstring(L, header->lvlttl);
-	else if (fastcmp(field,"subttl"))
-		lua_pushstring(L, header->subttl);
-	else if (fastcmp(field,"zonttl"))
-		lua_pushstring(L, header->zonttl);
-	else if (fastcmp(field,"actnum"))
-		lua_pushstring(L, header->actnum);
-	else if (fastcmp(field,"typeoflevel"))
-		lua_pushinteger(L, header->typeoflevel);
-	else if (fastcmp(field,"keywords"))
-		lua_pushstring(L, header->keywords);
-	else if (fastcmp(field,"musname")) // we create a table here because it saves us from a userdata nightmare
-	{
-		if (lua_compatmode)
-		{
-			lua_pushstring(L, header->musname[0]);
-			return 1;
-		}
-		uint8_t j;
-		lua_createtable(L, header->musname_size, 0);
-		for (j = 0; j < header->musname_size; j++)
-		{
-			lua_pushstring(L, header->musname[j]);
-			lua_rawseti(L, -2, 1 + j);
-		}
-	}
-	else if (fastcmp(field,"encoremusname")) // we create a table here because it saves us from a userdata nightmare
-	{
-		if (lua_compatmode)
-		{
-			lua_pushstring(L, header->encoremusname[0]);
-			return 1;
-		}
-		uint8_t j;
-		lua_createtable(L, header->encoremusname_size, 0);
-		for (j = 0; j < header->encoremusname_size; j++)
-		{
-			lua_pushstring(L, header->encoremusname[j]);
-			lua_rawseti(L, -2, 1 + j);
-		}
-	}
-	else if (fastcmp(field,"mustrack"))
-		lua_pushinteger(L, header->mustrack);
-	else if (fastcmp(field,"muspos"))
-		lua_pushinteger(L, header->muspos);
-	else if (fastcmp(field,"musname_size"))
-		lua_pushinteger(L, header->musname_size);
-	else if (fastcmp(field,"encoremusname_size"))
-		lua_pushinteger(L, header->encoremusname_size);
-	else if (fastcmp(field,"weather"))
-		lua_pushinteger(L, header->weather);
-	else if (fastcmp(field,"skytexture"))
-		lua_pushstring(L, header->skytexture);
-	else if (fastcmp(field,"skybox_scalex"))
-		lua_pushinteger(L, header->skybox_scalex);
-	else if (fastcmp(field,"skybox_scaley"))
-		lua_pushinteger(L, header->skybox_scaley);
-	else if (fastcmp(field,"skybox_scalez"))
-		lua_pushinteger(L, header->skybox_scalez);
-	else if (fastcmp(field,"runsoc"))
-		lua_pushstring(L, header->runsoc);
-	else if (fastcmp(field,"scriptname"))
-		lua_pushstring(L, header->scriptname);
-	else if (fastcmp(field,"precutscenenum"))
-		lua_pushinteger(L, header->precutscenenum);
-	else if (fastcmp(field,"cutscenenum"))
-		lua_pushinteger(L, header->cutscenenum);
-	else if (fastcmp(field,"palette"))
-		lua_pushinteger(L, header->palette);
-	else if (fastcmp(field,"numlaps"))
-		lua_pushinteger(L, header->numlaps);
-	else if (fastcmp(field,"lapspersection"))
-		lua_pushinteger(L, header->lapspersection);
-	else if (fastcmp(field,"unlockrequired"))
-		lua_pushinteger(L, header->unlockrequired);
-	else if (fastcmp(field,"levelselect"))
-		lua_pushinteger(L, header->levelselect);
-	else if (fastcmp(field,"levelflags"))
-		lua_pushinteger(L, header->levelflags);
-	else if (fastcmp(field,"menuflags"))
-		lua_pushinteger(L, header->menuflags);
-	else if (fastcmp(field,"mobj_scale"))
-		lua_pushfixed(L, header->mobj_scale);
-	else if (fastcmp(field,"default_waypoint_radius"))
-		lua_pushfixed(L, header->default_waypoint_radius);
-	else if (fastcmp(field, "gravity"))
-		lua_pushfixed(L, header->gravity);
-	else if (fastcmp(field, "use_walltransfer"))
-		lua_pushdboolean(L, header->use_walltransfer);
-	else if (fastcmp(field, "use_terrain"))
-		lua_pushdboolean(L, header->use_terrain);
-	else {
-		// Read custom vars now
-		// (note: don't include the "LUA." in your lua scripts!)
-		uint8_t j = 0;
-		for (;j < header->numCustomOptions && !fastcmp(field, header->customopts[j].option); ++j);
+	enum mapheaderinfo_e field = Lua_optoption(L, 2, mapheaderinfo_lumpname, mapheaderinfo_fields_ref);
 
-		if(j < header->numCustomOptions)
-			lua_pushstring(L, header->customopts[j].value);
-		else
-			lua_pushnil(L);
+	switch (field)
+	{
+		case mapheaderinfo_lumpname:
+			lua_pushstring(L, header->lumpname);
+			break;
+		case mapheaderinfo_lumpnamehash:
+			lua_pushinteger(L, header->lumpnamehash);
+			break;
+		case mapheaderinfo_lumpnum:
+			lua_pushinteger(L, header->lumpnum);
+			break;
+		case mapheaderinfo_lvlttl:
+			lua_pushstring(L, header->lvlttl);
+			break;
+		case mapheaderinfo_subttl:
+			lua_pushstring(L, header->subttl);
+			break;
+		case mapheaderinfo_zonttl:
+			lua_pushstring(L, header->zonttl);
+			break;
+		case mapheaderinfo_actnum:
+			lua_pushstring(L, header->actnum);
+			break;
+		case mapheaderinfo_typeoflevel:
+			lua_pushinteger(L, header->typeoflevel);
+			break;
+		case mapheaderinfo_keywords:
+			lua_pushstring(L, header->keywords);
+			break;
+		case mapheaderinfo_musname: // we create a table here because it saves us from a userdata nightmare
+		{
+			if (lua_compatmode)
+			{
+				lua_pushstring(L, header->musname[0]);
+				return 1;
+			}
+			uint8_t j;
+			lua_createtable(L, header->musname_size, 0);
+			for (j = 0; j < header->musname_size; j++)
+			{
+				lua_pushstring(L, header->musname[j]);
+				lua_rawseti(L, -2, 1 + j);
+			}
+			break;
+		}
+		case mapheaderinfo_encoremusname: // we create a table here because it saves us from a userdata nightmare
+		{
+			if (lua_compatmode)
+			{
+				lua_pushstring(L, header->encoremusname[0]);
+				return 1;
+			}
+			uint8_t j;
+			lua_createtable(L, header->encoremusname_size, 0);
+			for (j = 0; j < header->encoremusname_size; j++)
+			{
+				lua_pushstring(L, header->encoremusname[j]);
+				lua_rawseti(L, -2, 1 + j);
+			}
+			break;
+		}
+		case mapheaderinfo_mustrack:
+			lua_pushinteger(L, header->mustrack);
+			break;
+		case mapheaderinfo_muspos:
+			lua_pushinteger(L, header->muspos);
+			break;
+		case mapheaderinfo_musname_size:
+			lua_pushinteger(L, header->musname_size);
+			break;
+		case mapheaderinfo_encoremusname_size:
+			lua_pushinteger(L, header->encoremusname_size);
+			break;
+		case mapheaderinfo_weather:
+			lua_pushinteger(L, header->weather);
+			break;
+		case mapheaderinfo_skytexture:
+			lua_pushstring(L, header->skytexture);
+			break;
+		case mapheaderinfo_skybox_scalex:
+			lua_pushinteger(L, header->skybox_scalex);
+			break;
+		case mapheaderinfo_skybox_scaley:
+			lua_pushinteger(L, header->skybox_scaley);
+			break;
+		case mapheaderinfo_skybox_scalez:
+			lua_pushinteger(L, header->skybox_scalez);
+			break;
+		case mapheaderinfo_runsoc:
+			lua_pushstring(L, header->runsoc);
+			break;
+		case mapheaderinfo_scriptname:
+			lua_pushstring(L, header->scriptname);
+			break;
+		case mapheaderinfo_precutscenenum:
+			lua_pushinteger(L, header->precutscenenum);
+			break;
+		case mapheaderinfo_cutscenenum:
+			lua_pushinteger(L, header->cutscenenum);
+			break;
+		case mapheaderinfo_palette:
+			lua_pushinteger(L, header->palette);
+			break;
+		case mapheaderinfo_numlaps:
+			lua_pushinteger(L, header->numlaps);
+			break;
+		case mapheaderinfo_lapspersection:
+			lua_pushinteger(L, header->lapspersection);
+			break;
+		case mapheaderinfo_unlockrequired:
+			lua_pushinteger(L, header->unlockrequired);
+			break;
+		case mapheaderinfo_levelselect:
+			lua_pushinteger(L, header->levelselect);
+			break;
+		case mapheaderinfo_levelflags:
+			lua_pushinteger(L, header->levelflags);
+			break;
+		case mapheaderinfo_menuflags:
+			lua_pushinteger(L, header->menuflags);
+			break;
+		case mapheaderinfo_mobj_scale:
+			lua_pushfixed(L, header->mobj_scale);
+			break;
+		case mapheaderinfo_default_waypoint_radius:
+			lua_pushfixed(L, header->default_waypoint_radius);
+			break;
+		case mapheaderinfo_gravity:
+			lua_pushfixed(L, header->gravity);
+			break;
+		case mapheaderinfo_use_walltransfer:
+			lua_pushdboolean(L, header->use_walltransfer);
+			break;
+		case mapheaderinfo_use_terrain:
+			lua_pushdboolean(L, header->use_terrain);
+			break;
+		default:
+		{
+			// Read custom vars now
+			// (note: don't include the "LUA." in your lua scripts!)
+			uint8_t j = 0;
+			for (;j < header->numCustomOptions && !fastcmp(lua_tostring(L, 2), header->customopts[j].option); ++j);
+
+			if(j < header->numCustomOptions)
+				lua_pushstring(L, header->customopts[j].value);
+			else
+				lua_pushnil(L);
+			break;
+		}
 	}
+
 	return 1;
 }
 
@@ -2844,6 +2931,7 @@ int LUA_MapLib(lua_State *L)
 	side_fields_ref = Lua_CreateFieldTable(L, side_opt);
 	vertex_fields_ref = Lua_CreateFieldTable(L, vertex_opt);
 	bbox_fields_ref = Lua_CreateFieldTable(L, bbox_opt);
+	mapheaderinfo_fields_ref = Lua_CreateFieldTable(L, mapheaderinfo_opt);
 
 #ifdef HAVE_LUA_SEGS
 	seg_fields_ref = Lua_CreateFieldTable(L, seg_opt);

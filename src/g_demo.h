@@ -37,6 +37,7 @@ typedef enum {
 
 extern consvar_t cv_recordmultiplayerdemos, cv_netdemosyncquality, cv_netdemosize;
 extern consvar_t cv_resyncdemo;
+extern consvar_t cv_demodateformat;
 extern consvar_t cv_dummyreplaysave;
 extern menuitem_t replaysave;
 
@@ -88,6 +89,8 @@ struct menudemo_t {
 	menudemotype_e type;
 
 	char title[65]; // Null-terminated for string prints
+	char date[11]; // date when replay was recorded
+
 	uint16_t map;
 	uint8_t addonstatus; // What do we need to do addon-wise to play this demo?
 	uint8_t gametype;
@@ -210,7 +213,7 @@ ATTRNORETURN void FUNCNORETURN G_StopMetalRecording(dboolean kill);
 void G_StopDemo(void);
 dboolean G_CheckDemoStatus(void);
 
-void G_LoadDemoInfo(menudemo_t *pdemo, dboolean nameonly);
+void G_LoadDemoInfo(menudemo_t *pdemo, dboolean nameonly, const char *dateformat);
 void G_DeferedPlayDemo(const char *demo);
 
 void G_SaveDemo(void);

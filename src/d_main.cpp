@@ -19,6 +19,7 @@
 #include "g_state.h"
 
 #include <time.h>
+#include <locale.h>
 
 #include "doomdef.h"
 #include "am_map.h"
@@ -1722,6 +1723,7 @@ void D_SRB2Main(void)
 
 	CONS_Printf("I_InitializeTime()...\n");
 	I_InitializeTime();
+	setlocale(LC_TIME, "");
 	CON_SetLoadingProgress(LOADED_ISTARTUPTIMER);
 
 	D_RegisterServerCommands();

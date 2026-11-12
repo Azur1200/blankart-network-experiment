@@ -2608,11 +2608,25 @@ void M_UpdateMenuCMD(uint8_t i, dboolean bailrequired)
 				menucmd[i].buttons |= MBT_CONFIRM;
 				break;
 
+			case 'y':
+				if (messagebox.active)
+				{
+					menucmd[i].buttons |= MBT_CONFIRM;
+				}
+				break;
+
 			case KEY_ESCAPE:
 				if (menustack[0])
 					menucmd[i].buttons |= MBT_CANCEL;
 				else
 					menucmd[i].buttons |= MBT_HOME;
+				break;
+
+			case 'n':
+				if (messagebox.active)
+				{
+					menucmd[i].buttons |= MBT_CANCEL;
+				}
 				break;
 
 			case KEY_SPACE:
@@ -6278,6 +6292,14 @@ menudemo_t *demolist = NULL;
 // Locked behind Lock_search_state
 menudemo_t *demolist_all; // All replays
 dboolean replaynamesloaded = false;
+// Whenever we start a replay load thread, we increment this number and then thread will remember current value,
+// and by the end it will compare it with current value, and if it is equal it means thread can store data it has loaded.
+// If it's not equal, that means we started more than one thread (left and re-entered menu for example)
+size_t replaythreadnum = 0;
+
+// for replay dates
+#include <locale.h>
+const char *demodateformat = "%d.%m.%Y";
 
 #ifdef HAVE_THREADS
 I_mutex replayquerymutex;
@@ -6334,12 +6356,15 @@ static void CreateReplayItems(menupanelinst_t *pi)
 
 static void ReplayNamesLoadThread(void* userdata)
 {
+	(void)userdata;
+
 	Lock_search_state();
 
 	size_t demolist_all_size = sizedirmenu;
 	menudemo_t *demolist_all_local = (menudemo_t*)malloc(sizeof(menudemo_t)*sizedirmenu);
 	memcpy(demolist_all_local, demolist_all, sizeof(menudemo_t)*sizedirmenu);
-	char *replaydirpath = (char*)userdata;
+	size_t localreplaythreadnum = replaythreadnum;
+	const char *localdemodateformat = demodateformat;
 
 	Unlock_search_state();
 
@@ -6347,19 +6372,13 @@ static void ReplayNamesLoadThread(void* userdata)
 	{
 		if (demolist_all_local[i].type != MD_SUBDIR)
 		{
-			G_LoadDemoInfo(&demolist_all_local[i], true);
-
-			// this is fucking horrid, but i wanna be able to search for dates
-			/*if (demolist_all_local[i].date[0] != '\0')
-			{
-				snprintf(demolist_all_local[i].title, sizeof(demolist_all_local[i].title), "%s %s", demolist_all_local[i].title, demolist_all_local[i].date);
-			}*/
+			G_LoadDemoInfo(&demolist_all_local[i], true, localdemodateformat);
 		}
 	}
 
 	Lock_search_state();
 
-	if (strcmp(menupath, replaydirpath) == 0)
+	if (replaythreadnum == localreplaythreadnum && demolist_all)
 	{
 		memcpy(demolist_all, demolist_all_local, sizeof(menudemo_t)*sizedirmenu);
 		replaynamesloaded = true;
@@ -6368,22 +6387,32 @@ static void ReplayNamesLoadThread(void* userdata)
 	Unlock_search_state();
 
 	// Was allocated before thread start, we need to free it
-	free(replaydirpath);
 	free(demolist_all_local);
 }
 
 static void LoadReplayNames(void)
 {
-	char *replaydirpath = strdup(menupath);
-
 	Lock_search_state();
+	replaythreadnum++;
 	replaynamesloaded = false;
+	if (cv_demodateformat.value == 2)
+		demodateformat = "%m.%d.%Y";
+	else if (cv_demodateformat.value == 1)
+		demodateformat = "%d.%m.%Y";
+	else
+	{
+		// get the date format here
+		// setlocale reads/writes global state
+		const char *locale = setlocale(LC_TIME, NULL);
+		// US ppl are special (:
+		demodateformat = (locale && strstr(locale, "en_US")) ? "%m.%d.%Y" : "%d.%m.%Y";
+	}
 	Unlock_search_state();
 
 #ifdef HAVE_THREADS
-	I_spawn_thread("replay-names-load", ReplayNamesLoadThread, replaydirpath);
+	I_spawn_thread("replay-names-load", ReplayNamesLoadThread, NULL);
 #else
-	ReplayNamesLoadThread(replaydirpath);
+	ReplayNamesLoadThread(NULL);
 #endif
 }
 
@@ -6422,7 +6451,11 @@ static void M_HutCheckReplays(size_t maxnum)
 		// Mark as done
 		replayqueryfound = replayquerycheck = sizedirmenu;
 
+		Lock_search_state();
+
 		memcpy(demolist, demolist_all, sizeof(menudemo_t) * sizedirmenu);
+
+		Unlock_search_state();
 
 		return;
 	}
@@ -6784,8 +6817,26 @@ void MP_TickReplayHutInfoForeground(menupanelinst_t *pi)
 				M_SetItemText(pi, "MAPNAME", mapname);
 				Z_Free(mapname);
 
+				char lapstr[512] = {0};
 				int32_t laps = mdemo->numlaps;
-				M_SetItemText(pi, "NUMLAPS", laps ? va("(%d laps)", laps) : "");
+
+				if ((mdemo->date[0] != '\0') && (laps))
+				{
+					strlcpy(lapstr, laps ? va("(%d laps)", laps) : "", sizeof(lapstr));
+					M_SetItemText(pi, "DATEANDLAPS", va("%s %s", mdemo->date, lapstr));
+				}
+				else if ((mdemo->date[0] != '\0'))
+				{
+					M_SetItemText(pi, "DATEANDLAPS", va("%s", mdemo->date));
+				}
+				else if (laps)
+				{
+					M_SetItemText(pi, "DATEANDLAPS", va("(%d laps)", laps));
+				}
+				else
+				{
+					M_SetItemText(pi, "DATEANDLAPS", "");
+				}
 
 				M_SetItemText(pi, "GAMETYPE", mdemo->gametype == GT_RACE
 				? va("Race (%s speed)", kartspeed_cons_t[(mdemo->kartspeed & ~DF_ENCORE) + 1].strvalue)
@@ -6979,12 +7030,14 @@ void MP_TickReplayHutDemoList(menupanelinst_t *pi)
 
 	CreateReplayItems(pi);
 
+	const char *localdemodateformat = demodateformat;
+
 	for (i = 0; i < 50; i++)
 	{
 		size_t demoi = pi->itemon + (i/2 * (i & 1 ? -1 : 1));
 		if (demoi < replayqueryfound && demolist[demoi].type == MD_NOTLOADED)
 		{
-			G_LoadDemoInfo(&demolist[demoi], false);
+			G_LoadDemoInfo(&demolist[demoi], false, localdemodateformat);
 			break;
 		}
 	}

@@ -85,6 +85,8 @@ extern patch_t *kp_itemboxminimap;
 extern patch_t *kp_minimapdot;
 extern patch_t *kp_minimaplight;
 
+extern int32_t MINI_X, MINI_Y;
+
 struct trackingResult_t
 {
 	fixed_t x, y;
@@ -95,6 +97,11 @@ struct trackingResult_t
 };
 
 void K_RegisterKartHUDStuff(void);
+
+typedef struct position_t
+{
+	fixed_t x, y;
+} position_t;
 
 void K_ObjectTracking(trackingResult_t *result, const vector3_t *point, dboolean reverse);
 
@@ -206,6 +213,10 @@ typedef enum
 playertagtype_t K_WhichPlayerTag(player_t *p);
 void K_DrawPlayerTag(fixed_t x, fixed_t y, player_t *p, playertagtype_t type, dboolean foreground);
 void K_drawTargetHUD(const vector3_t *origin, player_t *player);
+
+int32_t K_GetMinimapTransFlags(void);
+position_t K_GetKartObjectPosToMinimapPos(fixed_t objx, fixed_t objy);
+
 
 extern patch_t *kp_itemtarget_arrow[2][2];
 extern patch_t *kp_itemtarget_icon[2];

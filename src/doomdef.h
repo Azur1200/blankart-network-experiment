@@ -102,7 +102,7 @@ extern char logfilename[1024];
 #define VERSIONSTRINGW WSTRING (VERSIONSTRING)
 
 /* A custom URL protocol for server links. */
-#define SERVER_URL_PROTOCOL "srb2kart://"
+#define SERVER_URL_PROTOCOL "blankart://"
 
 // Does this version require an added patch file?
 // Comment or uncomment this as necessary.

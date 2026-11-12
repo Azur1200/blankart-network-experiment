@@ -452,8 +452,8 @@ void readskincolor(MYFILE *f, int32_t num, dboolean mainfile)
 
 			if (fastcmp(word, "NAME"))
 			{
-				size_t namesize = sizeof(skincolors[num].name);
-				char truncword[namesize];
+				char truncword[sizeof(skincolors[num].name)];
+				size_t namesize = sizeof(truncword);
 				uint16_t dupecheck;
 
 				deh_strlcpy(truncword, word2, namesize, va("Skincolor %d: name", num)); // truncate here to check for dupes
@@ -461,7 +461,7 @@ void readskincolor(MYFILE *f, int32_t num, dboolean mainfile)
 				if (truncword[0] != '\0' && (fasticmp(truncword, skincolors[SKINCOLOR_NONE].name) || (dupecheck && dupecheck != num)))
 				{
 					size_t lastchar = strlen(truncword);
-					char oldword[lastchar+1];
+					char oldword[sizeof(truncword)];
 					char dupenum = '1';
 
 					strlcpy(oldword, truncword, lastchar+1);
@@ -519,7 +519,7 @@ void readskincolor(MYFILE *f, int32_t num, dboolean mainfile)
 			}
 			else if (fastcmp(word, "ACCESSIBLE"))
 			{
-				if (mainfile || num > FIRSTSUPERCOLOR)
+				//if (mainfile || num > FIRSTSUPERCOLOR)
 					skincolors[num].accessible = (dboolean)(atoi(word2) || word2[0] == 'T' || word2[0] == 'Y');
 			}
 			else

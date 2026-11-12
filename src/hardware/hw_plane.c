@@ -168,7 +168,7 @@ void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, dboolean is
 
 	HWR_ProcessPolygon(&Surf, planeVerts, nrPlaneVerts, PolyFlags, shader, false);
 
-	if (subsector)
+	if (subsector && subsector->hashorizon)
 	{
 		// Horizon lines
 		FOutVector horizonpts[6];
@@ -254,6 +254,227 @@ void HWR_RenderPlane(subsector_t *subsector, extrasubsector_t *xsub, dboolean is
 					// Draw
 					HWR_ProcessPolygon(&Surf, horizonpts, 6, PolyFlags, shader, true);
 				}
+			}
+		}
+	}
+}
+
+// copy pasted HWR_RenderPlane which just draws the horizonplanes
+// this is so horizonlines can work with translucent fofs
+// as we need to draw them before the stupid skywalls :chaosleep:
+void HWR_RenderFOFHorizonPlane(subsector_t *subsector, extrasubsector_t *xsub, dboolean isceiling, fixed_t fixedheight, FBITFIELD PolyFlags, int32_t lightlevel, levelflat_t *levelflat, sector_t *FOFsector, uint8_t alpha, extracolormap_t *planecolormap)
+{
+	float           height; // constant y for all points on the convex flat polygon
+	int32_t         nrPlaneVerts; // verts original define of convex flat polygon
+	int32_t         i;
+	float fflatwidth = 64.0f, fflatheight = 64.0f;
+	float scrollx = 0.0f, scrolly = 0.0f;
+	float tempxsow, tempytow, anglef = 0.0f;
+	angle_t angle = 0;
+	FSurfaceInfo    Surf = {};
+	pslope_t *slope = NULL;
+
+	static FOutVector *planeVerts = NULL;
+	static uint16_t numAllocedPlaneVerts = 0;
+
+	int32_t shader = SHADER_NONE;
+
+	//if (!cv_glhorizonlines.value)
+		//return;
+
+	if (!subsector || !subsector->hashorizon)
+		return;
+
+	// no convex poly were generated for this subsector
+	if (!xsub->planepoly)
+		return;
+
+	nrPlaneVerts = xsub->planepoly->numpts;
+
+	if (nrPlaneVerts < 3) // not even a triangle ?
+		return;
+
+	const sector_t *planesec = FOFsector;
+
+	// Get the slope pointer to simplify future code
+	if (planesec->f_slope && !isceiling)
+		slope = planesec->f_slope;
+	else if (planesec->c_slope && isceiling)
+		slope = planesec->c_slope;
+
+	height = FixedToFloat(fixedheight);
+
+	// Allocate plane-vertex buffer if we need to
+	if (!planeVerts || nrPlaneVerts > numAllocedPlaneVerts)
+	{
+		numAllocedPlaneVerts = (uint16_t)nrPlaneVerts;
+		Z_Free(planeVerts);
+		Z_Malloc(numAllocedPlaneVerts * sizeof (FOutVector), PU_LEVEL, &planeVerts);
+	}
+
+	if (!(PolyFlags & PF_NoTexture))
+	{
+		HWR_GetLevelFlat(levelflat, R_NoEncore(FOFsector, levelflat, !isceiling)); // match software!
+	}
+
+	// set texture for polygon
+	if (levelflat != NULL)
+	{
+		texture_t *texture = textures[R_GetTextureNumForFlat(levelflat)];
+		fflatwidth = texture->width;
+		fflatheight = texture->height;
+	}
+	else // set no texture
+	{
+		HWR_SetCurrentTexture(NULL);
+	}
+
+	// transform
+	if (!isceiling) // it's a floor
+	{
+		scrollx = FixedToFloat(planesec->floor_xoffs)/fflatwidth;
+		scrolly = FixedToFloat(planesec->floor_yoffs)/fflatheight;
+		angle = planesec->floorpic_angle;
+	}
+	else // it's a ceiling
+	{
+		scrollx = FixedToFloat(planesec->ceiling_xoffs)/fflatwidth;
+		scrolly = FixedToFloat(planesec->ceiling_yoffs)/fflatheight;
+		angle = planesec->ceilingpic_angle;
+	}
+
+	anglef = ANG2RAD(InvAngle(angle));
+
+#define SETUP3DVERT(vert, vx, vy) {\
+		/* Hurdler: add scrolling texture on floor/ceiling */ \
+		vert->s = ((vx) / fflatwidth) + scrollx;\
+		vert->t = -((vy) / fflatheight) + scrolly;\
+ \
+		/* Need to rotate before translate */\
+		if (angle) /* Only needs to be done if there's an altered angle */\
+		{\
+			tempxsow = vert->s;\
+			tempytow = vert->t;\
+			vert->s = (tempxsow * cos(anglef)) - (tempytow * sin(anglef));\
+			vert->t = (tempxsow * sin(anglef)) + (tempytow * cos(anglef));\
+		}\
+\
+		if (slope)\
+		{\
+			fixedheight = P_GetSlopeZAt(slope, FloatToFixed((vx)), FloatToFixed((vy)));\
+			height = FixedToFloat(fixedheight);\
+		}\
+\
+		vert->x = (vx);\
+		vert->y = height;\
+		vert->z = (vy);\
+}
+
+	HWR_Lighting(&Surf, lightlevel, planecolormap, false); // since gl_frontsector is null during normal translucent fof draw, we wanna match that
+
+	if (PolyFlags & PF_EnvironmentTrans)
+	{
+		Surf.PolyColor.s.alpha = (uint8_t)alpha;
+		PolyFlags |= PF_Modulated;
+	}
+	else
+		PolyFlags |= PF_Masked|PF_Modulated;
+
+	if (HWR_UseShader())
+	{
+		if (PolyFlags & PF_Fog)
+			shader = SHADER_FOG;
+		else if (PolyFlags & PF_Ripple)
+			shader = SHADER_WATER;
+		else
+			shader = SHADER_FLOOR;
+
+		PolyFlags |= PF_ColorMapped;
+	}
+
+	// Horizon lines
+	FOutVector horizonpts[6];
+	float dist, vx, vy;
+	float x1, y1, xd, yd;
+	uint8_t numplanes, j;
+	vertex_t v; // For determining the closest distance from the line to the camera, to split render planes for minimum distortion;
+
+	const float renderdist = 27000.0f; // How far out to properly render the plane
+	const float farrenderdist = 32768.0f; // From here, raise plane to horizon level to fill in the line with some texture distortion
+
+	seg_t *line = &segs[subsector->firstline];
+
+	for (i = 0; i < subsector->numlines; i++, line++)
+	{
+		if (!line->glseg && (line->linedef->special == HORIZONSPECIAL) && (R_PointOnSegSide(viewx, viewy, line) == 0))
+		{
+			P_ClosestPointOnLine(viewx, viewy, line->linedef, &v);
+			dist = FixedToFloat(R_PointToDist(v.x, v.y));
+
+			if (line->pv1)
+			{
+				x1 = ((polyvertex_t *)line->pv1)->x;
+				y1 = ((polyvertex_t *)line->pv1)->y;
+			}
+			else
+			{
+				x1 = FixedToFloat(line->v1->x);
+				y1 = FixedToFloat(line->v1->x);
+			}
+
+			if (line->pv2)
+			{
+				xd = ((polyvertex_t *)line->pv2)->x - x1;
+				yd = ((polyvertex_t *)line->pv2)->y - y1;
+			}
+			else
+			{
+				xd = FixedToFloat(line->v2->x) - x1;
+				yd = FixedToFloat(line->v2->y) - y1;
+			}
+
+			// Based on the seg length and the distance from the line, split horizon into multiple poly sets to reduce distortion
+			dist = sqrtf((xd*xd) + (yd*yd)) / dist / 16.0f;
+			if (dist > 100.0f)
+				numplanes = 100;
+			else
+				numplanes = (uint8_t)dist + 1;
+
+			for (j = 0; j < numplanes; j++)
+			{
+				// Left side
+				vx = x1 + xd * j / numplanes;
+				vy = y1 + yd * j / numplanes;
+				SETUP3DVERT((&horizonpts[1]), vx, vy);
+
+				dist = sqrtf(powf(vx - gl_viewx, 2) + powf(vy - gl_viewy, 2));
+				vx = (vx - gl_viewx) * renderdist / dist + gl_viewx;
+				vy = (vy - gl_viewy) * renderdist / dist + gl_viewy;
+				SETUP3DVERT((&horizonpts[0]), vx, vy);
+
+				// Right side
+				vx = x1 + xd * (j+1) / numplanes;
+				vy = y1 + yd * (j+1) / numplanes;
+				SETUP3DVERT((&horizonpts[2]), vx, vy);
+
+				dist = sqrtf(powf(vx - gl_viewx, 2) + powf(vy - gl_viewy, 2));
+				vx = (vx - gl_viewx) * renderdist / dist + gl_viewx;
+				vy = (vy - gl_viewy) * renderdist / dist + gl_viewy;
+				SETUP3DVERT((&horizonpts[3]), vx, vy);
+
+				// Horizon fills
+				vx = (horizonpts[0].x - gl_viewx) * farrenderdist / renderdist + gl_viewx;
+				vy = (horizonpts[0].z - gl_viewy) * farrenderdist / renderdist + gl_viewy;
+				SETUP3DVERT((&horizonpts[5]), vx, vy);
+				horizonpts[5].y = gl_viewz;
+
+				vx = (horizonpts[3].x - gl_viewx) * farrenderdist / renderdist + gl_viewx;
+				vy = (horizonpts[3].z - gl_viewy) * farrenderdist / renderdist + gl_viewy;
+				SETUP3DVERT((&horizonpts[4]), vx, vy);
+				horizonpts[4].y = gl_viewz;
+
+				// Draw
+				HWR_ProcessPolygon(&Surf, horizonpts, 6, PolyFlags, shader, true);
 			}
 		}
 	}

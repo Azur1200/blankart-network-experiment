@@ -19,27 +19,29 @@
 #include "lua_hud.h" // hud_running errors
 #include "lua_hook.h" // hook_cmd_running errors
 
+// itemvars_ fields
+#define ITEMVARSFIELDS(X) \
+	X(equipstyle) \
+	X(equipstylealt) \
+	X(flags) \
+	X(flagsalt) \
+	/*X(graphics) see K_GetItemGraphics*/ \
+	X(altcvar) \
+	X(altenabled)
+
 enum itemvars
 {
-	itemvars_equipstyle,
-	itemvars_equipstylealt,
-	itemvars_flags,
-	itemvars_flagsalt,
-	//itemvars_graphics, // see K_GetItemGraphics
-	itemvars_altcvar,
-	itemvars_altenabled,
+#define ENUMITEM(name) itemvars_##name,
+	ITEMVARSFIELDS(ENUMITEM)
 };
 
 static const char *const itemvars_opt[] = {
-	"equipstyle",
-	"equipstylealt",
-	"flags",
-	"flagsalt",
-	//"graphics",
-	"altcvar",
-	"altenabled",
-	NULL
+#define ENUMITEMNAME(name) #name,
+	ITEMVARSFIELDS(ENUMITEMNAME)
+	NULL,
 };
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
 int itemvars_fields_ref = LUA_NOREF;
 
@@ -94,31 +96,31 @@ static int item_num(lua_State *L)
 	return 1;
 }
 
+// resultvars_ fields
+#define RESULTVARSFIELDS(X) \
+	X(type) \
+	X(amount) \
+	X(displayname) \
+	X(isalt) \
+	X(flags) \
+	/*X(odds)*/ \
+	/*X(uniqueodds)*/ \
+	X(basecooldown) \
+	X(cooldown)
+
 enum resultvars
 {
-	resultvars_type,
-	resultvars_amount,
-	resultvars_displayname,
-	resultvars_isalt,
-	resultvars_flags,
-	//resultvars_odds,
-	//resultvars_uniqueodds,
-	resultvars_basecooldown,
-	resultvars_cooldown,
+#define ENUMITEM(name) resultvars_##name,
+	RESULTVARSFIELDS(ENUMITEM)
 };
 
 static const char *const resultvars_opt[] = {
-	"type",
-	"amount",
-	"displayname",
-	"isalt",
-	"flags",
-	//"odds",
-	//"uniqueodds",
-	"basecooldown",
-	"cooldown",
-	NULL
+#define ENUMITEMNAME(name) #name,
+	RESULTVARSFIELDS(ENUMITEMNAME)
+	NULL,
 };
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
 int resultvars_fields_ref = LUA_NOREF;
 

@@ -17,55 +17,43 @@
 #include "lua_script.h"
 #include "lua_libs.h"
 
-enum skin {
-	skin_valid = 0,
-	skin_name,
-	skin_wadnum,
-	skin_flags,
-	skin_realname,
-	skin_facerank,
-	skin_facewant,
-	skin_facemmap,
-	// SRB2kart
-	skin_kartspeed,
-	skin_kartweight,
-	//
-	skin_followitem,
-	skin_starttranscolor,
-	skin_prefcolor,
-	skin_supercolor,
-	skin_prefoppositecolor,
-	skin_highresscale,
-	skin_rivals,
-	skin_soundsid,
-	skin_voices,
-	skin_sprites,
-	skin_compatmode
+// skin_ fields
+#define SKINFIELDS(X) \
+	X(valid) \
+	X(name) \
+	X(wadnum) \
+	X(flags) \
+	X(realname) \
+	X(facerank) \
+	X(facewant) \
+	X(facemmap) \
+	X(kartspeed) \
+	X(kartweight) \
+	X(followitem) \
+	X(starttranscolor) \
+	X(prefcolor) \
+	X(supercolor) \
+	X(prefoppositecolor) \
+	X(highresscale) \
+	X(rivals) \
+	X(soundsid) \
+	X(voices) \
+	X(sprites) \
+	X(compatmode) \
+
+enum skin
+{
+#define ENUMITEM(name) skin_##name,
+	SKINFIELDS(ENUMITEM)
 };
+
 static const char *const skin_opt[] = {
-	"valid",
-	"name",
-	"wadnum",
-	"flags",
-	"realname",
-	"facerank",
-	"facewant",
-	"facemmap",
-	"kartspeed",
-	"kartweight",
-	"followitem",
-	"starttranscolor",
-	"prefcolor",
-	"supercolor",
-	"prefoppositecolor",
-	"highresscale",
-	"rivals",
-	"soundsid",
-	"voices",
-	"sprites",
-	"compatmode",
-	NULL
+#define ENUMITEMNAME(name) #name,
+	SKINFIELDS(ENUMITEMNAME)
+	NULL,
 };
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
 #define UNIMPLEMENTED luaL_error(L, LUA_QL("skin_t") " field " LUA_QS " is not implemented for Lua and cannot be accessed.", skin_opt[field])
 
@@ -157,6 +145,8 @@ static int skin_get(lua_State *L)
 		break;
 	case skin_compatmode:
 		lua_pushdboolean(L, wadfiles[skin->wadnum]->compatmode);
+		break;
+	default:
 		break;
 	}
 	return 1;

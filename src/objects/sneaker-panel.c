@@ -82,7 +82,9 @@ void Obj_SneakerPanelCollide(mobj_t *panel, mobj_t *mo)
 	player_t *player = mo->player;
 	fixed_t playerTop = mo->z + mo->height, playerBottom = mo->z;
 	fixed_t panelTop, panelBottom, dist, x, y, radius;
+	fixed_t full_radius = 0;
 	angle_t angle;
+	const sneakerpanelcollide_t panelcollide = cv_sneakerpanelcollide.value;
 
 	// only players can boost!
 	if (player == NULL)
@@ -103,10 +105,19 @@ void Obj_SneakerPanelCollide(mobj_t *panel, mobj_t *mo)
 	y = P_ReturnThrustY(NULL, angle, dist);
 
 	// check that these coordinates fall within the square panel
-	radius = FixedMul(SNEAKERPANEL_RADIUS, panel->scale);
+	radius = FixedMul(SNEAKERPANEL_RADIUS, panel->scale) + ((panelcollide == PANELCOL_HITBOX) ? mo->radius : 0);
+	full_radius = FixedMul(SNEAKERPANEL_RADIUS, panel->scale) + mo->radius;
 
 	if (x < -radius || x > radius || y < -radius || y > radius)
-		return; // out of bounds
+	{
+		// out of bounds
+		if ((panelcollide == PANELCOL_GRAZE) && (x > -full_radius && x < full_radius && y > -full_radius && y < full_radius))
+		{
+			// If we're not within the radius, but within the FULL radius, we're grazing
+			player->panelgraze = 8;
+		}
+		return;
+	}
 
 	// check that the player is within reasonable vertical bounds
 	if (slope == NULL)

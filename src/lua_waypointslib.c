@@ -17,36 +17,34 @@
 #include "p_local.h"
 #include "k_waypoint.h" // lol
 
-enum waypointvars {
-	waypointvars_valid = 0,
-	waypointvars_mobj,
-	waypointvars_x,
-	waypointvars_y,
-	waypointvars_z,
-	waypointvars_onaline,
-	waypointvars_nextwaypoints,
-	waypointvars_prevwaypoints,
-	waypointvars_nextwaypointdistances,
-	waypointvars_prevwaypointdistances,
-	waypointvars_numnextwaypoints,
-	waypointvars_numprevwaypoints,
+// waypointvars_ fields
+#define WAYPOINTVARSFIELDS(X) \
+	X(valid) \
+	X(mobj) \
+	X(x) \
+	X(y) \
+	X(z) \
+	X(onaline) \
+	X(nextwaypoints) \
+	X(prevwaypoints) \
+	X(nextwaypointdistances) \
+	X(prevwaypointdistances) \
+	X(numnextwaypoints) \
+	X(numprevwaypoints)
+
+enum waypointvars
+{
+#define ENUMITEM(name) waypointvars_##name,
+	WAYPOINTVARSFIELDS(ENUMITEM)
 };
 
 static const char *const waypointvars_opt[] = {
-	"valid",
-	"mobj",
-	"x",
-	"y",
-	"z",
-	"onaline",
-	"nextwaypoints",
-	"prevwaypoints",
-	"nextwaypointdistances",
-	"prevwaypointdistances",
-	"numnextwaypoints",
-	"numprevwaypoints",
-	NULL
+#define ENUMITEMNAME(name) #name,
+	WAYPOINTVARSFIELDS(ENUMITEMNAME)
+	NULL,
 };
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
 #define RNOFIELD luaL_error(L, LUA_QL("waypoint_t") " has no field named " LUA_QS, field)
 #define RNOSET luaL_error(L, LUA_QL("waypoint_t") " field " LUA_QS " cannot be set.", field)

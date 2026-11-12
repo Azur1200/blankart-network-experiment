@@ -53,179 +53,170 @@ static uint8_t camnum = 1;
 
 static dboolean cliprectenabled;
 
-// must match enum hud in lua_hud.h
+// The definitions for this are contained in lua_hud.h
 static const char *const hud_disable_options[] = {
-	"stagetitle",
-	"textspectator",
-	"crosshair",
-	"scores",
-	"time",
-	"gametypeinfo",	// Bumpers / Karma / Laps depending on gametype
-	"minimap",
-	"item",
-	"position",
-	"nametags",
-	"check",		// "CHECK" f-zero indicator
-	"minirankings",	// Gametype rankings to the left
-	"battlerankingsbumpers",	// bumper drawer for battle. Useful if you want to make a custom battle gamemode without bumpers being involved.
-	"battlefullscreen",			// battlefullscreen func (WAIT, ATTACK OR PROTECT ...)
-	"battlecomebacktimer",		// come back timer in battlefullscreen
-	"wanted",
-	"speedometer",
-	"rings",
-	"lives",
-	"freeplay",
-	"rankings",
-	"lapsplits",
-	"itemtimers",
-
-	"intermissiontally",
-	"intermissionmessages",
-	NULL};
-
-// you know, let's actually make sure that the table is synced.
-// because fuck knows how many times this has happened at this point. :v
-I_StaticAssert(sizeof(hud_disable_options) / sizeof(*hud_disable_options) == hud_MAX+1);
-
-enum patch {
-	patch_valid = 0,
-	patch_width,
-	patch_height,
-	patch_leftoffset,
-	patch_topoffset
+#define ENUMITEMNAME(name) #name,
+	HUDFIELDS(ENUMITEMNAME)
+	NULL,
 };
+#undef ENUMITEMNAME
+
+// patch_ fields
+#define PATCHFIELDS(X) \
+	X(valid) \
+	X(width) \
+	X(height) \
+	X(leftoffset) \
+	X(topoffset)
+
+enum patch
+{
+#define ENUMITEM(name) patch_##name,
+	PATCHFIELDS(ENUMITEM)
+};
+
 static const char *const patch_opt[] = {
-	"valid",
-	"width",
-	"height",
-	"leftoffset",
-	"topoffset",
-	NULL};
+#define ENUMITEMNAME(name) #name,
+	PATCHFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
 // alignment types for v.drawString
-enum align {
-	align_left = 0,
-	align_center,
-	align_right,
-	align_small,
-	align_smallcenter,
-	align_smallright,
-	align_thin,
-	align_thincenter,
-	align_thinright
+// align_ fields
+// I hate C macros, why can't I use '-' :face_holding_back_tears:
+#define ALIGNFIELDS(X) \
+    X(left, "left") \
+    X(center, "center") \
+    X(right, "right") \
+    X(small, "small") \
+    X(small_center, "small-center") \
+    X(small_right, "small-right") \
+    X(thin, "thin") \
+    X(thin_center, "thin-center") \
+    X(thin_right, "thin-right")
+
+enum align
+{
+#define ENUMITEM(em, str) align_##em,
+	ALIGNFIELDS(ENUMITEM)
 };
+
 static const char *const align_opt[] = {
-	"left",
-	"center",
-	"right",
-	"small",
-	"small-center",
-	"small-right",
-	"thin",
-	"thin-center",
-	"thin-right",
-	NULL};
+#define ENUMITEMNAME(em, str) str,
+	ALIGNFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
 // width types for v.stringWidth
-enum widtht {
-	widtht_normal = 0,
-	widtht_small,
-	widtht_thin
+// widtht_ fields
+#define WIDTHTFIELDS(X) \
+	X(normal) \
+	X(small) \
+	X(thin)
+
+enum widtht
+{
+#define ENUMITEM(name) widtht_##name,
+	WIDTHTFIELDS(ENUMITEM)
 };
+
 static const char *const widtht_opt[] = {
-	"normal",
-	"small",
-	"thin",
-	NULL};
-
-enum cameraf {
-	camera_chase = 0,
-	camera_aiming,
-	camera_x,
-	camera_y,
-	camera_z,
-	camera_angle,
-	camera_subsector,
-	camera_floorz,
-	camera_ceilingz,
-	camera_radius,
-	camera_height,
-	camera_momx,
-	camera_momy,
-	camera_momz,
-	camera_pan,
-	camera_pitch,
-	camera_pnum,
-	camera_freecam,
+#define ENUMITEMNAME(name) #name,
+	WIDTHTFIELDS(ENUMITEMNAME)
+	NULL,
 };
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
+// camera_ fields
+#define CAMERAFIELDS(X) \
+	X(chase) \
+	X(aiming) \
+	X(x) \
+	X(y) \
+	X(z) \
+	X(angle) \
+	X(subsector) \
+	X(floorz) \
+	X(ceilingz) \
+	X(radius) \
+	X(height) \
+	X(momx) \
+	X(momy) \
+	X(momz) \
+	X(pan) \
+	X(pitch) \
+	X(pnum) \
+	X(freecam)
+
+enum cameraf
+{
+#define ENUMITEM(name) camera_##name,
+	CAMERAFIELDS(ENUMITEM)
+};
 
 static const char *const camera_opt[] = {
-	"chase",
-	"aiming",
-	"x",
-	"y",
-	"z",
-	"angle",
-	"subsector",
-	"floorz",
-	"ceilingz",
-	"radius",
-	"height",
-	"momx",
-	"momy",
-	"momz",
-	"pan",
-	"pitch",
-	"pnum",
-	"freecam",
-	NULL};
+#define ENUMITEMNAME(name) #name,
+	CAMERAFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
-enum hudpatch {
-	hudpatch_item = 0,
-	hudpatch_itemmul,
-	hudpatch_itemalt
+// hudpatch_ fields
+#define HUDPATCHFIELDS(X) \
+	X(item) \
+	X(itemmul) \
+	X(itemalt)
+
+enum hudpatch
+{
+#define ENUMITEM(name) hudpatch_##name,
+	HUDPATCHFIELDS(ENUMITEM)
 };
 
 static const char *const hud_patch_options[] = {
-	"item",
-	"itemmul",
-	"itemalt",
-	NULL};
+#define ENUMITEMNAME(name) #name,
+	HUDPATCHFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
-enum hudoffsets {
-	hudoffsets_item = 0,
-	hudoffsets_time,
-	hudoffsets_gametypeinfo,
-	hudoffsets_rings,
-	hudoffsets_countdown,
-	hudoffsets_speedometer,
-	hudoffsets_accessibility,
-	hudoffsets_position,
-	hudoffsets_minirankings,
-	hudoffsets_startcountdown,
-	hudoffsets_check,
-	hudoffsets_minimap,
-	hudoffsets_wanted,
-	//hudoffsets_statdisplay,
+// hudoffsets_ fields
+#define HUDOFFSETSFIELDS(X) \
+	X(item) \
+	X(time) \
+	X(gametypeinfo) \
+	X(rings) \
+	X(countdown) \
+	X(speedometer) \
+	X(accessibility) \
+	X(position) \
+	X(minirankings) \
+	X(startcountdown) \
+	X(check) \
+	X(minimap) \
+	X(wanted) \
+	/*X(statdisplay)*/ \
+
+enum hudoffsets
+{
+#define ENUMITEM(name) hudoffsets_##name,
+	HUDOFFSETSFIELDS(ENUMITEM)
 };
 
 static const char *const hud_offsets_options[] = {
-	"item",
-	"time",
-	"gametypeinfo",
-	"rings",
-	"countdown",
-	"speedometer",
-	"accessibility",
-	"position",
-	"minirankings",
-	"startcountdown",
-	"check",
-	"minimap",
-	"wanted",
-	//"statdisplay",
-	NULL};
+#define ENUMITEMNAME(name) #name,
+	HUDOFFSETSFIELDS(ENUMITEMNAME)
+	NULL,
+};
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
 static int colormap_get(lua_State *L)
 {
@@ -783,10 +774,10 @@ static int libd_drawOnMinimap(lua_State *L)
 
 	// variables used to replicate k_kart's mmap drawer:
 	int32_t mx, my;
-	int32_t splitflags, minimaptrans = 0;
+	int32_t splitflags = 0, minimaptrans = cv_kartminimap.value;
 
 	// variables used for actually drawing the icon:
-	fixed_t amnumxpos, amnumypos;
+	position_t amnumpos = {0};
 	int32_t amxpos, amypos;
 
 	fixed_t patchw, patchh;
@@ -821,33 +812,17 @@ static int libd_drawOnMinimap(lua_State *L)
 	K_getMinimapDrawinfo(&info);
 	mx = info.x;
 	my = info.y;
+
+	minimaptrans = K_GetMinimapTransFlags();
+	if (!minimaptrans) return 0; // Exit early if it wouldn't draw anyway.
+
 	splitflags = info.flags;
 
-	if (r_splitscreen < 2) // 1/2P right aligned
+	if ((r_splitscreen < 2)||(r_splitscreen == 3)) // 1/2P right aligned
 	{
-		const tic_t length = TICRATE/2;
-
 		if (!lt_exitticker)
 			return 0;
-		if (lt_exitticker < length)
-			minimaptrans = (((int32_t)lt_exitticker)*minimaptrans)/((int32_t)length);
-
 	}
-	else if (r_splitscreen == 3) // 4P centered
-	{
-		const tic_t length = TICRATE/2;
-
-		if (!lt_exitticker)
-			return 0;
-		if (lt_exitticker < length)
-			minimaptrans = (((int32_t)lt_exitticker)*minimaptrans)/((int32_t)length);
-	}
-	// 3P lives in the middle of the bottom right player and shouldn't fade in OR slide
-
-	if (!minimaptrans)
-		return 0;
-
-	minimaptrans = ((10-minimaptrans)<<FF_TRANSSHIFT);
 
 	// let offsets transfer to the heads, too!
 	if (encoremode)
@@ -855,14 +830,6 @@ static int libd_drawOnMinimap(lua_State *L)
 	else
 		mx -= minimapinfo.minimap_pic->leftoffset;
 	my -= minimapinfo.minimap_pic->topoffset;
-
-	// now that we have replicated this behavior, we can draw an icon from our supplied x, y coordinates by replicating k_kart.c's totally understandable uncommented code!!!
-
-	amnumxpos = (FixedMul(x, minimapinfo.zoom) - minimapinfo.offs_x);
-	amnumypos = -(FixedMul(y, minimapinfo.zoom) - minimapinfo.offs_y);
-
-	if (encoremode)
-		amnumxpos = -amnumxpos;
 
 	if (cv_minihead.value)
 		scale /= 2;
@@ -874,8 +841,11 @@ static int libd_drawOnMinimap(lua_State *L)
 	if (centered)
 		patchw = patchh = 0;	// patch is supposedly already centered, don't butt in.
 
-	amxpos = amnumxpos + ((mx + minimapinfo.minimap_pic->width/2)<<FRACBITS) - patchw;
-	amypos = amnumypos + ((my + minimapinfo.minimap_pic->height/2)<<FRACBITS) - patchh;
+	// now that we have replicated this behavior, we can draw an icon from our supplied x, y coordinates by replicating k_kart.c's totally understandable uncommented code!!!
+	amnumpos = K_GetKartObjectPosToMinimapPos(x, y);
+
+	amxpos = amnumpos.x + ((mx + minimapinfo.minimap_pic->width/2)<<FRACBITS) - patchw;
+	amypos = amnumpos.y + ((my + minimapinfo.minimap_pic->height/2)<<FRACBITS) - patchh;
 
 	// and NOW we can FINALLY DRAW OUR GOD DAMN PATCH :V
 	lua_getfield(L, LUA_REGISTRYINDEX, "HUD_DRAW_LIST");
@@ -1129,20 +1099,20 @@ static int libd_drawString(lua_State *L)
 	case align_small:
 		V_DrawSmallString(x, y, flags, str);
 		break;
-	case align_smallcenter:
+	case align_small_center:
 		V_DrawCenteredSmallString(x, y, flags, str);
 		break;
-	case align_smallright:
+	case align_small_right:
 		V_DrawRightAlignedSmallString(x, y, flags, str);
 		break;
 	// tny_font
 	case align_thin:
 		V_DrawThinString(x, y, flags, str);
 		break;
-	case align_thincenter:
+	case align_thin_center:
 		V_DrawCenteredThinString(x, y, flags, str);
 		break;
-	case align_thinright:
+	case align_thin_right:
 		V_DrawRightAlignedThinString(x, y, flags, str);
 		break;
 	}

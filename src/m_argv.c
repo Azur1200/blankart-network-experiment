@@ -13,6 +13,12 @@
 
 #include <string.h>
 
+#ifdef HAVE_THREADS
+#define local_for_thread _Thread_local
+#else
+#define local_for_thread
+#endif
+
 #include "doomdef.h"
 #include "command.h"
 #include "m_argv.h"
@@ -31,8 +37,11 @@ char **myargv;
 dboolean myargmalloc = false;
 
 /**	\brief founded the parm
+ *
+ * thread_local because it can potentially be used from multiple threads (global variables aaaaaa)
+ * (myargc and myargv don't have to be thread_local because they are never modified after being set up)
 */
-static int32_t found;
+static local_for_thread int32_t found;
 
 /**	\brief Parses a server URL (such as srb2://127.0.0.1) as may be passed to the game via a web browser, etc.
 

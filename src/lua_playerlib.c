@@ -503,7 +503,8 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(rankscorefactor) \
 	X(playerid) \
 	X(cansliptide) \
-	X(pitblame)
+	X(pitblame) \
+	X(panelgraze)
 
 enum player_e
 {
@@ -520,6 +521,8 @@ static const char *const player_opt[] = {
 	PLAYERFIELDS(ENUMITEMNAME)
 	NULL,
 };
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
 int player_fields_ref = LUA_NOREF;
 
@@ -1371,6 +1374,8 @@ static int player_get(lua_State *L)
 	case player_pitblame:
 		lua_pushinteger(L, plr->pitblame);
 		break;
+	case player_panelgraze:
+		lua_pushinteger(L, plr->panelgraze);
 #ifdef HWRENDER
 	case player_fovadd:
 		lua_pushfixed(L, plr->fovadd);
@@ -2269,6 +2274,8 @@ static int player_set(lua_State *L)
 	case player_pitblame:
 		plr->pitblame = lua_tointeger(L, 3);
 		break;
+	case player_panelgraze:
+		plr->panelgraze = (uint16_t)lua_tointeger(L, 3);
 #ifdef HWRENDER
 	case player_fovadd:
 		plr->fovadd = luaL_checkfixed(L, 3);
@@ -2970,35 +2977,33 @@ static int karthud_len(lua_State *L)
 #define NOFIELD luaL_error(L, "%s %s", LUA_QL("ticcmd_t"), va("has no field named %ui", field))
 #define NOSET luaL_error(L, LUA_QL("ticcmd_t") " field " LUA_QS " cannot be set.", ticcmd_opt[field])
 
+// ticcmd_ fields
+#define TICCMDFIELDS(X) \
+	X(forwardmove) \
+	X(sidemove) \
+	X(turning) \
+	X(driftturn) \
+	X(angle) \
+	X(angleturn) \
+	X(throwdir) \
+	X(aiming) \
+	X(buttons) \
+	X(latency) \
+	X(flags)
+
 enum ticcmd_e
 {
-	ticcmd_forwardmove,
-	ticcmd_sidemove,
-	ticcmd_turning,
-	ticcmd_driftturn,
-	ticcmd_angle,
-	ticcmd_angleturn,
-	ticcmd_throwdir,
-	ticcmd_aiming,
-	ticcmd_buttons,
-	ticcmd_latency,
-	ticcmd_flags,
+#define ENUMITEM(name) ticcmd_##name,
+	TICCMDFIELDS(ENUMITEM)
 };
 
 static const char *const ticcmd_opt[] = {
-	"forwardmove",
-	"sidemove",
-	"turning",
-	"driftturn",
-	"angle",
-	"angleturn",
-	"throwdir",
-	"aiming",
-	"buttons",
-	"latency",
-	"flags",
+#define ENUMITEMNAME(name) #name,
+	TICCMDFIELDS(ENUMITEMNAME)
 	NULL,
 };
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
 int ticcmd_fields_ref = LUA_NOREF;
 
@@ -3099,40 +3104,36 @@ static int ticcmd_set(lua_State *L)
 #undef NOFIELD
 #undef NOSET
 
-enum sonicloopvars {
-	sonicloopvars_radius = 0,
-	sonicloopvars_revolution,
-	sonicloopvars_min_revolution,
-	sonicloopvars_max_revolution,
-	sonicloopvars_yaw,
-	sonicloopvars_origin_x,
-	sonicloopvars_origin_y,
-	sonicloopvars_origin_z,
-	sonicloopvars_origin_shift_x,
-	sonicloopvars_origin_shift_y,
-	sonicloopvars_shift_x,
-	sonicloopvars_shift_y,
-	sonicloopvars_flip,
-	sonicloopvars_camera,
+// sonicloopvars_ fields
+#define SONICLOOPVARSFIELDS(X) \
+	X(radius) \
+	X(revolution) \
+	X(min_revolution) \
+	X(max_revolution) \
+	X(yaw) \
+	X(origin_x) \
+	X(origin_y) \
+	X(origin_z) \
+	X(origin_shift_x) \
+	X(origin_shift_y) \
+	X(shift_x) \
+	X(shift_y) \
+	X(flip) \
+	X(camera)
+
+enum sonicloopvars
+{
+#define ENUMITEM(name) sonicloopvars_##name,
+	SONICLOOPVARSFIELDS(ENUMITEM)
 };
 
 static const char *const sonicloopvars_opt[] = {
-	"radius",
-	"revolution",
-	"min_revolution",
-	"max_revolution",
-	"yaw",
-	"origin_x",
-	"origin_y",
-	"origin_z",
-	"origin_shift_x",
-	"origin_shift_y",
-	"shift_x",
-	"shift_y",
-	"flip",
-	"camera",
-	NULL
+#define ENUMITEMNAME(name) #name,
+	SONICLOOPVARSFIELDS(ENUMITEMNAME)
+	NULL,
 };
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
 int sonicloopvars_fields_ref = LUA_NOREF;
 
@@ -3188,34 +3189,37 @@ static int sonicloopvars_get(lua_State *L)
 	case sonicloopvars_camera:
 		LUA_PushUserdata(L, &sonicloopvars->camera, META_SONICLOOPCAMVARS);
 		break;
+	default:
+		return luaL_error(L, LUA_QL("sonicloopcamvars_t") " has no field named " LUA_QS, lua_tostring(L, 2));
 	}
 	return 1;
 }
 
-enum sonicloopcamvars {
-	sonicloopcamvars_enter_tic = 0,
-	sonicloopcamvars_exit_tic,
-	sonicloopcamvars_zoom_in_speed,
-	sonicloopcamvars_zoom_out_speed,
-	sonicloopcamvars_dist,
-	sonicloopcamvars_pan,
-	sonicloopcamvars_pan_speed,
-	sonicloopcamvars_pan_accel,
-	sonicloopcamvars_pan_back,
+// sonicloopcanvars_ fields
+#define SONICLOOPCAMVARSFIELDS(X) \
+	X(enter_tic) \
+	X(exit_tic) \
+	X(zoom_in_speed) \
+	X(zoom_out_speed) \
+	X(dist) \
+	X(pan) \
+	X(pan_speed) \
+	X(pan_accel) \
+	X(pan_back)
+
+enum sonicloopcamvars
+{
+#define ENUMITEM(name) sonicloopcamvars_##name,
+	SONICLOOPCAMVARSFIELDS(ENUMITEM)
 };
 
 static const char *const sonicloopcamvars_opt[] = {
-	"enter_tic",
-	"exit_tic",
-	"zoom_in_speed",
-	"zoom_out_speed",
-	"dist",
-	"pan",
-	"pan_speed",
-	"pan_accel",
-	"pan_back",
-	NULL
+#define ENUMITEMNAME(name) #name,
+	SONICLOOPCAMVARSFIELDS(ENUMITEMNAME)
+	NULL,
 };
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
 int sonicloopcamvars_fields_ref = LUA_NOREF;
 
@@ -3256,6 +3260,8 @@ static int sonicloopcamvars_get(lua_State *L)
 	case sonicloopcamvars_pan_back:
 		lua_pushinteger(L, sonicloopcamvars->pan_back);
 		break;
+	default:
+		return luaL_error(L, LUA_QL("sonicloopcamvars_t") " has no field named " LUA_QS, lua_tostring(L, 2));
 	}
 	return 1;
 }
@@ -3263,23 +3269,27 @@ static int sonicloopcamvars_get(lua_State *L)
 #define NOSET luaL_error(L, LUA_QL("boostinfo_t") " field " LUA_QS " should not be set directly.", boostinfo_opt[field])
 #define NOFIELD luaL_error(L, "%s %s", LUA_QL("boostinfo_t"), va("has no field named %ui", field))
 
+// boostinfo_ fields
+#define BOOSTINFOFIELDS(X) \
+	X(stackspeedboost) \
+	X(nonstackspeedboost) \
+	X(accelboost) \
+	X(handleboost) \
+	X(grade)
+
 enum boostinfo
 {
-	boostinfo_stackspeedboost = 0,
-	boostinfo_nonstackspeedboost,
-	boostinfo_accelboost,
-	boostinfo_handleboost,
-	boostinfo_grade,
+#define ENUMITEM(name) boostinfo_##name,
+	BOOSTINFOFIELDS(ENUMITEM)
 };
 
 static const char *const boostinfo_opt[] = {
-	"stackspeedboost",
-	"nonstackspeedboost",
-	"accelboost",
-	"handleboost",
-	"grade",
+#define ENUMITEMNAME(name) #name,
+	BOOSTINFOFIELDS(ENUMITEMNAME)
 	NULL,
 };
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
 int boostinfo_fields_ref = LUA_NOREF;
 
@@ -3308,6 +3318,8 @@ static int boostinfo_get(lua_State *L)
 		case boostinfo_grade:
 			lua_pushinteger(L, boostinfo->grade);
 			break;
+		default:
+			return luaL_error(L, LUA_QL("boostinfo_t") " has no field named " LUA_QS, lua_tostring(L, 2));
 	}
 
 	return 1;
@@ -3345,6 +3357,8 @@ static int boostinfo_set(lua_State *L)
 		case boostinfo_grade:
 			boostinfo->grade = (uint8_t)luaL_checkinteger(L, 3);
 			break;
+		default:
+			return luaL_error(L, LUA_QL("boostinfo_t") " has no field named " LUA_QS, lua_tostring(L, 2));
 	}
 
 	return 0;
@@ -3393,57 +3407,44 @@ static int driftcount_array_num(lua_State *L)
 #define NOSET luaL_error(L, LUA_QL("ranklog_t") " field " LUA_QS " should not be set directly.", ranklog_opt[field])
 #define NOFIELD luaL_error(L, "%s %s", LUA_QL("ranklog_t"), va("has no field named %ui", field))
 
+// ranklog_ fields
+#define RANKLOGFIELDS(X) \
+	/* Non-Grading */ \
+	X(ijustgothitasshole) \
+	X(numlapgrades) \
+	X(lapwasgraded) \
+	X(prankeligible) \
+	/* Bonuses */ \
+	X(numhitconfirms) \
+	X(driftboostcount) \
+	X(leaderscore) \
+	X(spbattack) \
+	X(startboostgrading) \
+	/* Volatile Values */ \
+	X(posgrading) \
+	X(gaining) \
+	/* Penalties */ \
+	X(timeoffroadcurrent) \
+	X(timeoffroadtotal) \
+	X(wallbonks) \
+	X(hitdamagingsector) \
+	X(numrespawns) \
+	X(potentialbestscore) \
+	X(realvspotential)
+
 enum plranklog
 {
-	/* Non-Grading */
-	ranklog_ijustgothitasshole = 0,
-	ranklog_numlapgrades,
-	ranklog_lapwasgraded,
-	ranklog_prankeligible,
-	/* Bonuses */
-	ranklog_numhitconfirms,
-	ranklog_driftboostcount,
-	ranklog_leaderscore,
-	ranklog_spbattack,
-	ranklog_startboostgrading,
-	/* Volatile Values */
-	ranklog_posgrading,
-	ranklog_gaining,
-	/* Penalties */
-	ranklog_timeoffroadcurrent,
-	ranklog_timeoffroadtotal,
-	ranklog_wallbonks,
-	ranklog_hitdamagingsector,
-	ranklog_numrespawns,
-	ranklog_potentialbestscore,
-	ranklog_realvspotential
+#define ENUMITEM(name) ranklog_##name,
+	RANKLOGFIELDS(ENUMITEM)
 };
 
 static const char *const ranklog_opt[] = {
-	/* Non-Grading */
-	"ijustgothitasshole",
-	"numlapgrades",
-	"lapwasgraded",
-	"prankeligible",
-	/* Bonuses */
-	"numhitconfirms",
-	"driftboostcount",
-	"leaderscore",
-	"spbattack",
-	"startboostgrading",
-	/* Volatile Values */
-	"posgrading",
-	"gaining",
-	/* Penalties */
-	"timeoffroadcurrent",
-	"timeoffroadtotal",
-	"wallbonks",
-	"hitdamagingsector",
-	"numrespawns",
-	"potentialbestscore",
-	"realvspotential",
+#define ENUMITEMNAME(name) #name,
+	RANKLOGFIELDS(ENUMITEMNAME)
 	NULL,
 };
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
 int ranklog_fields_ref = LUA_NOREF;
 
@@ -3632,33 +3633,32 @@ static int ranklog_set(lua_State *L)
 #define NOSET luaL_error(L, LUA_QL("rankscorefactor_t") " field " LUA_QS " should not be set directly.", rankscorefac_opt[field])
 #define NOFIELD luaL_error(L, "%s %s", LUA_QL("rankscorefactor_t"), va("has no field named %ui", field))
 
+// ranklog_ fields
+#define RANKSCOREFACFIELDS(X) \
+	X(posgradescore) \
+	X(finishgrading) \
+	X(hitbonus) \
+	X(driftbonus) \
+	X(spbattackbonus) \
+	X(offroadpenalty) \
+	X(wallpenalty) \
+	X(hazardpenalty) \
+	X(respawnpenalty) \
+	X(potential)
+
 enum rankscorefac
 {
-	rankscorefactor_posgradescore = 0,
-	rankscorefactor_finishgrading,
-	rankscorefactor_hitbonus,
-	rankscorefactor_driftbonus,
-	rankscorefactor_spbattackbonus,
-	rankscorefactor_offroadpenalty,
-	rankscorefactor_wallpenalty,
-	rankscorefactor_hazardpenalty,
-	rankscorefactor_respawnpenalty,
-	rankscorefactor_potential,
+#define ENUMITEM(name) rankscorefactor_##name,
+	RANKSCOREFACFIELDS(ENUMITEM)
 };
 
 static const char *const rankscorefac_opt[] = {
-	"posgradescore",
-	"finishgrading",
-	"hitbonus",
-	"driftbonus",
-	"spbattackbonus",
-	"offroadpenalty",
-	"wallpenalty",
-	"hazardpenalty",
-	"respawnpenalty",
-	"potential",
+#define ENUMITEMNAME(name) #name,
+	RANKSCOREFACFIELDS(ENUMITEMNAME)
 	NULL,
 };
+#undef ENUMITEM
+#undef ENUMITEMNAME
 
 int rankscorefac_fields_ref = LUA_NOREF;
 

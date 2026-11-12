@@ -182,24 +182,11 @@ static char filenamebuf[MAX_WADPATH];
 #define RPC_NO_WINDOWS_H
 #include <windows.h>
 
-// Windows can't open utf-8 path so it must be converted to utf-16
 FILE* fopen_utf8(const char* filename, const char* mode)
 {
-	static const int MY_PATH_MAX =  2048;
-	WCHAR nameW[MY_PATH_MAX];
-	memset(nameW, 0, sizeof(WCHAR)*MY_PATH_MAX);
-	WCHAR modeW[16];
-	memset(modeW, 0, sizeof(WCHAR)*16);
-	// the following function converts the UTF-8 filename to UTF-16 (WCHAR) nameW
-	int len = MultiByteToWideChar(CP_UTF8, 0, filename, -1, nameW, MY_PATH_MAX);
-	if(len > 0 && MultiByteToWideChar(CP_UTF8, 0, mode, -1, modeW, 16) > 0)
-	{
-		// using _wfopen_s() shuts up MSVC's complaints
-		// about _wfopen() being unsafe..
-		FILE* ret = NULL;
-		if(_wfopen_s(&ret, nameW, modeW) == 0)
-			return ret;
-	}
+	FILE* ret = NULL;
+	if(fopen_s(&ret, filename, mode) == 0)
+		return ret;
 	return NULL;
 }
 

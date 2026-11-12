@@ -616,28 +616,23 @@ void K_ProcessTerrainEffect(mobj_t *mo)
 		P_DamageMobj(mo, NULL, NULL, 1, dmg);
 	}
 
-	// Sneaker panel
-	if (terrain->flags & TRF_SNEAKERPANEL)
-	{
-		if (player->floorboost == 0)
-			player->floorboost = 3;
-		else
-			player->floorboost = 2;
+	const sneakerpanelcollide_t panelcoltype = cv_sneakerpanelcollide.value;
 
-		K_DoSneaker(player, SNEAKERTYPE_PANEL);
-	}
-	
-	// WaterRun Panel
-	if (terrain->flags & TRF_WATERRUNPANEL)
+	if ((panelcoltype == PANELCOL_CENTER) || (panelcoltype == PANELCOL_GRAZE))
 	{
-		if (player->floorboost == 0)
-			player->floorboost = 3;
-		else
-			player->floorboost = 2;
+		// Sneaker panel
+		if (terrain->flags & TRF_SNEAKERPANEL)
+		{
+			K_DoSneakerPanel(player, false);
+		}
 
-		K_DoSneaker(player, SNEAKERTYPE_WATERPANEL);
+		// WaterRun Panel
+		if (terrain->flags & TRF_WATERRUNPANEL)
+		{
+			K_DoSneakerPanel(player, true);
+		}
 	}
-	
+
 	// Speed pad
 	if (terrain->speedPad > 0)
 	{
