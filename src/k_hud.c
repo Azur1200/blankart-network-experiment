@@ -109,7 +109,10 @@ consvar_t cv_newspeedometer = CVAR_INIT ("newspeedometer", "Small", CV_SAVE, spe
 static CV_PossibleValue_t inputdisplay_cons_t[] = {{0, "Off"}, {1, "Wheel"}, {2, "Stick"}, {3, "SRB2"}, {0, NULL}};
 
 consvar_t cv_showinput = CVAR_INIT ("showinput", "Off", CV_SAVE, inputdisplay_cons_t, NULL);
-consvar_t cv_showaccelprompt = CVAR_INIT ("showaccelprompt", "On", CV_SAVE, CV_OnOff, NULL);
+
+static CV_PossibleValue_t accelprompt_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Pedal Only"}, {0, NULL}};
+
+consvar_t cv_showaccelprompt = CVAR_INIT ("showaccelprompt", "On", CV_SAVE, accelprompt_cons_t, NULL);
 
 consvar_t cv_colorizedhud = CVAR_INIT ("colorizedhud", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_colorizeditembox = CVAR_INIT ("colorizeditembox", "On", CV_SAVE, CV_OnOff, NULL);
@@ -7453,7 +7456,7 @@ void K_drawKartHUD(void)
 
 			if ((stplyr->accelprompt) && cv_showaccelprompt.value)
 			{
-				K_DrawAccelPrompt(r_splitscreen > 0, leveltime);
+				K_DrawAccelPrompt((r_splitscreen > 0) || (cv_showaccelprompt.value == 2), leveltime);
 			}
 
 			if (cv_showinput.value > 0)
