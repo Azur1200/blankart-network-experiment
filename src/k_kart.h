@@ -622,6 +622,8 @@ void K_GetRankBasedPositions(void);
 extern int16_t *legacygradelap;
 extern uint32_t legacygradelap_size;
 
+panelcollide_t K_GetPanelGrazeType(void);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

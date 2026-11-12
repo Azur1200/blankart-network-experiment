@@ -1583,9 +1583,19 @@ static grazespecials_t K_GetTouchingSectorTerrainFlags(mobj_t *mo, terrain_flags
 	return totalflag;
 }
 
+panelcollide_t K_GetPanelGrazeType(void)
+{
+	if (G_CompatLevel(0x0017))
+	{
+		return PANELCOL_CENTER;
+	}
+
+	return cv_panelcollide.value;
+}
+
 static void K_UpdatePanelGraze(player_t *player)
 {
-	const panelcollide_t panelcoltype = cv_panelcollide.value;
+	const panelcollide_t panelcoltype = K_GetPanelGrazeType();
 
 	if (player->panelgraze)
 		player->panelgraze--;

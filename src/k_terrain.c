@@ -722,7 +722,7 @@ void K_ProcessTerrainEffect(mobj_t *mo)
 		P_DamageMobj(mo, NULL, NULL, 1, dmg);
 	}
 
-	const panelcollide_t panelcoltype = cv_panelcollide.value;
+	const panelcollide_t panelcoltype = K_GetPanelGrazeType();
 
 	if ((panelcoltype == PANELCOL_CENTER) || (panelcoltype == PANELCOL_GRAZE))
 	{

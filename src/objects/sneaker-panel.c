@@ -84,7 +84,7 @@ void Obj_SneakerPanelCollide(mobj_t *panel, mobj_t *mo)
 	fixed_t panelTop, panelBottom, dist, x, y, radius;
 	fixed_t full_radius = 0;
 	angle_t angle;
-	const panelcollide_t panelcollide = cv_panelcollide.value;
+	const panelcollide_t panelcollide = K_GetPanelGrazeType();
 
 	// only players can boost!
 	if (player == NULL)

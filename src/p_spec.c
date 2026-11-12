@@ -5606,7 +5606,7 @@ static void P_EvaluateSpecialFlags(player_t *player, sector_t *sector, sector_t 
 		*/
 	}
 
-	const panelcollide_t panelcoltype = cv_panelcollide.value;
+	const panelcollide_t panelcoltype = K_GetPanelGrazeType();
 
 	if ((panelcoltype == PANELCOL_CENTER) || (panelcoltype == PANELCOL_GRAZE))
 	{
