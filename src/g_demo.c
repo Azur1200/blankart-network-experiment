@@ -145,7 +145,7 @@ demoghost *ghosts = NULL;
 // DEMO RECORDING
 //
 
-#define DEMOVERSION 0x0015
+#define DEMOVERSION 0x0018
 #define DEMOHEADER  "\xF0" "BlanReplay" "\x0F"
 
 #define DF_GHOST        0x01 // This demo contains ghost data too!
@@ -859,6 +859,7 @@ static headerstatus_e G_ReadDemoHeader(uint8_t *dp, demoheader_t *header, dboole
 		case 0x0014:
 			arrayshuffle = false;
 			/* FALLTHRU */
+		case 0x0015:
 			break;
 
 		default: // too old, cannot support.

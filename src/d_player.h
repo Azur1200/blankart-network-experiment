@@ -1118,6 +1118,9 @@ struct player_t
 	// The sector damage of the first sector you land on after spawning.
 	sectordamage_t postspawnsectordamage;
 
+	// Makes a "HIT THE GAS!" prompt appear above the player
+	dboolean accelprompt;
+
 #ifdef HWRENDER
 	fixed_t fovadd; // adjust FOV for hw rendering
 #endif

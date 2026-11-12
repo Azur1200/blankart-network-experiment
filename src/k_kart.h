@@ -400,9 +400,9 @@ typedef enum
 	PANELCOL_CENTER = 0,
 	PANELCOL_HITBOX,
 	PANELCOL_GRAZE // PANELCOL_CENTER, but add to a "panel graze" ticker for potential funny VFX :^)
-} sneakerpanelcollide_t;
+} panelcollide_t;
 
-extern consvar_t cv_sneakerpanelcollide;
+extern consvar_t cv_panelcollide;
 
 void K_DoSneaker(player_t *player, int32_t type);
 void K_DoSneakerPanel(player_t *player, dboolean iswaterpanel);
@@ -621,6 +621,8 @@ void K_GetRankBasedPositions(void);
 
 extern int16_t *legacygradelap;
 extern uint32_t legacygradelap_size;
+
+panelcollide_t K_GetPanelGrazeType(void);
 
 #ifdef __cplusplus
 } // extern "C"

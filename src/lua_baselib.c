@@ -5221,6 +5221,12 @@ static int lib_kMissileOrKartItem(lua_State *L)
 	return 1;
 }
 
+static int lib_kGetPanelGrazeType(lua_State *L)
+{
+	lua_pushdboolean(L, K_GetPanelGrazeType());
+	return 1;
+}
+
 static int lib_kAddNewScoreboardMod(lua_State *L)
 {
 	const char *modname = luaL_checkstring(L, 1);
@@ -6726,6 +6732,8 @@ static luaL_Reg lib[] = {
 	{"K_GetDriftBoostRankScore", lib_kGetDriftBoostRankScore},
 	{"K_CalculateLapGrading", lib_kCalculateLapGrading},
 	{"K_UpdateIndividualPlayerRank", lib_kUpdateIndividualPlayerRank},
+
+	{"K_GetPanelGrazeType", lib_kGetPanelGrazeType},
 
 	// kart stuff that's in other places for some reason
 	{"K_IsMissileOrKartItem", lib_kMissileOrKartItem},

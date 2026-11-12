@@ -504,7 +504,8 @@ static int lib_lenLocalplayers(lua_State *L)
 	X(playerid) \
 	X(cansliptide) \
 	X(pitblame) \
-	X(panelgraze)
+	X(panelgraze) \
+	X(accelprompt)
 
 enum player_e
 {
@@ -1376,6 +1377,10 @@ static int player_get(lua_State *L)
 		break;
 	case player_panelgraze:
 		lua_pushinteger(L, plr->panelgraze);
+		break;
+	case player_accelprompt:
+		lua_pushdboolean(L, plr->accelprompt);
+		break;
 #ifdef HWRENDER
 	case player_fovadd:
 		lua_pushfixed(L, plr->fovadd);
@@ -2276,6 +2281,10 @@ static int player_set(lua_State *L)
 		break;
 	case player_panelgraze:
 		plr->panelgraze = (uint16_t)lua_tointeger(L, 3);
+		break;
+	case player_accelprompt:
+		plr->accelprompt = lua_todboolean(L, 3);
+		break;
 #ifdef HWRENDER
 	case player_fovadd:
 		plr->fovadd = luaL_checkfixed(L, 3);

@@ -110,6 +110,10 @@ static CV_PossibleValue_t inputdisplay_cons_t[] = {{0, "Off"}, {1, "Wheel"}, {2,
 
 consvar_t cv_showinput = CVAR_INIT ("showinput", "Off", CV_SAVE, inputdisplay_cons_t, NULL);
 
+static CV_PossibleValue_t accelprompt_cons_t[] = {{0, "Off"}, {1, "On"}, {2, "Pedal Only"}, {0, NULL}};
+
+consvar_t cv_showaccelprompt = CVAR_INIT ("showaccelprompt", "On", CV_SAVE, accelprompt_cons_t, NULL);
+
 consvar_t cv_colorizedhud = CVAR_INIT ("colorizedhud", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_colorizeditembox = CVAR_INIT ("colorizeditembox", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_darkitembox = CVAR_INIT ("darkitembox", "On", CV_SAVE, CV_OnOff, NULL);
@@ -272,6 +276,9 @@ patch_t *kp_rankmedals[2] = {NULL};
 patch_t *kp_ranktier[NUMRANKTIERS] = {NULL};
 patch_t *kp_ranktier4p[NUMRANKTIERS] = {NULL};
 
+patch_t *kp_accelpedal[2] = {NULL};
+patch_t *kp_accelprompt[12] = {NULL};
+
 // BUTTONS AAAAAA
 patch_t *kp_buttons_a[3] = {NULL};
 patch_t *kp_buttons_b[3] = {NULL};
@@ -357,6 +364,7 @@ void K_RegisterKartHUDStuff(void)
 	CV_RegisterVar(&cv_seeownname);
 	CV_RegisterVar(&cv_newspeedometer);
 	CV_RegisterVar(&cv_showinput);
+	CV_RegisterVar(&cv_showaccelprompt);
 	CV_RegisterVar(&cv_colorizedhud);
 	CV_RegisterVar(&cv_colorizedhudcolor);
 	CV_RegisterVar(&cv_colorizeditembox);
@@ -937,6 +945,22 @@ void K_LoadKartHUDGraphics(void)
 		buffer[5] = '0'+((i+1)/10);
 		buffer[6] = '0'+((i+1)%10);
 		HU_UpdatePatch(&kp_ranktier4p[i], "%s", buffer);
+	}
+
+	sprintf(buffer, "HITAPxx");
+	for (i = 0; i < 2; i++)
+	{
+		buffer[5] = '0'+((i+1)/10);
+		buffer[6] = '0'+((i+1)%10);
+		HU_UpdatePatch(&kp_accelpedal[i], "%s", buffer);
+	}
+
+	sprintf(buffer, "HITACxx");
+	for (i = 0; i < 12; i++)
+	{
+		buffer[5] = '0'+((i+1)/10);
+		buffer[6] = '0'+((i+1)%10);
+		HU_UpdatePatch(&kp_accelprompt[i], "%s", buffer);
 	}
 
 	// Rank medals
@@ -7138,6 +7162,69 @@ static dboolean K_DisableGametypeInfo(void)
 	return false;
 }
 
+void K_getAccelPromptDrawinfo(drawinfo_t *out)
+{
+	mobj_t *mo = NULL;
+	vector3_t pos = {0};
+	trackingResult_t res = {0};
+	fixed_t fx = 0;
+	fixed_t fy = 0;
+	int32_t flags = 0;
+	dboolean vflip = false;
+
+	if (!P_MobjWasRemoved(stplyr->mo))
+	{
+		mo = stplyr->mo;
+
+		vflip = ((mo->eflags & MFE_VERTICALFLIP) == MFE_VERTICALFLIP);
+
+		pos.x = R_InterpolateFixed(mo->old_x, mo->x) + mo->sprxoff;
+		pos.y = R_InterpolateFixed(mo->old_y, mo->y) + mo->spryoff;
+		pos.z = R_InterpolateFixed(mo->old_z, mo->z) + mo->sprzoff + (vflip ? mo->height : 0);
+
+		K_ObjectTracking(&res, &pos, false);
+	}
+
+	fx = res.x;
+	fy = res.y;
+
+	out->x = fx;
+	out->y = fy + (6 * (vflip ? -FRACUNIT : FRACUNIT));
+	out->flags = flags;
+}
+
+static void K_DrawAccelPrompt(dboolean pedalonly, tic_t ticker)
+{
+	patch_t *prompt_patch = NULL;
+	const tic_t anim_tic = (ticker / 3);
+	fixed_t prompt_offset = 36;
+	int32_t splitflags = V_HUDTRANS;
+
+	drawinfo_t info;
+	K_getAccelPromptDrawinfo(&info);
+
+	if (pedalonly)
+	{
+		prompt_patch = kp_accelpedal[anim_tic & 1];
+		prompt_offset = 8;
+	}
+	else
+	{
+		prompt_patch = kp_accelprompt[anim_tic % 12];
+	}
+
+	if (r_splitscreen > 0)
+	{
+		splitflags &= ~V_HUDTRANS;
+		splitflags |= V_HUDTRANSHALF;
+	}
+
+	if (prompt_patch)
+	{
+		V_DrawFixedPatch(info.x - (prompt_offset * FRACUNIT), info.y, FRACUNIT, info.flags|splitflags, prompt_patch, NULL);
+	}
+}
+
 void K_drawKartHUD(void)
 {
 	dboolean islonesome = false;
@@ -7365,6 +7452,11 @@ void K_drawKartHUD(void)
 			if (LUA_HudEnabled(hud_rings) && K_RingsActive() == true)
 			{
 				K_drawRingMeter();
+			}
+
+			if ((stplyr->accelprompt) && cv_showaccelprompt.value)
+			{
+				K_DrawAccelPrompt((r_splitscreen > 0) || (cv_showaccelprompt.value == 2), leveltime);
 			}
 
 			if (cv_showinput.value > 0)

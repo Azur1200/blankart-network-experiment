@@ -66,7 +66,7 @@ extern consvar_t cv_seeownname;
 
 extern consvar_t cv_newspeedometer;
 
-extern consvar_t cv_showinput;
+extern consvar_t cv_showinput, cv_showaccelprompt;
 
 extern consvar_t cv_colorizedhud;
 extern consvar_t cv_colorizeditembox;
@@ -144,6 +144,7 @@ void K_getRingsDrawinfo(drawinfo_t *out);
 void K_getMinimapDrawinfo(drawinfo_t *out);
 void K_getSlipstreamDrawinfo(drawinfo_t *out);
 void K_getLivesnStatsDrawinfo(drawinfo_t *out);
+void K_getAccelPromptDrawinfo(drawinfo_t *out);
 void K_ReloadHUDColorCvar(void);
 dboolean K_UseColorHud(void);
 skincolornum_t K_GetHudColor(void);
@@ -228,6 +229,9 @@ extern patch_t *kp_rankmedals[2];
 extern patch_t *kp_ranktier[NUMRANKTIERS];
 extern patch_t *kp_ranktier4p[NUMRANKTIERS];
 
+extern patch_t *kp_accelpedal[2];
+extern patch_t *kp_accelprompt[12];
+
 dboolean K_UseHighResPortraits(void);
 
 extern patch_t *kp_splitlapflag;
@@ -277,6 +281,8 @@ extern patch_t *kp_buttons_paddle4[3];
 extern patch_t *kp_buttons_touchpad[3];
 
 extern patch_t *kp_buttons_keyboardback[3];
+
+
 
 #ifdef __cplusplus
 } // extern "C"

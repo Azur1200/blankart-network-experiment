@@ -630,6 +630,12 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, dboolean heightcheck)
 			if (special->extravalue3)
 				return; // Popped bubbles should not be run into EVER
 
+			if ((statenum_t)(special->state-states) == S_TRAPBUBBLE_SPAWN)
+			{
+				if ((special->frame & FF_FRAMEMASK) < 5)
+					return; // Neither should spawning bubbles!
+			}
+
 			fixed_t extrarise = 0;
 			extrarise = (fixed_t)(special->script_args[1]);
 
@@ -652,6 +658,9 @@ void P_TouchSpecialThing(mobj_t *special, mobj_t *toucher, dboolean heightcheck)
 			special->x = toucher->x;
 			special->y = toucher->y;
 			special->z = toucher->z;
+
+			// Swap to the "floating" state...
+			P_SetMobjState(special, S_TRAPBUBBLE_FLOAT);
 
 			S_StartSound(toucher, sfx_s1b2);
 			return;

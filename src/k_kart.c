@@ -710,7 +710,7 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_rockshove);
 
-	CV_RegisterVar(&cv_sneakerpanelcollide);
+	CV_RegisterVar(&cv_panelcollide);
 }
 
 //}
@@ -1422,14 +1422,25 @@ static void K_UpdateOffroad(player_t *player)
 		player->offroad = 0;
 }
 
+typedef enum
+{
+	GRS_SNEAKERPANEL = 1,
+	GRS_WATERPANEL = 1<<1,
+	GRS_POGOSRINGYELLOW = 1<<2,
+	GRS_POGOSRINGRED = 1<<3,
+	// These check terrain arguments, check their associated values pls!
+	GRS_TERRAINSPRING = 1<<4,
+	GRS_TERRAINPOGOSPRING = 1<<5,
+} grazespecials_t;
+
 /**	\brief	Checks that the player is on a subsector with the given terrain for realsies, and returns the relevant flags.
 			What can I say? Sneaker panel grazing sucks!
 
 	\param	mo	player mobj object
 
-	\return	terrain_flags_t
+	\return	grazespecials_t
 */
-static terrain_flags_t K_GetTouchingSectorTerrainFlags(mobj_t *mo, terrain_flags_t flagstohunt)
+static grazespecials_t K_GetTouchingSectorTerrainFlags(mobj_t *mo, terrain_flags_t terrainflagstohunt, sectorspecialflags_t specialflagstohunt)
 {
 	// Check for sectors in touching_sectorlist
 	msecnode_t *node = NULL; // touching_sectorlist iter
@@ -1437,6 +1448,7 @@ static terrain_flags_t K_GetTouchingSectorTerrainFlags(mobj_t *mo, terrain_flags
 	sector_t *s2 = NULL;	 // FOF sector shortcut
 	ffloor_t *rover = NULL;	 // FOF
 	terrain_t *terrain = NULL;
+	grazespecials_t totalflag = 0;
 
 	int32_t pic = 0;
 
@@ -1468,19 +1480,40 @@ static terrain_flags_t K_GetTouchingSectorTerrainFlags(mobj_t *mo, terrain_flags
 
 			if (terrain && K_AffectingTerrainActive())
 			{
-				if ((flagstohunt == 0) || (terrain->flags & flagstohunt))
-					return terrain->flags;
+				if ((terrain->flags & terrainflagstohunt) & TRF_WATERRUNPANEL)
+				{
+					totalflag |= GRS_WATERPANEL;
+				}
+				if ((terrain->flags & terrainflagstohunt) & TRF_SNEAKERPANEL)
+				{
+					totalflag |= GRS_SNEAKERPANEL;
+				}
+				if (terrain->springStrength)
+				{
+					totalflag |= GRS_TERRAINSPRING;
+				}
+				if (terrain->pogoSpring)
+				{
+					totalflag |= GRS_TERRAINPOGOSPRING;
+				}
 			}
 			else
 			{
-				// Hunt for specific sector specials, return a fake terrain if we find one
-				if (s->specialflags & SSF_WATERPANEL)
+				if ((s->specialflags & specialflagstohunt) & SSF_WATERPANEL)
 				{
-					return TRF_WATERRUNPANEL;
+					totalflag |= GRS_WATERPANEL;
 				}
-				else if (s->specialflags & SSF_SNEAKERPANEL)
+				if ((s->specialflags & specialflagstohunt) & SSF_SNEAKERPANEL)
 				{
-					return TRF_SNEAKERPANEL;
+					totalflag |= GRS_SNEAKERPANEL;
+				}
+				if ((s->specialflags & specialflagstohunt) & SSF_REDPOGOSPRING)
+				{
+					totalflag |= GRS_POGOSRINGRED;
+				}
+				if ((s->specialflags & specialflagstohunt) & SSF_YELLOWPOGOSPRING)
+				{
+					totalflag |= GRS_POGOSRINGYELLOW;
 				}
 			}
 		}
@@ -1507,53 +1540,86 @@ static terrain_flags_t K_GetTouchingSectorTerrainFlags(mobj_t *mo, terrain_flags
 
 				if (terrain && K_AffectingTerrainActive())
 				{
-					if ((flagstohunt == 0) || (terrain->flags & flagstohunt))
-						return terrain->flags;
+					if ((terrain->flags & terrainflagstohunt) & TRF_WATERRUNPANEL)
+					{
+						totalflag |= GRS_WATERPANEL;
+					}
+					if ((terrain->flags & terrainflagstohunt) & TRF_SNEAKERPANEL)
+					{
+						totalflag |= GRS_SNEAKERPANEL;
+					}
+					if (terrain->springStrength)
+					{
+						totalflag |= GRS_TERRAINSPRING;
+					}
+					if (terrain->pogoSpring)
+					{
+						totalflag |= GRS_TERRAINPOGOSPRING;
+					}
 				}
 				else
 				{
-					// Hunt for specific sector specials, return a fake terrain if we find one
-					if (s2->specialflags & SSF_WATERPANEL)
+					if ((s2->specialflags & specialflagstohunt) & SSF_WATERPANEL)
 					{
-						return TRF_WATERRUNPANEL;
+						totalflag |= GRS_WATERPANEL;
 					}
-					else if (s2->specialflags & SSF_SNEAKERPANEL)
+					else if ((s2->specialflags & specialflagstohunt) & SSF_SNEAKERPANEL)
 					{
-						return TRF_SNEAKERPANEL;
+						totalflag |= GRS_SNEAKERPANEL;
+					}
+					else if ((s2->specialflags & specialflagstohunt) & SSF_REDPOGOSPRING)
+					{
+						totalflag |= GRS_POGOSRINGRED;
+					}
+					else if ((s2->specialflags & specialflagstohunt) & SSF_YELLOWPOGOSPRING)
+					{
+						totalflag |= GRS_POGOSRINGYELLOW;
 					}
 				}
 			}
 		}
 	}
 
-	return 0; // couldn't find any terrain
+	return totalflag;
 }
 
-static void K_UpdateSneakerPanel(player_t *player)
+panelcollide_t K_GetPanelGrazeType(void)
 {
-	const sneakerpanelcollide_t panelcoltype = cv_sneakerpanelcollide.value;
+	if (G_CompatLevel(0x0017))
+	{
+		return PANELCOL_CENTER;
+	}
+
+	return cv_panelcollide.value;
+}
+
+static void K_UpdatePanelGraze(player_t *player)
+{
+	const panelcollide_t panelcoltype = K_GetPanelGrazeType();
 
 	if (player->panelgraze)
 		player->panelgraze--;
 
 	if ((panelcoltype == PANELCOL_HITBOX) || (panelcoltype == PANELCOL_GRAZE))
 	{
-		terrain_t *terrain = player->mo->terrain;
+		// Search all the sectors for any flags we might be touching
+		grazespecials_t grazeflags = K_GetTouchingSectorTerrainFlags(player->mo, (TRF_SNEAKERPANEL|TRF_WATERRUNPANEL), (SSF_WATERPANEL|SSF_SNEAKERPANEL|SSF_REDPOGOSPRING|SSF_YELLOWPOGOSPRING));
 
-		terrain_flags_t terrainflags = 0;
-		if (terrain != NULL && K_AffectingTerrainActive())
+		// WaterRun Panel
+		if (grazeflags & GRS_WATERPANEL)
 		{
-			terrainflags = terrain->flags;
-		}
-
-		if (!(terrainflags & (TRF_SNEAKERPANEL|TRF_WATERRUNPANEL)))
-		{
-			// Search all the sectors for any flags we might be touching
-			terrainflags = K_GetTouchingSectorTerrainFlags(player->mo, (TRF_SNEAKERPANEL|TRF_WATERRUNPANEL));
+			if (panelcoltype == PANELCOL_HITBOX)
+			{
+				K_DoSneakerPanel(player, true);
+			}
+			else
+			{
+				player->panelgraze = 8;
+			}
 		}
 
 		// Sneaker panel
-		if (terrainflags & TRF_SNEAKERPANEL)
+		if (grazeflags & GRS_SNEAKERPANEL)
 		{
 			if (panelcoltype == PANELCOL_HITBOX)
 			{
@@ -1565,12 +1631,38 @@ static void K_UpdateSneakerPanel(player_t *player)
 			}
 		}
 
-		// WaterRun Panel
-		if (terrainflags & TRF_WATERRUNPANEL)
+		// Red Pogo Spring Panel
+		if (grazeflags & GRS_POGOSRINGRED)
 		{
 			if (panelcoltype == PANELCOL_HITBOX)
 			{
-				K_DoSneakerPanel(player, true);
+				P_ProcessPogoSpring(player, true, SSPT_RED);
+			}
+			else
+			{
+				player->panelgraze = 8;
+			}
+		}
+
+		// Yellow Pogo Spring Panel
+		if (grazeflags & GRS_POGOSRINGYELLOW)
+		{
+			if (panelcoltype == PANELCOL_HITBOX)
+			{
+				P_ProcessPogoSpring(player, true, SSPT_YELLOW);
+			}
+			else
+			{
+				player->panelgraze = 8;
+			}
+		}
+
+		// TODO: What if we move K_ProcessTerrainEffect to run in its entirety here?
+		if ((grazeflags & GRS_TERRAINSPRING) || (grazeflags & GRS_TERRAINPOGOSPRING))
+		{
+			if (panelcoltype == PANELCOL_HITBOX)
+			{
+				K_ProcessSpringTerrainEffect(player, player->mo->terrain);
 			}
 			else
 			{
@@ -8382,6 +8474,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	player->mo->spritexoffset = 0;
 	player->mo->spriteyoffset = 0;
 
+	// Unset the "hit accel!" prompt boolean
+	player->accelprompt = false;
+
 	// flips and crashes use centred pivots
 	if (skins[player->skin]->flags & SF_OLDPIVOTS || (player->flipovertimer > 0 || player->crash_state != 0 
 		|| (cv_kartfloatysquish.value && player->squishedtimer && !P_IsObjectOnGround(player->mo))))
@@ -8411,7 +8506,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->mo->sprzoff += FixedMul(player->mo->height, FSIN(pitch));
 	}
 
-	K_UpdateSneakerPanel(player);
+	K_UpdatePanelGraze(player);
 	K_UpdateOffroad(player);
 	K_UpdateDashArea(player);
 	K_UpdateDraft(player);
