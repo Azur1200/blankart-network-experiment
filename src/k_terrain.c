@@ -547,6 +547,112 @@ static void K_SetTerrainFriction(mobj_t *mo)
 	}
 }
 
+void K_ProcessSpringTerrainEffect(player_t *player, terrain_t *terrain)
+{
+	if (player == NULL || player->mo == NULL || terrain == NULL)
+	{
+		return;
+	}
+
+	mobj_t *mo = player->mo;
+
+	// Spring
+	if (terrain->springStrength)
+	{
+		sector_t *sector = player->mo->subsector->sector;
+
+		const pslope_t *slope;
+		angle_t angle = 0;
+
+		fixed_t co = FRACUNIT;
+		fixed_t si = 0;
+
+		// FIXME: come up with a better way to get the touched
+		// texture's slope to this function. At least this
+		// will work for 90% of scenarios...
+
+		if (player->mo->eflags & MFE_VERTICALFLIP)
+		{
+			if (player->mo->ceilingrover != NULL)
+			{
+				slope = *player->mo->ceilingrover->b_slope;
+			}
+			else
+			{
+				slope = sector->c_slope;
+			}
+		}
+		else
+		{
+			if (player->mo->floorrover != NULL)
+			{
+				slope = *player->mo->floorrover->t_slope;
+			}
+			else
+			{
+				slope = sector->f_slope;
+			}
+		}
+
+		if (slope && (terrain->pogoSpring == 0))
+		{
+			const angle_t fa = (slope->zangle >> ANGLETOFINESHIFT);
+
+			co = FINECOSINE(fa) * P_MobjFlip(player->mo);
+			si = -(FINESINE(fa));
+
+			angle = slope->xydirection;
+		}
+
+		// Kill heavy airdrop too so you don't get softlocked.
+		K_KillAirDrop(player, PAF_AIRDROP_HEAVY);
+
+		P_DoSpringRR(player->mo, mapobjectscale,
+					 FixedMul(terrain->springStrength, co),
+					 FixedMul(terrain->springStrength, si),
+					 angle);
+
+		sector->soundorg.z = player->mo->z;
+
+		if (terrain->pogoSpring == 0)
+			S_StartSound(&sector->soundorg, sfx_s3kb1); // Don't play two spring sounds at once thx!
+	}
+
+	if ((terrain->pogoSpring > 0) && terrain->springStrength) // Hack to allow spring strength to work with pogospring
+		mo->eflags &= ~MFE_SPRUNG;
+
+	// Pogospring panel
+	if (terrain->pogoSpring > 0 && !(mo->eflags & MFE_SPRUNG))
+	{
+		// I'm not including the "minimum scale" rant here again. Look at P_DoSpring for that.
+		// Just know this fixes things with Alt. Shrink.
+		fixed_t objscale = player->mo->scale;
+
+		if (K_IsAltShrunk(player))
+			objscale = max(player->mo->scale, mapobjectscale);
+
+		const fixed_t hscale = mapobjectscale + (mapobjectscale - objscale);
+		fixed_t minspeed = terrain->pogoSpringMin*hscale;
+		fixed_t maxspeed = terrain->pogoSpringMax*hscale;
+		angle_t pushangle = FixedHypot(player->mo->momx, player->mo->momy) ? R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy) : player->mo->angle;
+
+		if (terrain->pogoSpring == 2)
+			player->pogospring = 2;
+		else
+			player->pogospring = 1;
+
+		if ((player->speed > maxspeed) && terrain->pogoSpring == 2) // Prevent overshooting jumps
+			P_InstaThrust(player->mo, pushangle, maxspeed);
+		else if (player->speed < minspeed) // Push forward to prevent getting stuck
+			P_InstaThrust(player->mo, pushangle, minspeed);
+
+		if (!terrain->springStrength)
+			K_DoPogoSpring(player->mo, 0, 1);
+		else
+			S_StartSound(player->mo, sfx_kc2f);
+	}
+}
+
 /*--------------------------------------------------
 	void K_ProcessTerrainEffect(mobj_t *mo)
 
@@ -616,7 +722,7 @@ void K_ProcessTerrainEffect(mobj_t *mo)
 		P_DamageMobj(mo, NULL, NULL, 1, dmg);
 	}
 
-	const sneakerpanelcollide_t panelcoltype = cv_sneakerpanelcollide.value;
+	const panelcollide_t panelcoltype = cv_panelcollide.value;
 
 	if ((panelcoltype == PANELCOL_CENTER) || (panelcoltype == PANELCOL_GRAZE))
 	{
@@ -699,100 +805,9 @@ void K_ProcessTerrainEffect(mobj_t *mo)
 		}
 	}
 
-	// Spring
-	if (terrain->springStrength)
+	if ((panelcoltype == PANELCOL_CENTER) || (panelcoltype == PANELCOL_GRAZE))
 	{
-		sector_t *sector = player->mo->subsector->sector;
-
-		const pslope_t *slope;
-		angle_t angle = 0;
-
-		fixed_t co = FRACUNIT;
-		fixed_t si = 0;
-
-		// FIXME: come up with a better way to get the touched
-		// texture's slope to this function. At least this
-		// will work for 90% of scenarios...
-
-		if (player->mo->eflags & MFE_VERTICALFLIP)
-		{
-			if (player->mo->ceilingrover != NULL)
-			{
-				slope = *player->mo->ceilingrover->b_slope;
-			}
-			else
-			{
-				slope = sector->c_slope;
-			}
-		}
-		else
-		{
-			if (player->mo->floorrover != NULL)
-			{
-				slope = *player->mo->floorrover->t_slope;
-			}
-			else
-			{
-				slope = sector->f_slope;
-			}
-		}
-
-		if (slope && (terrain->pogoSpring == 0))
-		{
-			const angle_t fa = (slope->zangle >> ANGLETOFINESHIFT);
-
-			co = FINECOSINE(fa) * P_MobjFlip(player->mo);
-			si = -(FINESINE(fa));
-
-			angle = slope->xydirection;
-		}
-
-		// Kill heavy airdrop too so you don't get softlocked.
-		K_KillAirDrop(player, PAF_AIRDROP_HEAVY);
-
-		P_DoSpringRR(player->mo, mapobjectscale,
-				FixedMul(terrain->springStrength, co),
-				FixedMul(terrain->springStrength, si),
-				angle);
-
-		sector->soundorg.z = player->mo->z;
-		
-		if (terrain->pogoSpring == 0)
-			S_StartSound(&sector->soundorg, sfx_s3kb1); // Don't play two spring sounds at once thx!
-	}
-	
-	if ((terrain->pogoSpring > 0) && terrain->springStrength) // Hack to allow spring strength to work with pogospring
-		mo->eflags &= ~MFE_SPRUNG;
-	
-	// Pogospring panel
-	if (terrain->pogoSpring > 0 && !(mo->eflags & MFE_SPRUNG))
-	{
-		// I'm not including the "minimum scale" rant here again. Look at P_DoSpring for that.
-		// Just know this fixes things with Alt. Shrink.
-		fixed_t objscale = player->mo->scale;
-
-		if (K_IsAltShrunk(player))
-			objscale = max(player->mo->scale, mapobjectscale);
-
-		const fixed_t hscale = mapobjectscale + (mapobjectscale - objscale);
-		fixed_t minspeed = terrain->pogoSpringMin*hscale;
-		fixed_t maxspeed = terrain->pogoSpringMax*hscale;
-		angle_t pushangle = FixedHypot(player->mo->momx, player->mo->momy) ? R_PointToAngle2(0, 0, player->mo->momx, player->mo->momy) : player->mo->angle;
-
-		if (terrain->pogoSpring == 2)
-			player->pogospring = 2;
-		else
-			player->pogospring = 1;
-		
-		if ((player->speed > maxspeed) && terrain->pogoSpring == 2) // Prevent overshooting jumps
-			P_InstaThrust(player->mo, pushangle, maxspeed);
-		else if (player->speed < minspeed) // Push forward to prevent getting stuck
-			P_InstaThrust(player->mo, pushangle, minspeed);
-		
-		if (!terrain->springStrength)
-			K_DoPogoSpring(player->mo, 0, 1);
-		else
-			S_StartSound(player->mo, sfx_kc2f);
+		K_ProcessSpringTerrainEffect(player, terrain);
 	}
 
 	// (Offroad is handled elsewhere!)

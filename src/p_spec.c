@@ -5605,14 +5605,21 @@ static void P_EvaluateSpecialFlags(player_t *player, sector_t *sector, sector_t 
 			P_SetPlayerMobjState(player->mo, S_PLAY_FALL);
 		*/
 	}
-	if (sector->specialflags & SSF_SNEAKERPANEL)
-		P_ProcessBoostPanel(player, isTouching, SBPT_SNEAKER);
-	if (sector->specialflags & SSF_WATERPANEL)
-		P_ProcessBoostPanel(player, isTouching, SBPT_WATER);
-	if (sector->specialflags & SSF_REDPOGOSPRING)
-		P_ProcessPogoSpring(player, isTouching, SSPT_RED);
-	if (sector->specialflags & SSF_YELLOWPOGOSPRING)
-		P_ProcessPogoSpring(player, isTouching, SSPT_YELLOW);
+
+	const panelcollide_t panelcoltype = cv_panelcollide.value;
+
+	if ((panelcoltype == PANELCOL_CENTER) || (panelcoltype == PANELCOL_GRAZE))
+	{
+		if (sector->specialflags & SSF_SNEAKERPANEL)
+			P_ProcessBoostPanel(player, isTouching, SBPT_SNEAKER);
+		if (sector->specialflags & SSF_WATERPANEL)
+			P_ProcessBoostPanel(player, isTouching, SBPT_WATER);
+		if (sector->specialflags & SSF_REDPOGOSPRING)
+			P_ProcessPogoSpring(player, isTouching, SSPT_RED);
+		if (sector->specialflags & SSF_YELLOWPOGOSPRING)
+			P_ProcessPogoSpring(player, isTouching, SSPT_YELLOW);
+	}
+
 	if (sector->specialflags & SSF_ZOOMTUBESTART)
 		P_ProcessZoomTube(player, sectag, false);
 	if (sector->specialflags & SSF_ZOOMTUBEEND)

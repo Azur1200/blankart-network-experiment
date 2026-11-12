@@ -625,6 +625,8 @@ dboolean K_TerrainHasAffect(terrain_t *terrain, dboolean badonly, dboolean follo
 
 dboolean K_AffectingTerrainActive(void);
 
+void K_ProcessSpringTerrainEffect(player_t *player, terrain_t *terrain);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
