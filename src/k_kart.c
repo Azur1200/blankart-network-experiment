@@ -1650,7 +1650,14 @@ static void K_UpdatePanelGraze(player_t *player)
 		// TODO: What if we move K_ProcessTerrainEffect to run in its entirety here?
 		if ((grazeflags & GRS_TERRAINSPRING) || (grazeflags & GRS_TERRAINPOGOSPRING))
 		{
-			K_ProcessSpringTerrainEffect(player, player->mo->terrain);
+			if (panelcoltype == PANELCOL_HITBOX)
+			{
+				K_ProcessSpringTerrainEffect(player, player->mo->terrain);
+			}
+			else
+			{
+				player->panelgraze = 8;
+			}
 		}
 	}
 }
