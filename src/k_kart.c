@@ -8382,6 +8382,9 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	player->mo->spritexoffset = 0;
 	player->mo->spriteyoffset = 0;
 
+	// Unset the "hit accel!" prompt boolean
+	player->accelprompt = false;
+
 	// flips and crashes use centred pivots
 	if (skins[player->skin]->flags & SF_OLDPIVOTS || (player->flipovertimer > 0 || player->crash_state != 0 
 		|| (cv_kartfloatysquish.value && player->squishedtimer && !P_IsObjectOnGround(player->mo))))
