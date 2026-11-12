@@ -113,6 +113,14 @@ _(WSPB) // Wall spike base
 _(STPT) // Starpost
 _(BMNE) // Big floating mine
 _(PUMI) // Rollout Rock
+_(TBBF) // Trap Bubble (Front)
+_(TBBB) // Trap Bubble (Back)
+_(TBFF) // Trap Bubble (Floating, Front)
+_(TBFB) // Trap Bubble (Floating, Back)
+_(TBPF) // Trap Bubble (Popping, Front)
+_(TBPB) // Trap Bubble (Popping, Back)
+_(TBSF) // Trap Bubble (Spawning, Front)
+_(TBSB) // Trap Bubble (Spawning, Back)
 
 // Monitor Boxes
 _(SRBX)

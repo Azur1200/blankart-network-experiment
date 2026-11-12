@@ -332,12 +332,13 @@ dboolean P_SetPlayerMobjState(mobj_t *mobj, statenum_t state);
 dboolean P_SetMobjState(mobj_t *mobj, statenum_t state);
 
 void P_RunOverlays(void);
-#define OV_DONTSCREENOFFSET	1
-#define OV_DONT3DOFFSET		1<<1
-#define OV_DONTXYSCALE		1<<2
-#define OV_DONTROLL			1<<3
-#define OV_DONTBAKEOFFSET	1<<4
-#define OV_DONTCOPYANGLE	1<<5
+#define OV_DONTSCREENOFFSET		1
+#define OV_DONT3DOFFSET			1<<1
+#define OV_DONTXYSCALE			1<<2
+#define OV_DONTROLL				1<<3
+#define OV_DONTBAKEOFFSET		1<<4
+#define OV_DONTCOPYANGLE		1<<5
+#define OV_DONTFORCEDISPOFFSET	1<<6
 
 void P_HandleMinecartSegments(mobj_t *mobj);
 void P_MobjThinker(mobj_t *mobj);

@@ -6876,25 +6876,33 @@ void P_RunOverlays(void)
 		if ((mo->flags & MF_DONTENCOREMAP) != (mo->target->flags & MF_DONTENCOREMAP))
 			mo->flags ^= MF_DONTENCOREMAP;
 
-		mo->dispoffset = mo->target->dispoffset + mo->info->dispoffset;
-
-		if (!(mo->state->frame & FF_ANIMATE))
+		if (!(mo->threshold & OV_DONTFORCEDISPOFFSET))
 		{
-			zoffs = FixedMul(((signed)mo->state->var2)*FRACUNIT, mo->scale);
+			mo->dispoffset = mo->target->dispoffset + mo->info->dispoffset;
 
-			if (mo->state->var1)
+			if (!(mo->state->frame & FF_ANIMATE))
 			{
-				mo->dispoffset--;
+				zoffs = FixedMul(((signed)mo->state->var2)*FRACUNIT, mo->scale);
+
+				if (mo->state->var1)
+				{
+					mo->dispoffset--;
+				}
+				else
+				{
+					mo->dispoffset++;
+				}
 			}
 			else
 			{
-				mo->dispoffset++;
+				// if you're using FF_ANIMATE on an overlay,
+				// then you're on your own.
+				zoffs = 0;
 			}
 		}
 		else
 		{
-			// if you're using FF_ANIMATE on an overlay,
-			// then you're on your own.
+			// Overlay has to be manually set, just zero-out the offset
 			zoffs = 0;
 		}
 
@@ -8278,14 +8286,129 @@ static void P_CleanTrapBubble(mobj_t *trapbbl)
 
 static void P_TrapBubbleThink(mobj_t* mobj)
 {
-	if ((leveltime % 180 == 0) && (!mobj->extravalue3))
-		S_StartSound(mobj, sfx_s3kbfl);
+	statenum_t mystate = (statenum_t)(mobj->state-states);
+
+	if (mobj->target && !P_MobjWasRemoved(mobj->target))
+	{
+		// Assume this is the background overlay
+
+		if (mobj->target->player)
+		{
+			// NO_NO_NO_NO.mov
+			P_SetTarget(&mobj->target, NULL);
+
+			mobj_t *bubble_bg = P_SpawnMobjFromMobj(mobj, 0, 0, 0, MT_OVERLAY);
+
+			if (!P_MobjWasRemoved(bubble_bg))
+			{
+				P_SetTarget(&bubble_bg->target, mobj);
+				P_SetTarget(&mobj->target, bubble_bg);
+
+				P_SetMobjState(bubble_bg, S_INVISIBLE);
+
+				bubble_bg->fuse = -1;
+				bubble_bg->tics = -1;
+
+				bubble_bg->sprite = SPR_NULL;
+				bubble_bg->dispoffset = -1;
+				bubble_bg->renderflags = RF_DONTDRAW;
+				bubble_bg->threshold = OV_DONTFORCEDISPOFFSET;
+
+				bubble_bg->momx = 0;
+				bubble_bg->momy = 0;
+				bubble_bg->momz = 0;
+			}
+		}
+		else
+		{
+			mobj->target->renderflags = 0;
+
+			// Remap the dispoffset so that this always draws BEHIND the bubble proper
+			mobj->target->dispoffset = max(-2, min(2, mobj->dispoffset - 2));
+
+			switch(mystate)
+			{
+				case S_TRAPBUBBLE:
+					mobj->target->sprite = SPR_TBBB;
+					mobj->target->frame = mobj->frame;
+					mobj->target->renderflags = mobj->renderflags;
+					break;
+				case S_TRAPBUBBLE_FLOAT:
+					mobj->target->sprite = SPR_TBFB;
+					mobj->target->frame = mobj->frame;
+					mobj->target->renderflags = mobj->renderflags;
+					break;
+				case S_TRAPBUBBLE_POP_1:
+					if ((mobj->frame & FF_FRAMEMASK) == 0)
+					{
+						mobj->target->sprite = SPR_TBPB;
+						mobj->target->frame = mobj->frame;
+						mobj->target->renderflags = mobj->renderflags;
+					}
+					else
+					{
+						mobj->target->sprite = SPR_NULL;
+						mobj->target->renderflags = RF_DONTDRAW;
+					}
+					break;
+				case S_TRAPBUBBLE_SPAWN:
+					const uint32_t flagsmask = ~FF_FRAMEMASK;
+					if (mobj->frame & FF_FRAMEMASK)
+					{
+						int32_t realframe = (mobj->frame & FF_FRAMEMASK);
+						mobj->target->sprite = SPR_TBSB;
+						mobj->target->frame = (mobj->frame & flagsmask) | (max(0, realframe - 1));
+						mobj->target->renderflags = mobj->renderflags;
+					}
+					else
+					{
+						mobj->target->sprite = SPR_NULL;
+						mobj->target->renderflags = RF_DONTDRAW;
+					}
+					break;
+				default:
+					mobj->target->sprite = SPR_NULL;
+					mobj->target->renderflags = RF_DONTDRAW;
+					break;
+			}
+		}
+	}
+	else
+	{
+		mobj_t *bubble_bg = P_SpawnMobjFromMobj(mobj, 0, 0, 0, MT_OVERLAY);
+
+		if (!P_MobjWasRemoved(bubble_bg))
+		{
+			P_SetTarget(&bubble_bg->target, mobj);
+			P_SetTarget(&mobj->target, bubble_bg);
+
+			P_SetMobjState(bubble_bg, S_INVISIBLE);
+
+			bubble_bg->fuse = -1;
+			bubble_bg->tics = -1;
+
+			bubble_bg->sprite = SPR_NULL;
+			bubble_bg->dispoffset = -1;
+			bubble_bg->renderflags = RF_DONTDRAW;
+			bubble_bg->threshold = OV_DONTFORCEDISPOFFSET;
+
+			bubble_bg->momx = 0;
+			bubble_bg->momy = 0;
+			bubble_bg->momz = 0;
+		}
+	}
 
 	if (mobj->tracer && !P_MobjWasRemoved(mobj->tracer) && mobj->tracer->player)
 	{
 		player_t* player = mobj->tracer->player;
 		fixed_t destx, desty, curfz, destfz;
 		dboolean blockmove = false;
+
+		// Play a warbly sound
+		if ((leveltime % 180 == 0) && (!mobj->extravalue3))
+		{
+			S_StartSound(mobj, sfx_s3kbfl);
+		}
 
 		// disable new pivots while in bubbles
 		// this basically has to run *after* K_KartPlayerThink to work so watch out
@@ -8402,7 +8525,7 @@ static void P_TrapBubbleThink(mobj_t* mobj)
 		{
 			// Check if the player hits Accel; if they have, pop and launch 'em out with
 			// a boost!
-			// FIXME: A "HIT THE GAS!" prompt to tell players what to do in the moment
+
 			uint16_t buttons = K_GetKartButtons(player);
 			dboolean pressing_accel = ((buttons & BT_ACCELERATE) &&
 						   !(player->oldcmd.buttons & BT_ACCELERATE));
@@ -8418,7 +8541,7 @@ static void P_TrapBubbleThink(mobj_t* mobj)
 
 				const fixed_t speedscalar = K_GetKartGameSpeedScalar(gamespeed);
 
-				// Unlike the normal Bubble Shield boost, this sould fling you at a
+				// Unlike the normal Bubble Shield boost, this should fling you at a
 				// constant midair speed
 				P_InstaThrust(mobj->tracer,
 					      mobj->tracer->angle,
@@ -8444,6 +8567,10 @@ static void P_TrapBubbleThink(mobj_t* mobj)
 
 				return;
 			}
+			else
+			{
+				mobj->tracer->player->accelprompt = true;
+			}
 		}
 
 		mobj->movecount++;
@@ -8458,7 +8585,14 @@ static void P_TrapBubbleThink(mobj_t* mobj)
 	}
 	else
 	{
-		mobj->destscale = (5 * mapobjectscale) >> 2;
+		if (mobj->spawnpoint)
+		{
+			mobj->destscale = (5 * FixedMul(mobj->spawnpoint->scale, mapobjectscale)) >> 2;
+		}
+		else
+		{
+			mobj->destscale = (5 * mapobjectscale) >> 2;
+		}
 
 		if (mobj->threshold > 0)
 			mobj->threshold--;
@@ -11941,6 +12075,28 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 		case MT_SNEAKERPANELSPAWNER:
 			Obj_SneakerPanelSpawnerSpawn(mobj);
 			break;
+		case MT_TRAPBUBBLE:
+			mobj_t *bubble_bg = P_SpawnMobjFromMobj(mobj, 0, 0, 0, MT_OVERLAY);
+
+			if (!P_MobjWasRemoved(bubble_bg))
+			{
+				P_SetTarget(&bubble_bg->target, mobj);
+				P_SetTarget(&mobj->target, bubble_bg);
+
+				P_SetMobjState(bubble_bg, S_INVISIBLE);
+
+				bubble_bg->fuse = -1;
+				bubble_bg->tics = -1;
+
+				bubble_bg->sprite = SPR_TBSB;
+				bubble_bg->dispoffset = -1;
+				bubble_bg->renderflags = RF_DONTDRAW;
+				bubble_bg->threshold = OV_DONTFORCEDISPOFFSET;
+
+				bubble_bg->momx = 0;
+				bubble_bg->momy = 0;
+				bubble_bg->momz = 0;
+			}
 		default:
 			break;
 	}

@@ -9698,6 +9698,7 @@ void A_SpawnFreshCopy(void *thing)
 	mobj_t *newObject;
 
 	const dboolean copyspawn = (dboolean)(var1 != 0);
+	const statenum_t setstate = (statenum_t)(var2);
 
 	if (LUA_CallAction(A_SPAWNFRESHCOPY, actor))
 		return;
@@ -9708,6 +9709,11 @@ void A_SpawnFreshCopy(void *thing)
 	int32_t i;
 	for (i = 0; i < NUM_SCRIPT_ARGS; i++)
 		newObject->script_args[i] = actor->script_args[i];
+
+	if (setstate)
+	{
+		P_SetMobjState(newObject, setstate);
+	}
 
 	newObject->angle = actor->angle;
 	newObject->color = actor->color;
