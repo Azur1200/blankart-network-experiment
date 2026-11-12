@@ -1935,6 +1935,8 @@ void M_Drawer(void)
 				V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, curbgcolor);
 			else if (fastcmp(curbgname, "SRB2KTTL") && (!curbghide || !titlemapinaction))
 				F_TitleBGScroll(5, menuanimtimer);
+			else if (fastcmp(curbgname, "BLANKTTL") && (!curbghide || !titlemapinaction))
+				F_BlanTitleBG(menuanimtimer);
 			else if ((!curbghide || !titlemapinaction))
 				F_SkyScroll(curbgxspeed, curbgyspeed, curbgname);
 			if (curfadevalue)

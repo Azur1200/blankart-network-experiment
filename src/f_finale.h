@@ -79,6 +79,7 @@ void F_BlanStartCredits(void);
 void F_StartSecretCredits(void);
 
 void F_TitleBGScroll(int32_t scrollspeed, int32_t ticker);
+void F_BlanTitleBG(int32_t ticker);
 
 extern int32_t finalecount;
 extern int32_t menuanimtimer;
