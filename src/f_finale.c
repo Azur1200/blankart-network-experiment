@@ -110,9 +110,7 @@ static patch_t *ttcheckers; // *vroom* KART
 static patch_t *ttkflash; // flash screen
 
 // ttmode blan
-static patch_t *ttblanlogo;
 static patch_t *ttblanoverlay;
-static patch_t *ttblanpieces[8];
 static patch_t *ttblanchara[3];
 
 #define NOWAY
@@ -1440,24 +1438,7 @@ void F_CacheTitleScreen(void)
 			break;
 		
 		case TTMODE_BLAN:
-			ttblanlogo = W_CachePatchName("BKLOGOMN", PU_PATCH_LOWPRIORITY);
 			ttblanoverlay = W_CachePatchName("BKLOGOOV", PU_PATCH_LOWPRIORITY);
-
-			const char* patchNames[] = {
-				"BKLOGO00",
-				"BKLOGO01",
-				"BKLOGO02",
-				"BKLOGO03",
-				"BKLOGO04",
-				"BKLOGO05",
-				"BKLOGO06",
-				"BKLOGO07"
-			};
-
-			for (size_t m = 0; m < sizeof(patchNames) / sizeof(patchNames[0]); ++m)
-			{
-				ttblanpieces[m] = W_CachePatchName(patchNames[m], PU_PATCH_LOWPRIORITY);
-			}
 
 			const char* charaPatchNames[] = {
 				"BKCHAR00",
@@ -1705,17 +1686,34 @@ static animkeyframe_t charakeyframes_1_rot[] = {
 	{0, 68, EASE_OUTQUAD},
 };
 
-static void F_DrawCompositeGameLogo(void)
+void F_DrawCompositeGameLogo(tic_t time, int32_t yoffset)
 {
-	fixed_t fractime = ((finalecount - 15)<<FRACBITS) + R_GetTimeFrac(RTF_MENU);
+	const char* ttblanLogoPatchNames[] = {
+		"BKLOGO00",
+		"BKLOGO01",
+		"BKLOGO02",
+		"BKLOGO03",
+		"BKLOGO04",
+		"BKLOGO05",
+		"BKLOGO06",
+		"BKLOGO07"
+	};
+	patch_t *ttblanpieces[8];
+	
+	fixed_t fractime = ((time)<<FRACBITS) + R_GetTimeFrac(RTF_MENU);
 	fixed_t x, y, scale;
+
+	for (size_t m = 0; m < 8; ++m)
+	{
+		ttblanpieces[m] = W_CachePatchName(ttblanLogoPatchNames[m], PU_CACHE);
+	}
 
 	if (fractime > 2<<FRACBITS)
 	{
 		x = M_GetAnimatedKeyFrameValue(logokeyframes_5_x, 2, fractime);
 		y = M_GetAnimatedKeyFrameValue(logokeyframes_5_y, 3, fractime);
 		scale = M_GetAnimatedKeyFrameValue(logokeyframes_5_scale, 2, fractime);
-		V_DrawFixedPatch(x, y, scale, V_SNAPTOTOP, ttblanpieces[5], NULL);
+		V_DrawFixedPatch(x, y + (yoffset<<FRACBITS), scale, V_SNAPTOTOP, ttblanpieces[5], NULL);
 	}
 
 	if (fractime > 0)
@@ -1723,7 +1721,7 @@ static void F_DrawCompositeGameLogo(void)
 		x = M_GetAnimatedKeyFrameValue(logokeyframes_4_x, 2, fractime);
 		y = M_GetAnimatedKeyFrameValue(logokeyframes_4_y, 3, fractime);
 		scale = M_GetAnimatedKeyFrameValue(logokeyframes_4_scale, 2, fractime);
-		V_DrawFixedPatch(x, y, scale, V_SNAPTOTOP, ttblanpieces[4], NULL);
+		V_DrawFixedPatch(x, y + (yoffset<<FRACBITS), scale, V_SNAPTOTOP, ttblanpieces[4], NULL);
 	}
 
 	if (fractime > 12<<FRACBITS)
@@ -1731,7 +1729,7 @@ static void F_DrawCompositeGameLogo(void)
 		x = M_GetAnimatedKeyFrameValue(logokeyframes_7_x, 2, fractime);
 		y = M_GetAnimatedKeyFrameValue(logokeyframes_7_y, 3, fractime);
 		scale = M_GetAnimatedKeyFrameValue(logokeyframes_7_scale, 2, fractime);
-		V_DrawFixedPatch(x, y, scale, V_SNAPTOTOP, ttblanpieces[7], NULL);
+		V_DrawFixedPatch(x, y + (yoffset<<FRACBITS), scale, V_SNAPTOTOP, ttblanpieces[7], NULL);
 	}
 
 	if (fractime > 10<<FRACBITS)
@@ -1739,7 +1737,7 @@ static void F_DrawCompositeGameLogo(void)
 		x = M_GetAnimatedKeyFrameValue(logokeyframes_6_x, 2, fractime);
 		y = M_GetAnimatedKeyFrameValue(logokeyframes_6_y, 3, fractime);
 		scale = M_GetAnimatedKeyFrameValue(logokeyframes_6_scale, 2, fractime);
-		V_DrawFixedPatch(x, y, scale, V_SNAPTOTOP, ttblanpieces[6], NULL);
+		V_DrawFixedPatch(x, y + (yoffset<<FRACBITS), scale, V_SNAPTOTOP, ttblanpieces[6], NULL);
 	}
 
 	if (fractime > 0)
@@ -1747,7 +1745,7 @@ static void F_DrawCompositeGameLogo(void)
 		x = M_GetAnimatedKeyFrameValue(logokeyframes_0_x, 2, fractime);
 		y = M_GetAnimatedKeyFrameValue(logokeyframes_0_y, 3, fractime);
 		scale = M_GetAnimatedKeyFrameValue(logokeyframes_0_scale, 2, fractime);
-		V_DrawFixedPatch(x, y, scale, V_SNAPTOTOP, ttblanpieces[0], NULL);
+		V_DrawFixedPatch(x, y + (yoffset<<FRACBITS), scale, V_SNAPTOTOP, ttblanpieces[0], NULL);
 	}
 
 	if (fractime > 2<<FRACBITS)
@@ -1755,7 +1753,7 @@ static void F_DrawCompositeGameLogo(void)
 		x = M_GetAnimatedKeyFrameValue(logokeyframes_1_x, 2, fractime);
 		y = M_GetAnimatedKeyFrameValue(logokeyframes_1_y, 3, fractime);
 		scale = M_GetAnimatedKeyFrameValue(logokeyframes_1_scale, 2, fractime);
-		V_DrawFixedPatch(x, y, scale, V_SNAPTOTOP, ttblanpieces[1], NULL);
+		V_DrawFixedPatch(x, y + (yoffset<<FRACBITS), scale, V_SNAPTOTOP, ttblanpieces[1], NULL);
 	}
 
 	if (fractime > 10<<FRACBITS)
@@ -1763,7 +1761,7 @@ static void F_DrawCompositeGameLogo(void)
 		x = M_GetAnimatedKeyFrameValue(logokeyframes_2_x, 2, fractime);
 		y = M_GetAnimatedKeyFrameValue(logokeyframes_2_y, 3, fractime);
 		scale = M_GetAnimatedKeyFrameValue(logokeyframes_2_scale, 2, fractime);
-		V_DrawFixedPatch(x, y, scale, V_SNAPTOTOP, ttblanpieces[2], NULL);
+		V_DrawFixedPatch(x, y + (yoffset<<FRACBITS), scale, V_SNAPTOTOP, ttblanpieces[2], NULL);
 	}
 	
 	if (fractime > 12<<FRACBITS)
@@ -1771,7 +1769,12 @@ static void F_DrawCompositeGameLogo(void)
 		x = M_GetAnimatedKeyFrameValue(logokeyframes_3_x, 2, fractime);
 		y = M_GetAnimatedKeyFrameValue(logokeyframes_3_y, 3, fractime);
 		scale = M_GetAnimatedKeyFrameValue(logokeyframes_3_scale, 2, fractime);
-		V_DrawFixedPatch(x, y, scale, V_SNAPTOTOP, ttblanpieces[3], NULL);
+		V_DrawFixedPatch(x, y + (yoffset<<FRACBITS), scale, V_SNAPTOTOP, ttblanpieces[3], NULL);
+	}
+
+	for (size_t n = 0; n < 8; ++n)
+	{
+		W_UnlockCachedPatch(ttblanpieces[n]);
 	}
 }
 
@@ -1884,7 +1887,7 @@ void F_TitleScreenDrawer(void)
 				V_DrawFixedPatch(chxA, (44<<FRACBITS) - chsuby, FRACUNIT/3, V_SNAPTOBOTTOM, ttblanchara[1], NULL);
 			}
 
-			F_DrawCompositeGameLogo();
+			F_DrawCompositeGameLogo(finalecount - 15, 0);
 			if (alphaflags)
 			{
 				V_DrawFixedPatch(30<<FRACBITS, 16<<FRACBITS, FRACUNIT, V_SNAPTOTOP|V_ADD|alphaflags, ttblanoverlay, NULL);

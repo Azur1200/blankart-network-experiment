@@ -78,6 +78,8 @@ void F_StartCredits(void);
 void F_BlanStartCredits(void);
 void F_StartSecretCredits(void);
 
+void F_DrawCompositeGameLogo(tic_t time, int32_t yoffset);
+
 void F_TitleBGScroll(int32_t scrollspeed, int32_t ticker);
 void F_BlanTitleBG(int32_t ticker);
 

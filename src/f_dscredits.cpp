@@ -74,10 +74,7 @@ static int32_t finalesecs, finalespeed;
 static dboolean dscredits_running = false;
 
 // Title Screen
-static patch_t *ttbanner; // SONIC ROBO BLAST 2
-static patch_t *ttkart; // *vroom* KART
-static patch_t *ttcheckers; // *vroom* KART
-static patch_t *ttkflash; // flash screen
+static patch_t *ttblanoverlay;
 
 // Scenery
 #define NUMDSBUILDINGS 6
@@ -158,7 +155,7 @@ static uint16_t credits_colors[CREDSKINCOUNT];
 
 static uint16_t player1_idx, rival_idx, special_idx, specialp, tylermemoriam;
 
-static const char* gamettl = "SRB2KART";
+static const char* gamettl = "BLANKART";
 
 dscredits_t dscredits;
 
@@ -463,11 +460,7 @@ void F_SecretCreditsTicker(void)
 
         credskins = CREDSKINCOUNT - 1;
 
-        // SRB2K logo
-        ttbanner = static_cast<patch_t*>(W_CachePatchName("TTKBANNR", PU_PATCH_LOWPRIORITY));
-		ttkart = static_cast<patch_t*>(W_CachePatchName("TTKART", PU_PATCH_LOWPRIORITY));
-		ttcheckers = static_cast<patch_t*>(W_CachePatchName("TTCHECK", PU_PATCH_LOWPRIORITY));
-		ttkflash = static_cast<patch_t*>(W_CachePatchName("TTKFLASH", PU_PATCH_LOWPRIORITY));
+        ttblanoverlay = static_cast<patch_t*>(W_CachePatchName("BKLOGOOV", PU_PATCH_LOWPRIORITY));
 
         // Scenery patches
         dsground = static_cast<patch_t*>(W_CachePatchName("EXCDGND", PU_PATCH_LOWPRIORITY));
@@ -1318,49 +1311,19 @@ static void F_DrawCreditsArea(fixed_t y_root, fixed_t height, fixed_t xdiff)
 // Not really "fake" considering this is the actual title sequence.
 static void F_FakeTitleScreen(tic_t count)
 {
-    int32_t w, h;
+    int32_t transval = CLAMP((count - 50)>>1, 0, 10);
+    int32_t alphaflags = (transval<<V_ALPHASHIFT);
 
-    w = vid.scaledwidth;
-    h = (vid.height / vid.dup);
-
-    const int32_t vidxdiff = (w - BASEVIDWIDTH) / 2;
-    const int32_t vidydiff = (h - BASEVIDHEIGHT) / 2;
-
-	if (count < 50)
-	{
-        V_DrawSmallScaledPatch(84, 36, 0, ttbanner);
-
-        if (count >= 20)
-            V_DrawSmallScaledPatch(84, 87, 0, ttkart);
-        else if (count >= 10)
-            V_DrawSciencePatch((84<<FRACBITS) - 18*(((20 - count)<<FRACBITS) - R_GetTimeFrac(RTF_MENU)), 87<<FRACBITS, 0, ttkart, FRACUNIT/2);
-	}
-	else if (count < 52)
-	{
-		V_DrawFill(-vidxdiff - 2, -vidydiff - 2, w + 2, h + 2, 0);
-		V_DrawSmallScaledPatch(84, 36, 0, ttkflash);
-	}
-	else
-	{
-		int32_t transval = 0;
-
-		if (count <= (50+(9<<1)))
-			transval = (count - 50)>>1;
-
-		if (transval)
-        {
-            V_DrawFill(-vidxdiff - 2, -vidydiff - 2, w + 2, h + 2, ((10 - transval) << V_ALPHASHIFT)|0);
-        }
-
-        V_DrawSmallScaledPatch(84, 36, 0, ttbanner);
-
-		V_DrawSmallScaledPatch(84, 87, 0, ttkart);
-
-		if (!transval)
-			return;
-
-		V_DrawSmallScaledPatch(84, 36, transval<<V_ALPHASHIFT, ttkflash);
-	}
+    if (transval && (10 - transval))
+    {
+        V_DrawFadeScreen(0, 10 - transval);
+    }
+    
+    F_DrawCompositeGameLogo(count - 25, 48);
+    if (alphaflags)
+    {
+        V_DrawFixedPatch(30<<FRACBITS, 54<<FRACBITS, FRACUNIT, V_SNAPTOTOP|V_ADD|alphaflags, ttblanoverlay, NULL);
+    }
 }
 
 void F_SecretCreditsDrawer(void)
@@ -1422,11 +1385,7 @@ void F_SecretCreditsDrawer(void)
         V_DrawFill(-vidxdiff - 2, -vidydiff - 2, w + 2, h + 2, ((10 - alpha) << V_ALPHASHIFT)|31);
     }
 
-    if ((titlealpha) && (dscredits.creditsscene < 18))
-    {
-        V_DrawSmallScaledPatch(84, 36, ((10 - titlealpha) << V_ALPHASHIFT), ttbanner);
-    }
-    else if (dscredits.creditsscene >= 18)
+    if (dscredits.creditsscene >= 18)
     {
         tic_t fakefinalecount = static_cast<tic_t>(std::max(static_cast<longtic_t>(0),
                                                             elapsed - creditstimings[17]) /
