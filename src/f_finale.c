@@ -73,6 +73,7 @@ int32_t curbgxspeed;
 int32_t curbgyspeed;
 dboolean curbghide;
 dboolean hidetitlemap;		// WARNING: set to false by M_SetupNextMenu and M_ClearMenus
+dboolean sawfullcredits = false;
 
 #if 0
 static uint8_t  laststaff = 0;
@@ -2093,7 +2094,8 @@ void F_TitleScreenTicker(dboolean run)
 			{
 				if (finalecount == 5)
 				{
-					S_ChangeMusicInternal("titlea", true);
+					const char* titlemus = (sawfullcredits) ? "exttl" : "titlea";
+					S_ChangeMusicInternal(titlemus, true);
 				}
 				else if (finalecount == 80)
 				{

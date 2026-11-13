@@ -129,6 +129,8 @@ extern int32_t curbgyspeed;
 extern dboolean curbghide;
 extern dboolean hidetitlemap;
 
+extern dboolean sawfullcredits;
+
 extern dboolean curhidepics;
 extern ttmode_enum curttmode;
 extern uint8_t curttscale;

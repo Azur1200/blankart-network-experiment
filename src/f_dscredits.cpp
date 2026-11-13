@@ -968,6 +968,7 @@ void F_SecretCreditsTicker(void)
     // After ALL THAT, check if the credits are finished.
     if (dscredits.creditsscene >= LASTSCENE)
     {
+        sawfullcredits = true;
         F_StartGameEvaluation();
     }
     
