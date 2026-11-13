@@ -56,17 +56,17 @@ static longtic_t elapsed = 0;
 static longtic_t lastelapsed = 0;
 static longtic_t elapsed_diff;
 
-static longtic_t kartcredits_start = 13335000;
-static longtic_t kartcredits_end = 186384000;
-static longtic_t kartcredits_length = (kartcredits_end - kartcredits_start);
-static fixed_t kartcredits_dividend = kartcredits_length / FRACUNIT;
-static fixed_t kartcredits_height;
-
-static longtic_t blancredits_start = 195977000;
-static longtic_t blancredits_end = 294593000;
+static longtic_t blancredits_start = 13335000;
+static longtic_t blancredits_end = 186384000;
 static longtic_t blancredits_length = (blancredits_end - blancredits_start);
 static fixed_t blancredits_dividend = blancredits_length / FRACUNIT;
 static fixed_t blancredits_height;
+
+static longtic_t kartcredits_start = 195977000;
+static longtic_t kartcredits_end = 294593000;
+static longtic_t kartcredits_length = (kartcredits_end - kartcredits_start);
+static fixed_t kartcredits_dividend = kartcredits_length / FRACUNIT;
+static fixed_t kartcredits_height;
 
 static longtic_t finalescene;
 static int32_t finalesecs, finalespeed;
@@ -214,146 +214,6 @@ longtic_t creditstimings[] = {
     308203000, // (scene 21) This should return you to the title screen.
 
     INFLONGTICS // Dummy (Let's *not* crash the game...)
-};
-
-// Basically just trims the "Thanks for playing!" text
-static const char *credits[] = {
-	"\1SRB2Kart",
-	"\1Credits",
-	"",
-	"\1Game Design",
-	"Sally \"TehRealSalt\" Cochenour",
-	"Jeffery \"Chromatian\" Scott",
-	"\"VelocitOni\"",
-	"",
-	"\1Lead Programming",
-	"Sally \"TehRealSalt\" Cochenour",
-	"Vivian \"toaster\" Grannell",
-	"Ronald \"Eidolon\" Kinard",
-	"James Robert Roman",
-	"Sean \"Sryder\" Ryder",
-	"Ehab \"wolfs\" Saeed",
-	"\"ZarroTsu\"",
-	"",
-	"\1Support Programming",
-	"\"Lach\"",
-	"\"Lat\'\"",
-	"AJ \"Tyron\" Martinez",
-	"\"Monster Iestyn\"",
-	"\"SteelT\"",
-	"",
-	"\1External Programming",
-	"Alam Ed Arias",
-	"\"alphaRexJames\"",
-	"\"Ashnal\"",
-	"\"filpAM\"",
-	"\"FlykeSpice\"",
-	"\"Hannu Hanhi\"",
-	"\"himie\"",
-	"\"JugadorXEI\"",
-	"\"Kimberly\"",
-	"\"Lighto97\"",
-	"\"Lonsfor\"",
-	"\"mazmazz\"",
-	"\"minenice\"",
-	"\"Shuffle\"",
-	"\"Snu\"",
-	"\"X.organic\"",
-	"",
-	"\1Lead Artists",
-	"Desmond \"Blade\" DesJardins",
-	"\"VelocitOni\"",
-	"",
-	"\1Support Artists",
-	"Sally \"TehRealSalt\" Cochenour",
-	"\"Chengi\"",
-	"\"Chrispy\"",
-	"Sherman \"CoatRack\" DesJardins",
-	"\"DrTapeworm\"",
-	"Jesse \"Jeck Jims\" Emerick",
-	"Wesley \"Charyb\" Gillebaard",
-	"\"Nev3r\"",
-	"Vivian \"toaster\" Grannell",
-	"James \"SeventhSentinel\" Hall",
-	"\"Lat\'\"",
-	"\"rairai104n\"",
-	"\"Tyrannosaur Chao\"",
-	"\"ZarroTsu\"",
-	"",
-	"\1External Artists",
-	"\"1-Up Mason\"",
-	"\"DirkTheHusky\"",
-	"\"LJSTAR\"",
-	"\"MotorRoach\"",
-	"\"Ritz\"",
-	"\"Rob\"",
-	"\"SmithyGNC\"",
-	"\"Snu\"",
-	"\"Spherallic\"",
-	"\"TelosTurntable\"",
-	"\"VAdaPEGA\"",
-	"\"Virt\"",
-	"\"Voltrix\"",
-	"",
-	"\1Sound Design",
-	"James \"SeventhSentinel\" Hall",
-	"Sonic Team",
-	"\"VAdaPEGA\"",
-	"\"VelocitOni\"",
-	"",
-	"\1Original Music",
-	"\"DrTapeworm\"",
-	"Wesley \"Charyb\" Gillebaard",
-	"James \"SeventhSentinel\" Hall",
-	"",
-	"\1Lead Level Design",
-	"\"Blitz-T\"",
-	"Sally \"TehRealSalt\" Cochenour",
-	"Desmond \"Blade\" DesJardins",
-	"Jeffery \"Chromatian\" Scott",
-	"\"Tyrannosaur Chao\"",
-	"",
-	"\1Support Level Design",
-	"\"Chaos Zero 64\"",
-	"\"D00D64\"",
-	"\"DrTapeworm\"",
-	"Paul \"Boinciel\" Clempson",
-	"Sherman \"CoatRack\" DesJardins",
-	"Vivian \"toaster\" Grannell",
-	"\"Gunla\"",
-	"James \"SeventhSentinel\" Hall",
-	"\"Lat\'\"",
-	"\"MK\"",
-	"\"Ninferno\"",
-	"Sean \"Sryder\" Ryder",
-	"\"Ryuspark\"",
-	"\"Simsmagic\"",
-	"Ivo Solarin",
-	"\"SP47\"",
-	"\"TG\"",
-	"\"Victor Rush Turbo\"",
-	"\"ZarroTsu\"",
-	"",
-	"\1Testing",
-	"RKH License holders",
-	"The KCS",
-	"\"CyberIF\"",
-	"\"Dani\"",
-	"Karol \"Fooruman\" D""\x1E""browski", // Dąbrowski, <Sryder> accents in srb2 :ytho:
-	"\"Virt\"",
-	"",
-	"\1Special Thanks",
-	"SEGA",
-	"Sonic Team",
-	"SRB2 & Sonic Team Jr. (www.srb2.org)",
-	"\"Chaos Zero 64\"",
-	"",
-	"\1Produced By",
-	"Kart Krew",
-	"",
-	"\1In Memory of",
-	"\2\"Tyler52\"",
-	NULL
 };
 
 tic_t dscreditsticks = 0;
@@ -1404,6 +1264,34 @@ void F_SecretCreditsDrawer(void)
     if ((dscredits.creditsscene > 1) && (dscredits.creditsscene < 8))
     {
         y = ((BASEVIDHEIGHT + vidydiff) << FRACBITS) -
+            FixedMul(blancredits_height + (h << FRACBITS), std::min(std::max(blancredits_start, elapsed) - blancredits_start, blancredits_end) / blancredits_dividend);
+
+        // Draw credits text on top
+        for (i = 0; blancredits[i]; i++)
+        {
+            switch(blancredits[i][0])
+            {
+            case 0:
+                y += 50<<FRACBITS;
+                break;
+            case 1:
+                if (y>>FRACBITS > -(10 + vidydiff))
+                    V_DrawString(8 - vidxdiff, y >> FRACBITS, V_ORANGEMAP, &blancredits[i][1]);
+                y += 16<<FRACBITS;
+                break;
+            default:
+                if (y>>FRACBITS > -(10 + vidydiff))
+                    V_DrawRightAlignedThinString(248 - vidxdiff, y >> FRACBITS, V_ALLOWLOWERCASE, blancredits[i]);
+                y += 20<<FRACBITS;
+                break;
+            }
+            if (((y>>FRACBITS) * vid.dup) > vid.height)
+                break;
+        }
+    }
+    else if (dscredits.creditsscene > 7)
+    {
+        y = ((BASEVIDHEIGHT + vidydiff) << FRACBITS) -
             FixedMul(kartcredits_height + (h << FRACBITS), std::min(std::max(kartcredits_start, elapsed) - kartcredits_start, kartcredits_end) / kartcredits_dividend);
 
         // Draw credits text on top
@@ -1429,34 +1317,6 @@ void F_SecretCreditsDrawer(void)
             default:
                 if (y>>FRACBITS > -(10 + vidydiff))
                     V_DrawRightAlignedThinString(248 - vidxdiff, y >> FRACBITS, V_ALLOWLOWERCASE, credits[i]);
-                y += 20<<FRACBITS;
-                break;
-            }
-            if (((y>>FRACBITS) * vid.dup) > vid.height)
-                break;
-        }
-    }
-    else if (dscredits.creditsscene > 7)
-    {
-        y = ((BASEVIDHEIGHT + vidydiff) << FRACBITS) -
-            FixedMul(blancredits_height + (h << FRACBITS), std::min(std::max(blancredits_start, elapsed) - blancredits_start, blancredits_end) / blancredits_dividend);
-
-        // Draw credits text on top
-        for (i = 0; blancredits[i]; i++)
-        {
-            switch(blancredits[i][0])
-            {
-            case 0:
-                y += 50<<FRACBITS;
-                break;
-            case 1:
-                if (y>>FRACBITS > -(10 + vidydiff))
-                    V_DrawString(8 - vidxdiff, y >> FRACBITS, V_ORANGEMAP, &blancredits[i][1]);
-                y += 16<<FRACBITS;
-                break;
-            default:
-                if (y>>FRACBITS > -(10 + vidydiff))
-                    V_DrawRightAlignedThinString(248 - vidxdiff, y >> FRACBITS, V_ALLOWLOWERCASE, blancredits[i]);
                 y += 20<<FRACBITS;
                 break;
             }

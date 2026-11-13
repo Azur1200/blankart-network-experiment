@@ -545,7 +545,7 @@ dboolean F_IntroResponder(event_t *event)
 // =========
 //  CREDITS
 // =========
-static const char *credits[] = {
+const char *credits[] = {
 	"\1SRB2Kart",
 	"\1Credits",
 	"",
@@ -680,7 +680,7 @@ static const char *credits[] = {
 	"Kart Krew",
 	"",
 	"\1In Memory of",
-	"\"Tyler52\"",
+	"\2\"Tyler52\"",
 	"",
 	"",
 	"\1Thank you",
@@ -905,6 +905,7 @@ dboolean F_CreditResponder(event_t *event)
 //  BLANCREDITS
 // ============
 
+// Without the "Thanks for playing!" text, due to the full credits
 const char *blancredits[] = {
 	"\1BlanKart",
 	"\1Credits",
@@ -920,6 +921,11 @@ const char *blancredits[] = {
 	"\1Support Programming",
 	"\"hayaunderscore\" aka \"DeltaKanyx\"",
 	"\"WumboSpasm\"",
+	"",
+	"\1\"Vehicles\" System",
+	"\"GenericHeroGuy\"",
+	"\"minenice\"",
+	"\"yama\"",
 	"",
 	"\1Item Programming",
 	"\"NepDisk\"",
@@ -943,7 +949,7 @@ const char *blancredits[] = {
 	"Kart Krew Dev",
 	"Ronald \"Eidolon\" Kinard", // Interp, Virtual keyboard, So many other things
 	"\"Lat'\"", // Followers, Virutal Keyboard
-	"\"JugadorXEI\"",
+	"\"JugadorXEI\"", // A whole lot :holdingbugtears:
 	"\"Kimberly\"",
 	"\"Chearii\"",
 	"\"hayaunderscore\" aka \"DeltaKanyx\"",
@@ -957,7 +963,6 @@ const char *blancredits[] = {
 	"\"Skirlez\"", // PT_SAY packet fixes
 	"Sally \"TehRealSalt\" Cochenour", // Map Buffer rewrite, Voting rewrites
 	"\"Jartha\"", // Various bugfixes, RRID, Virtual Keyboard
-	"\"Lat'\"", // Virtual Keyboard
 	"\"Jisk\"", // K_AddMessage Lua exposure
 	"",
 	"\1Item Design",
@@ -976,6 +981,60 @@ const char *blancredits[] = {
 	"\"merritt\"",
 	"\"Sunflower\" aka \"AnimeSonic\"",
 	"",
+	"\1Logo Design",
+	"\"ArtoMeister\"",
+	"\"merritt\"",
+	"\"Spee\"",
+	"\"yama\"",
+	"",
+	"\1Title Illustration",
+	"\"zichow4evr\"",
+	"",
+	"\1Vehicle Design", // ...the indev talks in question. Surprise!
+	"\"StarrydustNova\"", // Blan Kart M
+	"\"joshyflip\"", // Blan Kart M
+	"\"Spee\"", // Blan Kart M
+	"\"ArtoMeister\"", // Hang-on Bike
+	"\"PX8916\"", // Blan Kart S
+	"",
+	"\1Character Artwork",
+	"\"StarrydustNova\"", // Sonic
+	"\"joshyflip\"", // Sonic
+	"\"yama\"", // Sonic
+	"\"ArtoMeister\"", // Sakura
+	"\"minenice\"", // Arisa
+	"",
+	"\1Map Design",
+	"\"SGNRyan\"",
+	"\"AracadeStriker\"",
+	"Lillie aka \"triangularity\"",
+	"\"Mayo\"",
+	"\"StarrydustNova\"",
+	"\"Phoenix\"",
+	"\"yama\"",
+	"",
+	"\1Map Textures",
+	"\"SGNRyan\"",
+	"\"StarrydustNova\"",
+	"\"yama\"",
+	"\"ArtoMeister\"",
+	"",
+	"\1Map Object Artwork",
+	"\"yama\"",
+	"\"Miguelius256\"",
+	"",
+  	"\1Map Quality Assurance",
+	"\"merritt\"",
+	"\"SGNRyan\"",
+	"\"luna\"",
+	"\"Mayo\"",
+	"\"MotoBugger\"",
+	"\"Rim Jobless\"",
+	"\"White Mage (guy who picked up controller)\"",
+	"\"rigged\"",
+	"\"StarrydustNova\"",
+	"\"yama\"",
+	"",
 	"\1New Item Art",
 	"\"Spee\"", // Double jawz, the various bananas, the icons from HitList, new landmine sprite
 	"\"Jin\"", // Double Sneakers
@@ -985,6 +1044,7 @@ const char *blancredits[] = {
 	"\"minenice\"",
 	"\"Mompi\"",
 	"\"Chuckles troll\"", // Attraction Shield, S-Monitor
+	"\"TetraCT\" aka \"CoolThok\"", // Egg Mine HUD graphics
 	"",
 	"\1New HUD Art",
 	"\"Spee\"",
@@ -1000,11 +1060,10 @@ const char *blancredits[] = {
 	"\"StarrydustNova\"",
 	"\"joshyflip\"",
 	"\"Chuckles troll\"", // Timer icon for: S-Monitor
+	"\"yama\"", // Rank graphics
 	"",
 	"\1New Misc Art",
 	"\"scizor300\"",
-	"\"StarrydustNova\"", // Per some indev talks. Can't reveal the secrets yet!
-	"\"joshyflip\"", // Per some indev talks. Can't reveal the secrets yet!
 	"\"ArtoMeister\"", // "Bad waypoint" graphic
 	"",
 	"\1Additional Assets",
@@ -1023,7 +1082,7 @@ const char *blancredits[] = {
 	"\"luna\"",
 	"\"Super Chris\"",
 	"\"Sunflower\" aka \"AnimeSonic\"",
-	"\"CoolThok\"",
+	"\"TetraCT\" aka \"CoolThok\"",
 	"\"Phoenix\"",
 	"",
 	// Anyone who's been directly involved with getting rid of SIGSEGV
@@ -1086,13 +1145,17 @@ const char *blancredits[] = {
 	"Sunflower's Garden",
 	"The Moe Mansion and Birdhouse Team",
 	"SRB2Kart Saturn Contributors",
+	NULL
+};
+
+static const char *thankstext[] = {
 	"",
 	"",
 	"\1Thank you",
-	"\1for playing!",
-
-	NULL,
+	"\1for playing!"
 };
+
+static const char** realblancredits;
 
 void F_BlanStartCredits(void)
 {
@@ -1100,6 +1163,53 @@ void F_BlanStartCredits(void)
 
 	// Just in case they're open ... somehow
 	M_ClearMenus(true);
+
+	// Allocate the credits string
+
+	const size_t blancreds_size = sizeof(blancredits) + sizeof(thankstext) - sizeof(const char*);
+	const size_t blancreds_fullsize = blancreds_size + sizeof(const char*);
+
+	if (!realblancredits)
+	{
+		realblancredits = malloc(blancreds_fullsize);
+	}
+	else
+	{
+		realblancredits = realloc(realblancredits, blancreds_fullsize);
+	}
+
+	memset(realblancredits, 0, blancreds_fullsize);
+
+	size_t ptr_pos = 0;
+	size_t copylen = (sizeof(blancredits) / sizeof(blancredits[1])) - 1;
+	size_t i = 0;
+	const size_t capacity = (blancreds_size / sizeof(const char*));
+
+	// Copy the credits string the shitty bruteforce way...
+	for (i = 0; i < copylen; i++)
+	{
+		if (capacity <= ptr_pos)
+		{
+			I_Error("F_BlanStartCredits: pointer position exceeds capacity of %lu", capacity);
+		}
+
+		realblancredits[ptr_pos] = blancredits[i];
+
+		if (i < (copylen - 1))
+			ptr_pos++;
+	}
+
+	copylen = (sizeof(thankstext) / sizeof(thankstext[1]));
+	for (i = 0; i < copylen; i++)
+	{
+		if (capacity <= ptr_pos)
+		{
+			I_Error("F_BlanStartCredits: pointer position exceeds capacity of %lu", capacity);
+		}
+
+		realblancredits[ptr_pos] = thankstext[i];
+		ptr_pos++;
+	}
 
 	if (creditscutscene)
 	{
@@ -1176,22 +1286,25 @@ void F_BlanCreditDrawer(void)
 	V_DrawSciencePatch(0, 0 - yscroll, V_SNAPTOTOP, W_CachePatchName("CREDTILE", PU_CACHE), FRACUNIT);
 	V_DrawFillConsoleMap(-100,-100,vid.width, vid.height,0);
 
+	if (!realblancredits)
+		return;
+
 	// Draw credits text on top
-	for (i = 0; blancredits[i]; i++)
+	for (i = 0; realblancredits[i]; i++)
 	{
-		switch(blancredits[i][0])
+		switch(realblancredits[i][0])
 		{
 		case 0:
 			y += 80<<FRACBITS;
 			break;
 		case 1:
 			if (y>>FRACBITS > -20)
-				V_DrawCenteredStringAtFixed(160<<FRACBITS, y, 0, &blancredits[i][1]);
+				V_DrawCenteredStringAtFixed(160<<FRACBITS, y, 0, &realblancredits[i][1]);
 			y += 20<<FRACBITS;
 			break;
 		default:
 			if (y>>FRACBITS > -10)
-				V_DrawCenteredStringAtFixed(160<<FRACBITS, y, V_ALLOWLOWERCASE, blancredits[i]);
+				V_DrawCenteredStringAtFixed(160<<FRACBITS, y, V_ALLOWLOWERCASE, realblancredits[i]);
 			y += 12<<FRACBITS;
 			break;
 		}
@@ -1208,10 +1321,13 @@ void F_BlanCreditTicker(void)
 	uint16_t i;
 	fixed_t y = (80<<FRACBITS) - 5*(animtimer<<FRACBITS)/8;
 
+	if (!realblancredits)
+		return;
+
 	// Draw credits text on top
-	for (i = 0; blancredits[i]; i++)
+	for (i = 0; realblancredits[i]; i++)
 	{
-		switch(blancredits[i][0])
+		switch(realblancredits[i][0])
 		{
 			case 0: y += 80<<FRACBITS; break;
 			case 1: y += 20<<FRACBITS; break;
@@ -1222,7 +1338,7 @@ void F_BlanCreditTicker(void)
 	}
 
 	// Do this here rather than in the drawer you doofus! (this is why dedicated mode broke at credits)
-	if (!blancredits[i] && y <= 120<<FRACBITS && !finalecount)
+	if (!realblancredits[i] && y <= 120<<FRACBITS && !finalecount)
 	{
 		timetonext = 5*TICRATE+1;
 		finalecount = 5*TICRATE;

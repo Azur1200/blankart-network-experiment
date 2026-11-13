@@ -108,6 +108,7 @@ extern int16_t tty;
 extern int16_t ttloop;
 extern uint16_t tttics;
 extern dboolean ttavailable[6];
+extern const char *credits[];
 extern const char *blancredits[];
 
 typedef enum
