@@ -1534,7 +1534,9 @@ static grazespecials_t K_GetTouchingSectorTerrainFlags(mobj_t *mo, terrain_flags
 			if ( ((s2->flags & MSF_FLIPSPECIAL_FLOOR) && mo->z == cel)	// "floor" check
 				|| ((s2->flags & MSF_FLIPSPECIAL_CEILING) && (mo->z + mo->height) == flr) )	// "ceiling" check.
 			{
-				pic = (mo->eflags & MFE_VERTICALFLIP ? s2->ceilingpic : s2->floorpic);
+				// For FOFs, *ceilings* are floors, *floors* are ceilings
+				// Eeeeevery thing you know is wrong, black is white, up is down, and short is long...
+				pic = (mo->eflags & MFE_VERTICALFLIP ? s2->floorpic : s2->ceilingpic);
 
 				terrain = K_GetTerrainForFlatNum(pic);
 
