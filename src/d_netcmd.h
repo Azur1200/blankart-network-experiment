@@ -514,6 +514,7 @@ void RemoveAdminPlayer(int32_t playernum);
 void ItemFinder_OnChange(void);
 void D_SetPassword(const char *pw);
 void D_ClearPassword(void);
+int32_t D_LookupPlayer(const char *s);
 
 void P_SetPlayerSpectator(int32_t playernum);
 

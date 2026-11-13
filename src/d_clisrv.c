@@ -3065,31 +3065,12 @@ static void Command_GetPlayerNum(void)
 
 int8_t nametonum(const char *name)
 {
-	int32_t playernum, i;
+	int32_t playernum = D_LookupPlayer(name);
 
-	if (fastcmp(name, "0"))
-		return 0;
+	if (playernum == -1)
+		CONS_Printf(M_GetText("There is no player named \"%s\"\n"), name);
 
-	playernum = (int8_t)atoi(name);
-
-	if (playernum < 0 || playernum >= MAXPLAYERS)
-		return -1;
-
-	if (playernum)
-	{
-		if (playeringame[playernum])
-			return (int8_t)playernum;
-		else
-			return -1;
-	}
-
-	for (i = 0; i < MAXPLAYERS; i++)
-		if (playeringame[i] && fasticmp(player_names[i], name))
-			return (int8_t)i;
-
-	CONS_Printf(M_GetText("There is no player named \"%s\"\n"), name);
-
-	return -1;
+	return playernum;
 }
 
 /** Lists all players and their player numbers.
