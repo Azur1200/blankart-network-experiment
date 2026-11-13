@@ -793,6 +793,12 @@ void F_CreditDrawer(void)
 				V_DrawCreditString((160 - (V_CreditStringWidth(&credits[i][1])>>1))<<FRACBITS, y, 0, &credits[i][1]);
 			y += 30<<FRACBITS;
 			break;
+		case 2:
+			// This calls the Tyler memorial in the full credits, but that's hardcoded here
+			// This'd otherwise cause an unneeded stringdance, which was funny, but...
+			if (y>>FRACBITS > -10)
+				V_DrawStringAtFixed(32<<FRACBITS, y, V_ALLOWLOWERCASE,  &credits[i][1]);
+			break;
 		default:
 			if (y>>FRACBITS > -10)
 				V_DrawStringAtFixed(32<<FRACBITS, y, V_ALLOWLOWERCASE, credits[i]);
