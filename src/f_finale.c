@@ -997,6 +997,9 @@ const char *blancredits[] = {
 	"\1Title Illustration",
 	"\"zichow4evr\"",
 	"",
+	"\1Menu Background Artwork",
+	"Lillie aka \"triangularity\"",
+	"",
 	"\1Vehicle Design", // ...the indev talks in question. Surprise!
 	"\"StarrydustNova\"", // Blan Kart M
 	"\"joshyflip\"", // Blan Kart M
