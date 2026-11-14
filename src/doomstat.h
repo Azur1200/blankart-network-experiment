@@ -566,6 +566,7 @@ enum TypeOfLevel
 	TOL_BATTLE	= 0x0002, ///< Battle
 	TOL_BOSS	= 0x0004, ///< Boss (variant of battle, but forbidden)
 	TOL_SPECIAL	= 0x0008, ///< Special Stage (variant of race, but forbidden)
+	TOL_FREEROAM = 0x0010, ///< Free Roam (varient of race, but not for racing)
 
 	// Compat
 	TOL_COMPAT1	= 0x0008, ///< For compat. Handles all the unused kart v1 types.
