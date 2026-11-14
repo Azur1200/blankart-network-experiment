@@ -1044,6 +1044,7 @@ const char *blancredits[] = {
 	"\"rigged\"",
 	"\"StarrydustNova\"",
 	"\"yama\"",
+	"\"Gemini0\"",
 	"",
 	"\1New Item Art",
 	"\"Spee\"", // Double jawz, the various bananas, the icons from HitList, new landmine sprite
