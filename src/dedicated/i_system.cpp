@@ -1773,29 +1773,10 @@ void I_GetDiskFreeSpace(int64_t *freespace)
 	*freespace = stfs.f_bavail * stfs.f_bsize;
 #endif
 #elif defined (_WIN32)
-	static p_GetDiskFreeSpaceExA pfnGetDiskFreeSpaceEx = NULL;
-	static dboolean testwin95 = false;
-	ULARGE_INTEGER usedbytes, lfreespace;
-
-	if (!testwin95)
-	{
-		reinterpret_cast<decltype(pfnGetDiskFreeSpaceEx)>(GetProcAddress(GetModuleHandleA("kernel32.dll"), "GetDiskFreeSpaceExA"));
-		testwin95 = true;
-	}
-	if (pfnGetDiskFreeSpaceEx)
-	{
-		if (pfnGetDiskFreeSpaceEx(srb2home, &lfreespace, &usedbytes, NULL))
-			*freespace = lfreespace.QuadPart;
-		else
-			*freespace = INT32_MAX;
-	}
-	else
-	{
-		DWORD SectorsPerCluster, BytesPerSector, NumberOfFreeClusters, TotalNumberOfClusters;
-		GetDiskFreeSpace(NULL, &SectorsPerCluster, &BytesPerSector,
-						 &NumberOfFreeClusters, &TotalNumberOfClusters);
-		*freespace = BytesPerSector*SectorsPerCluster*NumberOfFreeClusters;
-	}
+	ULARGE_INTEGER BytesAvailableCaller, TotalBytes, TotalFreeBytes;
+	GetDiskFreeSpaceEx(NULL, &BytesAvailableCaller, &TotalBytes,
+						&TotalFreeBytes);
+	*freespace = TotalFreeBytes.QuadPart;
 #else // Dummy for platform independent; 1GB should be enough
 	*freespace = 1024*1024*1024;
 #endif

@@ -354,7 +354,7 @@ dboolean CL_SendFileRequest(void)
 {
 	char *p;
 	int32_t i;
-	int64_t totalfreespaceneeded = 0, availablefreespace;
+	int64_t totalfreespaceneeded = 0, availablefreespace = 0;
 	int32_t skippedafile = -1;
 #ifdef MORELEGACYDOWNLOADER
 	dboolean firstloop = true;
