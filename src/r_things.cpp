@@ -1016,7 +1016,8 @@ static void R_DrawVisSprite(vissprite_t *vis)
 	column_t *column, *bmcol = NULL;
 	void (*localcolfunc)(drawcolumndata_t*, column_t *, column_t *, int32_t);
 	int32_t texturecolumn;
-	int32_t pwidth;
+	int64_t texturecolumn64 = 0;
+	int32_t pwidth = 0;
 	fixed_t frac;
 	patch_t *patch = vis->patch;
 	patch_t *bmpatch = vis->bright;
@@ -1257,32 +1258,55 @@ static void R_DrawVisSprite(vissprite_t *vis)
 			float f_yscale = FIXED_TO_FLOAT(spryscale);
 			float f_scalestep = FIXED_TO_FLOAT(FixedMul(vis->scalestep, vis->spriteyscale));
 			float f_pixel = (vis->cut & SC_VFLIP) ? -1.0f : 1.0f;
+			float f_base_yscale = FIXED_TO_FLOAT(vis->affine.base_yscale);
+			float scaleiter = 0.0;
+
+			fixed_t horzscale = FixedMul(vis->spritexscale, this_scale);
+
+			pwidth = vis->affine.bounds.xlen;
 
 			// Papersprite drawing loop
 			for (dc.x = vis->x1; dc.x <= vis->x2; dc.x++, f_yscale += f_scalestep)
 			{
 				float _ysc = (f_yscale / f_yscale_const);
 
+				scaleiter += (f_scalestep / f_yscale_const);
+
+				float scalemul = f_base_yscale + scaleiter;
+
 				if (_ysc < 0.001f)
 				{
 					continue;
 				}
 
-				dc.affineystep = FLOAT_TO_FIXED(f_pixel / _ysc);
+				dc.affineystep = FLOAT_TO_FIXED(f_pixel / (f_yscale / FIXED_TO_FLOAT(vis->affine.distscale.y)));
 
 				angle_t angle = ((vis->centerangle + xtoviewangle[viewssnum][dc.x]) >> ANGLETOFINESHIFT) & 0xFFF;
-				dc.frac = FixedMul((vis->paperoffset - FixedMul(FINETANGENT(angle), vis->paperdistance)),
-								   vis->affine.distscale.x);
+				texturecolumn64 = FixedDiv(vis->paperoffset - FixedMul(FINETANGENT(angle), vis->paperdistance), horzscale);
+
+				// texturecolumn in this case is still fixed-point
+				const int32_t texcol_pixel = (texturecolumn64 >> FRACBITS);
+
+				if (texcol_pixel < 0 || texcol_pixel >= pwidth)
+					continue;
+
+				if (vis->xiscale < 0) // Flipped sprite
+					texturecolumn64 = (static_cast<int64_t>(pwidth) * FRACUNIT) - FRACUNIT - texturecolumn64;
+
+				// Shitty hack: rescale dc.frac to world coordinates
+				dc.frac = static_cast<fixed_t>(FixedMul64(texturecolumn64, vis->affine.distscale.x));
 
 				sprtopscreen = (centeryfrac - FixedMul(dc.texturemid, FLOAT_TO_FIXED(f_yscale)));
 				float f_ylen = static_cast<float>(dc.affinebound.ylen);
 
+				const fixed_t finyscale = FLOAT_TO_FIXED((f_ylen * f_base_yscale) * (1.1 + scaleiter));
+
 				dc.yl = (sprtopscreen+FRACUNIT-1)>>FRACBITS;
-				dc.yh = ((sprtopscreen + FLOAT_TO_FIXED(f_ylen * _ysc))-1)>>FRACBITS;
+				dc.yh = ((sprtopscreen + FLOAT_TO_FIXED(finyscale))-1)>>FRACBITS;
 
 				int32_t topscreen = sprtopscreen;
-				int32_t bottomscreen = sprbotscreen == INT32_MAX ? topscreen + FLOAT_TO_FIXED(f_ylen * _ysc)
-		                                      : sprbotscreen + FLOAT_TO_FIXED(f_ylen * _ysc);
+				int32_t bottomscreen = sprbotscreen == INT32_MAX ? topscreen + finyscale
+		                                      : sprbotscreen + finyscale;
 
 				dc.yl = (topscreen+FRACUNIT-1)>>FRACBITS;
 				dc.yh = (bottomscreen-1)>>FRACBITS;
@@ -1780,7 +1804,7 @@ static void R_ProjectDropShadow(mobj_t *thing, vissprite_t *vis, fixed_t scale, 
 {
 	vissprite_t *shadow;
 	patch_t *patch;
-	fixed_t xscale, yscale, shadowxscale, shadowyscale, shadowskew, x1, x2;
+	fixed_t xscale = 0, yscale = 0, shadowxscale, shadowyscale, shadowskew, x1, x2;
 	int32_t heightsec, phs;
 	fixed_t scalemul;
 	fixed_t floordiff;
@@ -2556,6 +2580,8 @@ static void R_ProjectSprite(mobj_t *thing)
 	offset = FixedMul(offset, FixedMul(spritexscale, this_scale));
 	offset2 = FixedMul(spr_width, FixedMul(spritexscale, this_scale));
 
+	fixed_t paper_yscale_affine = 0;
+
 	if (papersprite)
 	{
 		fixed_t xscale2, yscale2, cosmul, sinmul, tx2, tz2;
@@ -2563,8 +2589,8 @@ static void R_ProjectSprite(mobj_t *thing)
 
 		if (affinesprite)
 		{
-			offset = FixedDiv(offset, xscale);
-			offset2 = FixedDiv(offset2, xscale);
+			offset = FixedDiv(offset, FixedMul(xscale, this_scale));
+			offset2 = FixedDiv(offset2, FixedMul(xscale, this_scale));
 		}
 
 		if (ang >= ANGLE_180)
@@ -2657,6 +2683,9 @@ static void R_ProjectSprite(mobj_t *thing)
 
 		if (scalestep == 0)
 			scalestep = 1;
+
+		if (affinesprite)
+			paper_yscale_affine = FixedDiv(yscale, affine_distscale.y);
 
 		xscale = FixedDiv(range<<FRACBITS, abs(offset2));
 
@@ -3060,6 +3089,11 @@ static void R_ProjectSprite(mobj_t *thing)
 	vis->scale = FixedMul(spriteyscale, yscale); //<<detailshift;
 	vis->thingscale = (affinesprite) ? FRACUNIT : this_scale;
 
+	if (affinesprite)
+	{
+		vis->affine.base_yscale = paper_yscale_affine;
+	}
+
 	vis->spritexscale = spritexscale;
 	vis->spriteyscale = spriteyscale;
 	vis->spritexoffset = spr_offset;
@@ -3097,9 +3131,13 @@ static void R_ProjectSprite(mobj_t *thing)
 			xpush = intsign(vis->xiscale) * FRACUNIT;
 		}
 
-
 		vis->startfrac += xpush * (vis->x1 - x1);
 		vis->scale += FixedMul(scalestep, spriteyscale) * (vis->x1 - x1);
+
+		if (affinesprite)
+		{
+			vis->affine.base_yscale += FixedDiv(FixedMul(scalestep, spriteyscale), affine_distscale.y) * (vis->x1 - x1);
+		}
 	}
 
 	vis->transmap = R_GetBlendTable(blendmode, trans);
@@ -4474,11 +4512,7 @@ dboolean R_ThingIsPaperSprite(mobj_t *thing)
 
 dboolean R_ThingIsAffineSprite(mobj_t *thing)
 {
-	// Affine papersprites are messy in software rendering.
-	// Yes, I'm lazy; I've been at this for TWO WEEKS.
-	dboolean papersprite = (R_ThingIsPaperSprite(thing));
-
-	dboolean notaffine = ((thing->frame & FF_NOAFFINE || thing->renderflags & RF_NOAFFINE) || papersprite);
+	dboolean notaffine = ((thing->frame & FF_NOAFFINE || thing->renderflags & RF_NOAFFINE));
 
 	return (!notaffine);
 }

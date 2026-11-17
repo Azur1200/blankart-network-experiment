@@ -225,6 +225,7 @@ struct vissprite_t
 		angle_t rollangle; // Affine rotation angle
 		affine_t transform; // The actual affine transformation.
 		affine_bounding_t bounds; // The "bounding box" (draw area) of the affine sprite.
+		fixed_t base_yscale; // (For papersprites) The base vertical scale before any further warping
 	} affine;
 
 	fixed_t texturemid;
