@@ -470,6 +470,12 @@ int32_t I_GetKey(void);
 	#define PATHSEP "/"
 #endif
 
+#if defined (_WIN32)
+	#define PATHSEPCHAR '\\'
+#else
+	#define PATHSEPCHAR '/'
+#endif
+
 #define PUNCTUATION "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
 
 // Compile date and time and revision.

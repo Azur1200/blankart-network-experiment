@@ -623,6 +623,8 @@ static void MapDisplay(const mapheader_t *map)
 
 	ImGui::Text("Map ID Lump Number: %u", map->lumpnum);
 
+	ImGui::Text("Map ID Wad Number: %u", WADFILENUM(map->lumpnum));
+
 	ImGui::Text("Just Played: %lu", map->justPlayed);
 
 	if (map->lvlttl[0] != 0)
