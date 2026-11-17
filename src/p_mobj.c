@@ -1316,7 +1316,7 @@ void P_CheckGravity(mobj_t *mo, dboolean affect)
 //
 // P_SetPitchRollFromSlope
 //
-#define SLOPEROLL_DIV 4
+#define SLOPEROLL_DIV (4)
 void P_UpdatePitchRollFromSlope(mobj_t *mo, pslope_t *slope)
 {
 	angle_t an;
@@ -1329,22 +1329,22 @@ void P_UpdatePitchRollFromSlope(mobj_t *mo, pslope_t *slope)
 
 		// pitch
 		tempangle = R_PointToAngle2(0, 0, FixedSqrt(FixedMul(tempy, tempy) + FixedMul(tempz, tempz)), tempx);
-		an = (INT32)((angle_t)tempangle - mo->slopepitch) / SLOPEROLL_DIV;
+		an = (int32_t)((angle_t)tempangle - mo->slopepitch) / SLOPEROLL_DIV;
 		mo->slopepitch = an ? mo->slopepitch + an : (angle_t)tempangle;
 		
 		// roll
 		tempangle = R_PointToAngle2(0, 0, tempz, tempy);
-		an = (INT32)((angle_t)tempangle - mo->sloperoll) / SLOPEROLL_DIV;
+		an = (int32_t)((angle_t)tempangle - mo->sloperoll) / SLOPEROLL_DIV;
 		mo->sloperoll = an ? mo->sloperoll + an : (angle_t)tempangle;
 	}
 	else if (P_IsObjectOnGround(mo))
 	{
 		// pitch
-		an = (INT32)(-mo->slopepitch) / SLOPEROLL_DIV;
+		an = (int32_t)(-mo->slopepitch) / SLOPEROLL_DIV;
 		mo->slopepitch = an ? mo->slopepitch + an : 0;
 		
 		// roll
-		an = (INT32)(-mo->sloperoll) / SLOPEROLL_DIV;
+		an = (int32_t)(-mo->sloperoll) / SLOPEROLL_DIV;
 		mo->sloperoll = an ? mo->sloperoll + an : 0;
 	}
 	mo->pitch = mo->roll = 0;
