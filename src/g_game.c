@@ -4321,7 +4321,7 @@ static gametype_t defaultgametypes[] =
 		"Free Roam",
 		"GT_FREEROAM",
 		GTR_RINGS|GTR_ENCORE|GTR_NOCOUNTDOWN,
-		TOL_RACE|TOL_BATTLE|TOL_SPECIAL,
+		TOL_RACE|TOL_BATTLE|TOL_SPECIAL|TOL_FREEROAM,
 		int_none,
 		0,
 		0,
@@ -4486,6 +4486,7 @@ tolinfo_t TYPEOFLEVEL[NUMTOLNAMES] = {
 	{"BATTLE",TOL_BATTLE},
 	{"BOSS",TOL_BOSS},
 	{"SPECIAL",TOL_SPECIAL},
+	{"FREEROAM",TOL_FREEROAM},
 	{"TV",TOL_TV},
 
 	// Compat stuff

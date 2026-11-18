@@ -5605,6 +5605,7 @@ void K_SpawnBoostTrail(player_t *player)
 		P_XYMovement(flame);
 		if (P_MobjWasRemoved(flame))
 			continue;
+		
 
 		if (player->mo->eflags & MFE_VERTICALFLIP)
 		{
@@ -7132,7 +7133,7 @@ void K_CalculateBananaSlope(mobj_t *mobj, fixed_t x, fixed_t y, fixed_t z, fixed
 	}
 
 	//mobj->standingslope = slope;
-	P_SetPitchRollFromSlope(mobj, slope);
+	P_UpdatePitchRollFromSlope(mobj, slope);
 }
 
 // Move the hnext chain!

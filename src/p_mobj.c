@@ -1316,6 +1316,41 @@ void P_CheckGravity(mobj_t *mo, dboolean affect)
 //
 // P_SetPitchRollFromSlope
 //
+#define SLOPEROLL_DIV (4)
+void P_UpdatePitchRollFromSlope(mobj_t *mo, pslope_t *slope)
+{
+	angle_t an;
+	if (slope)
+	{
+		fixed_t tempz = slope->normal.z;
+		fixed_t tempy = slope->normal.y;
+		fixed_t tempx = slope->normal.x;
+		fixed_t tempangle = 0;
+
+		// pitch
+		tempangle = R_PointToAngle2(0, 0, FixedSqrt(FixedMul(tempy, tempy) + FixedMul(tempz, tempz)), tempx);
+		an = (int32_t)((angle_t)tempangle - mo->slopepitch) / SLOPEROLL_DIV;
+		mo->slopepitch = an ? mo->slopepitch + an : (angle_t)tempangle;
+		
+		// roll
+		tempangle = R_PointToAngle2(0, 0, tempz, tempy);
+		an = (int32_t)((angle_t)tempangle - mo->sloperoll) / SLOPEROLL_DIV;
+		mo->sloperoll = an ? mo->sloperoll + an : (angle_t)tempangle;
+	}
+	else if (P_IsObjectOnGround(mo))
+	{
+		// pitch
+		an = (int32_t)(-mo->slopepitch) / SLOPEROLL_DIV;
+		mo->slopepitch = an ? mo->slopepitch + an : 0;
+		
+		// roll
+		an = (int32_t)(-mo->sloperoll) / SLOPEROLL_DIV;
+		mo->sloperoll = an ? mo->sloperoll + an : 0;
+	}
+	mo->pitch = mo->roll = 0;
+}
+#undef SLOPEROLL_DIV
+
 void P_SetPitchRollFromSlope(mobj_t *mo, pslope_t *slope)
 {
 	if (slope)
@@ -1893,7 +1928,6 @@ void P_XYMovement(mobj_t *mo)
 			{
 				// Allow for a bit of sticking - this value can be adjusted later
 				mo->standingslope = oldslope;
-				P_SetPitchRollFromSlope(mo, mo->standingslope);
 				P_SlopeLaunch(mo);
 
 				//CONS_Printf("launched off of slope - ");
@@ -2471,7 +2505,7 @@ dboolean P_ZMovement(mobj_t *mo)
 		if (((mo->eflags & MFE_VERTICALFLIP) ? g_tm.ceilingslope : g_tm.floorslope) && (mo->type != MT_STEAM))
 		{
 			mo->standingslope = (mo->eflags & MFE_VERTICALFLIP) ? g_tm.ceilingslope : g_tm.floorslope;
-			P_SetPitchRollFromSlope(mo, mo->standingslope);
+			// P_SetPitchRollFromSlope(mo, mo->standingslope);
 			P_ReverseQuantizeMomentumToSlope(&mom, mo->standingslope);
 		}
 
@@ -3978,6 +4012,8 @@ static void P_PlayerMobjThinker(mobj_t *mobj)
 	}
 	else
 		P_TryMove(mobj, mobj->x, mobj->y, true, NULL);
+	
+	P_UpdatePitchRollFromSlope(mobj, mobj->standingslope);
 
 	P_CheckCrumblingPlatforms(mobj);
 
@@ -11096,6 +11132,8 @@ void P_MobjThinker(mobj_t *mobj)
 		if (P_MobjWasRemoved(mobj))
 			return;
 	}
+
+	P_UpdatePitchRollFromSlope(mobj, mobj->standingslope);
 
 	// always do the gravity bit now, that's simpler
 	// BUT CheckPosition only if wasn't done before.

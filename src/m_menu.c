@@ -217,6 +217,7 @@ int  M_GetWaitingMode(void);
 // level select platter
 #define MAPSPERROW 5 // map sperrow?
 #define MAXMAPNAME 21+1+21+1+2+1 // lvlttl + SPACE + zonttl + SPACE + actnum + NUL
+#define MAXHEADERNAME 64 
 
 typedef struct
 {
@@ -228,7 +229,7 @@ typedef struct
 
 typedef struct
 {
-	char header[MAXMAPNAME];
+	char header[MAXHEADERNAME];
 	dboolean wide;
 	uint16_t cupid;
 	uint8_t numcolumns;
@@ -4615,30 +4616,38 @@ static qsort_f *cupsortfuncs[] = {
 
 static dboolean M_MakeLevelSelectHeader(levelselectrow_t *row, mapheader_t *prev, mapheader_t *iter)
 {
-	const char *header = NULL;
+	const char *headerstring = NULL;
 
 	switch (cv_levelsort.value)
 	{
 	case LEVELSORT_CUP:
 		if (iter == NULL || prev->cup != iter->cup)
-			header = prev->cup == NULL ? "Unsorted" : CupName(prev->cup, true);
+			headerstring = prev->cup == NULL ? "Unsorted" : CupName(prev->cup, true);
 		break;
 	case LEVELSORT_FILE:
 		if (iter == NULL || WADFILENUM(prev->lumpnum) != WADFILENUM(iter->lumpnum))
 		{
 			const char *wadname = wadfiles[WADFILENUM(prev->lumpnum)]->filename;
-			header = strrchr(wadname, *PATHSEP);
-			if (header != NULL)
-				header++;
+			headerstring = strrchr(wadname, PATHSEPCHAR);
+			if (headerstring != NULL)
+				headerstring++;
 			else
-				header = wadname;
+				headerstring = wadname;
 		}
 		break;
 	default:
 		break;
 	}
 
-	return header != NULL && strlcpy(row->header, header, sizeof(row->header));
+	if (headerstring != NULL)
+	{
+		strlcpy(row->header, headerstring, MAXHEADERNAME);
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
 
 // a nice cup of tea, perhaps?
@@ -4712,6 +4721,7 @@ static void M_UpdateLevelPlatterCups(void)
 static void M_UpdateLevelPlatter(void)
 {
 	int32_t i, row = 0, headerRow = -1;
+	mapheader_t *itermap = NULL;
 	mapheader_t *previtermap = NULL; // prevmap AND lastmap are taken...!
 	dboolean forceNewRow = true;
 	int16_t sortedmaps[INT16_MAX];
@@ -4754,8 +4764,8 @@ static void M_UpdateLevelPlatter(void)
 	for (i = 0; i < numsortedmaps; i++)
 	{
 		mapnum_t mapnum = sortedmaps[i];
-		mapheader_t *itermap = mapheaderinfo[mapnum];
 		dboolean wide = false;//(headermap->menuflags & LF2_WIDEICON);
+		itermap = mapheaderinfo[mapnum];
 
 		if (headerRow != -1 && M_MakeLevelSelectHeader(&levelselect.rows[headerRow], previtermap, itermap))
 		{
@@ -4770,8 +4780,8 @@ static void M_UpdateLevelPlatter(void)
 			{
 				levelselect.numrows = row+1;
 				levelselect.rows = Z_Realloc(levelselect.rows, levelselect.numrows*sizeof(levelselectrow_t), PU_STATIC, NULL);
-				memset(&levelselect.rows[row], 0, sizeof(levelselectrow_t));
-				levelselect.rows[row].wide = wide;
+				memset(&levelselect.rows[levelselect.numrows - 1], 0, sizeof(levelselectrow_t));
+				levelselect.rows[levelselect.numrows - 1].wide = wide;
 			}
 		}
 
@@ -4803,7 +4813,9 @@ static void M_UpdateLevelPlatter(void)
 		previtermap = itermap;
 		forceNewRow = wide;
 		if (headerRow == -1)
+		{
 			headerRow = row;
+		}
 	}
 
 	// check headers for the last map added, too!
