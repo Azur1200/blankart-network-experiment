@@ -1282,7 +1282,10 @@ static void R_DrawVisSprite(vissprite_t *vis)
 				dc.affineystep = FLOAT_TO_FIXED(f_pixel / (f_yscale / FIXED_TO_FLOAT(vis->affine.distscale.y)));
 
 				angle_t angle = ((vis->centerangle + xtoviewangle[viewssnum][dc.x]) >> ANGLETOFINESHIFT) & 0xFFF;
-				texturecolumn64 = FixedDiv(vis->paperoffset - FixedMul(FINETANGENT(angle), vis->paperdistance), horzscale);
+				texturecolumn64 = FixedMul64(FixedDiv(vis->paperoffset - FixedMul(FINETANGENT(angle), vis->paperdistance), horzscale), vis->affine.distscale.x);
+
+				if (vis->xiscale < 0) // Flipped sprite
+					texturecolumn64 = (static_cast<int64_t>(pwidth) * FRACUNIT) - FRACUNIT - texturecolumn64;
 
 				// texturecolumn in this case is still fixed-point
 				const int32_t texcol_pixel = (texturecolumn64 >> FRACBITS);
@@ -1290,11 +1293,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 				if (texcol_pixel < 0 || texcol_pixel >= pwidth)
 					continue;
 
-				if (vis->xiscale < 0) // Flipped sprite
-					texturecolumn64 = (static_cast<int64_t>(pwidth) * FRACUNIT) - FRACUNIT - texturecolumn64;
-
-				// Shitty hack: rescale dc.frac to world coordinates
-				dc.frac = static_cast<fixed_t>(FixedMul64(texturecolumn64, vis->affine.distscale.x));
+				dc.frac = static_cast<fixed_t>(texturecolumn64);
 
 				sprtopscreen = (centeryfrac - FixedMul(dc.texturemid, FLOAT_TO_FIXED(f_yscale)));
 				float f_ylen = static_cast<float>(dc.affinebound.ylen);
@@ -2560,8 +2559,10 @@ static void R_ProjectSprite(mobj_t *thing)
 #endif
 	}
 
-	if (flip)
+	if (flip && (!(affinesprite && papersprite)))
+	{
 		offset = spr_offset - spr_width;
+	}
 	else
 		offset = -spr_offset;
 
@@ -2577,7 +2578,9 @@ static void R_ProjectSprite(mobj_t *thing)
 	}
 #endif
 
-	offset = FixedMul(offset, FixedMul(spritexscale, this_scale));
+	const fixed_t base_offset = FixedMul(offset, FixedMul(spritexscale, this_scale));
+
+	offset = base_offset;
 	offset2 = FixedMul(spr_width, FixedMul(spritexscale, this_scale));
 
 	fixed_t paper_yscale_affine = 0;
