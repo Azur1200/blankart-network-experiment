@@ -4143,6 +4143,12 @@ static int lib_kGetOrbiJawzDamage(lua_State *L)
 	return 1;
 }
 
+static int lib_kGetOrbiJawzSoftDamage(lua_State *L)
+{
+	lua_pushinteger(L, K_GetOrbiJawzSoftDamage());
+	return 1;
+}
+
 static int lib_kSpawnKartExplosion(lua_State *L)
 {
 	fixed_t x = luaL_checkfixed(L, 1);
@@ -6634,6 +6640,7 @@ static luaL_Reg lib[] = {
 	{"K_ResetCrashData",lib_kResetCrashData},
 	{"K_ResetCrashOffsetData",lib_kResetCrashOffsetData},
 	{"K_GetOrbiJawzDamage",lib_kGetOrbiJawzDamage},
+	{"K_GetOrbiJawzSoftDamage", lib_kGetOrbiJawzSoftDamage},
 	{"K_TakeBumpersFromPlayer",lib_kTakeBumpersFromPlayer},
 	{"K_SpawnKartExplosion",lib_kSpawnKartExplosion},
 	{"K_SpawnMineExplosion",lib_kSpawnMineExplosion},

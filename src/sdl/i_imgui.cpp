@@ -531,6 +531,9 @@ static void MobjDisplay(mobj_t *mobj, int32_t recursive_mobj, int32_t recursive_
 
 	generic_mobj(mobj->tracer, "tracer", recursive_mobj, recursive_player);
 
+	generic_mobj(mobj->bubbleplow, "bubbleplow", recursive_mobj, recursive_player);
+	ImGui::Text("bubbleplowforget: %d", mobj->bubbleplowforget);
+
 	ImGui::Text("friction: %d", mobj->friction);
 	ImGui::Text("movefactor: %d", mobj->movefactor);
 	ImGui::Text("gravity: %d", mobj->gravity);

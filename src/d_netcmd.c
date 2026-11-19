@@ -859,6 +859,9 @@ consvar_t cv_kartinvindamage = CVAR_INIT ("kartinvindamage", "Wipe-out", CV_NETV
 static CV_PossibleValue_t kartorbidmg_cons_t[] = {{0, "Auto"}, {DMG_WIPEOUT, "Wipe-out"}, {DMG_CRASH, "Crash"}, {0, NULL}};
 consvar_t cv_kartorbijawzdmg = CVAR_INIT ("orbijawzdamage", "Auto", CV_NETVAR|CV_CHEAT|CV_GUARD, kartorbidmg_cons_t, NULL);
 
+static CV_PossibleValue_t kartorbisoftdmg_cons_t[] = {{DMG_WIPEOUT, "Wipe-out"}, {DMG_FLIPOVER, "Flip-over"}, {DMG_CRASH, "Crash"}, {0, NULL}};
+consvar_t cv_kartorbijawzsoftdmg = CVAR_INIT ("orbijawzsoftdamage", "Crash", CV_NETVAR|CV_CHEAT|CV_GUARD, kartorbisoftdmg_cons_t, NULL);
+
 // How far the player must be from the cluster to roll an S-Monitor.
 static CV_PossibleValue_t smonitordist_cons_t[] = {{1, "MIN"}, {32000, "MAX"}, {0, NULL}};
 consvar_t cv_kartsmonitordist = CVAR_INIT ("smonitor_startdist", "11000", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordist_cons_t, NULL);
@@ -879,6 +882,8 @@ static CV_PossibleValue_t bubble_defense_damagerate_cons_t[] = {{0, "MIN"}, {FRA
 consvar_t cv_kartbubble_defense_damagerate = CVAR_INIT ("kartbubble_defense_damagerate", "0.8", CV_NETVAR|CV_FLOAT, bubble_defense_damagerate_cons_t, NULL);
 consvar_t cv_kartbubble_boost_allow = CVAR_INIT ("kartbubble_boost_allow", "On", CV_NETVAR, CV_OnOff, NULL);
 consvar_t cv_kartbubble_boost_offroadignore = CVAR_INIT ("kartbubble_boost_offroadignore", "On", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartbubble_pierceshield = CVAR_INIT ("kartbubble_pierceshield", "On", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartbubble_killonreflect = CVAR_INIT ("kartbubble_killonreflect", "On", CV_NETVAR, CV_OnOff, NULL);
 
 consvar_t cv_kartflame_fastfuel = CVAR_INIT ("kartflame_fastfuel", "On", CV_NETVAR, CV_OnOff, NULL);
 consvar_t cv_kartflame_offroadburn = CVAR_INIT ("kartflame_offroadburn", "On", CV_NETVAR, CV_OnOff, NULL);
