@@ -1272,8 +1272,6 @@ static void R_DrawVisSprite(vissprite_t *vis)
 
 				scaleiter += (f_scalestep / f_yscale_const);
 
-				float scalemul = f_base_yscale + scaleiter;
-
 				if (_ysc < 0.001f)
 				{
 					continue;
