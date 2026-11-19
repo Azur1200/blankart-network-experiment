@@ -490,6 +490,7 @@ uint16_t K_GetKartButtons(const player_t *player);
 int8_t K_GetForwardMove(const player_t *player);
 int8_t K_GetSideMove(const player_t *player);
 fixed_t K_GetNewSpeed(const player_t *player);
+fixed_t K_GetDerivativeOfNewSpeed(const player_t *player);
 fixed_t K_3dKartMovement(const player_t *player, dboolean onground, int8_t fowardmove);
 int8_t K_Sliptiding(const player_t *player);
 fixed_t K_PlayerBaseFriction(const player_t *player, fixed_t original);
