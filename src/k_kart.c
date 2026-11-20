@@ -1598,7 +1598,7 @@ panelcollide_t K_GetPanelGrazeType(void)
 	return cv_panelcollide.value;
 }
 
-static void K_UpdatePanelGraze(player_t *player)
+void K_UpdatePanelGraze(player_t *player)
 {
 	const panelcollide_t panelcoltype = K_GetPanelGrazeType();
 
@@ -8530,7 +8530,6 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->mo->sprzoff += FixedMul(player->mo->height, FSIN(pitch));
 	}
 
-	K_UpdatePanelGraze(player);
 	K_UpdateOffroad(player);
 	K_UpdateDashArea(player);
 	K_UpdateDraft(player);

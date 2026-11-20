@@ -624,6 +624,7 @@ void K_GetRankBasedPositions(void);
 extern int16_t *legacygradelap;
 extern uint32_t legacygradelap_size;
 
+void K_UpdatePanelGraze(player_t *player);
 panelcollide_t K_GetPanelGrazeType(void);
 
 #ifdef __cplusplus

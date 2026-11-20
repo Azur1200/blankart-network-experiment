@@ -465,9 +465,6 @@ struct doomdata_t
 	uint8_t ackreturn; // The return of the ack number
 
 	uint8_t packettype;
-#ifdef SIGNGAMETRAFFIC
-	uint8_t signature[MAXSPLITSCREENPLAYERS][SIGNATURELENGTH];
-#endif
 	uint8_t packetindex;
 	union
 	{
