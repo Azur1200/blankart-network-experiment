@@ -1183,7 +1183,7 @@ static void F_FakeTitleScreen(tic_t count)
     F_DrawCompositeGameLogo(count - 25, 48);
     if (alphaflags)
     {
-        V_DrawFixedPatch(30<<FRACBITS, 54<<FRACBITS, FRACUNIT, V_SNAPTOTOP|V_ADD|alphaflags, ttblanoverlay, NULL);
+        V_DrawFixedPatch(30<<FRACBITS, 64<<FRACBITS, FRACUNIT, V_SNAPTOTOP|V_ADD|alphaflags, ttblanoverlay, NULL);
     }
 }
 
