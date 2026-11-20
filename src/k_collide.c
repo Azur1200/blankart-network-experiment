@@ -97,6 +97,14 @@ uint8_t K_GetOrbiJawzDamage(void)
 	return DMG_WIPEOUT;
 }
 
+uint8_t K_GetOrbiJawzSoftDamage(void)
+{
+	if (cv_kartorbijawzsoftdmg.value)
+		return (uint8_t)(cv_kartorbijawzsoftdmg.value); // Just return the raw damage value, since it's part of the cvar
+
+	return DMG_CRASH;
+}
+
 #undef NOMOREWIPEOUTS
 
 dboolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
@@ -105,6 +113,7 @@ dboolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
 	dboolean sprung = false;
 
 	uint8_t orbidamage = K_GetOrbiJawzDamage();
+	uint8_t orbisoftdamage = K_GetOrbiJawzSoftDamage();
 
 	if (itempushing && t2->type == MT_RANDOMITEM
 	 && (t1->type == MT_JAWZ_DUD || (t1->type == MT_ORBINAUT && t1->flags2 & MF2_AMBUSH)))
@@ -151,6 +160,22 @@ dboolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
 		}
 		else
 		{
+			if (t1->bubbleplow && (!P_MobjWasRemoved(t1->bubbleplow)) && (t1->bubbleplow->player))
+			{
+				const uint32_t bubbleplow_pid = (uint32_t)(t1->bubbleplow->player - players);
+				const uint32_t victim_pid = (uint32_t)(t2->player - players);
+
+				if (victim_pid == bubbleplow_pid)
+				{
+					// If we're plowing into a Bubble Shield holder, at least tone down the damage a bit...
+					orbidamage = orbisoftdamage;
+
+					// Clean up after ourselves!
+					P_SetTarget(&t1->bubbleplow, NULL);
+					t1->bubbleplowforget = 0;
+				}
+			}
+
 			if ((!P_IsObjectOnGround(t1)) && (!P_IsObjectOnGround(t2)) && ((orbidamage & DMG_TYPEMASK) == DMG_CRASH))
 			{
 				// If *both* the Orbinaut and the player are in the air, activate bumping
@@ -848,7 +873,7 @@ void K_AttractionShieldAttack(mobj_t *actor, fixed_t size, fixed_t powerrate, db
 	P_DoBlockThingsIterate(xl, yl, xh, yh, PIT_AttractionShieldAttack);
 }
 
-static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble, int16_t dmg)
+static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble, int16_t dmg, dboolean plowing)
 {
 	if (!player)
 	{
@@ -863,7 +888,7 @@ static void K_BubbleShieldCollideDrain(player_t *player, mobj_t *bubble, int16_t
 	}
 
 	// Damage the shield after an item hit.
-	K_RemoveBubbleHealth(player, dmg);
+	K_RemoveBubbleHealth(player, dmg, plowing);
 
 	if (K_GetShieldFromPlayer(player) == KSHIELD_BUBBLE)
 	{
@@ -1029,6 +1054,52 @@ static int16_t K_GetBubbleDamage(mobj_t* itm)
 	return dmg;
 }
 
+static dboolean K_BubbleShieldKillOnReflect(mobj_t *itm)
+{
+	dboolean killonreflect = false;
+
+	switch (itm->type)
+	{
+	case MT_SINK:
+	case MT_JAWZ:
+	case MT_BANANA:
+	case MT_ORBINAUT:
+	{
+		// Kill certain items on reflect
+		killonreflect = true;
+		break;
+	}
+	default:
+		break;
+	}
+
+	return killonreflect;
+}
+
+static dboolean K_BubbleShieldGetsPlowedBy(mobj_t *itm)
+{
+	if (itm->threshold && !itm->player)
+		return false;
+
+	dboolean plowsbubble = false;
+
+	switch (itm->type)
+	{
+	case MT_ORBINAUT:
+	{
+		// If this is an Orbi snipe, this plows
+		if (K_GetBubbleDamage(itm) >= MAXBUBBLEHEALTH)
+			plowsbubble = true;
+
+		break;
+	}
+	default:
+		break;
+	}
+
+	return plowsbubble;
+}
+
 dboolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 {
 	// don't bump yourself
@@ -1037,20 +1108,36 @@ dboolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 
 	if (K_BubbleShieldCanReflect(t2))
 	{
-		dboolean reflected = K_BubbleShieldReflect(t1, t2);
+		dboolean plowme = (cv_kartbubble_pierceshield.value) ? K_BubbleShieldGetsPlowedBy(t2) : false;
 
-		if (reflected)
+		dboolean reflected = (plowme) ? false : K_BubbleShieldReflect(t1, t2);
+		dboolean killonreflect = (plowme) ? false : ((cv_kartbubble_killonreflect.value) ? K_BubbleShieldKillOnReflect(t2) : false);
+
+		if (reflected || plowme)
 		{
 			// Drain my stuff please.
 			if ((!P_MobjWasRemoved(t1)) && (t1->target) && (t1->target->player))
 			{
+				if (plowme)
+				{
+					P_SetTarget(&t2->bubbleplow, t1->target);
+					t2->bubbleplowforget = (3 * TICRATE) / 2;
+				}
+
+				const dboolean confirmplow = (plowme && K_CheckBubblePlow(t2, t1->target) && K_IsBubbleDefending(t1->target->player));
+
 				K_BubbleShieldCollideDrain(t1->target->player,
 							   t1,
-							   K_GetBubbleDamage(t2));
+							   K_GetBubbleDamage(t2), confirmplow);
+
+				if ((!P_MobjWasRemoved(t2)) && killonreflect)
+				{
+					K_ItemDamage(t2, t1, true);
+				}
 			}
 		}
 
-		return reflected;
+		return (reflected || plowme);
 	}
 
 	if (t2->flags & MF_SHOOTABLE)
@@ -1066,7 +1153,7 @@ dboolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2)
 			{
 				K_BubbleShieldCollideDrain(t1->target->player,
 							   t1,
-							   K_GetBubbleDamage(t2));
+							   K_GetBubbleDamage(t2), false);
 			}
 		}
 

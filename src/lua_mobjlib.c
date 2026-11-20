@@ -122,7 +122,9 @@
 	X(tid) \
 	X(special) \
 	X(args) \
-	X(stringargs)
+	X(stringargs) \
+	X(bubbleplow) \
+	X(bubbleplowforget)
 
 enum mobj_e
 {
@@ -608,6 +610,17 @@ static int mobj_get(lua_State *L)
 		break;
 	case mobj_stringargs:
 		LUA_PushUserdata(L, mo->stringargs, META_THINGSTRINGARGS);
+		break;
+	case mobj_bubbleplow:
+		if (mo->bubbleplow && P_MobjWasRemoved(mo->bubbleplow))
+		{ // don't put invalid mobj back into Lua.
+			P_SetTarget(&mo->bubbleplow, NULL);
+			return 0;
+		}
+		LUA_PushUserdata(L, mo->bubbleplow, META_MOBJ);
+		break;
+	case mobj_bubbleplowforget:
+		lua_pushinteger(L, mo->bubbleplowforget);
 		break;
 	default: // extra custom variables in Lua memory
 		lua_getfield(L, LUA_REGISTRYINDEX, LREG_EXTVARS);
@@ -1141,6 +1154,18 @@ static int mobj_set(lua_State *L)
 		return NOSET;
 	case mobj_stringargs:
 		return NOSET;
+	case mobj_bubbleplow:
+		if (lua_isnil(L, 3))
+			P_SetTarget(&mo->bubbleplow, NULL);
+		else
+		{
+			mobj_t *bubbleplow = *((mobj_t **)luaL_checkudata(L, 3, META_MOBJ));
+			P_SetTarget(&mo->bubbleplow, bubbleplow);
+		}
+		break;
+	case mobj_bubbleplowforget:
+		mo->bubbleplowforget = luaL_checkinteger(L, 3);
+		break;
 	default:
 		lua_getfield(L, LUA_REGISTRYINDEX, LREG_EXTVARS);
 		I_Assert(lua_istable(L, -1));

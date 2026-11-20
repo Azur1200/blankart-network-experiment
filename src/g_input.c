@@ -998,6 +998,9 @@ int32_t G_KeyStringtoNum(const char *keystr)
 	if (!keystr[0])
 		return 0;
 
+	if (fasticmp(keystr, "UBND"))
+		return 0;
+
 	if (!keystr[1] && keystr[0] > ' ' && keystr[0] <= 'z')
 		return keystr[0];
 

@@ -433,6 +433,9 @@ struct mobj_t
 
 	mobj_t *tracer; // Thing being chased/attacked for tracers.
 
+	mobj_t *bubbleplow; // Plowed a Bubble Shield; this is the shield's former owner
+	uint32_t bubbleplowforget; // When this timer runs out, forget what `mobj->bubbleplow` was
+
 	fixed_t friction;
 	fixed_t movefactor;
 	fixed_t gravity;

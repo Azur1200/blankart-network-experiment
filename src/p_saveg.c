@@ -2083,6 +2083,7 @@ enum mobj_diff_t
 	MD3_EXTVAL3,
 	MD3_LIFETIME,
 	MD3_VOICE,
+	MD3_BUBBLEPLOW,
 
 	MD__MAX
 };
@@ -2244,7 +2245,11 @@ static void DiffMobj(const mobj_t *mobj, uint32_t diff[])
 	DIFF(mobj->bakexoff || mobj->bakeyoff || mobj->bakezoff || mobj->bakexpiv || mobj->bakeypiv || mobj->bakezpiv, MD3_BAKEDOFFSET);
 	DIFF(mobj->extravalue3, MD3_EXTVAL3);
 	DIFF(mobj->mobjlifetime, MD3_LIFETIME);
+
 	DIFF(mobj->voice, MD3_VOICE);
+
+	DIFF(mobj->bubbleplow, MD3_BUBBLEPLOW);
+	DIFF(mobj->bubbleplowforget, MD3_BUBBLEPLOW);
 }
 
 dboolean MobjIsNetSynced(mobj_t *mobj)
@@ -2607,6 +2612,9 @@ static thinker_t *SyncMobjThinker(savebuffer_t *save, actionf_p1 thinker, thinke
 			mobj->voice = &((skin_t *)(mobj->skin))->voices[savedvoice];
 		}
 	}
+
+	RSYNCF(MD3_BUBBLEPLOW, mobj->bubbleplow);
+	SYNCF(MD3_BUBBLEPLOW, mobj->bubbleplowforget);
 
 	if (!save->write)
 	{
@@ -4234,6 +4242,7 @@ static void P_RelinkPointers(savebuffer_t *save)
 		RELINK(&mobj->hprev);
 		RELINK(&mobj->itnext);
 		RELINK(&mobj->terrainOverlay);
+		RELINK(&mobj->bubbleplow);
 	}
 
 	for (i = 0; i < MAXPLAYERS; i++)

@@ -1230,8 +1230,8 @@ static void R_DrawVisSprite(vissprite_t *vis)
 		dc.affine.ox = vis->affine.transform.ox;
 		dc.affine.oy = vis->affine.transform.oy;
 
-		dc.affineoffset.x = vis->affine.offset.x;
-		dc.affineoffset.y = vis->affine.offset.y;
+		dc.affineoffset.x = 0;
+		dc.affineoffset.y = 0;
 
 		dc.affinemosaic.x = vis->affine.mosaic.x;
 		dc.affinemosaic.y = vis->affine.mosaic.y;
@@ -1271,8 +1271,6 @@ static void R_DrawVisSprite(vissprite_t *vis)
 				float _ysc = (f_yscale / f_yscale_const);
 
 				scaleiter += (f_scalestep / f_yscale_const);
-
-				float scalemul = f_base_yscale + scaleiter;
 
 				if (_ysc < 0.001f)
 				{

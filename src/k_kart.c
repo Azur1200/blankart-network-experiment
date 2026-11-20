@@ -606,6 +606,7 @@ void K_RegisterKartStuff(void)
 
 	CV_RegisterVar(&cv_kartinvindamage);
 	CV_RegisterVar(&cv_kartorbijawzdmg);
+	CV_RegisterVar(&cv_kartorbijawzsoftdmg);
 
 	CV_RegisterVar(&cv_kartinvintheme);
 
@@ -644,6 +645,8 @@ void K_RegisterKartStuff(void)
 	// experimental stuff
 	CV_RegisterVar(&cv_kartbubble_defense_canidle);
 	CV_RegisterVar(&cv_kartbubble_defense_damagerate);
+	CV_RegisterVar(&cv_kartbubble_pierceshield);
+	CV_RegisterVar(&cv_kartbubble_killonreflect);
 	CV_RegisterVar(&cv_kartbubble_boost_allow);
 	CV_RegisterVar(&cv_kartbubble_boost_offroadignore);
 	CV_RegisterVar(&cv_kartflame_fastfuel);
@@ -1043,7 +1046,7 @@ static void K_SetPlayerBumped(player_t *player, mobj_t *comparemobj)
 	if (pshield == KSHIELD_BUBBLE && player->bubblecool == 0 && K_CheckBubbleChip(comparemobj))
 	{
 		// Each bump does chip damage to the shield.
-		K_RemoveBubbleHealth(player, BUBBLEBUMPCHIP);
+		K_RemoveBubbleHealth(player, BUBBLEBUMPCHIP, false);
 
 		if (player->bubblehealth > 0)
 		{
@@ -6718,8 +6721,26 @@ dboolean K_IsBubbleDefending(const player_t *player)
 	return (player->bubbleblowup);
 }
 
+// Checks if an attacking item "plows" the Bubble Shield, popping it instantly and ignoring any reflect interactions
+dboolean K_CheckBubblePlow(mobj_t *attacker, mobj_t *victim)
+{
+	if (P_MobjWasRemoved(attacker))
+		return false; // No attacker
+
+	if (!(attacker->bubbleplow && (!P_MobjWasRemoved(attacker->bubbleplow)) && attacker->bubbleplow->player))
+		return false; // Nothing TO plow
+
+	if (!(victim && (!P_MobjWasRemoved(victim)) && victim->player))
+		return false; // No victim
+
+	const uint32_t bubbleplow_pid = (uint32_t)(attacker->bubbleplow->player - players);
+	const uint32_t victim_pid = (uint32_t)(victim->player - players);
+
+	return (bubbleplow_pid == victim_pid);
+}
+
 // Depletes a bubble shield's health, and pops the shield at 0 health.
-void K_RemoveBubbleHealth(player_t *player, int16_t sub)
+void K_RemoveBubbleHealth(player_t *player, int16_t sub, dboolean plowing)
 {
 	// don't damage if we have some buffer time
 	if (player->bubblebuffer > 0)
@@ -6736,7 +6757,7 @@ void K_RemoveBubbleHealth(player_t *player, int16_t sub)
 
 	if (player->bubblehealth <= 0)
 	{
-		if (player->bubbleblowup)
+		if (player->bubbleblowup && (!plowing))
 		{
 			// 1.5 seconds of i-frames for better gamefeel on shatters
 			player->flashing = 3 * TICRATE / 2;

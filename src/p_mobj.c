@@ -10961,6 +10961,8 @@ void P_MobjThinker(mobj_t *mobj)
 		P_SetTarget(&mobj->hprev, NULL);
 	if (mobj->itnext && P_MobjWasRemoved(mobj->itnext))
 		P_SetTarget(&mobj->itnext, NULL);
+	if (mobj->bubbleplow && P_MobjWasRemoved(mobj->bubbleplow))
+		P_SetTarget(&mobj->bubbleplow, NULL);
 
 	// Tick lifetime of mobj
 	mobj->mobjlifetime++;
@@ -11050,6 +11052,20 @@ void P_MobjThinker(mobj_t *mobj)
 		LUA_HookMobj(mobj, MOBJ_HOOK(MobjThinker));
 		if (P_MobjWasRemoved(mobj))
 			return;
+	}
+
+	if (mobj->bubbleplowforget)
+	{
+		mobj->bubbleplowforget--;
+
+		if (mobj->bubbleplowforget == 0)
+		{
+			if (mobj->bubbleplow && (!P_MobjWasRemoved(mobj->bubbleplow)))
+			{
+				// Forget who we plowed
+				P_SetTarget(&mobj->bubbleplow, NULL);
+			}
+		}
 	}
 
 	// if it's pushable, or if it would be pushable other than temporary disablement, use the
@@ -12394,6 +12410,7 @@ void P_RemoveMobj(mobj_t *mobj)
 	// Remove any references to other mobjs.
 	P_SetTarget(&mobj->target, NULL);
 	P_SetTarget(&mobj->tracer, NULL);
+	P_SetTarget(&mobj->bubbleplow, NULL);
 
 	// repair hnext chain
 	{
