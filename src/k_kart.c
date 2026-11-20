@@ -7653,7 +7653,7 @@ static void K_UpdateInvincibilitySounds(player_t *player)
 	{
 		const dboolean invinsound =
 		    ((player->invincibilitytimer) ||
-		     ((player->smonitortimer > 0) && (!player->smonitorwarning)));
+		     ((player->smonitortimer > 2) && (!player->smonitorwarning)));
 
 		if (player->growshrinktimer > 0 && (!localplayer || cv_growmusic.value == 2)) // Prioritize Grow
 			sfxnum = cv_kartinvinsfx.value ? sfx_alarmg : sfx_kgrow;

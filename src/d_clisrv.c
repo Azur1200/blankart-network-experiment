@@ -5519,7 +5519,10 @@ static void PT_Login(int8_t node)
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	if (client)
+	{
+		I_OutputMsg("[PT_Login] node isn't server!\n");
 		return;
+	}
 
 	I_Assert((uint8_t)node < sizeof(adminsalt) / sizeof(adminsalt[0]));
 
@@ -5537,10 +5540,16 @@ static void PT_LoginAuth(int8_t node, int32_t netconsole)
 	uint8_t finalsha256[32];/* Well, it's the cool thing to do? */
 	uint32_t i;
 	if (client)
+	{
+		I_OutputMsg("[PT_LoginAuth] node isn't server!\n");
 		return;
+	}
 
 	if ((size_t)doomcom->datalength < sizeof(netbuffer->u.sha256sum))/* ignore partial sends */
+	{
+		I_OutputMsg("[PT_LoginAuth] partial send: doomcon->datalength (%lu) doesn't match sha256sum size (%lu)!\n", (size_t)doomcom->datalength, sizeof(netbuffer->u.sha256sum));
 		return;
+	}
 
 	if (adminsalt[node][0] == 0)
 	{
@@ -5905,13 +5914,22 @@ static void PT_LoginChallenge(int8_t node)
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 
 	if (node != servernode)
+	{
+		I_OutputMsg("[PT_LoginChallenge] node isn't server!\n");
 		return;
+	}
 
 	if ((size_t)doomcom->datalength < sizeof(netbuffer->u.salt))/* ignore partial sends */
+	{
+		I_OutputMsg("[PT_LoginChallenge] partial send: doomcon->datalength (%lu) doesn't match salt size (%lu)!\n", (size_t)doomcom->datalength, sizeof(netbuffer->u.salt));
 		return;
+	}
 
 	if (reqpass == NULL)
+	{
+		I_OutputMsg("[PT_LoginChallenge] reqpass is NULL - no login requested?!\n");
 		return; // got PT_LOGINCHALLENGE but we didn't request a login
+	}
 
 	memcpy(salt, netbuffer->u.salt, sizeof(netbuffer->u.salt));
 	D_SHA256PasswordPass((const uint8_t *)reqpass, strlen(reqpass), salt, netbuffer->u.sha256sum);
