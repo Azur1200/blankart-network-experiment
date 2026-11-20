@@ -4691,7 +4691,10 @@ void P_PlayerThink(player_t *player)
 	// check special sectors : damage & secrets
 
 	if (!player->spectator)
+	{
 		P_PlayerInSpecialSector(player);
+		K_UpdatePanelGraze(player);
+	}
 
 	// Redundant "on ground" check so that damaging specials go first
 	if (P_IsObjectOnGround(player->mo) == true)
@@ -4902,7 +4905,10 @@ void P_PlayerAfterThink(player_t *player)
 	// check special sectors : damage & secrets
 
 	if (!player->spectator)
+	{
 		P_PlayerInSpecialSector(player);
+		K_UpdatePanelGraze(player);
+	}
 
 	// Redundant "on ground" check so that damaging specials go first
 	if (P_IsObjectOnGround(player->mo) == true)
