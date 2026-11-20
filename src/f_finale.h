@@ -78,7 +78,10 @@ void F_StartCredits(void);
 void F_BlanStartCredits(void);
 void F_StartSecretCredits(void);
 
+void F_DrawCompositeGameLogo(tic_t time, int32_t yoffset);
+
 void F_TitleBGScroll(int32_t scrollspeed, int32_t ticker);
+void F_BlanTitleBG(int32_t ticker);
 
 extern int32_t finalecount;
 extern int32_t menuanimtimer;
@@ -89,7 +92,8 @@ typedef enum
 {
 	TTMODE_NONE = 0,
 	TTMODE_KART,
-	TTMODE_USER
+	TTMODE_USER,
+	TTMODE_BLAN
 } ttmode_enum;
 
 #define TTMAX_ALACROIX 30 // max frames for SONIC typeface, plus one for NULL terminating entry
@@ -104,6 +108,7 @@ extern int16_t tty;
 extern int16_t ttloop;
 extern uint16_t tttics;
 extern dboolean ttavailable[6];
+extern const char *credits[];
 extern const char *blancredits[];
 
 typedef enum
@@ -123,6 +128,8 @@ extern int32_t curbgxspeed;
 extern int32_t curbgyspeed;
 extern dboolean curbghide;
 extern dboolean hidetitlemap;
+
+extern dboolean sawfullcredits;
 
 extern dboolean curhidepics;
 extern ttmode_enum curttmode;

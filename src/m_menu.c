@@ -1936,6 +1936,8 @@ void M_Drawer(void)
 				V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, curbgcolor);
 			else if (fastcmp(curbgname, "SRB2KTTL") && (!curbghide || !titlemapinaction))
 				F_TitleBGScroll(5, menuanimtimer);
+			else if (fastcmp(curbgname, "BLANKTTL") && (!curbghide || !titlemapinaction))
+				F_BlanTitleBG(menuanimtimer);
 			else if ((!curbghide || !titlemapinaction))
 				F_SkyScroll(curbgxspeed, curbgyspeed, curbgname);
 			if (curfadevalue)
@@ -2143,6 +2145,8 @@ void M_StartControlPanel(void)
 	{
 		if (gamestate != GS_MENU)
 		{
+			gamestate_t oldgamestate = gamestate;
+
 			if (titlemapinaction)
 			{
 				// We clear a LITTLE bit of state, but not a full D_ClearState.
@@ -2152,6 +2156,11 @@ void M_StartControlPanel(void)
 			}
 
 			G_SetGamestate(GS_MENU);
+			// this was annoying
+			if (oldgamestate == GS_TITLESCREEN)
+			{
+				wipegamestate = GS_MENU;
+			}
 			gameaction = ga_nothing;
 			paused = false;
 			CON_ToggleOff();

@@ -32,6 +32,7 @@ add_executable(BLANKART MACOSX_BUNDLE WIN32
 	st_stuff.c
 	m_aatree.c
 	m_anigif.c
+	m_animkeyframe.c
 	m_argv.c
 	m_bbox.c
 	m_cheat.c

@@ -43,6 +43,8 @@
 #include "lua_hud.h"
 #include "lua_hook.h"
 
+#include "m_animkeyframe.h"
+
 // Stage of animation:
 // 0 = text, 1 = art screen
 int32_t finalecount;
@@ -71,6 +73,7 @@ int32_t curbgxspeed;
 int32_t curbgyspeed;
 dboolean curbghide;
 dboolean hidetitlemap;		// WARNING: set to false by M_SetupNextMenu and M_ClearMenus
+dboolean sawfullcredits = false;
 
 #if 0
 static uint8_t  laststaff = 0;
@@ -81,7 +84,7 @@ static uint32_t demoIdleLeft;
 
 // customizable title screen graphics
 
-ttmode_enum ttmode = TTMODE_KART;
+ttmode_enum ttmode = TTMODE_BLAN;
 uint8_t ttscale = 1; // FRACUNIT / ttscale
 // ttmode user vars
 char ttname[9];
@@ -103,8 +106,13 @@ uint16_t curtttics;
 // ttmode kart
 static patch_t *ttbanner; // SONIC ROBO BLAST 2
 static patch_t *ttkart; // *vroom* KART
+
 static patch_t *ttcheckers; // *vroom* KART
 static patch_t *ttkflash; // flash screen
+
+// ttmode blan
+static patch_t *ttblanoverlay;
+static patch_t *ttblanchara[3];
 
 #define NOWAY
 
@@ -267,6 +275,21 @@ void F_TitleBGScroll(int32_t scrollspeed, int32_t ticker)
 	W_UnlockCachedPatch(pat2);
 }
 
+void F_BlanTitleBG(int32_t ticker)
+{
+	patch_t *ttblanback;
+	ttblanback = W_CachePatchName("BKBACK00", PU_CACHE);
+
+	int32_t w = (vid.scaledwidth << FRACBITS);
+	int32_t h = (vid.scaledheight << FRACBITS);
+	fixed_t horzscale = FixedDiv(w, LSBF_SHORT(ttblanback->width)<<FRACBITS);
+	fixed_t vertscale = FixedDiv(h, LSBF_SHORT(ttblanback->height)<<FRACBITS);
+	
+	V_DrawFixedPatch(0, 0, max(horzscale, vertscale), V_SNAPTOTOP|V_SNAPTOLEFT, ttblanback, 
+		R_GetTranslationColormap(TC_RAINBOW, SKINCOLOR_NAVY, GTC_MENUCACHE));
+	
+	W_UnlockCachedPatch(ttblanback);
+}
 
 // =============
 //  INTRO SCENE
@@ -523,7 +546,7 @@ dboolean F_IntroResponder(event_t *event)
 // =========
 //  CREDITS
 // =========
-static const char *credits[] = {
+const char *credits[] = {
 	"\1SRB2Kart",
 	"\1Credits",
 	"",
@@ -658,7 +681,7 @@ static const char *credits[] = {
 	"Kart Krew",
 	"",
 	"\1In Memory of",
-	"\"Tyler52\"",
+	"\2\"Tyler52\"",
 	"",
 	"",
 	"\1Thank you",
@@ -770,6 +793,12 @@ void F_CreditDrawer(void)
 			if (y>>FRACBITS > -20)
 				V_DrawCreditString((160 - (V_CreditStringWidth(&credits[i][1])>>1))<<FRACBITS, y, 0, &credits[i][1]);
 			y += 30<<FRACBITS;
+			break;
+		case 2:
+			// This calls the Tyler memorial in the full credits, but that's hardcoded here
+			// This'd otherwise cause an unneeded stringdance, which was funny, but...
+			if (y>>FRACBITS > -10)
+				V_DrawStringAtFixed(32<<FRACBITS, y, V_ALLOWLOWERCASE,  &credits[i][1]);
 			break;
 		default:
 			if (y>>FRACBITS > -10)
@@ -883,6 +912,7 @@ dboolean F_CreditResponder(event_t *event)
 //  BLANCREDITS
 // ============
 
+// Without the "Thanks for playing!" text, due to the full credits
 const char *blancredits[] = {
 	"\1BlanKart",
 	"\1Credits",
@@ -898,6 +928,11 @@ const char *blancredits[] = {
 	"\1Support Programming",
 	"\"hayaunderscore\" aka \"DeltaKanyx\"",
 	"\"WumboSpasm\"",
+	"",
+	"\1\"Vehicles\" System",
+	"\"GenericHeroGuy\"",
+	"\"minenice\"",
+	"\"yama\"",
 	"",
 	"\1Item Programming",
 	"\"NepDisk\"",
@@ -921,7 +956,7 @@ const char *blancredits[] = {
 	"Kart Krew Dev",
 	"Ronald \"Eidolon\" Kinard", // Interp, Virtual keyboard, So many other things
 	"\"Lat'\"", // Followers, Virutal Keyboard
-	"\"JugadorXEI\"",
+	"\"JugadorXEI\"", // A whole lot :holdingbugtears:
 	"\"Kimberly\"",
 	"\"Chearii\"",
 	"\"hayaunderscore\" aka \"DeltaKanyx\"",
@@ -935,7 +970,6 @@ const char *blancredits[] = {
 	"\"Skirlez\"", // PT_SAY packet fixes
 	"Sally \"TehRealSalt\" Cochenour", // Map Buffer rewrite, Voting rewrites
 	"\"Jartha\"", // Various bugfixes, RRID, Virtual Keyboard
-	"\"Lat'\"", // Virtual Keyboard
 	"\"Jisk\"", // K_AddMessage Lua exposure
 	"",
 	"\1Item Design",
@@ -954,6 +988,64 @@ const char *blancredits[] = {
 	"\"merritt\"",
 	"\"Sunflower\" aka \"AnimeSonic\"",
 	"",
+	"\1Logo Design",
+	"\"ArtoMeister\"",
+	"\"merritt\"",
+	"\"Spee\"",
+	"\"yama\"",
+	"",
+	"\1Title Illustration",
+	"\"zichow4evr\"",
+	"",
+	"\1Menu Background Artwork",
+	"Lillie aka \"triangularity\"",
+	"",
+	"\1Vehicle Design", // ...the indev talks in question. Surprise!
+	"\"StarrydustNova\"", // Blan Kart M
+	"\"joshyflip\"", // Blan Kart M
+	"\"Spee\"", // Blan Kart M
+	"\"ArtoMeister\"", // Hang-on Bike
+	"\"PX8916\"", // Blan Kart S
+	"",
+	"\1Character Artwork",
+	"\"StarrydustNova\"", // Sonic
+	"\"joshyflip\"", // Sonic
+	"\"yama\"", // Sonic
+	"\"ArtoMeister\"", // Sakura
+	"\"minenice\"", // Arisa
+	"",
+	"\1Map Design",
+	"\"SGNRyan\"",
+	"\"AracadeStriker\"",
+	"Lillie aka \"triangularity\"",
+	"\"Mayo\"",
+	"\"StarrydustNova\"",
+	"\"Phoenix\"",
+	"\"yama\"",
+	"",
+	"\1Map Textures",
+	"\"SGNRyan\"",
+	"\"StarrydustNova\"",
+	"\"yama\"",
+	"\"ArtoMeister\"",
+	"",
+	"\1Map Object Artwork",
+	"\"yama\"",
+	"\"Miguelius256\"",
+	"",
+  	"\1Map Quality Assurance",
+	"\"merritt\"",
+	"\"SGNRyan\"",
+	"\"luna\"",
+	"\"Mayo\"",
+	"\"MotoBugger\"",
+	"\"Rim Jobless\"",
+	"\"White Mage (guy who picked up controller)\"",
+	"\"rigged\"",
+	"\"StarrydustNova\"",
+	"\"yama\"",
+	"\"Gemini0\"",
+	"",
 	"\1New Item Art",
 	"\"Spee\"", // Double jawz, the various bananas, the icons from HitList, new landmine sprite
 	"\"Jin\"", // Double Sneakers
@@ -963,6 +1055,7 @@ const char *blancredits[] = {
 	"\"minenice\"",
 	"\"Mompi\"",
 	"\"Chuckles troll\"", // Attraction Shield, S-Monitor
+	"\"TetraCT\" aka \"CoolThok\"", // Egg Mine HUD graphics
 	"",
 	"\1New HUD Art",
 	"\"Spee\"",
@@ -978,11 +1071,10 @@ const char *blancredits[] = {
 	"\"StarrydustNova\"",
 	"\"joshyflip\"",
 	"\"Chuckles troll\"", // Timer icon for: S-Monitor
+	"\"yama\"", // Rank graphics
 	"",
 	"\1New Misc Art",
 	"\"scizor300\"",
-	"\"StarrydustNova\"", // Per some indev talks. Can't reveal the secrets yet!
-	"\"joshyflip\"", // Per some indev talks. Can't reveal the secrets yet!
 	"\"ArtoMeister\"", // "Bad waypoint" graphic
 	"",
 	"\1Additional Assets",
@@ -1001,7 +1093,7 @@ const char *blancredits[] = {
 	"\"luna\"",
 	"\"Super Chris\"",
 	"\"Sunflower\" aka \"AnimeSonic\"",
-	"\"CoolThok\"",
+	"\"TetraCT\" aka \"CoolThok\"",
 	"\"Phoenix\"",
 	"",
 	// Anyone who's been directly involved with getting rid of SIGSEGV
@@ -1064,13 +1156,17 @@ const char *blancredits[] = {
 	"Sunflower's Garden",
 	"The Moe Mansion and Birdhouse Team",
 	"SRB2Kart Saturn Contributors",
+	NULL
+};
+
+static const char *thankstext[] = {
 	"",
 	"",
 	"\1Thank you",
-	"\1for playing!",
-
-	NULL,
+	"\1for playing!"
 };
+
+static const char** realblancredits;
 
 void F_BlanStartCredits(void)
 {
@@ -1078,6 +1174,53 @@ void F_BlanStartCredits(void)
 
 	// Just in case they're open ... somehow
 	M_ClearMenus(true);
+
+	// Allocate the credits string
+
+	const size_t blancreds_size = sizeof(blancredits) + sizeof(thankstext) - sizeof(const char*);
+	const size_t blancreds_fullsize = blancreds_size + sizeof(const char*);
+
+	if (!realblancredits)
+	{
+		realblancredits = malloc(blancreds_fullsize);
+	}
+	else
+	{
+		realblancredits = realloc(realblancredits, blancreds_fullsize);
+	}
+
+	memset(realblancredits, 0, blancreds_fullsize);
+
+	size_t ptr_pos = 0;
+	size_t copylen = (sizeof(blancredits) / sizeof(blancredits[1])) - 1;
+	size_t i = 0;
+	const size_t capacity = (blancreds_size / sizeof(const char*));
+
+	// Copy the credits string the shitty bruteforce way...
+	for (i = 0; i < copylen; i++)
+	{
+		if (capacity <= ptr_pos)
+		{
+			I_Error("F_BlanStartCredits: pointer position exceeds capacity of %lu", capacity);
+		}
+
+		realblancredits[ptr_pos] = blancredits[i];
+
+		if (i < (copylen - 1))
+			ptr_pos++;
+	}
+
+	copylen = (sizeof(thankstext) / sizeof(thankstext[1]));
+	for (i = 0; i < copylen; i++)
+	{
+		if (capacity <= ptr_pos)
+		{
+			I_Error("F_BlanStartCredits: pointer position exceeds capacity of %lu", capacity);
+		}
+
+		realblancredits[ptr_pos] = thankstext[i];
+		ptr_pos++;
+	}
 
 	if (creditscutscene)
 	{
@@ -1154,22 +1297,25 @@ void F_BlanCreditDrawer(void)
 	V_DrawSciencePatch(0, 0 - yscroll, V_SNAPTOTOP, W_CachePatchName("CREDTILE", PU_CACHE), FRACUNIT);
 	V_DrawFillConsoleMap(-100,-100,vid.width, vid.height,0);
 
+	if (!realblancredits)
+		return;
+
 	// Draw credits text on top
-	for (i = 0; blancredits[i]; i++)
+	for (i = 0; realblancredits[i]; i++)
 	{
-		switch(blancredits[i][0])
+		switch(realblancredits[i][0])
 		{
 		case 0:
 			y += 80<<FRACBITS;
 			break;
 		case 1:
 			if (y>>FRACBITS > -20)
-				V_DrawCenteredStringAtFixed(160<<FRACBITS, y, 0, &blancredits[i][1]);
+				V_DrawCenteredStringAtFixed(160<<FRACBITS, y, 0, &realblancredits[i][1]);
 			y += 20<<FRACBITS;
 			break;
 		default:
 			if (y>>FRACBITS > -10)
-				V_DrawCenteredStringAtFixed(160<<FRACBITS, y, V_ALLOWLOWERCASE, blancredits[i]);
+				V_DrawCenteredStringAtFixed(160<<FRACBITS, y, V_ALLOWLOWERCASE, realblancredits[i]);
 			y += 12<<FRACBITS;
 			break;
 		}
@@ -1186,10 +1332,13 @@ void F_BlanCreditTicker(void)
 	uint16_t i;
 	fixed_t y = (80<<FRACBITS) - 5*(animtimer<<FRACBITS)/8;
 
+	if (!realblancredits)
+		return;
+
 	// Draw credits text on top
-	for (i = 0; blancredits[i]; i++)
+	for (i = 0; realblancredits[i]; i++)
 	{
-		switch(blancredits[i][0])
+		switch(realblancredits[i][0])
 		{
 			case 0: y += 80<<FRACBITS; break;
 			case 1: y += 20<<FRACBITS; break;
@@ -1200,7 +1349,7 @@ void F_BlanCreditTicker(void)
 	}
 
 	// Do this here rather than in the drawer you doofus! (this is why dedicated mode broke at credits)
-	if (!blancredits[i] && y <= 120<<FRACBITS && !finalecount)
+	if (!realblancredits[i] && y <= 120<<FRACBITS && !finalecount)
 	{
 		timetonext = 5*TICRATE+1;
 		finalecount = 5*TICRATE;
@@ -1414,6 +1563,29 @@ void F_CacheTitleScreen(void)
 			ttcheckers = W_CachePatchName("TTCHECK", PU_PATCH_LOWPRIORITY);
 			ttkflash = W_CachePatchName("TTKFLASH", PU_PATCH_LOWPRIORITY);
 			break;
+		
+		case TTMODE_BLAN:
+			ttblanoverlay = W_CachePatchName("BKLOGOOV", PU_PATCH_LOWPRIORITY);
+
+			const char* charaPatchNames[] = {
+				"BKCHAR00",
+				"BKCHAR01",
+				"BKCHAR02"
+			};
+
+			for (size_t m = 0; m < sizeof(charaPatchNames) / sizeof(charaPatchNames[0]); ++m)
+			{
+				ttblanchara[m] = W_CachePatchName(charaPatchNames[m], PU_PATCH_LOWPRIORITY);
+			}
+
+			ttblanchara[2]->pivot.x =
+				(108) + ttblanchara[2]->leftoffset;
+			ttblanchara[2]->pivot.y =
+				(47) + ttblanchara[2]->topoffset;
+			ttblanchara[2]->alignflags |=
+				(PATCHALIGN_AUTOCENTER | PATCHALIGN_USEPIVOTS);
+			
+			break;
 
 		case TTMODE_USER:
 		{
@@ -1511,6 +1683,228 @@ void F_StartTitleScreen(void)
 	F_CacheTitleScreen();
 }
 
+// B
+static animkeyframe_t logokeyframes_0_x[] = {
+	{380<<FRACBITS, 0, EASE_OUTBACK},
+	{32<<FRACBITS, 10, EASE_OUTBACK},
+};
+static animkeyframe_t logokeyframes_0_y[] = {
+	{(70 - 18)<<FRACBITS, 0, EASE_OUTQUAD},
+	{(110 - 18)<<FRACBITS, 5, EASE_OUTQUAD},
+	{(46 - 18)<<FRACBITS, 10, EASE_OUTQUAD},
+};
+static animkeyframe_t logokeyframes_0_scale[] = {
+	{2 * FRACUNIT, 0, EASE_INOUTBACK},
+	{FRACUNIT, 10, EASE_INOUTBACK},
+};
+// L
+static animkeyframe_t logokeyframes_1_x[] = {
+	{380<<FRACBITS, 2, EASE_OUTBACK},
+	{84<<FRACBITS, 12, EASE_OUTBACK}
+};
+static animkeyframe_t logokeyframes_1_y[] = {
+	{(71 - 18)<<FRACBITS, 2, EASE_OUTQUAD},
+	{(111 - 18)<<FRACBITS, 7, EASE_OUTQUAD},
+	{(47 - 18)<<FRACBITS, 12, EASE_OUTQUAD},
+};
+static animkeyframe_t logokeyframes_1_scale[] = {
+	{2 * FRACUNIT, 2, EASE_INOUTBACK},
+	{FRACUNIT, 12, EASE_INOUTBACK},
+};
+// A
+static animkeyframe_t logokeyframes_2_x[] = {
+	{380<<FRACBITS, 10, EASE_OUTBACK},
+	{100<<FRACBITS, 20, EASE_OUTBACK}
+};
+static animkeyframe_t logokeyframes_2_y[] = {
+	{(77 - 18)<<FRACBITS, 10, EASE_OUTQUAD},
+	{(117 - 18)<<FRACBITS, 15, EASE_OUTQUAD},
+	{(53 - 18)<<FRACBITS, 20, EASE_OUTQUAD},
+};
+static animkeyframe_t logokeyframes_2_scale[] = {
+	{2 * FRACUNIT, 10, EASE_INOUTBACK},
+	{FRACUNIT, 20, EASE_INOUTBACK},
+};
+//N
+static animkeyframe_t logokeyframes_3_x[] = {
+	{380<<FRACBITS, 12, EASE_OUTBACK},
+	{132<<FRACBITS, 22, EASE_OUTBACK}
+};
+static animkeyframe_t logokeyframes_3_y[] = {
+	{(77 - 18)<<FRACBITS, 12, EASE_OUTQUAD},
+	{(117 - 18)<<FRACBITS, 17, EASE_OUTQUAD},
+	{(53 - 18)<<FRACBITS, 22, EASE_OUTQUAD},
+};
+static animkeyframe_t logokeyframes_3_scale[] = {
+	{2 * FRACUNIT, 12, EASE_INOUTBACK},
+	{FRACUNIT, 22, EASE_INOUTBACK},
+};
+
+//K
+static animkeyframe_t logokeyframes_4_x[] = {
+	{-80<<FRACBITS, 0, EASE_OUTBACK},
+	{163<<FRACBITS, 10, EASE_OUTBACK},
+};
+static animkeyframe_t logokeyframes_4_y[] = {
+	{(52 - 18)<<FRACBITS, 0, EASE_OUTQUAD},
+	{(24 - 18)<<FRACBITS, 5, EASE_OUTQUAD},
+	{(46 - 18)<<FRACBITS, 10, EASE_OUTQUAD},
+};
+static animkeyframe_t logokeyframes_4_scale[] = {
+	{FRACUNIT/2, 0, EASE_INOUTBACK},
+	{FRACUNIT, 10, EASE_INOUTBACK},
+};
+//A
+static animkeyframe_t logokeyframes_5_x[] = {
+	{-80<<FRACBITS, 2, EASE_OUTBACK},
+	{195<<FRACBITS, 12, EASE_OUTBACK},
+};
+static animkeyframe_t logokeyframes_5_y[] = {
+	{(57 - 18)<<FRACBITS, 2, EASE_OUTQUAD},
+	{(21 - 18)<<FRACBITS, 7, EASE_OUTQUAD},
+	{(53 - 18)<<FRACBITS, 12, EASE_OUTQUAD},
+};
+static animkeyframe_t logokeyframes_5_scale[] = {
+	{FRACUNIT/2, 2, EASE_INOUTBACK},
+	{FRACUNIT, 12, EASE_INOUTBACK},
+};
+//R
+static animkeyframe_t logokeyframes_6_x[] = {
+	{-80<<FRACBITS, 10, EASE_OUTBACK},
+	{227<<FRACBITS, 20, EASE_OUTBACK},
+};
+static animkeyframe_t logokeyframes_6_y[] = {
+	{(57 - 18)<<FRACBITS, 10, EASE_OUTQUAD},
+	{(29 - 18)<<FRACBITS, 15, EASE_OUTQUAD},
+	{(53 - 18)<<FRACBITS, 20, EASE_OUTQUAD},
+};
+static animkeyframe_t logokeyframes_6_scale[] = {
+	{FRACUNIT/2, 10, EASE_INOUTBACK},
+	{FRACUNIT, 20, EASE_INOUTBACK},
+};
+//T
+static animkeyframe_t logokeyframes_7_x[] = {
+	{-80<<FRACBITS, 12, EASE_OUTBACK},
+	{253<<FRACBITS, 22, EASE_OUTBACK},
+};
+static animkeyframe_t logokeyframes_7_y[] = {
+	{(52 - 18)<<FRACBITS, 12, EASE_OUTQUAD},
+	{(24 - 18)<<FRACBITS, 17, EASE_OUTQUAD},
+	{(46 - 18)<<FRACBITS, 22, EASE_OUTQUAD},
+};
+static animkeyframe_t logokeyframes_7_scale[] = {
+	{FRACUNIT/2, 12, EASE_INOUTBACK},
+	{FRACUNIT, 22, EASE_INOUTBACK},
+};
+
+static animkeyframe_t charakeyframes_0_x[] = {
+	{380<<FRACBITS, 40, EASE_OUTQUAD},
+	{-57<<FRACBITS, 60, EASE_OUTQUAD},
+};
+
+static animkeyframe_t charakeyframes_1_x[] = {
+	{430<<FRACBITS, 40, EASE_OUTQUAD},
+	{-3<<FRACBITS, 60, EASE_OUTQUAD},
+};
+
+static animkeyframe_t charakeyframes_1_rot[] = {
+	{60<<FRACBITS, 50, EASE_LINEAR},
+	{-5<<FRACBITS, 62, EASE_OUTQUAD},
+	{0, 68, EASE_OUTQUAD},
+};
+
+void F_DrawCompositeGameLogo(tic_t time, int32_t yoffset)
+{
+	const char* ttblanLogoPatchNames[] = {
+		"BKLOGO00",
+		"BKLOGO01",
+		"BKLOGO02",
+		"BKLOGO03",
+		"BKLOGO04",
+		"BKLOGO05",
+		"BKLOGO06",
+		"BKLOGO07"
+	};
+	patch_t *ttblanpieces[8];
+	
+	fixed_t fractime = ((time)<<FRACBITS) + R_GetTimeFrac(RTF_MENU);
+	fixed_t x, y, scale;
+
+	for (size_t m = 0; m < 8; ++m)
+	{
+		ttblanpieces[m] = W_CachePatchName(ttblanLogoPatchNames[m], PU_CACHE);
+	}
+
+	if (fractime > 2<<FRACBITS)
+	{
+		x = M_GetAnimatedKeyFrameValue(logokeyframes_5_x, 2, fractime);
+		y = M_GetAnimatedKeyFrameValue(logokeyframes_5_y, 3, fractime);
+		scale = M_GetAnimatedKeyFrameValue(logokeyframes_5_scale, 2, fractime);
+		V_DrawFixedPatch(x, y + (yoffset<<FRACBITS), scale, V_SNAPTOTOP, ttblanpieces[5], NULL);
+	}
+
+	if (fractime > 0)
+	{
+		x = M_GetAnimatedKeyFrameValue(logokeyframes_4_x, 2, fractime);
+		y = M_GetAnimatedKeyFrameValue(logokeyframes_4_y, 3, fractime);
+		scale = M_GetAnimatedKeyFrameValue(logokeyframes_4_scale, 2, fractime);
+		V_DrawFixedPatch(x, y + (yoffset<<FRACBITS), scale, V_SNAPTOTOP, ttblanpieces[4], NULL);
+	}
+
+	if (fractime > 12<<FRACBITS)
+	{
+		x = M_GetAnimatedKeyFrameValue(logokeyframes_7_x, 2, fractime);
+		y = M_GetAnimatedKeyFrameValue(logokeyframes_7_y, 3, fractime);
+		scale = M_GetAnimatedKeyFrameValue(logokeyframes_7_scale, 2, fractime);
+		V_DrawFixedPatch(x, y + (yoffset<<FRACBITS), scale, V_SNAPTOTOP, ttblanpieces[7], NULL);
+	}
+
+	if (fractime > 10<<FRACBITS)
+	{
+		x = M_GetAnimatedKeyFrameValue(logokeyframes_6_x, 2, fractime);
+		y = M_GetAnimatedKeyFrameValue(logokeyframes_6_y, 3, fractime);
+		scale = M_GetAnimatedKeyFrameValue(logokeyframes_6_scale, 2, fractime);
+		V_DrawFixedPatch(x, y + (yoffset<<FRACBITS), scale, V_SNAPTOTOP, ttblanpieces[6], NULL);
+	}
+
+	if (fractime > 0)
+	{
+		x = M_GetAnimatedKeyFrameValue(logokeyframes_0_x, 2, fractime);
+		y = M_GetAnimatedKeyFrameValue(logokeyframes_0_y, 3, fractime);
+		scale = M_GetAnimatedKeyFrameValue(logokeyframes_0_scale, 2, fractime);
+		V_DrawFixedPatch(x, y + (yoffset<<FRACBITS), scale, V_SNAPTOTOP, ttblanpieces[0], NULL);
+	}
+
+	if (fractime > 2<<FRACBITS)
+	{
+		x = M_GetAnimatedKeyFrameValue(logokeyframes_1_x, 2, fractime);
+		y = M_GetAnimatedKeyFrameValue(logokeyframes_1_y, 3, fractime);
+		scale = M_GetAnimatedKeyFrameValue(logokeyframes_1_scale, 2, fractime);
+		V_DrawFixedPatch(x, y + (yoffset<<FRACBITS), scale, V_SNAPTOTOP, ttblanpieces[1], NULL);
+	}
+
+	if (fractime > 10<<FRACBITS)
+	{
+		x = M_GetAnimatedKeyFrameValue(logokeyframes_2_x, 2, fractime);
+		y = M_GetAnimatedKeyFrameValue(logokeyframes_2_y, 3, fractime);
+		scale = M_GetAnimatedKeyFrameValue(logokeyframes_2_scale, 2, fractime);
+		V_DrawFixedPatch(x, y + (yoffset<<FRACBITS), scale, V_SNAPTOTOP, ttblanpieces[2], NULL);
+	}
+	
+	if (fractime > 12<<FRACBITS)
+	{
+		x = M_GetAnimatedKeyFrameValue(logokeyframes_3_x, 2, fractime);
+		y = M_GetAnimatedKeyFrameValue(logokeyframes_3_y, 3, fractime);
+		scale = M_GetAnimatedKeyFrameValue(logokeyframes_3_scale, 2, fractime);
+		V_DrawFixedPatch(x, y + (yoffset<<FRACBITS), scale, V_SNAPTOTOP, ttblanpieces[3], NULL);
+	}
+
+	for (size_t n = 0; n < 8; ++n)
+	{
+		W_UnlockCachedPatch(ttblanpieces[n]);
+	}
+}
+
 // (no longer) De-Demo'd Title Screen
 void F_TitleScreenDrawer(void)
 {
@@ -1590,6 +1984,44 @@ void F_TitleScreenDrawer(void)
 			break;
 		}
 
+		case TTMODE_BLAN:
+		{
+			fixed_t fractime = ((finalecount)<<FRACBITS) + R_GetTimeFrac(RTF_MENU);
+			int32_t transval = CLAMP((finalecount - 40)>>1, 0, 10);
+			int32_t alphaflags = (transval<<V_ALPHASHIFT);
+			if (finalecount < 40)
+			{
+				V_DrawFill(0, 0, BASEVIDWIDTH, BASEVIDHEIGHT, 31);
+			}
+			else
+			{
+				fixed_t chxA, chxB, chrot;
+				fixed_t chsuby = 2 * FSIN(FixedAngle(FixedMul((fractime / TICRATE) % (M_TAU_FIXED), M_RADTODEG_FIXED)));
+
+				if (titlemapinaction == false)
+					F_BlanTitleBG(finalecount);
+				
+				if (alphaflags)
+				{
+					V_DrawFadeScreen(0, 10 - transval);
+				}
+
+				chxA = M_GetAnimatedKeyFrameValue(charakeyframes_0_x, 2, fractime);
+				chxB = M_GetAnimatedKeyFrameValue(charakeyframes_1_x, 2, fractime);
+				chrot = M_GetAnimatedKeyFrameValue(charakeyframes_1_rot, 3, fractime);
+				V_DrawFixedPatch(chxA, (44<<FRACBITS) - chsuby, FRACUNIT/3, V_SNAPTOBOTTOM, ttblanchara[0], NULL);
+				V_DrawRotatedFixedPatch(chxB, (73<<FRACBITS) - chsuby, FixedAngle(chrot), FRACUNIT/3, V_SNAPTOBOTTOM, ttblanchara[2], NULL);
+				V_DrawFixedPatch(chxA, (44<<FRACBITS) - chsuby, FRACUNIT/3, V_SNAPTOBOTTOM, ttblanchara[1], NULL);
+			}
+
+			F_DrawCompositeGameLogo(finalecount - 15, 0);
+			if (alphaflags)
+			{
+				V_DrawFixedPatch(30<<FRACBITS, 16<<FRACBITS, FRACUNIT, V_SNAPTOTOP|V_ADD|alphaflags, ttblanoverlay, NULL);
+			}
+			break;
+		}
+
 		case TTMODE_USER:
 			if (!ttuser[max(0, ttuser_count)])
 			{
@@ -1644,16 +2076,40 @@ void F_TitleScreenTicker(dboolean run)
 
 		finalecount++;
 
-		if (finalecount == 10)
+		switch (curttmode)
 		{
-			S_StartSound(NULL, sfx_s23e);
-		}
-		else if (finalecount == 50)
-		{
-			// Now start the music
-			S_ChangeMusicInternal("titles", true);
-			S_ShowMusicCredit(0, 5*TICRATE, 0);
-			S_StartSound(NULL, sfx_s23c);
+			case TTMODE_KART:
+			{
+				if (finalecount == 10)
+				{
+					S_StartSound(NULL, sfx_s23e);
+				}
+				else if (finalecount == 50)
+				{
+					// Now start the music
+					S_ChangeMusicInternal("titles", true);
+					S_ShowMusicCredit(0, 5*TICRATE, 0);
+					S_StartSound(NULL, sfx_s23c);
+				}
+
+				break;
+			}
+			case TTMODE_BLAN:
+			{
+				if (finalecount == 5)
+				{
+					const char* titlemus = (sawfullcredits) ? "exttl" : "titlea";
+					S_ChangeMusicInternal(titlemus, true);
+				}
+				else if (finalecount == 80)
+				{
+					S_ShowMusicCredit(-25*FRACUNIT, 5*TICRATE, V_SNAPTOTOP);
+				}
+
+				break;
+			}
+			default:
+				break;
 		}
 	}
 

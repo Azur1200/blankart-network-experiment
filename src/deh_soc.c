@@ -2905,6 +2905,8 @@ void readmenu(MYFILE *f, int32_t num)
 				}
 				else if (fastcmp(word2, "KART"))
 					menudefs[num].ttmode = TTMODE_KART;
+				else if (fastcmp(word2, "BLAN"))
+					menudefs[num].ttmode = TTMODE_BLAN;
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "TITLEPICSSCALE"))
@@ -4026,6 +4028,8 @@ void readmaincfg(MYFILE *f)
 				}
 				else if (fastcmp(word2, "KART"))
 					ttmode = TTMODE_KART;
+				else if (fastcmp(word2, "BLAN"))
+					ttmode = TTMODE_BLAN;
 				titlechanged = true;
 			}
 			else if (fastcmp(word, "TITLEPICSNAME"))
