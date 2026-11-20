@@ -59,12 +59,12 @@ FILE *debugfile = NULL; // put some net info in a file during the game
 #endif
 
 #define MAXREBOUND 8
-static doomdata_t reboundstore[MAXREBOUND];
-static int16_t reboundsize[MAXREBOUND];
-static int32_t rebound_head, rebound_tail;
+static doomdata_t reboundstore[MAXREBOUND] = {};
+static int16_t reboundsize[MAXREBOUND] = {};
+static int32_t rebound_head = 0, rebound_tail = 0;
 
 /// \brief bandwith of netgame
-int32_t net_bandwidth;
+int32_t net_bandwidth = 0;
 
 /// \brief max length per packet
 int16_t hardware_MAXPACKETLENGTH = 0;
@@ -97,7 +97,7 @@ bannednode_t *bannednode = NULL;
 
 
 // network stats
-static tic_t statstarttic;
+static tic_t statstarttic = 0;
 int32_t getbytes = 0;
 int64_t sendbytes = 0;
 uint8_t plcycle = 0;
@@ -108,9 +108,9 @@ static int32_t sendackpacket = 0, getackpacket = 0;
 int32_t ticruned = 0, ticmiss = 0;
 
 // globals
-int32_t getbps, sendbps;
+int32_t getbps = 0, sendbps = 0;
 float lostpercent = 0.0f, duppercent = 0.0f, gamelostpercent = 0.0f;
-int32_t packetheaderlength;
+int32_t packetheaderlength = 0;
 
 dboolean Net_GetNetStat(void)
 {
@@ -1052,34 +1052,6 @@ static dboolean ShouldDropPacket(void)
 }
 #endif
 
-// Unused because Eidolon correctly pointed out that +512b on every packet was scary.
-#ifdef SIGNGAMETRAFFIC
-dboolean IsPacketSigned(int packettype)
-{
-	switch (packettype)
-	{
-		case PT_CLIENTCMD:
-		case PT_CLIENT2CMD:
-		case PT_CLIENT3CMD:
-		case PT_CLIENT4CMD:
-		case PT_CLIENTMIS:
-		case PT_CLIENT2MIS:
-		case PT_CLIENT3MIS:
-		case PT_CLIENT4MIS:
-		case PT_TEXTCMD:
-		case PT_TEXTCMD2:
-		case PT_TEXTCMD3:
-		case PT_TEXTCMD4:
-		case PT_LOGIN:
-		case PT_ASKLUAFILE:
-		case PT_SENDINGLUAFILE:
-			return true;
-		default:
-			return false;
-	}
-}
-#endif
-
 //
 // HSendPacket
 //
@@ -1087,35 +1059,6 @@ dboolean HSendPacket(int32_t node, dboolean reliable, uint8_t acknum, size_t pac
 {
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	doomcom->datalength = (int16_t)(packetlength + BASEPACKETSIZE);
-
-#ifdef SIGNGAMETRAFFIC
-	if (IsPacketSigned(netbuffer->packettype))
-	{
-		int i;
-
-		for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
-		{
-			const void* message = &netbuffer->u;
-			//CONS_Printf("Signing packet type %d of length %d\n", netbuffer->packettype, packetlength);
-			crypto_eddsa_sign(netbuffer->signature[i], g_secret_key[i], message, packetlength);
-		}
-
-#ifdef DEVELOP
-		if (cv_badtraffic.value)
-		{
-			CV_AddValue(&cv_badtraffic, -1);
-			CONS_Alert(CONS_WARNING, "cv_badtraffic enabled, scrubbing signature from HSendPacket\n");
-			memset(netbuffer->signature, 0, sizeof(netbuffer->signature));
-		}
-
-#endif
-	}
-	else
-	{
-		//CONS_Printf("NOT signing PT_%d of length %d, it doesn't need to be\n", netbuffer->packettype, packetlength);
-		memset(netbuffer->signature, 0, sizeof(netbuffer->signature));
-	}
-#endif
 
 	if (node == 0) // Packet is to go back to us
 	{

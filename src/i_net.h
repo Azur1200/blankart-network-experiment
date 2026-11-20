@@ -24,7 +24,7 @@
 
 /// \def MAXPACKETLENGTH
 /// For use in a LAN
-#define MAXPACKETLENGTH 2063
+#define MAXPACKETLENGTH 1673
 /// \def INETPACKETLENGTH
 ///  For use on the internet
 #define INETPACKETLENGTH 1450
