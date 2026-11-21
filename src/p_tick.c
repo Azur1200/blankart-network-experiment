@@ -748,7 +748,7 @@ static void P_HandleCameraFreelookYaw(uint8_t pnum, player_t *player, camera_t *
 			}
 			// mouse aiming
 			int32_t mousex = gamekeydown[0][KEY_MOUSEMOVE+3] - gamekeydown[0][KEY_MOUSEMOVE+2];
-			cam->freelook_yaw_add -= FixedMul(mousex * 400, cv_mousesens.value) * (encoremode ? -1 : 1);
+			cam->freelook_yaw_add = (cam->freelook_yaw_add - FixedMul(mousex * 400, cv_mousesens.value) * (encoremode ? -1 : 1)) % (360<<FRACBITS);
 		}
 		else
 		{
