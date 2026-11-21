@@ -1696,7 +1696,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, int32_t realtics, uint8_t ssplayer)
 	if (spectating)
 	{
 		int32_t mousex = gamekeydown[0][KEY_MOUSEMOVE+3] - gamekeydown[0][KEY_MOUSEMOVE+2];
-		cmd->angle -= (mousex * 8) * (encoremode ? -1 : 1);
+		cmd->angle -= FixedMul(FixedMul(mousex*400, cv_mousesens.value), 104) * (encoremode ? -1 : 1);
 	}
 
 	//control spectator camera using the gyro
@@ -1840,7 +1840,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, int32_t realtics, uint8_t ssplayer)
 
 		// either i allow mouse binds in controls... or i just hardcode it :^)
 		int32_t mousey = gamekeydown[0][KEY_MOUSEMOVE+1] - gamekeydown[0][KEY_MOUSEMOVE+0];
-		axis += mousey * 8*2;
+		axis += FixedMul(FixedMul(mousey*400, cv_mouseysens.value), 104);
 
 		if (axis != 0 && spectating)
 			cmd->aiming += axis/2 * screen_invert; // divide by 2 to match KB_LOOKSPEED

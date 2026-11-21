@@ -726,26 +726,29 @@ static void P_HandleCameraFreelookYaw(uint8_t pnum, player_t *player, camera_t *
 		}
 		angle = min(abs(angle), TICRATE<<FRACBITS) * intsign(angle);
 
-		// gyro aiming
-		if (G_GetGamepadCanUseTilt(pnum)
-			&& (cv_tiltcontrol[pnum].value == TILTCONTROL_CAME || cv_tiltcontrol[pnum].value == TILTCONTROL_ON)
-			&& G_PlayerInputDown(pnum, gc_freelook, false, DEADZONE_BUTTON)
-		)
+		if (G_PlayerInputDown(pnum, gc_freelook, false, DEADZONE_BUTTON))
 		{
-			fixed_t deltaseconds = FixedDiv(FRACUNIT, max(cv_timescale.value, FRACUNIT/20))/TICRATE;
-			fixed_t yawRelaxFactor = 141*FRACUNIT/100;
-			vector3_t gyro = G_GetGamepadCalibratedGyro(pnum);
-			vector3_t gravnorm = G_GetGamepadGravity(pnum);
-			vector2_t gyroYZ = {gyro.y, gyro.z};
-			
-			// use world yaw for yaw direction, local combined yaw for magnitude
-			FV3_Normalize(&gravnorm);
-			fixed_t worldYaw = FixedMul(gyro.y, gravnorm.y) + FixedMul(gyro.z, gravnorm.z); // dot product but just yaw and roll
-			
-			fixed_t yaw = intsign(worldYaw) * (encoremode ? -1 : 1) *
-			min(FixedMul(-abs(worldYaw), yawRelaxFactor), FV2_Magnitude(&gyroYZ));
-			
-			cam->freelook_yaw_add = (cam->freelook_yaw_add - FixedMul(yaw, deltaseconds)) % (360<<FRACBITS);
+			// gyro aiming
+			if (G_GetGamepadCanUseTilt(pnum) && (cv_tiltcontrol[pnum].value == TILTCONTROL_CAME || cv_tiltcontrol[pnum].value == TILTCONTROL_ON))
+			{
+				fixed_t deltaseconds = FixedDiv(FRACUNIT, max(cv_timescale.value, FRACUNIT/20))/TICRATE;
+				fixed_t yawRelaxFactor = 141*FRACUNIT/100;
+				vector3_t gyro = G_GetGamepadCalibratedGyro(pnum);
+				vector3_t gravnorm = G_GetGamepadGravity(pnum);
+				vector2_t gyroYZ = {gyro.y, gyro.z};
+				
+				// use world yaw for yaw direction, local combined yaw for magnitude
+				FV3_Normalize(&gravnorm);
+				fixed_t worldYaw = FixedMul(gyro.y, gravnorm.y) + FixedMul(gyro.z, gravnorm.z); // dot product but just yaw and roll
+				
+				fixed_t yaw = intsign(worldYaw) * (encoremode ? -1 : 1) *
+				min(FixedMul(-abs(worldYaw), yawRelaxFactor), FV2_Magnitude(&gyroYZ));
+				
+				cam->freelook_yaw_add = (cam->freelook_yaw_add - FixedMul(yaw, deltaseconds)) % (360<<FRACBITS);
+			}
+			// mouse aiming
+			int32_t mousex = gamekeydown[0][KEY_MOUSEMOVE+3] - gamekeydown[0][KEY_MOUSEMOVE+2];
+			cam->freelook_yaw_add -= FixedMul(mousex * 400, cv_mousesens.value) * (encoremode ? -1 : 1);
 		}
 		else
 		{
@@ -791,6 +794,9 @@ void P_RunChaseCameras(void)
 					vector3_t gyro = G_GetGamepadCalibratedGyro(i);
 					cam->freelook_pitch_add -= FixedMul(gyro.x, deltaseconds);
 				}
+				// mouse aiming
+				int32_t mousey = gamekeydown[0][KEY_MOUSEMOVE+1] - gamekeydown[0][KEY_MOUSEMOVE+0];
+				cam->freelook_pitch_add += FixedMul(mousey * 400, cv_mouseysens.value);
 			}
 			else
 			{
