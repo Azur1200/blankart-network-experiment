@@ -1975,6 +1975,10 @@ static void ParseTextmapSectorParameter(uint32_t i, const char *param, const cha
 		sectors[i].specialflags |= SSF_NOPHYSICSFLOOR;
 	else if (fastcmp(param, "nophysics_ceiling") && fastcmp("true", val))
 		sectors[i].specialflags |= SSF_NOPHYSICSCEILING;
+	else if (fastcmp(param, "noramp_floor") && fastcmp("true", val))
+		sectors[i].specialflags |= SSF_NORAMPFLOOR;
+	else if (fastcmp(param, "noramp_ceiling") && fastcmp("true", val))
+		sectors[i].specialflags |= SSF_NORAMPCEILING;
 	else if (fastcmp(param, "gravityoverride") && fastcmp("true", val))
 		sectors[i].specialflags |= SSF_GRAVITYOVERRIDE;
 	else if (fastcmp(param, "walltransfer") && fastcmp("true", val))
@@ -3211,6 +3215,10 @@ static void P_WriteTextmap(void)
 			fprintf(f, "nophysics_floor = true;\n");
 		if (wsectors[i].specialflags & SSF_NOPHYSICSCEILING)
 			fprintf(f, "nophysics_ceiling = true;\n");
+		if (wsectors[i].specialflags & SSF_NORAMPFLOOR)
+			fprintf(f, "noramp_floor = true;\n");
+		if (wsectors[i].specialflags & SSF_NORAMPCEILING)
+			fprintf(f, "noramp_ceiling = true;\n");
 		if (wsectors[i].specialflags & SSF_GRAVITYOVERRIDE)
 			fprintf(f, "gravityoverride = true;\n");
 		if (wsectors[i].specialflags & SSF_WALLTRANSFER)
@@ -3505,6 +3513,9 @@ static void P_LoadTextmap(dboolean patch)
 			if (sc->specialflags & SSF_NOPHYSICSFLOOR)
 				sc->f_slope->flags |= SL_NOPHYSICS;
 
+			if (sc->specialflags & SSF_NORAMPFLOOR)
+				sc->f_slope->flags |= SL_NORAMP;
+
         }
 
 		if (textmap_planeceiling.defined == (PD_A|PD_B|PD_C|PD_D))
@@ -3513,6 +3524,9 @@ static void P_LoadTextmap(dboolean patch)
 			sc->hasslope = true;
 			if (sc->specialflags & SSF_NOPHYSICSCEILING)
 				sc->c_slope->flags |= SL_NOPHYSICS;
+
+			if (sc->specialflags & SSF_NORAMPCEILING)
+				sc->c_slope->flags |= SL_NORAMP;
 
         }
 

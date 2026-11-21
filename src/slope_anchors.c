@@ -353,6 +353,11 @@ new_vertex_slope
 		slope->flags |= SL_NOPHYSICS;
 	}
 
+	if (flags & TMSAF_NORAMP)
+	{
+		slope->flags |= SL_NORAMP;
+	}
+
 	if (flags & TMSAF_DYNAMIC)
 	{
 		slope->flags |= SL_DYNAMIC;

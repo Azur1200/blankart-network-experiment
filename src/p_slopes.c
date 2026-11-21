@@ -454,6 +454,8 @@ static void line_SpawnViaLine(const int linenum, const dboolean spawnthinker)
 	uint8_t flags = 0; // Slope flags
 	if (line->args[2] & TMSL_NOPHYSICS)
 		flags |= SL_NOPHYSICS;
+	if (line->args[2] & TMSL_NORAMP)
+		flags |= SL_NORAMP;
 	if (line->args[2] & TMSL_DYNAMIC)
 		flags |= SL_DYNAMIC;
 
@@ -686,6 +688,8 @@ static void line_SpawnViaMapthingVertexes(const int linenum, const dboolean spaw
 
 	if (line->args[4] & TMSL_NOPHYSICS)
 		flags |= SL_NOPHYSICS;
+	if (line->args[4] & TMSL_NORAMP)
+		flags |= SL_NORAMP;
 	if (line->args[4] & TMSL_DYNAMIC)
 		flags |= SL_DYNAMIC;
 
@@ -754,6 +758,9 @@ static void SpawnVertexSlopes(void)
 			if (sc->specialflags & SSF_NOPHYSICSFLOOR)
 				sc->f_slope->flags |= SL_NOPHYSICS;
 
+			if (sc->specialflags & SSF_NORAMPFLOOR)
+				sc->f_slope->flags |= SL_NORAMP;
+
 			P_ReconfigureViaVertexes(slop, vtx[0], vtx[1], vtx[2]);
 		}
 
@@ -770,6 +777,9 @@ static void SpawnVertexSlopes(void)
 
 			if (sc->specialflags & SSF_NOPHYSICSCEILING)
 				sc->c_slope->flags |= SL_NOPHYSICS;
+
+			if (sc->specialflags & SSF_NORAMPCEILING)
+				sc->c_slope->flags |= SL_NORAMP;
 
 			P_ReconfigureViaVertexes(slop, vtx[0], vtx[1], vtx[2]);
 		}
@@ -957,6 +967,25 @@ fixed_t P_GetLightZAt(const lightlist_t *light, fixed_t x, fixed_t y)
 	return light->slope ? P_GetSlopeZAt(light->slope, x, y) : light->height;
 }
 
+// Returns true if this slope should launch objects.
+dboolean P_SlopeIsRamp(pslope_t *slope)
+{
+	if (slope == NULL)
+	{
+		// Invalid input
+		return false;
+	}
+
+	if (slope->flags & SL_NORAMP)
+	{
+		// Can't ramp!
+		return false;
+	}
+
+	// We can slope launch!
+	return true;
+}
+
 // Returns true if we should run slope physics code on an object.
 dboolean P_CanApplySlopePhysics(mobj_t *mo, pslope_t *slope)
 {
@@ -1017,7 +1046,7 @@ void P_ReverseQuantizeMomentumToSlope(vector3_t *momentum, pslope_t *slope)
 // Handles slope ejection for objects
 void P_SlopeLaunch(mobj_t *mo)
 {
-	if (P_CanApplySlopePhysics(mo, mo->standingslope) == true) // If there's physics, time for launching.
+	if ((P_CanApplySlopePhysics(mo, mo->standingslope) == true) && (P_SlopeIsRamp(mo->standingslope))) // If there's physics, time for launching.
 	{
 		// Double the pre-rotation Z, then halve the post-rotation Z. This reduces the
 		// vertical launch given from slopes while increasing the horizontal launch

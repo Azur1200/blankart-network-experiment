@@ -50,6 +50,7 @@ typedef enum
 	TMSL_NOPHYSICS = 1,
 	TMSL_DYNAMIC   = 1<<1,
 	TMSL_COPY      = 1<<2,
+	TMSL_NORAMP    = 1<<3,
 } textmapslopeflags_t;
 
 typedef enum
@@ -64,6 +65,7 @@ typedef enum
 	TMSAF_DYNAMIC   = 1<<1,
 	TMSAF_BACKSIDE  = 1<<2,
 	TMSAF_MIRROR    = 1<<3,
+	TMSAF_NORAMP	= 1<<4,
 } textmapslopeanchorflags_t;
 
 void P_LinkSlopeThinkers (void);
@@ -102,6 +104,7 @@ fixed_t P_GetFFloorBottomZAt(const ffloor_t *ffloor, fixed_t x, fixed_t y);
 fixed_t P_GetLightZAt(const lightlist_t *light, fixed_t x, fixed_t y);
 
 // Lots of physics-based bullshit
+dboolean P_SlopeIsRamp(pslope_t *slope);
 dboolean P_CanApplySlopePhysics(mobj_t *mo, pslope_t *slope);
 void P_QuantizeMomentumToSlope(vector3_t *momentum, pslope_t *slope);
 void P_ReverseQuantizeMomentumToSlope(vector3_t *momentum, pslope_t *slope);
