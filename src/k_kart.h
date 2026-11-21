@@ -10,6 +10,8 @@
 #include "d_player.h" // Need for player_t
 #include "command.h" // Need for player_t
 #include "g_game.h" // Need for mapnum_t
+#include "k_terrain.h"
+#include "r_defs.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -624,7 +626,25 @@ void K_GetRankBasedPositions(void);
 extern int16_t *legacygradelap;
 extern uint32_t legacygradelap_size;
 
-void K_UpdatePanelGraze(player_t *player);
+typedef enum
+{
+	GRS_SNEAKERPANEL = 1,
+	GRS_WATERPANEL = 1<<1,
+	GRS_POGOSRINGYELLOW = 1<<2,
+	GRS_POGOSRINGRED = 1<<3,
+	// These check terrain arguments, check their associated values pls!
+	GRS_TERRAINSPRING = 1<<4,
+	GRS_TERRAINPOGOSPRING = 1<<5,
+} ATTRPACK grazespecials_t;
+
+grazespecials_t K_GetGrazeSpecialsForSector(sector_t* sec,
+					    dboolean ceiling,
+					    terrain_flags_t terrainflagstohunt,
+					    sectorspecialflags_t specialflagstohunt);
+grazespecials_t K_GetTouchingSectorTerrainFlags(mobj_t* mo,
+						terrain_flags_t terrainflagstohunt,
+						sectorspecialflags_t specialflagstohunt);
+grazespecials_t K_UpdatePanelGraze(player_t* player);
 panelcollide_t K_GetPanelGrazeType(void);
 
 #ifdef __cplusplus

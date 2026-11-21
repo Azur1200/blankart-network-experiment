@@ -3156,6 +3156,103 @@ dboolean P_CheckMove(mobj_t *thing, fixed_t x, fixed_t y, dboolean allowdropoff,
 	return moveok;
 }
 
+// If `K_GetPanelGrazeType` returns `PANELCOL_HITBOX`, this will process Spring Panel collisions if
+// the player is landing on one.
+static dboolean P_CheckLandingOnSlopedSpringPanel(mobj_t* thing,
+						  sector_t* sec,
+						  pslope_t* slope,
+						  dboolean is_fof)
+{
+	if ((thing == NULL) || (sec == NULL) || (slope == NULL))
+	{
+		// Invalid input
+		return false;
+	}
+
+	if (!thing->player)
+	{
+		// No player
+		return false;
+	}
+
+	const panelcollide_t panelcoltype = K_GetPanelGrazeType();
+	vector3_t momcheck = {0};
+	grazespecials_t grazeflags = 0;
+	dboolean checkceiling = ((thing->eflags & MFE_VERTICALFLIP) == MFE_VERTICALFLIP);
+
+	if (is_fof)
+	{
+		checkceiling = !checkceiling;
+	}
+
+	momcheck.x = thing->momx;
+	momcheck.y = thing->momy;
+	momcheck.z = thing->momz;
+
+	if (P_CanApplySlopePhysics(thing, slope))
+	{
+#ifdef DOUBLE_MOMZ_SLOPE_LANDING
+		momcheck.z *= 2;
+#endif
+
+		P_ReverseQuantizeMomentumToSlope(&momcheck, slope);
+	}
+
+	// Check if we're falling onto certain special sectors
+	if (P_MobjFlip(thing) * (momcheck.z) < 0)
+	{
+		grazeflags = K_GetGrazeSpecialsForSector(
+		    sec,
+		    checkceiling,
+		    (TRF_SNEAKERPANEL | TRF_WATERRUNPANEL),
+		    (SSF_WATERPANEL | SSF_SNEAKERPANEL | SSF_REDPOGOSPRING | SSF_YELLOWPOGOSPRING));
+
+		// Red Pogo Spring Panel
+		if (grazeflags & GRS_POGOSRINGRED)
+		{
+			if (panelcoltype == PANELCOL_HITBOX)
+			{
+				P_ProcessPogoSpring(thing->player, true, SSPT_RED);
+				return true;
+			}
+			else
+			{
+				thing->player->panelgraze = 8;
+			}
+		}
+
+		// Yellow Pogo Spring Panel
+		if (grazeflags & GRS_POGOSRINGYELLOW)
+		{
+			if (panelcoltype == PANELCOL_HITBOX)
+			{
+				P_ProcessPogoSpring(thing->player, true, SSPT_YELLOW);
+				return true;
+			}
+			else
+			{
+				thing->player->panelgraze = 8;
+			}
+		}
+
+		// TODO: What if we move K_ProcessTerrainEffect to run in its entirety here?
+		if ((grazeflags & GRS_TERRAINSPRING) || (grazeflags & GRS_TERRAINPOGOSPRING))
+		{
+			if (panelcoltype == PANELCOL_HITBOX)
+			{
+				K_ProcessSpringTerrainEffect(thing->player, thing->terrain);
+				return true;
+			}
+			else
+			{
+				thing->player->panelgraze = 8;
+			}
+		}
+	}
+
+	return false;
+}
+
 //
 // P_TryMove
 // Attempt to move to a new position.
@@ -3205,12 +3302,25 @@ dboolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, dboolean allowdropoff, T
 
 	if (!(thing->flags & MF_NOCLIPHEIGHT))
 	{
+		dboolean sprung = false;
+
 		// Assign thing's standingslope if needed
 		if (thing->z <= g_tm.floorz && !(thing->eflags & MFE_VERTICALFLIP))
 		{
 			K_UpdateMobjTerrain(thing, g_tm.floorpic);
 
-			if (!startingonground && g_tm.floorslope)
+			if (g_tm.floorrover)
+			{
+				sector_t* floorsector = &sectors[g_tm.floorrover->secnum];
+
+				if (floorsector && (!startingonground) && thing->player)
+				{
+					sprung = P_CheckLandingOnSlopedSpringPanel(
+					    thing, floorsector, g_tm.floorslope, true);
+				}
+			}
+
+			if ((!sprung) && (!startingonground) && g_tm.floorslope)
 			{
 				P_HandleSlopeLanding(thing, g_tm.floorslope);
 			}
@@ -3226,11 +3336,23 @@ dboolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, dboolean allowdropoff, T
 				}
 			}
 		}
-		else if (thing->z+thing->height >= g_tm.ceilingz && (thing->eflags & MFE_VERTICALFLIP))
+		else if (thing->z + thing->height >= g_tm.ceilingz &&
+			 (thing->eflags & MFE_VERTICALFLIP))
 		{
 			K_UpdateMobjTerrain(thing, g_tm.ceilingpic);
 
-			if (!startingonground && g_tm.ceilingslope)
+			if (g_tm.ceilingrover)
+			{
+				sector_t* ceilingsector = &sectors[g_tm.ceilingrover->secnum];
+
+				if (ceilingsector && (!startingonground) && thing->player)
+				{
+					sprung = P_CheckLandingOnSlopedSpringPanel(
+					    thing, ceilingsector, g_tm.ceilingslope, true);
+				}
+			}
+
+			if ((!sprung) && (!startingonground) && g_tm.ceilingslope)
 			{
 				P_HandleSlopeLanding(thing, g_tm.ceilingslope);
 			}
