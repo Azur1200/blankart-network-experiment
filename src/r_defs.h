@@ -303,6 +303,7 @@ struct r_lightlist_t
 typedef enum {
 	SL_NOPHYSICS = 1, /// This plane will have no physics applied besides the positioning.
 	SL_DYNAMIC = 1<<1, /// This plane slope will be assigned a thinker to make it dynamic.
+	SL_NORAMP = 1<<2, /// May or may not have physics, but will *not* induce a slope launch.
 } slopeflags_t;
 
 struct pslope_t
@@ -399,6 +400,8 @@ typedef enum
 	SSF_GRAVITYOVERRIDE = 1<<19, // combine with MSF_GRAVITYFLIP
 	SSF_WALLTRANSFER = 1<<20,
 	SSF_BUMPYROAD = 1<<21,
+	SSF_NORAMPFLOOR = 1<<22,
+	SSF_NORAMPCEILING = 1<<23
 } sectorspecialflags_t;
 
 typedef enum

@@ -1453,6 +1453,7 @@ struct int_const_s const INT_CONST[] = {
 	// Slope flags
 	{"SL_NOPHYSICS",SL_NOPHYSICS},
 	{"SL_DYNAMIC",SL_DYNAMIC},
+	{"SL_NORAMP",SL_NORAMP},
 
 	// Angles
 	{"ANG1",ANG1},
