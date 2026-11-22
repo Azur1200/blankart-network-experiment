@@ -455,6 +455,7 @@ void K_KartUpdatePosition(player_t *player);
 void K_KartLegacyUpdatePosition(player_t *player);
 void K_UpdateClusterPoints(void);
 uint32_t K_GetClusterDistanceForPlayer(player_t * player);
+dboolean K_SMonitorNoDecay(uint16_t pingame, uint8_t pos, uint32_t usedist);
 void K_UpdateAllPlayerPositions(void);
 void K_GetPlayerNumber(void);
 mobj_t *K_CreatePaperItem(fixed_t x, fixed_t y, fixed_t z, angle_t angle, int8_t flip, uint8_t type, uint8_t amount);

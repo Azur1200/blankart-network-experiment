@@ -8866,14 +8866,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 			int16_t smonitor_subtrahend = (pingame > 1) ? SMONITORDECAYTIME : 1;
 
 			uint32_t usedist = K_GetClusterDistanceForPlayer(player);
-
-			// First place is an S-Monitor candidate in 4P lobbies and lower, so anything in that
-			// range is "tinypop"
-			dboolean tinypop = (pingame <= 4);
-
-			int16_t podium = (tinypop) ? 1 : max(2, min(4, (3 * pingame / 8)));
-
-			dboolean nodecay = ((usedist > (uint32_t)SMONITORDECAYDIST) && (player->position > podium));
+			dboolean nodecay = K_SMonitorNoDecay(pingame, player->position, usedist);
 
 			if (nodecay)
 			{
@@ -12613,6 +12606,18 @@ uint32_t K_GetClusterDistanceForPlayer(player_t * player)
 }
 
 #undef MINCLUSTERPLAYERS
+
+// Determines if the S Monitor is not allowed to begin decaying yet.
+dboolean K_SMonitorNoDecay(uint16_t pingame, uint8_t pos, uint32_t usedist)
+{
+	// First place is an S-Monitor candidate in 4P lobbies and lower, so anything in that
+	// range is "tinypop"
+	dboolean tinypop = (pingame <= 4);
+
+	int16_t podium = (tinypop) ? 1 : max(2, min(4, (3 * pingame / 8)));
+
+	return ((usedist > (uint32_t)SMONITORDECAYDIST) && (pos > podium));
+}
 
 //
 // K_KartUpdatePosition
