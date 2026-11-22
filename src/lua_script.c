@@ -287,7 +287,8 @@ int LUA_Call(lua_State *L, int nargs, int nresults, int errorhandlerindex, dbool
 	X(wantedfrequency) \
 	X(mapnamespace) \
 	X(emeralds) \
-	X(token)
+	X(token) \
+	X(MAXBUBBLEHEALTH)
 
 enum global_e
 {
@@ -707,6 +708,8 @@ int LUA_PushGlobals(lua_State *L)
 		case global_mapnamespace:
 			lua_pushstring(L, P_MapNamespaceString(mapnamespace));
 			return 1;
+		case global_MAXBUBBLEHEALTH:
+			lua_pushinteger(L, MAXBUBBLEHEALTH); // Literally bubbletime * 3; adjust that to adjust this!
 		default:
 			return 0;
 	}
