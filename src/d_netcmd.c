@@ -869,7 +869,7 @@ consvar_t cv_kartsmonitordist = CVAR_INIT ("smonitor_startdist", "11000", CV_NET
 // Conga is extremely finicky, so we need a separate threshold to preserve the S-Monitor's reliability
 consvar_t cv_kartsmonitor_congadist = CVAR_INIT("smonitor_startdist_conga", "10500", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordist_cons_t, NULL);
 
-consvar_t cv_kartsmonitor_decaydist = CVAR_INIT ("smonitor_decaydist", "3600", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordist_cons_t, NULL);
+consvar_t cv_kartsmonitor_decaydist = CVAR_INIT ("smonitor_decaydist", "4000", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordist_cons_t, NULL);
 
 static CV_PossibleValue_t smonitordecaytime_cons_t[] = {{1, "MIN"}, {6, "MAX"}, {0, NULL}};
 consvar_t cv_kartsmonitor_decaytime = CVAR_INIT ("smonitor_decaytime", "2", CV_NETVAR|CV_CHEAT|CV_GUARD, smonitordecaytime_cons_t, NULL);
