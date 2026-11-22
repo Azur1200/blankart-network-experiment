@@ -107,6 +107,9 @@ void HU_AddChatText(const char *text, dboolean playsound);
 // set true when entering a chat message
 extern dboolean chat_on;
 
+extern dboolean wants_demo_save;
+extern dboolean holding_demo_save;
+
 // keystrokes in the console or chat window
 extern dboolean hu_keystrokes;
 

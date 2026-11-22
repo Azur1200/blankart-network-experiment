@@ -89,6 +89,8 @@ patch_t *srb2back = NULL;
 static player_t *plr;
 dboolean hu_keystrokes; // :)
 dboolean chat_on; // entering a chat message?
+dboolean wants_demo_save; // Wants to save a demo?
+dboolean holding_demo_save;
 static char w_chat_buf[HU_MAXMSGLEN + 1];
 static textinput_t w_chat;
 static dboolean headsupactive = false;

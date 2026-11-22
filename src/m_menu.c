@@ -1630,6 +1630,30 @@ dboolean M_Responder(event_t *ev)
 			// Spymode on F12 handled in game logic
 		}
 
+		if (cv_recordmultiplayerdemos.value && (demo.savemode == DSM_NOTSAVING || demo.savemode == DSM_WILLAUTOSAVE))
+		{
+			if (chat_on)
+			{
+				holding_demo_save = G_PlayerInputDown(0, gc_lookback, false, DEADZONE_BUTTON) == true;
+			}
+			else
+			{
+				if ((!holding_demo_save) && G_PlayerInputDown(0, gc_lookback, false, DEADZONE_BUTTON) == true)
+				{
+					wants_demo_save = true;
+					return true;
+				}
+				else if (holding_demo_save && G_PlayerInputDown(0, gc_lookback, false, DEADZONE_BUTTON) == false)
+				{
+					holding_demo_save = false;
+				}
+			}
+		}
+		else if (!chat_on)
+		{
+			holding_demo_save = false;
+		}
+
 		if (G_PlayerInputDown(0, gc_systemmenu, true, DEADZONE_BUTTON) == true || menuKey == KEY_ESCAPE)
 		{
 			if (chat_on)

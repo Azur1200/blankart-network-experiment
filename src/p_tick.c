@@ -1131,7 +1131,7 @@ void P_Ticker(dboolean run)
 			G_WriteAllGhostTics();
 
 			if (cv_recordmultiplayerdemos.value && (demo.savemode == DSM_NOTSAVING || demo.savemode == DSM_WILLAUTOSAVE))
-				if (demo.savebutton && demo.savebutton + 3*TICRATE < leveltime && G_PlayerInputDown(0, gc_lookback, false, DEADZONE_BUTTON) && !menustack[0] && !chat_on)
+				if (demo.savebutton && demo.savebutton + 3*TICRATE < leveltime && wants_demo_save && !menustack[0] && !chat_on)
 				{
 					demo.savemode = DSM_TITLEENTRY;
 					M_OpenVirtualKeyboard(&demo.titlenameinput, demo.titlename, &replaysave);
@@ -1146,6 +1146,7 @@ void P_Ticker(dboolean run)
 			else
 				G_ConsAllGhostTics();
 		}
+		wants_demo_save = false;
 
 		if (modeattacking)
 			G_GhostTicker();
