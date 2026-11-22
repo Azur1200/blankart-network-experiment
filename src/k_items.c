@@ -1755,9 +1755,9 @@ int32_t KO_SMonitorOdds(int32_t odds,
 	if (K_SMonitorNoDecay(
 		roulette->pingame,
 		roulette->playerpos,
-		roulette->clusterDist))  // DEAR GOD ONLY DO THIS IF WE'RE NOT IN DECAY RANGE...!
+		cdist))  // DEAR GOD ONLY DO THIS IF WE'RE NOT IN DECAY RANGE...!
 	{
-		K_KartGetSMonitorOdds(cdist);
+		odds = K_KartGetSMonitorOdds(cdist);
 
 		// Special case: if you're SERIOUSLY far behind before the cooldown finishes, ignore
 		// it and start forcing,
