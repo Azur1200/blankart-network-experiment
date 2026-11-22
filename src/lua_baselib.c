@@ -5233,6 +5233,17 @@ static int lib_kGetPanelGrazeType(lua_State *L)
 	return 1;
 }
 
+static int lib_kSMonitorNoDecay(lua_State *L)
+{
+	//HUDSAFE
+	uint16_t pingame = luaL_checkinteger(L, 1);
+	uint8_t pos = luaL_checkinteger(L, 2);
+	uint32_t usedist = luaL_checkinteger(L, 3);
+
+	lua_pushdboolean(L, K_SMonitorNoDecay(pingame, pos, usedist));
+	return 1;
+}
+
 static int lib_kAddNewScoreboardMod(lua_State *L)
 {
 	const char *modname = luaL_checkstring(L, 1);
@@ -6741,6 +6752,8 @@ static luaL_Reg lib[] = {
 	{"K_UpdateIndividualPlayerRank", lib_kUpdateIndividualPlayerRank},
 
 	{"K_GetPanelGrazeType", lib_kGetPanelGrazeType},
+
+	{"K_SMonitorNoDecay", lib_kSMonitorNoDecay},
 
 	// kart stuff that's in other places for some reason
 	{"K_IsMissileOrKartItem", lib_kMissileOrKartItem},
