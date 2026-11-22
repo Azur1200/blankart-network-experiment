@@ -1496,10 +1496,7 @@ grazespecials_t K_GetTouchingSectorTerrainFlags(mobj_t* mo,
 	sector_t* s = NULL;       // main sector shortcut
 	sector_t* s2 = NULL;      // FOF sector shortcut
 	ffloor_t* rover = NULL;   // FOF
-	terrain_t* terrain = NULL;
 	grazespecials_t totalflag = 0;
-
-	int32_t pic = 0;
 
 	fixed_t flr;
 	fixed_t cel;  // floor & ceiling for height checks to make sure we're touching the offroad
