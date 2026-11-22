@@ -1078,7 +1078,7 @@ uint8_t K_FindUseodds(const player_t *player, fixed_t mashed, uint32_t pdis, uin
 		.playerpos = player->position,
 		//.pos = i,
 		.ourDist = player->distancetofinish,
-		.clusterDist = player->distancefromcluster,
+		.clusterDist = K_GetClusterDistanceForPlayer(player),
 		.mashed = mashed,
 		.spbrush = spbrush,
 		.bot = player->bot,
@@ -1655,7 +1655,7 @@ void K_KartItemRoulette(player_t *player, ticcmd_t *cmd)
 		.playerpos = player->position,
 		.pos = useodds,
 		.ourDist = player->distancetofinish,
-		.clusterDist = player->distancefromcluster,
+		.clusterDist = K_GetClusterDistanceForPlayer(player),
 		.mashed = mashed,
 		.spbrush = spbrush,
 		.bot = player->bot,
@@ -1734,8 +1734,11 @@ void K_SetPlayerItemCooldown(player_t *player, tic_t timer, dboolean force)
 
 // Unique odds functions, for REAL this time
 
-// S-Monitor odds 
-int32_t KO_SMonitorOdds(int32_t odds, const kartroulette_t *roulette, const kartresult_t *result, uint8_t *forceme)
+// S-Monitor odds
+int32_t KO_SMonitorOdds(int32_t odds,
+			const kartroulette_t* roulette,
+			const kartresult_t* result,
+			uint8_t* forceme)
 {
 	(void)result;
 
@@ -1747,19 +1750,28 @@ int32_t KO_SMonitorOdds(int32_t odds, const kartroulette_t *roulette, const kart
 		cdist = (9 * cdist / 5);
 	}
 
-	odds = K_KartGetSMonitorOdds(cdist);
+	odds = 0;
 
-	// Special case: if you're SERIOUSLY far behind before the cooldown finishes, ignore it and start forcing,
-	if (odds >= SMONITOR_FORCEODDS)
+	if (K_SMonitorNoDecay(
+		roulette->pingame,
+		roulette->playerpos,
+		roulette->clusterDist))  // DEAR GOD ONLY DO THIS IF WE'RE NOT IN DECAY RANGE...!
 	{
-		*forceme = 3; // Take priority over SPBs
-	}
-	else if (K_InStartCooldown())
-	{
-		odds = 0;
-	}
+		K_KartGetSMonitorOdds(cdist);
 
-	odds *= BASEODDSMUL;
+		// Special case: if you're SERIOUSLY far behind before the cooldown finishes, ignore
+		// it and start forcing,
+		if (odds >= SMONITOR_FORCEODDS)
+		{
+			*forceme = 3;  // Take priority over SPBs
+		}
+		else if (K_InStartCooldown())
+		{
+			odds = 0;
+		}
+
+		odds *= BASEODDSMUL;
+	}
 
 	return odds;
 }

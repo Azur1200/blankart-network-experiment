@@ -6851,7 +6851,7 @@ static void K_drawDistributionDebugger(void)
 			.playerpos = stplyr->position,
 			.pos = useodds,
 			.ourDist = stplyr->distancetofinish,
-			.clusterDist = stplyr->distancefromcluster,
+			.clusterDist = K_GetClusterDistanceForPlayer(stplyr),
 			.mashed = 0,
 			.spbrush = spbrush,
 			.bot = stplyr->bot,
