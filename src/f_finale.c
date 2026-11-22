@@ -924,6 +924,7 @@ const char *blancredits[] = {
 	"\"Indev\"",
 	"\"yama\"",
 	"\"minenice\"",
+	"\"Zeke\"", // Mouse support
 	"",
 	"\1Support Programming",
 	"\"hayaunderscore\" aka \"DeltaKanyx\"",
