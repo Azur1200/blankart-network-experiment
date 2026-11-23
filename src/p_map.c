@@ -3157,7 +3157,7 @@ dboolean P_CheckMove(mobj_t *thing, fixed_t x, fixed_t y, dboolean allowdropoff,
 }
 
 // If `K_GetPanelGrazeType` returns `PANELCOL_HITBOX`, this will process Spring Panel collisions if
-// the player is landing on one.
+// the player is landing on one. Also processes panel effects.
 static dboolean P_CheckLandingOnSlopedSpringPanel(mobj_t* thing,
 						  sector_t* sec,
 						  pslope_t* slope,
@@ -3206,6 +3206,32 @@ static dboolean P_CheckLandingOnSlopedSpringPanel(mobj_t* thing,
 		    checkceiling,
 		    (TRF_SNEAKERPANEL | TRF_WATERRUNPANEL),
 		    (SSF_WATERPANEL | SSF_SNEAKERPANEL | SSF_REDPOGOSPRING | SSF_YELLOWPOGOSPRING));
+
+		// WaterRun Panel
+		if (grazeflags & GRS_WATERPANEL)
+		{
+			if (panelcoltype == PANELCOL_HITBOX)
+			{
+				K_DoSneakerPanel(thing->player, true);
+			}
+			else
+			{
+				thing->player->panelgraze = 8;
+			}
+		}
+
+		// Sneaker panel
+		if (grazeflags & GRS_SNEAKERPANEL)
+		{
+			if (panelcoltype == PANELCOL_HITBOX)
+			{
+				K_DoSneakerPanel(thing->player, false);
+			}
+			else
+			{
+				thing->player->panelgraze = 8;
+			}
+		}
 
 		// Red Pogo Spring Panel
 		if (grazeflags & GRS_POGOSRINGRED)
