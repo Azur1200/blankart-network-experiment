@@ -7,6 +7,7 @@ add_executable(BLANKART MACOSX_BUNDLE WIN32
 	strbuf.c
 	d_main.cpp
 	d_clisrv.c
+	cl_predict.c
 	d_net.c
 	d_netfil.c
 	d_netcmd.c

@@ -11,6 +11,7 @@
 /// \brief SRB2 Network game communication and protocol, all OS independent parts.
 
 #include "d_clisrv.h"
+#include "cl_predict.h"
 #include "doomdef.h"
 #include "inttypes.h" // PRIX64
 #include <time.h>
@@ -1568,6 +1569,7 @@ static void CL_LoadReceivedSavegame(dboolean reloading)
 	}
 
 	Consistancy(&consistancy[gametic%BACKUPTICS], gametic%BACKUPTICS);
+	CL_PredResetState();
 	if (!reloading)
 		CON_ToggleOff();
 
@@ -3036,6 +3038,7 @@ void CL_Reset(void)
 	connectiontimeout = (tic_t)cv_nettimeout.value; //reset this temporary hack
 
 	expectChallenge = false;
+	CL_PredResetSession();
 
 #ifdef HAVE_CURL
 	curl_failedwebdownload = false;
@@ -3875,6 +3878,7 @@ void D_ClientServerInit(void)
 	COM_AddCommand("droprate", Command_Droprate);
 #endif
 	COM_AddCommand("numnodes", Command_Numnodes);
+	CL_PredRegisterVars();
 
 	RegisterNetXCmd(XD_KICK, Got_KickCmd);
 	RegisterNetXCmd(XD_ADDPLAYER, Got_AddPlayer);
@@ -3916,6 +3920,8 @@ static void ResetNode(int32_t node)
 
 	bannednode[node].banid = SIZE_MAX;
 	bannednode[node].timeleft = NO_BAN_TIME;
+
+	SV_PredResetNode(node);
 }
 
 void SV_ResetServer(void)
@@ -3934,6 +3940,7 @@ void SV_ResetServer(void)
 
 	for (i = 0; i < MAXNETNODES; i++)
 		ResetNode(i);
+	SV_PredResetAll();
 
 	for (i = 0; i < MAXPLAYERS; i++)
 	{
@@ -4052,6 +4059,7 @@ void D_QuitNetGame(void)
 	}
 
 	D_CloseConnection();
+	CL_PredResetSession();
 	ClearAdminPlayers();
 	Schedule_Clear();
 	Automate_Clear();
@@ -4081,6 +4089,7 @@ static inline void SV_AddNode(int32_t node)
 		nodeingame[node] = true;
 
 	nodeneedsauth[node] = false;
+	SV_PredResetNode(node);
 }
 
 // Xcmd XD_ADDPLAYER
@@ -5085,6 +5094,7 @@ static void PT_ServerCFG(int8_t node)
 		connectedtodedicated = netbuffer->u.servercfg.dedicated;
 
 		memcpy(server_context, netbuffer->u.servercfg.server_context, 8);
+		CL_PredResetSession();
 	}
 
 #ifdef HAVE_DISCORDRPC
@@ -5119,12 +5129,12 @@ static void PT_ServerCFG(int8_t node)
  * \sa HandlePacketFromPlayer
  *
  */
-static dboolean CheckForSpeedHacks(uint8_t p)
+static dboolean CheckCmdForSpeedHacks(uint8_t p, const ticcmd_t *cmd)
 {
-	if (netcmds[maketic%BACKUPTICS][p].forwardmove > MAXPLMOVE || netcmds[maketic%BACKUPTICS][p].forwardmove < -MAXPLMOVE
-		|| netcmds[maketic%BACKUPTICS][p].sidemove > MAXPLMOVE || netcmds[maketic%BACKUPTICS][p].sidemove < -MAXPLMOVE
-		|| netcmds[maketic%BACKUPTICS][p].throwdir > KART_FULLTURN || netcmds[maketic%BACKUPTICS][p].throwdir < -KART_FULLTURN
-		|| netcmds[maketic%BACKUPTICS][p].turning > KART_FULLTURN || netcmds[maketic%BACKUPTICS][p].turning < -KART_FULLTURN
+	if (cmd->forwardmove > MAXPLMOVE || cmd->forwardmove < -MAXPLMOVE
+		|| cmd->sidemove > MAXPLMOVE || cmd->sidemove < -MAXPLMOVE
+		|| cmd->throwdir > KART_FULLTURN || cmd->throwdir < -KART_FULLTURN
+		|| cmd->turning > KART_FULLTURN || cmd->turning < -KART_FULLTURN
 	)
 	{
 		CONS_Alert(CONS_WARNING, M_GetText("Illegal movement value received from node %d\n"), playernode[p]);
@@ -5135,6 +5145,11 @@ static dboolean CheckForSpeedHacks(uint8_t p)
 	}
 
 	return false;
+}
+
+static dboolean CheckForSpeedHacks(uint8_t p)
+{
+	return CheckCmdForSpeedHacks(p, &netcmds[maketic%BACKUPTICS][p]);
 }
 
 static void PT_Say(int node)
@@ -5197,90 +5212,9 @@ static void PT_Say(int node)
 	DoSayCommand(say.message, say.target, say.flags, say.source);
 }
 
-static void PT_ClientCmd(int8_t node, int32_t netconsole)
+static void SV_CheckClientConsistancy(int8_t node, int32_t netconsole, tic_t realstart, consistancy_t clientconsistancy)
 {
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
-	tic_t realend, realstart;
-
-	if (client)
-		return;
-
-	// To save bytes, only the low byte of tic numbers are sent
-	// Use ExpandTics to figure out what the rest of the bytes are
-
-	realstart = ExpandTics(netbuffer->u.clientpak.client_tic, nettics[node]);
-	realend = ExpandTics(netbuffer->u.clientpak.resendfrom, nettics[node]);
-
-	if (   netbuffer->packettype == PT_CLIENTMIS  || netbuffer->packettype == PT_CLIENT2MIS
-		|| netbuffer->packettype == PT_CLIENT3MIS || netbuffer->packettype == PT_CLIENT4MIS
-		|| netbuffer->packettype == PT_NODEKEEPALIVEMIS
-		|| supposedtics[node] < realend)
-	{
-		supposedtics[node] = realend;
-	}
-	// Discard out of order packet
-	if (nettics[node] > realend)
-	{
-		DEBFILE(va("out of order ticcmd discarded nettics = %u\n", nettics[node]));
-		return;
-	}
-
-	// Update the nettics
-	nettics[node] = realend;
-
-	// This should probably still timeout though, as the node should always have a player 1 number
-	if (netconsole == -1)
-		return;
-
-	// As long as clients send valid ticcmds, the server can keep running, so reset the timeout
-	/// \todo Use a separate cvar for that kind of timeout?
-	freezetimeout[node] = I_GetTime() + connectiontimeout;
-
-	// Don't do anything for packets of type NODEKEEPALIVE?
-	// Sryder 2018/07/01: Update the freezetimeout still!
-	if (netbuffer->packettype == PT_NODEKEEPALIVE
-		|| netbuffer->packettype == PT_NODEKEEPALIVEMIS)
-		return;
-
-	// store it in an internal buffer so the last packet takes precedence, which minimizes input lag
-	G_MoveTiccmd(&playercmds[netconsole], &netbuffer->u.clientpak.cmd, 1);
-
-	// Check ticcmd for "speed hacks"
-	if (CheckForSpeedHacks((uint8_t)netconsole))
-		return;
-
-	// Splitscreen cmd
-	if ((nodetoplayer2[node] >= 0) &&
-		  ((netbuffer->packettype == PT_CLIENT2CMD || netbuffer->packettype == PT_CLIENT2MIS)
-		|| (netbuffer->packettype == PT_CLIENT3CMD || netbuffer->packettype == PT_CLIENT3MIS)
-		|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS)))
-	{
-		G_MoveTiccmd(&playercmds[(uint8_t)nodetoplayer2[node]], &netbuffer->u.client2pak.cmd2, 1);
-
-		if (CheckForSpeedHacks((uint8_t)nodetoplayer2[node]))
-			return;
-	}
-
-	if ((nodetoplayer3[node] >= 0) &&
-		  ((netbuffer->packettype == PT_CLIENT3CMD || netbuffer->packettype == PT_CLIENT3MIS)
-		|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS)))
-	{
-		G_MoveTiccmd(&playercmds[(uint8_t)nodetoplayer3[node]], &netbuffer->u.client3pak.cmd3, 1);
-
-		if (CheckForSpeedHacks((uint8_t)nodetoplayer3[node]))
-			return;
-	}
-
-	if ((nodetoplayer4[node] >= 0) &&
-		(netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS))
-	{
-		G_MoveTiccmd(&playercmds[(uint8_t)nodetoplayer4[node]], &netbuffer->u.client4pak.cmd4, 1);
-
-		if (CheckForSpeedHacks((uint8_t)nodetoplayer4[node]))
-			return;
-	}
-
-	consistancy_t clientconsistancy = netbuffer->u.clientpak.consistancy;
 
 	if (cv_logconsistency.value)
 	{
@@ -5383,27 +5317,6 @@ static void PT_ClientCmd(int8_t node, int32_t netconsole)
 				// Extremely elaborate debug!
 				CONS_Printf(M_GetText("EXPECTED\n%s"), cfailexpected);
 				CONS_Printf(M_GetText("RECEIVED\n%s"), cfailrecieved);
-
-				/*
-				// RNG debug...
-				numdesynchingseeds = 0;
-				{RNGSEEDS(PRINTSEEDSMISMATCH)}
-
-				if (numdesynchingseeds < 1)
-				{
-					if (consistancy[realstart%BACKUPTICS].seed_checksum !=
-					    clientconsistancy.seed_checksum)
-					{
-						CONS_Alert(CONS_ERROR, "Checksums mismatch, but"
-							   "  no RNG seed mismatches found!\n");
-					}
-					else
-					{
-						CONS_Printf("No RNG seed mismatches found.\n");
-					}
-				}
-				CONS_Printf("------------\n");
-				*/
 			}
 			SendKick(netconsole, KICK_MSG_CON_FAIL);
 			DEBFILE(va("player %d kicked (synch failure) [%u] %d!=%d\n",
@@ -5412,6 +5325,164 @@ static void PT_ClientCmd(int8_t node, int32_t netconsole)
 			return;
 		}
 	}
+}
+
+static void PT_ClientCmd(int8_t node, int32_t netconsole)
+{
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+	tic_t realend, realstart;
+
+	if (client)
+		return;
+
+	// To save bytes, only the low byte of tic numbers are sent
+	// Use ExpandTics to figure out what the rest of the bytes are
+
+	realstart = ExpandTics(netbuffer->u.clientpak.client_tic, nettics[node]);
+	realend = ExpandTics(netbuffer->u.clientpak.resendfrom, nettics[node]);
+
+	if (   netbuffer->packettype == PT_CLIENTMIS  || netbuffer->packettype == PT_CLIENT2MIS
+		|| netbuffer->packettype == PT_CLIENT3MIS || netbuffer->packettype == PT_CLIENT4MIS
+		|| netbuffer->packettype == PT_NODEKEEPALIVEMIS
+		|| supposedtics[node] < realend)
+	{
+		supposedtics[node] = realend;
+	}
+	// Discard out of order packet
+	if (nettics[node] > realend)
+	{
+		DEBFILE(va("out of order ticcmd discarded nettics = %u\n", nettics[node]));
+		return;
+	}
+
+	// Update the nettics
+	nettics[node] = realend;
+
+	// This should probably still timeout though, as the node should always have a player 1 number
+	if (netconsole == -1)
+		return;
+
+	// As long as clients send valid ticcmds, the server can keep running, so reset the timeout
+	/// \todo Use a separate cvar for that kind of timeout?
+	freezetimeout[node] = I_GetTime() + connectiontimeout;
+
+	// Don't do anything for packets of type NODEKEEPALIVE?
+	// Sryder 2018/07/01: Update the freezetimeout still!
+	if (netbuffer->packettype == PT_NODEKEEPALIVE
+		|| netbuffer->packettype == PT_NODEKEEPALIVEMIS)
+		return;
+
+	SV_PredOnVanillaCmd(node);
+
+	// store it in an internal buffer so the last packet takes precedence, which minimizes input lag
+	G_MoveTiccmd(&playercmds[netconsole], &netbuffer->u.clientpak.cmd, 1);
+
+	// Check ticcmd for "speed hacks"
+	if (CheckForSpeedHacks((uint8_t)netconsole))
+		return;
+
+	// Splitscreen cmd
+	if ((nodetoplayer2[node] >= 0) &&
+		  ((netbuffer->packettype == PT_CLIENT2CMD || netbuffer->packettype == PT_CLIENT2MIS)
+		|| (netbuffer->packettype == PT_CLIENT3CMD || netbuffer->packettype == PT_CLIENT3MIS)
+		|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS)))
+	{
+		G_MoveTiccmd(&playercmds[(uint8_t)nodetoplayer2[node]], &netbuffer->u.client2pak.cmd2, 1);
+
+		if (CheckForSpeedHacks((uint8_t)nodetoplayer2[node]))
+			return;
+	}
+
+	if ((nodetoplayer3[node] >= 0) &&
+		  ((netbuffer->packettype == PT_CLIENT3CMD || netbuffer->packettype == PT_CLIENT3MIS)
+		|| (netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS)))
+	{
+		G_MoveTiccmd(&playercmds[(uint8_t)nodetoplayer3[node]], &netbuffer->u.client3pak.cmd3, 1);
+
+		if (CheckForSpeedHacks((uint8_t)nodetoplayer3[node]))
+			return;
+	}
+
+	if ((nodetoplayer4[node] >= 0) &&
+		(netbuffer->packettype == PT_CLIENT4CMD || netbuffer->packettype == PT_CLIENT4MIS))
+	{
+		G_MoveTiccmd(&playercmds[(uint8_t)nodetoplayer4[node]], &netbuffer->u.client4pak.cmd4, 1);
+
+		if (CheckForSpeedHacks((uint8_t)nodetoplayer4[node]))
+			return;
+	}
+
+	SV_CheckClientConsistancy(node, netconsole, realstart, netbuffer->u.clientpak.consistancy);
+}
+
+static void PT_PredCap(int8_t node)
+{
+	if (server)
+		SV_PredHandleCap(node);
+	else
+		CL_PredHandleCap(node);
+}
+
+static void PT_ClientCmdPred(int8_t node, int32_t netconsole)
+{
+	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+	tic_t realend, realstart;
+	uint32_t seq;
+	uint8_t count, k;
+	size_t needed;
+	ticcmd_t cmds[CLPRED_MAX_CMDS];
+	consistancy_t clientconsistancy;
+
+	if (client)
+		return;
+
+	if ((size_t)doomcom->datalength < BASEPACKETSIZE + offsetof(clientcmd_pred_pak, cmds))
+		return;
+
+	count = netbuffer->u.clientpredpak.count;
+	if (count == 0 || count > CLPRED_MAX_CMDS)
+		return;
+
+	needed = BASEPACKETSIZE + offsetof(clientcmd_pred_pak, cmds) + (size_t)count * sizeof(ticcmd_t);
+	if ((size_t)doomcom->datalength < needed)
+		return;
+
+	realstart = ExpandTics(netbuffer->u.clientpredpak.client_tic, nettics[node]);
+	realend = ExpandTics(netbuffer->u.clientpredpak.resendfrom, nettics[node]);
+
+	if (netbuffer->packettype == PT_CLIENTMIS_PRED || supposedtics[node] < realend)
+		supposedtics[node] = realend;
+
+	if (nettics[node] > realend)
+	{
+		DEBFILE(va("out of order pred ticcmd discarded nettics = %u\n", nettics[node]));
+		return;
+	}
+
+	nettics[node] = realend;
+
+	if (netconsole == -1)
+		return;
+
+	freezetimeout[node] = I_GetTime() + connectiontimeout;
+
+	seq = LSBF_LONG(netbuffer->u.clientpredpak.seq);
+	clientconsistancy = netbuffer->u.clientpredpak.consistancy;
+
+	for (k = 0; k < count; k++)
+	{
+		G_MoveTiccmd(&cmds[k], &netbuffer->u.clientpredpak.cmds[k], 1);
+		if (CheckCmdForSpeedHacks((uint8_t)netconsole, &cmds[k]))
+			return;
+	}
+
+	SV_PredReceiveCmds(node, seq, count, cmds);
+	SV_CheckClientConsistancy(node, netconsole, realstart, clientconsistancy);
+}
+
+static void PT_PredAck(int8_t node)
+{
+	CL_PredHandleAck(node);
 }
 
 static void PT_BasicKeepAlive(int8_t node, int32_t netconsole)
@@ -5630,6 +5701,7 @@ static void PT_ClientQuit(int8_t node, int32_t netconsole)
 	Net_CloseConnection(node);
 	nodeingame[node] = false;
 	nodeneedsauth[node] = false;
+	SV_PredResetNode(node);
 }
 
 static void PT_CanReceiveGamestate(int8_t node)
@@ -6352,6 +6424,11 @@ static void HandlePacketFromPlayer(int8_t node)
 		case PT_WILLDIAGNOSERNG    : PT_WillDiagnoseRNG    (node, netconsole); break;
 		case PT_SENDINGLUAFILE     : PT_SendingLuaFile     (node            ); break;
 		case PT_SERVERCFG          :                                           break;
+		// CLIENT-SIDE PREDICTION (Option B backward-compatible)
+		case PT_PREDCAP            : PT_PredCap            (node            ); break;
+		case PT_CLIENTCMD_PRED     : PT_ClientCmdPred      (node, netconsole); break;
+		case PT_CLIENTMIS_PRED     : PT_ClientCmdPred      (node, netconsole); break;
+		case PT_PREDACK            : PT_PredAck            (node            ); break;
 		// CHALLENGE
 		//case PT_CHALLENGEALL       : PT_ChallengeAll       (node            ); break;
 		//case PT_RESPONSEALL        : PT_ResponseAll        (node            ); break;
@@ -6790,6 +6867,11 @@ static void CL_SendClientCmd(void)
 	size_t packetsize = 0;
 	dboolean mis = false;
 
+	if (client && netgame && !demo.playback && cl_mode == CL_CONNECTED && addedtogame)
+	{
+		CL_PredTickHandshake();
+	}
+
 	netbuffer->packettype = PT_CLIENTCMD;
 
 	if (cl_packetmissed)
@@ -6811,6 +6893,7 @@ static void CL_SendClientCmd(void)
 	else if (gamestate != GS_NULL && (addedtogame || dedicated))
 	{
 		uint8_t lagDelay = 0;
+		dboolean sent_pred = false;
 
 		if (lowest_lag > 0)
 		{
@@ -6818,34 +6901,54 @@ static void CL_SendClientCmd(void)
 			lagDelay = min(lowest_lag, MAXGENTLEMENDELAY);
 		}
 
-		packetsize = sizeof (clientcmd_pak);
-		G_MoveTiccmd(&netbuffer->u.clientpak.cmd, &localcmds[0][lagDelay], 1);
-
-		CloneConsistancy(netbuffer->u.clientpak.consistancy,
-				 consistancy[gametic % BACKUPTICS]);
-
-		if (splitscreen) // Send a special packet with 2 cmd for splitscreen
+		if (client && netgame && !demo.playback)
 		{
-			netbuffer->packettype = (mis ? PT_CLIENT2MIS : PT_CLIENT2CMD);
-			packetsize = sizeof (client2cmd_pak);
-			G_MoveTiccmd(&netbuffer->u.client2pak.cmd2, &localcmds[1][lagDelay], 1);
-
-			if (splitscreen > 1)
+			CL_PredRecordOutgoingCmd(&localcmds[0][lagDelay]);
+			if (splitscreen)
 			{
-				netbuffer->packettype = (mis ? PT_CLIENT3MIS : PT_CLIENT3CMD);
-				packetsize = sizeof (client3cmd_pak);
-				G_MoveTiccmd(&netbuffer->u.client3pak.cmd3, &localcmds[2][lagDelay], 1);
-
-				if (splitscreen > 2)
-				{
-					netbuffer->packettype = (mis ? PT_CLIENT4MIS : PT_CLIENT4CMD);
-					packetsize = sizeof (client4cmd_pak);
-					G_MoveTiccmd(&netbuffer->u.client4pak.cmd4, &localcmds[3][lagDelay], 1);
-				}
+				CL_PredOnSplitscreenFallback();
+			}
+			else if (CL_PredUseEnhancedCmd())
+			{
+				CL_PredBuildCmdPacket(mis, (uint8_t)(gametic & UINT8_MAX),
+					(uint8_t)(neededtic & UINT8_MAX),
+					&consistancy[gametic % BACKUPTICS], &packetsize);
+				HSendPacket(servernode, false, 0, packetsize);
+				sent_pred = true;
 			}
 		}
 
-		HSendPacket(servernode, false, 0, packetsize);
+		if (!sent_pred)
+		{
+			packetsize = sizeof (clientcmd_pak);
+			G_MoveTiccmd(&netbuffer->u.clientpak.cmd, &localcmds[0][lagDelay], 1);
+
+			CloneConsistancy(netbuffer->u.clientpak.consistancy,
+					 consistancy[gametic % BACKUPTICS]);
+
+			if (splitscreen) // Send a special packet with 2 cmd for splitscreen
+			{
+				netbuffer->packettype = (mis ? PT_CLIENT2MIS : PT_CLIENT2CMD);
+				packetsize = sizeof (client2cmd_pak);
+				G_MoveTiccmd(&netbuffer->u.client2pak.cmd2, &localcmds[1][lagDelay], 1);
+
+				if (splitscreen > 1)
+				{
+					netbuffer->packettype = (mis ? PT_CLIENT3MIS : PT_CLIENT3CMD);
+					packetsize = sizeof (client3cmd_pak);
+					G_MoveTiccmd(&netbuffer->u.client3pak.cmd3, &localcmds[2][lagDelay], 1);
+
+					if (splitscreen > 2)
+					{
+						netbuffer->packettype = (mis ? PT_CLIENT4MIS : PT_CLIENT4CMD);
+						packetsize = sizeof (client4cmd_pak);
+						G_MoveTiccmd(&netbuffer->u.client4pak.cmd4, &localcmds[3][lagDelay], 1);
+					}
+				}
+			}
+
+			HSendPacket(servernode, false, 0, packetsize);
+		}
 	}
 
 	if (cl_mode == CL_CONNECTED || dedicated)
@@ -6957,6 +7060,12 @@ static void SV_SendTics(void)
 		}
 
 
+		// Send exact prediction input ACKs to Option B fork clients before PT_SERVERTICS
+		if (SV_PredNodeUsesPredCmd(n))
+		{
+			SV_PredSendAck(n, realfirsttic, lasttictosend);
+		}
+
 		// Send the tics
 		netbuffer->packettype = PT_SERVERTICS;
 		netbuffer->u.serverpak.starttic = (uint8_t)realfirsttic;
@@ -7048,6 +7157,13 @@ static void SV_Maketic(void)
 		if (K_PlayerUsesBotMovement(&players[i]))
 		{
 			K_BuildBotTiccmd(&players[i], &playercmds[i]);
+			continue;
+		}
+		if (playernode[i] < MAXNETNODES
+			&& SV_PredNodeUsesPredCmd(playernode[i])
+			&& nodetoplayer[playernode[i]] == i)
+		{
+			SV_PredPopPlayerCmd(playernode[i], maketic, &playercmds[i]);
 			continue;
 		}
 		// We didn't receive this tic
@@ -7177,6 +7293,7 @@ dboolean TryRunTics(tic_t realtics)
 					}
 
 					G_Ticker((gametic % NEWTICRATERATIO) == 0);
+					CL_PredOnConfirmedTic(gametic, &netcmds[gametic % BACKUPTICS][consoleplayer]);
 				}
 				if (Playing() && netgame && (gametic % TICRATE == 0))
 				{

@@ -860,16 +860,24 @@ static const char *packettypename[NUMPACKETTYPE] =
 
 	"CHALLENGEALL",
 	"RESPONSEALL",
-	"RESULTSALL"
+	"RESULTSALL",
+
+	[PT_PREDCAP] = "PREDCAP",
+	[PT_CLIENTCMD_PRED] = "CLIENTCMD_PRED",
+	[PT_CLIENTMIS_PRED] = "CLIENTMIS_PRED",
+	[PT_PREDACK] = "PREDACK"
 };
 
 static void DebugPrintpacket(const char *header)
 {
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+	const char *typename = (netbuffer->packettype < NUMPACKETTYPE && packettypename[netbuffer->packettype])
+		? packettypename[netbuffer->packettype]
+		: "UNKNOWN";
 
 	fprintf(debugfile, "%-12s (node %d,ack %d,ackret %d,size %d) type(%d) : %s\n",
 		header, doomcom->remotenode, netbuffer->ack, netbuffer->ackreturn, doomcom->datalength,
-		netbuffer->packettype, packettypename[netbuffer->packettype]);
+		netbuffer->packettype, typename);
 
 	switch (netbuffer->packettype)
 	{
@@ -913,6 +921,20 @@ static void DebugPrintpacket(const char *header)
 			fprintf(debugfile, "    tic %4u resendfrom %u\n",
 				(uint32_t)netbuffer->u.clientpak.client_tic,
 				(uint32_t)netbuffer->u.clientpak.resendfrom);
+			break;
+		case PT_CLIENTCMD_PRED:
+		case PT_CLIENTMIS_PRED:
+			fprintf(debugfile, "    tic %4u resendfrom %u seq %u count %u\n",
+				(uint32_t)netbuffer->u.clientpredpak.client_tic,
+				(uint32_t)netbuffer->u.clientpredpak.resendfrom,
+				(uint32_t)LSBF_LONG(netbuffer->u.clientpredpak.seq),
+				(uint32_t)netbuffer->u.clientpredpak.count);
+			break;
+		case PT_PREDACK:
+			fprintf(debugfile, "    starttic %u numtics %u flags %u\n",
+				(uint32_t)LSBF_LONG(netbuffer->u.predack.starttic),
+				(uint32_t)netbuffer->u.predack.numtics,
+				(uint32_t)netbuffer->u.predack.flags);
 			break;
 		case PT_BASICKEEPALIVE:
 			fprintf(debugfile, "    keep alive\n");
