@@ -152,6 +152,8 @@ void R_UpdateViewInterpolation(void);
 void R_ResetViewInterpolation(uint8_t p);
 // Update old view for seamless relative teleport
 void R_RelativeTeleportViewInterpolation(uint8_t p, fixed_t xdiff, fixed_t ydiff, fixed_t zdiff, angle_t angdiff);
+// Shift both old and new views into reconciled prediction reference frame
+void R_PredShiftViewInterpolation(uint8_t p, fixed_t xdiff, fixed_t ydiff, fixed_t zdiff);
 // Set the current view context (the viewvars pointed to by newview)
 void R_SetViewContext(enum viewcontext_e _viewcontext);
 

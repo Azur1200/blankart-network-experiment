@@ -813,7 +813,16 @@ void P_RunChaseCameras(void)
 			}
 			P_HandleCameraFreelookYaw(i, p, cam);
 
-			P_MoveChaseCamera(p, cam, false);
+			if (i == 0 && CL_PredIsDeferringCamera0())
+			{
+				CL_PredMarkCamera0Deferred();
+				continue;
+			}
+
+			if (i == 0 && p == &players[consoleplayer] && CL_PredHasShadow())
+				CL_PredStepChaseCamera(p, cam, false);
+			else
+				P_MoveChaseCamera(p, cam, false);
 		}
 	}
 }
@@ -1171,9 +1180,16 @@ void P_Ticker(dboolean run)
 
 	if (gamestate == GS_LEVEL)
 	{
+		dboolean defer_cam0 = (client && netgame && !demo.playback && !splitscreen
+			&& cv_cl_movement.value && displayplayers[0] == consoleplayer);
+
 		// Move the camera during levels.
 		K_UpdateDirector();
+		if (defer_cam0)
+			CL_PredSetDeferCamera0(true);
 		P_RunChaseCameras();
+		if (defer_cam0)
+			CL_PredSetDeferCamera0(false);
 	}
 
 	if (run && !levelloading && leveltime && (!dedicated))

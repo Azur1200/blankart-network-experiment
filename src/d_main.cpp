@@ -22,6 +22,7 @@
 #include <locale.h>
 
 #include "doomdef.h"
+#include "cl_predict.h"
 #include "am_map.h"
 #include "console.h"
 #include "d_net.h"
@@ -1153,6 +1154,7 @@ void D_SRB2Loop(void)
 		{
 			if (!frameskip)
 			{
+				CL_PredUpdateVisualSmoothing(renderdeltatics);
 				D_Display();
 			}
 			else if (!dedicated && frameskip)

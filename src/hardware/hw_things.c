@@ -20,6 +20,7 @@
 #include "../z_zone.h"
 #include "../r_fps.h"
 #include "../r_local.h"
+#include "../cl_predict.h"
 #include "../qs22j.h"
 
 static void HWR_ProjectSprite(mobj_t *thing);
@@ -1497,6 +1498,11 @@ void HWR_AddSprites(sector_t *sec)
 	limit_dist = (fixed_t)(cv_drawdist.value) * mapobjectscale;
 	for (thing = sec->thinglist; thing; thing = thing->snext)
 	{
+		if (CL_PredShouldRenderMobj(thing) && CL_PredGetRenderSector() != sec)
+		{
+			continue;
+		}
+
 		// do not render in skybox
 		if (gl_rendering_skybox && (thing->renderflags & RF_HIDEINSKYBOX))
 		{
@@ -1511,6 +1517,18 @@ void HWR_AddSprites(sector_t *sec)
 			}
 
 			HWR_ProjectBoundingBox(thing);
+		}
+	}
+
+	if (playeringame[consoleplayer] && CL_PredShouldRenderMobj(players[consoleplayer].mo))
+	{
+		mobj_t *pred_mo = players[consoleplayer].mo;
+		if (CL_PredGetRenderSector() == sec && (!pred_mo->subsector || pred_mo->subsector->sector != sec))
+		{
+			if (!(gl_rendering_skybox && (pred_mo->renderflags & RF_HIDEINSKYBOX)) && R_ThingVisible(pred_mo))
+			{
+				HWR_ProjectSprite(pred_mo);
+			}
 		}
 	}
 }
@@ -1641,13 +1659,24 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	dispoffset = thing->dispoffset;
 
 	// sprite offset
-	interp.x += thing->sprxoff;
-	interp.y += thing->spryoff;
-	interp.z += thing->sprzoff;
-
-	if (thing->player)
+	if (CL_PredShouldRenderMobj(thing))
 	{
-		interp.z += thing->player->crash_zoffset;
+		fixed_t ox, oy, oz, cz;
+		CL_PredGetRenderOffsets(thing, &ox, &oy, &oz, &cz);
+		interp.x += ox;
+		interp.y += oy;
+		interp.z += oz + cz;
+	}
+	else
+	{
+		interp.x += thing->sprxoff;
+		interp.y += thing->spryoff;
+		interp.z += thing->sprzoff;
+
+		if (thing->player)
+		{
+			interp.z += thing->player->crash_zoffset;
+		}
 	}
 
 	if (interp.spritexscale < 1 || interp.spriteyscale < 1)
@@ -1691,32 +1720,41 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		I_Error("HWR_ProjectSprite: invalid sprite number %i ", thing->sprite);
 #endif
 
-	rot = thing->frame&FF_FRAMEMASK;
+	{
+		uint8_t use_sprite2 = thing->sprite2;
+		uint32_t use_frame = thing->frame;
+		if (CL_PredShouldRenderMobj(thing))
+		{
+			CL_PredGetRenderSprite(thing, &use_sprite2, &use_frame);
+		}
 
-	//Fab : 02-08-98: 'skin' override spritedef currently used for skin
-	if (thing->skin && thing->sprite == SPR_PLAY)
-	{
-		sprdef = &((skin_t *)thing->skin)->sprites[thing->sprite2];
-#ifdef ROTSPRITE
-		sprinfo = &((skin_t *)thing->skin)->sprinfo[thing->sprite2];
-#endif
-	}
-	else if (thing->sprite == SPR_ITEM)
-	{
-		int32_t item = thing->threshold > 0 && thing->threshold < numkartitems ? thing->threshold : 0;
-		dboolean alt = item > 0 && K_IsKartItemAlternate(item);
+		rot = use_frame&FF_FRAMEMASK;
 
-		sprdef = alt ? &kartitems[item].altspritedef : &kartitems[item].spritedef;
+		//Fab : 02-08-98: 'skin' override spritedef currently used for skin
+		if (thing->skin && thing->sprite == SPR_PLAY)
+		{
+			sprdef = &((skin_t *)thing->skin)->sprites[use_sprite2];
 #ifdef ROTSPRITE
-		sprinfo = &spriteinfo[SPR_ITEM];
+			sprinfo = &((skin_t *)thing->skin)->sprinfo[use_sprite2];
 #endif
-	}
-	else
-	{
-		sprdef = &sprites[thing->sprite];
+		}
+		else if (thing->sprite == SPR_ITEM)
+		{
+			int32_t item = thing->threshold > 0 && thing->threshold < numkartitems ? thing->threshold : 0;
+			dboolean alt = item > 0 && K_IsKartItemAlternate(item);
+
+			sprdef = alt ? &kartitems[item].altspritedef : &kartitems[item].spritedef;
 #ifdef ROTSPRITE
-		sprinfo = &spriteinfo[thing->sprite];
+			sprinfo = &spriteinfo[SPR_ITEM];
 #endif
+		}
+		else
+		{
+			sprdef = &sprites[thing->sprite];
+#ifdef ROTSPRITE
+			sprinfo = &spriteinfo[thing->sprite];
+#endif
+		}
 	}
 
 	if (rot >= sprdef->numframes)

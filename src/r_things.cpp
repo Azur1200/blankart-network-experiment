@@ -14,6 +14,7 @@
 #include <algorithm>
 
 #include "doomdef.h"
+#include "cl_predict.h"
 #include "console.h"
 #include "g_game.h"
 #include "r_local.h"
@@ -2161,13 +2162,24 @@ static void R_ProjectSprite(mobj_t *thing)
 	this_scale = interp.scale;
 
 	// sprite offset
-	interp.x += thing->sprxoff;
-	interp.y += thing->spryoff;
-	interp.z += thing->sprzoff;
-
-	if (thing->player)
+	if (CL_PredShouldRenderMobj(thing))
 	{
-		interp.z += thing->player->crash_zoffset;
+		fixed_t ox, oy, oz, cz;
+		CL_PredGetRenderOffsets(thing, &ox, &oy, &oz, &cz);
+		interp.x += ox;
+		interp.y += oy;
+		interp.z += oz + cz;
+	}
+	else
+	{
+		interp.x += thing->sprxoff;
+		interp.y += thing->spryoff;
+		interp.z += thing->sprzoff;
+
+		if (thing->player)
+		{
+			interp.z += thing->player->crash_zoffset;
+		}
 	}
 
 	radius = interp.radius; // For drop shadows
@@ -2211,17 +2223,24 @@ static void R_ProjectSprite(mobj_t *thing)
 		I_Error("R_ProjectSprite: invalid sprite number %d ", thing->sprite);
 #endif
 
-	frame = thing->frame&FF_FRAMEMASK;
+	uint8_t use_sprite2 = thing->sprite2;
+	uint32_t use_frame = thing->frame;
+	if (CL_PredShouldRenderMobj(thing))
+	{
+		CL_PredGetRenderSprite(thing, &use_sprite2, &use_frame);
+	}
+
+	frame = use_frame&FF_FRAMEMASK;
 
 	//Fab : 02-08-98: 'skin' override spritedef currently used for skin
 	if (thing->skin && thing->sprite == SPR_PLAY)
 	{
-		sprdef = &((skin_t *)thing->skin)->sprites[thing->sprite2];
+		sprdef = &((skin_t *)thing->skin)->sprites[use_sprite2];
 #ifdef ROTSPRITE
-		sprinfo = &((skin_t *)thing->skin)->sprinfo[thing->sprite2];
+		sprinfo = &((skin_t *)thing->skin)->sprinfo[use_sprite2];
 #endif
 		if (frame >= sprdef->numframes) {
-			CONS_Alert(CONS_ERROR, M_GetText("R_ProjectSprite: invalid skins[\"%s\"].sprites[SPR2_%s] frame %s\n"), ((skin_t *)thing->skin)->name, spr2names[thing->sprite2], sizeu5(frame));
+			CONS_Alert(CONS_ERROR, M_GetText("R_ProjectSprite: invalid skins[\"%s\"].sprites[SPR2_%s] frame %s\n"), ((skin_t *)thing->skin)->name, spr2names[use_sprite2], sizeu5(frame));
 			thing->sprite = states[S_UNKNOWN].sprite;
 			thing->frame = states[S_UNKNOWN].frame;
 			sprdef = &sprites[thing->sprite];
@@ -3427,6 +3446,11 @@ void R_AddSprites(sector_t *sec, int32_t lightlevel)
 	limit_dist = (fixed_t)(cv_drawdist.value) * mapobjectscale;
 	for (thing = sec->thinglist; thing; thing = thing->snext)
 	{
+		if (CL_PredShouldRenderMobj(thing) && CL_PredGetRenderSector() != sec)
+		{
+			continue;
+		}
+
 		// do not render in skybox
 		if (rendering_skybox && (thing->renderflags & RF_HIDEINSKYBOX))
 		{
@@ -3451,6 +3475,20 @@ void R_AddSprites(sector_t *sec, int32_t lightlevel)
 				radius could be bigger than sprite.
 				*/
 				R_ProjectBoundingBox(thing, NULL);
+			}
+		}
+	}
+
+	// If local predicted kart moved into a different sector than its confirmed mobj,
+	// project it here so it uses this sector's lighting and is never culled behind cam.
+	if (playeringame[consoleplayer] && CL_PredShouldRenderMobj(players[consoleplayer].mo))
+	{
+		mobj_t *pred_mo = players[consoleplayer].mo;
+		if (CL_PredGetRenderSector() == sec && (!pred_mo->subsector || pred_mo->subsector->sector != sec))
+		{
+			if (!(rendering_skybox && (pred_mo->renderflags & RF_HIDEINSKYBOX)) && R_ThingVisible(pred_mo))
+			{
+				R_ProjectSprite(pred_mo);
 			}
 		}
 	}
@@ -4432,6 +4470,9 @@ dboolean R_ThingRendersOnTop (mobj_t *thing)
 
 dboolean R_ThingWithinDist (mobj_t *thing, fixed_t limit_dist)
 {
+	if (CL_PredShouldRenderMobj(thing))
+		return true;
+
 	const fixed_t dist = R_PointToDist(thing->x, thing->y);
 
 	if (limit_dist && dist > limit_dist)

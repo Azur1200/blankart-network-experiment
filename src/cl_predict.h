@@ -82,11 +82,31 @@ void CL_PredSelfTestOnTic(tic_t executed_tic, const ticcmd_t *raw_cmd);
 
 // Engine internal shadow-step entrypoints (called only while P_IsPredicting())
 struct sector_t;
+struct subsector_t;
+struct interpmobjstate_t;
+struct camera_t;
 void P_PredPushMapState(void);
 void P_PredPopMapState(void);
 int32_t P_PredCollectTouchingSectors(mobj_t *thing, struct sector_t **out_sectors, int32_t max_sectors);
 void P_PredPlayerThink(player_t *player);
 void P_PredPlayerMobjThink(mobj_t *mobj);
+
+// ---- Step 4: Visual pose, chase camera, smooth reconciliation & debug HUD ----
+void CL_PredUpdateVisualSmoothing(fixed_t deltatics_fixed);
+dboolean CL_PredShouldRenderMobj(const mobj_t *mobj);
+void CL_PredInterpolateMobjState(fixed_t frac, struct interpmobjstate_t *out);
+void CL_PredGetRenderOffsets(const mobj_t *mobj, fixed_t *sprxoff, fixed_t *spryoff, fixed_t *sprzoff, fixed_t *crash_zoffset);
+void CL_PredGetRenderSprite(const mobj_t *mobj, uint8_t *out_sprite2, uint32_t *out_frame);
+struct sector_t *CL_PredGetRenderSector(void);
+void CL_PredGetSmoothViewOffset(uint8_t viewnum, fixed_t *ox, fixed_t *oy, fixed_t *oz);
+dboolean CL_PredGetFirstPersonView(uint8_t viewnum, fixed_t *out_x, fixed_t *out_y, fixed_t *out_z, struct subsector_t **out_subsector);
+
+void CL_PredSetDeferCamera0(dboolean defer);
+dboolean CL_PredIsDeferringCamera0(void);
+void CL_PredMarkCamera0Deferred(void);
+dboolean CL_PredStepChaseCamera(player_t *player, struct camera_t *thiscam, dboolean resetcalled);
+
+void CL_PredDrawDebugHUD(void);
 
 // Inspection helpers (used by Step 4 rendering / camera / HUD)
 dboolean CL_PredIsProtoActive(void);

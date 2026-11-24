@@ -14,6 +14,7 @@
 ///        Does palette indicators as well (red pain/berserk, bright pickup)
 
 #include "doomdef.h"
+#include "cl_predict.h"
 #include "g_game.h"
 #include "i_sound.h"
 #include "r_local.h"
@@ -1309,4 +1310,5 @@ void ST_Drawer(void)
 	}
 
 	ST_drawDebugInfo();
+	CL_PredDrawDebugHUD();
 }

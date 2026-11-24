@@ -17,6 +17,7 @@
 #include <cmath>
 
 #include "doomdef.h"
+#include "cl_predict.h"
 #include "g_game.h"
 #include "g_input.h"
 #include "m_perfstats.h"
@@ -1378,14 +1379,22 @@ void R_SetupFrame(int s, dboolean skybox)
 	else
 	// use the player's eyes view
 	{
+		subsector_t *fp_subsec = NULL;
 		r_viewmobj = player->mo;
 		I_Assert(r_viewmobj != NULL);
 
-		newview->x = r_viewmobj->x;
-		newview->y = r_viewmobj->y;
-		newview->z = player->viewz;
+		if (CL_PredGetFirstPersonView((uint8_t)s, &newview->x, &newview->y, &newview->z, &fp_subsec))
+		{
+			R_SetupCommonFrame(player, fp_subsec ? fp_subsec : r_viewmobj->subsector);
+		}
+		else
+		{
+			newview->x = r_viewmobj->x;
+			newview->y = r_viewmobj->y;
+			newview->z = player->viewz;
 
-		R_SetupCommonFrame(player, r_viewmobj->subsector);
+			R_SetupCommonFrame(player, r_viewmobj->subsector);
+		}
 	}
 }
 

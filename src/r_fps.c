@@ -13,6 +13,7 @@
 /// \brief Uncapped framerate stuff.
 
 #include "r_fps.h"
+#include "cl_predict.h"
 
 #include "r_main.h"
 #include "r_skins.h"
@@ -191,6 +192,14 @@ void R_InterpolateView(fixed_t frac)
 	viewy = R_LerpFixed(prevview->y, newview->y, frac);
 	viewz = R_LerpFixed(prevview->z, newview->z, frac);
 
+	{
+		fixed_t ox, oy, oz;
+		CL_PredGetSmoothViewOffset(i, &ox, &oy, &oz);
+		viewx += ox;
+		viewy += oy;
+		viewz += oz;
+	}
+
 	viewangle = R_LerpAngle(prevview->angle, newview->angle, frac);
 	aimingangle = R_LerpAngle(prevview->aim, newview->aim, frac);
 	viewroll = R_LerpAngle(prevview->roll, newview->roll, frac);
@@ -246,6 +255,18 @@ void R_RelativeTeleportViewInterpolation(uint8_t p, fixed_t xdiff, fixed_t ydiff
 	pview_old[p].angle += angdiff;
 }
 
+void R_PredShiftViewInterpolation(uint8_t p, fixed_t xdiff, fixed_t ydiff, fixed_t zdiff)
+{
+	if (p >= MAXSPLITSCREENPLAYERS)
+		return;
+	pview_old[p].x += xdiff;
+	pview_old[p].y += ydiff;
+	pview_old[p].z += zdiff;
+	pview_new[p].x += xdiff;
+	pview_new[p].y += ydiff;
+	pview_new[p].z += zdiff;
+}
+
 void R_SetViewContext(enum viewcontext_e _viewcontext)
 {
 	uint8_t i = 0;
@@ -290,6 +311,12 @@ angle_t R_InterpolateAngle(angle_t from, angle_t to)
 
 void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 {
+	if (CL_PredShouldRenderMobj(mobj))
+	{
+		CL_PredInterpolateMobjState(frac, out);
+		return;
+	}
+
 	if (frac == FRACUNIT)
 	{
 		out->x = mobj->x;
