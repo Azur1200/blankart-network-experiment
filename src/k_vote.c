@@ -555,7 +555,10 @@ void Y_VoteDrawer(void)
 		int32_t smallrubyoffset = 4<<FRACBITS;
 		int32_t smallpicoffset = 4<<FRACBITS;
 
-		if (dedicated && i == 0) // While leaving blank spots for non-existent players is largely intentional, the first spot *always* being blank looks a tad silly :V
+		if (dedicated && i == 0)
+			continue;
+
+		if (!Y_PlayerIDCanVote(i)) // new voting screen behaviour makes empty slots look really bad if highpop player slots are occupied
 			continue;
 
 		if (Y_PlayerIDCanVote(i) && g_votes[i] != VOTE_NOT_PICKED)
