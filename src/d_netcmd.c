@@ -884,6 +884,7 @@ consvar_t cv_kartbubble_boost_allow = CVAR_INIT ("kartbubble_boost_allow", "On",
 consvar_t cv_kartbubble_boost_offroadignore = CVAR_INIT ("kartbubble_boost_offroadignore", "On", CV_NETVAR, CV_OnOff, NULL);
 consvar_t cv_kartbubble_pierceshield = CVAR_INIT ("kartbubble_pierceshield", "On", CV_NETVAR, CV_OnOff, NULL);
 consvar_t cv_kartbubble_killonreflect = CVAR_INIT ("kartbubble_killonreflect", "On", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_kartbubble_pvp = CVAR_INIT ("kartbubble_pvp", "None", CV_NETVAR, playerbump_cons_t, NULL);
 
 consvar_t cv_kartflame_fastfuel = CVAR_INIT ("kartflame_fastfuel", "On", CV_NETVAR, CV_OnOff, NULL);
 consvar_t cv_kartflame_offroadburn = CVAR_INIT ("kartflame_offroadburn", "On", CV_NETVAR, CV_OnOff, NULL);

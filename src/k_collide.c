@@ -923,7 +923,7 @@ static dboolean K_BubbleReflectingTrapItem(const mobj_t *t)
 		   t->type == MT_EGGMINE || K_BubbleShieldReflectSpecialCase(t);
 }
 
-static dboolean K_StrongPlayerBump(const player_t *player)
+dboolean K_StrongPlayerBump(player_t *player)
 {
 	return ((player->invincibilitytimer)
 	    || (player->growshrinktimer > 0));

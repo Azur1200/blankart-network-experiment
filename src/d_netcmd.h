@@ -259,6 +259,7 @@ extern consvar_t cv_kartbubble_boost_allow;
 extern consvar_t cv_kartbubble_boost_offroadignore;
 extern consvar_t cv_kartbubble_pierceshield;
 extern consvar_t cv_kartbubble_killonreflect;
+extern consvar_t cv_kartbubble_pvp;
 extern consvar_t cv_kartflame_fastfuel;
 extern consvar_t cv_kartflame_offroadburn;
 extern consvar_t cv_kartflame_shove;

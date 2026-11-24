@@ -593,6 +593,26 @@ static void P_DoFanAndGasJet(mobj_t *spring, mobj_t *object)
 	}
 }
 
+static dboolean P_CheckIfCannotPVPBump(playerbumptype_t bumptype, dboolean pvp_hit, mobj_t *t1, mobj_t *t2)
+{
+	dboolean cannotbump = false;
+
+	switch(bumptype)
+	{
+		case PBUMP_GNDONLY:
+			cannotbump = ((!P_IsObjectOnGround(t1) || !P_IsObjectOnGround(t2)) && !pvp_hit);
+			break;
+		case PBUMP_NONE:
+			cannotbump = !pvp_hit;
+			break;
+		case PBUMP_STANDARD:
+		default:
+			break;
+	}
+
+	return cannotbump;
+}
+
 //
 // PIT_CheckThing
 //
@@ -670,6 +690,31 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 	{
         return BMIT_CONTINUE;
     }
+
+	// If we don't want Bubble PvP, don't let it happen
+	if (P_CheckIfCannotPVPBump((playerbumptype_t)(cv_kartbubble_pvp.value), false, thing, g_tm.thing))
+	{
+		dboolean allowpvp = false;
+
+		if (thing->player)
+			allowpvp = (allowpvp || K_StrongPlayerBump(thing->player));
+
+		if (g_tm.thing->player)
+			allowpvp = (allowpvp || K_StrongPlayerBump(g_tm.thing->player));
+
+		if (!allowpvp)
+		{
+			if (thing->player && (g_tm.thing->type == MT_BUBBLESHIELD))
+			{
+				return BMIT_CONTINUE;
+			}
+
+			if (g_tm.thing->player && (thing->type == MT_BUBBLESHIELD))
+			{
+				return BMIT_CONTINUE;
+			}
+		}
+	}
 
 	// Get rid of the "just flipped" flag.
 	// We only use that to confirm flipover hits.
@@ -1454,20 +1499,7 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 		}
 		else if (thing->player) // bounce when players collide
 		{
-			dboolean cannotbump = false;
-
-			switch(playerbumpactive)
-			{
-				case PBUMP_GNDONLY:
-					cannotbump = ((!P_IsObjectOnGround(thing) || !P_IsObjectOnGround(g_tm.thing)) && !pvp_hit);
-					break;
-				case PBUMP_NONE:
-					cannotbump = !pvp_hit;
-					break;
-				case PBUMP_STANDARD:
-				default:
-					break;
-			}
+			dboolean cannotbump = P_CheckIfCannotPVPBump(playerbumpactive, pvp_hit, thing, g_tm.thing);
 
 			if (SMONITORINTANGIBLE)
 			{

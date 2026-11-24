@@ -647,6 +647,7 @@ void K_RegisterKartStuff(void)
 	CV_RegisterVar(&cv_kartbubble_defense_damagerate);
 	CV_RegisterVar(&cv_kartbubble_pierceshield);
 	CV_RegisterVar(&cv_kartbubble_killonreflect);
+	CV_RegisterVar(&cv_kartbubble_pvp);
 	CV_RegisterVar(&cv_kartbubble_boost_allow);
 	CV_RegisterVar(&cv_kartbubble_boost_offroadignore);
 	CV_RegisterVar(&cv_kartflame_fastfuel);

@@ -28,6 +28,7 @@ dboolean K_BubbleShieldReflect(mobj_t *t1, mobj_t *t2);
 dboolean K_BubbleShieldCanReflect(mobj_t *t);
 dboolean K_BubbleShieldReflectSpecialCase(const mobj_t *t);
 
+dboolean K_StrongPlayerBump(player_t *player);
 dboolean K_BubbleShieldCollide(mobj_t *t1, mobj_t *t2);
 dboolean K_KitchenSinkCollide(mobj_t *t1, mobj_t *t2);
 dboolean K_FallingRockCollide(mobj_t *t1, mobj_t *t2);
