@@ -567,9 +567,9 @@ static void HWR_Subsector(size_t num)
 	//	CONS_Printf("subsector %d in portal\n", (int32_t)num);
 
 #ifdef PARANOIA //no risk while developing, enough debugging nights!
-	if (num >= num_extrasubsectors)
+	if (num >= num_extra_subsector)
 		I_Error("HWR_Subsector: ss %s with numss = %s, addss = %s\n",
-			sizeu1(num), sizeu2(numsubsectors), sizeu3(num_extrasubsectors));
+			sizeu1(num), sizeu2(numsubsectors), sizeu3(num_extra_subsector));
 #endif
 
 	if (num < numsubsectors)
