@@ -7294,6 +7294,7 @@ dboolean TryRunTics(tic_t realtics)
 
 					G_Ticker((gametic % NEWTICRATERATIO) == 0);
 					CL_PredOnConfirmedTic(gametic, &netcmds[gametic % BACKUPTICS][consoleplayer]);
+					CL_PredSelfTestOnTic(gametic, &netcmds[gametic % BACKUPTICS][consoleplayer]);
 				}
 				if (Playing() && netgame && (gametic % TICRATE == 0))
 				{

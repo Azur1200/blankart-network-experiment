@@ -16,6 +16,7 @@
 
 #include "d_player.h"
 #include "doomdef.h"
+#include "cl_predict.h"
 #include "doomstat.h"
 #include "i_system.h"
 #include "d_event.h"
@@ -1677,7 +1678,7 @@ dboolean P_PlayerHitFloor(player_t *player, dboolean fromAir)
 
 	clipmomz = !(P_CheckDeathPitCollide(player->mo));
 
-	if (player->airtime > 10 && player->prevonground == false && fromAir == true && !P_CheckDeathPitFOFs(player->mo))
+	if (player->airtime > 10 && player->prevonground == false && fromAir == true && !P_CheckDeathPitFOFs(player->mo) && !P_IsPredicting())
 	{
 		K_SpawnSplashForMobj(player->mo, abs(player->mo->momz));
 	}
@@ -2390,12 +2391,15 @@ static void P_UpdatePlayerAiming(player_t *player)
 		player->aiming = G_ClipAimingPitch((int32_t*) &player->aiming);
 	}
 
-	for (i = 0; i <= r_splitscreen; i++)
+	if (!P_IsPredicting())
 	{
-		if (player == &players[displayplayers[i]])
+		for (i = 0; i <= r_splitscreen; i++)
 		{
-			localaiming[i] = player->aiming;
-			break;
+			if (player == &players[displayplayers[i]])
+			{
+				localaiming[i] = player->aiming;
+				break;
+			}
 		}
 	}
 }
@@ -2508,9 +2512,12 @@ void P_MovePlayer(player_t *player)
 
 	P_UpdatePlayerAngle(player);
 
-	ticruned++;
-	if (!(cmd->flags & TICCMD_RECEIVED))
-		ticmiss++;
+	if (!P_IsPredicting())
+	{
+		ticruned++;
+		if (!(cmd->flags & TICCMD_RECEIVED))
+			ticmiss++;
+	}
 
 	P_3dMovement(player);
 
@@ -2604,78 +2611,82 @@ void P_MovePlayer(player_t *player)
 	////////////////////////////
 
 	// SRB2kart - Drifting smoke and fire
-	if ((player->sneakertimer || player->flamestore)
-		&& onground && (leveltime & 1))
-		K_SpawnBoostTrail(player);
-
-	if (((player->invincibilitytimer) ||
-	     ((player->smonitortimer > 0) &&
-	      (((leveltime %
-		 max(1, 10 - FixedMul(9, K_SMonitorGradient(player->smonitortimer)))) == 0)))))
+	if (!P_IsPredicting())
 	{
-		K_SpawnSparkleTrail(player->mo);
-	}
+		if ((player->sneakertimer || player->flamestore)
+			&& onground && (leveltime & 1))
+			K_SpawnBoostTrail(player);
 
-	// The Arrow Bullet aura should spawn before you actually enter the Arrow Bullet state.
-	if (cv_kartaltshrink_arrowbullet.value && K_IsAltShrunk(player) && (K_GetSpeedPercentage(player) >= MINAURAPCT))
-	{
-		fixed_t aura_scalar = P_KartAltShrinkAuraScalar(player);
-
-		int32_t auravis = 10 - FixedMul(7, Easing_OutCubic(aura_scalar, 0, FRACUNIT));
-		auravis = min(9, max(1, auravis)) << FF_TRANSSHIFT;
-
-		fixed_t aura_scale = Easing_OutCubic(aura_scalar, FRACHALF, FRACUNIT + FRACHALF);
-
-		if ((!player->arrowbullet) || (P_MobjWasRemoved(player->arrowbullet)))
+		if (((player->invincibilitytimer) ||
+		     ((player->smonitortimer > 0) &&
+		      (((leveltime %
+			 max(1, 10 - FixedMul(9, K_SMonitorGradient(player->smonitortimer)))) == 0)))))
 		{
-			mobj_t *newbullet = P_SpawnMobjFromMobj(player->mo, 0, 0, 0, MT_OVERLAY);
+			K_SpawnSparkleTrail(player->mo);
+		}
 
-			P_SetMobjState(newbullet, S_ALTSHRINK_ARROWBULLET);
+		// The Arrow Bullet aura should spawn before you actually enter the Arrow Bullet state.
+		if (cv_kartaltshrink_arrowbullet.value && K_IsAltShrunk(player) && (K_GetSpeedPercentage(player) >= MINAURAPCT))
+		{
+			fixed_t aura_scalar = P_KartAltShrinkAuraScalar(player);
 
-            newbullet->movefactor = aura_scale;
-			newbullet->threshold |= OV_DONTCOPYANGLE;
+			int32_t auravis = 10 - FixedMul(7, Easing_OutCubic(aura_scalar, 0, FRACUNIT));
+			auravis = min(9, max(1, auravis)) << FF_TRANSSHIFT;
 
-			P_SetTarget(&newbullet->target, player->mo);
+			fixed_t aura_scale = Easing_OutCubic(aura_scalar, FRACHALF, FRACUNIT + FRACHALF);
 
-			P_SetTarget(&player->arrowbullet, newbullet);
+			if ((!player->arrowbullet) || (P_MobjWasRemoved(player->arrowbullet)))
+			{
+				mobj_t *newbullet = P_SpawnMobjFromMobj(player->mo, 0, 0, 0, MT_OVERLAY);
 
-			player->arrowbullet->angle = K_MomentumAngle(player->mo);
-			player->arrowbullet->sloperoll = player->mo->sloperoll;
-			player->arrowbullet->slopepitch = player->mo->slopepitch;
+				P_SetMobjState(newbullet, S_ALTSHRINK_ARROWBULLET);
 
-			player->arrowbullet->frame &= ~FF_TRANSMASK;
-			player->arrowbullet->frame |= auravis;
+				newbullet->movefactor = aura_scale;
+				newbullet->threshold |= OV_DONTCOPYANGLE;
 
-			player->arrowbullet->dispoffset = min(2, player->mo->dispoffset + 1);
+				P_SetTarget(&newbullet->target, player->mo);
+
+				P_SetTarget(&player->arrowbullet, newbullet);
+
+				player->arrowbullet->angle = K_MomentumAngle(player->mo);
+				player->arrowbullet->sloperoll = player->mo->sloperoll;
+				player->arrowbullet->slopepitch = player->mo->slopepitch;
+
+				player->arrowbullet->frame &= ~FF_TRANSMASK;
+				player->arrowbullet->frame |= auravis;
+
+				player->arrowbullet->dispoffset = min(2, player->mo->dispoffset + 1);
+			}
+			else
+			{
+				player->arrowbullet->angle = K_MomentumAngle(player->mo);
+				player->arrowbullet->sloperoll = player->mo->sloperoll;
+				player->arrowbullet->slopepitch = player->mo->slopepitch;
+
+				player->arrowbullet->movefactor = aura_scale;
+
+				player->arrowbullet->frame &= ~FF_TRANSMASK;
+				player->arrowbullet->frame |= auravis;
+
+				player->arrowbullet->dispoffset = min(2, player->mo->dispoffset + 1);
+			}
 		}
 		else
 		{
-			player->arrowbullet->angle = K_MomentumAngle(player->mo);
-			player->arrowbullet->sloperoll = player->mo->sloperoll;
-			player->arrowbullet->slopepitch = player->mo->slopepitch;
-
-			player->arrowbullet->movefactor = aura_scale;
-
-			player->arrowbullet->frame &= ~FF_TRANSMASK;
-			player->arrowbullet->frame |= auravis;
-
-			player->arrowbullet->dispoffset = min(2, player->mo->dispoffset + 1);
-		}
-	}
-	else
-	{
-		if ((player->arrowbullet) && (!P_MobjWasRemoved(player->arrowbullet)))
-		{
-			P_SetTarget(&player->arrowbullet->target, NULL);
-			P_RemoveMobj(player->arrowbullet);
-			P_SetTarget(&player->arrowbullet, NULL);
+			if ((player->arrowbullet) && (!P_MobjWasRemoved(player->arrowbullet)))
+			{
+				P_SetTarget(&player->arrowbullet->target, NULL);
+				P_RemoveMobj(player->arrowbullet);
+				P_SetTarget(&player->arrowbullet, NULL);
+			}
 		}
 	}
 
 	if (K_AltShrinkArrowBulletCondition(player))
 	{
 		player->inarrowbullet = true;
-		K_SpawnNormalSpeedLines(player);
+		if (!P_IsPredicting())
+			K_SpawnNormalSpeedLines(player);
 	}
 	else
 	{
@@ -2684,40 +2695,43 @@ void P_MovePlayer(player_t *player)
 #undef MINAURAPCT
 #undef AURA_DIFF
 
-	if (player->wipeoutslow > 1 && (leveltime & 1))
-		K_SpawnWipeoutTrail(player->mo, false);
-
-	K_DriftDustHandling(player->mo);
-
-	// Crush test...
-	if ((player->mo->ceilingz - player->mo->floorz < player->mo->height) && !(player->mo->flags & MF_NOCLIP))
+	if (!P_IsPredicting())
 	{
-		if (player->spectator)
-			P_DamageMobj(player->mo, NULL, NULL, 1, DMG_SPECTATOR); // Respawn crushed spectators
-		else
-			P_DamageMobj(player->mo, NULL, NULL, 1, DMG_SQUISH); // SRB2kart - we don't kill when squished, we squish when squished.
+		if (player->wipeoutslow > 1 && (leveltime & 1))
+			K_SpawnWipeoutTrail(player->mo, false);
 
-		if (player->playerstate == PST_DEAD)
+		K_DriftDustHandling(player->mo);
+
+		// Crush test...
+		if ((player->mo->ceilingz - player->mo->floorz < player->mo->height) && !(player->mo->flags & MF_NOCLIP))
 		{
-			TracyCZoneEnd(__zone);
-			return;
+			if (player->spectator)
+				P_DamageMobj(player->mo, NULL, NULL, 1, DMG_SPECTATOR); // Respawn crushed spectators
+			else
+				P_DamageMobj(player->mo, NULL, NULL, 1, DMG_SQUISH); // SRB2kart - we don't kill when squished, we squish when squished.
+
+			if (player->playerstate == PST_DEAD)
+			{
+				TracyCZoneEnd(__zone);
+				return;
+			}
 		}
-	}
 
 #ifdef FLOORSPLATS
-	if (cv_shadow.value && rendermode == render_soft)
-		R_AddFloorSplat(player->mo->subsector, player->mo, "SHADOW", player->mo->x,
-			player->mo->y, player->mo->floorz, SPLATDRAWMODE_OPAQUE);
+		if (cv_shadow.value && rendermode == render_soft)
+			R_AddFloorSplat(player->mo->subsector, player->mo, "SHADOW", player->mo->x,
+				player->mo->y, player->mo->floorz, SPLATDRAWMODE_OPAQUE);
 #endif
 
-	// Look for blocks to bust up
-	// Because of FF_SHATTER, we should look for blocks constantly,
-	// not just when spinning or playing as Knuckles
-	if (CheckForBustableBlocks)
-		P_CheckBustableBlocks(player);
+		// Look for blocks to bust up
+		// Because of FF_SHATTER, we should look for blocks constantly,
+		// not just when spinning or playing as Knuckles
+		if (CheckForBustableBlocks)
+			P_CheckBustableBlocks(player);
+	}
 
 	// Check for a BOUNCY sector!
-	if (CheckForBouncySector)
+	if (CheckForBouncySector && !P_IsPredicting())
 		P_CheckBouncySectors(player);
 
 	// Look for Quicksand!
@@ -4873,6 +4887,181 @@ void P_PlayerThink(player_t *player)
 	LUA_HookPlayerThink(player);
 
 	TracyCZoneEnd(__zone);
+}
+
+//
+// P_PredPlayerThink
+//
+// Read-only client movement prediction step mirroring P_PlayerThink physics
+// without world-mutating Lua hooks, network commands, or VFX spawns.
+//
+void P_PredPlayerThink(player_t *player)
+{
+	ticcmd_t *cmd;
+
+	I_Assert(P_IsPredicting());
+	I_Assert(player != NULL);
+	I_Assert(player->mo != NULL);
+
+	player->driftlevel = 0;
+	player->old_drawangle = player->drawangle;
+
+	if (player->flashcount)
+		player->flashcount--;
+
+	if (player->awayviewtics && player->awayviewtics != -1)
+		player->awayviewtics--;
+
+	// Track airtime
+	if (P_IsObjectOnGround(player->mo) && !P_PlayerInPain(player))
+		player->airtime = 0;
+	else
+		player->airtime++;
+
+	// Track drifting time
+	if (player->drift != 0)
+		player->driftelapsed++;
+	else
+		player->driftelapsed = 0;
+
+	cmd = &player->cmd;
+
+	if (cmd->throwdir > 0)
+		player->throwdir = 1;
+	else if (cmd->throwdir < 0)
+		player->throwdir = -1;
+	else
+		player->throwdir = 0;
+
+	// Accessibility - kickstart acceleration
+	if (!(player->pflags & PF_KICKSTARTACCEL) || leveltime < starttime)
+	{
+		player->kickstartaccel = 0;
+	}
+	else if (cmd->buttons & BT_ACCELERATE)
+	{
+		if (!player->exiting && !(player->oldcmd.buttons & BT_ACCELERATE))
+			player->kickstartaccel = 0;
+		else if (player->kickstartaccel < ACCEL_KICKSTART)
+			player->kickstartaccel++;
+		else
+			player->kickstartaccel = ACCEL_KICKSTART + 1;
+	}
+	else if (player->kickstartaccel < ACCEL_KICKSTART)
+	{
+		player->kickstartaccel = 0;
+	}
+	else
+	{
+		player->kickstartaccel = ACCEL_KICKSTART + 1;
+	}
+
+	if (P_PlayerInPain(player))
+	{
+		if (player->spinoutrot < MAXSPINROT)
+		{
+			if ((player->spinoutrot + SPINOUTROTSPEED) >= MAXSPINROT)
+				player->spinoutrot = (player->spinoutrot + SPINOUTROTSPEED) % MAXSPINROT;
+			else
+				player->spinoutrot += SPINOUTROTSPEED;
+		}
+	}
+	else
+	{
+		if ((player->spinoutrot) && (player->spinoutrot < MAXSPINROT))
+		{
+			if ((player->spinoutrot + SPINOUTROTSPEED) >= MAXSPINROT)
+				player->spinoutrot = 0;
+			else
+				player->spinoutrot += SPINOUTROTSPEED;
+		}
+	}
+
+	// Countdown control lock
+	if (!(gametypes[gametype]->rules & GTR_NOCOUNTDOWN))
+	{
+		if (leveltime < starttime)
+			player->nocontrol = 2;
+	}
+	else
+	{
+		if (leveltime < introtime)
+			player->nocontrol = 2;
+	}
+
+	if (P_IsObjectOnGround(player->mo) && (player->pflags & PF_NOSCALEGRAVITY))
+		player->pflags &= ~PF_NOSCALEGRAVITY;
+
+	player->pflags &= ~PF_HITFINISHLINE;
+
+	if (player->driftmode == DRIFTMODE_INSTANT)
+	{
+		if (cmd->buttons & BT_DRIFT)
+			player->pflags |= PF_DRIFTINPUT;
+		else
+			player->pflags &= ~PF_DRIFTINPUT;
+	}
+
+	P_MobjCheckWater(player->mo);
+
+	if (player->linktimer)
+	{
+		if (--player->linktimer <= 0)
+			player->linkcount = 0;
+	}
+
+	if (player->mo->reactiontime)
+	{
+		player->mo->reactiontime--;
+	}
+	else
+	{
+		P_MovePlayer(player);
+	}
+
+	player->pflags &= ~PF_STASIS;
+
+	if (player->onconveyor == 1)
+		player->onconveyor = 3;
+	else if (player->onconveyor == 3)
+		player->cmomy = player->cmomx = 0;
+
+	if (player->bumpertime)
+		player->bumpertime--;
+
+	if (player->powers[pw_sneakers] && player->powers[pw_sneakers] < UINT16_MAX)
+		player->powers[pw_sneakers]--;
+
+	if (player->powers[pw_invulnerability] && player->powers[pw_invulnerability] < UINT16_MAX)
+		player->powers[pw_invulnerability]--;
+
+	if (player->flashing && player->flashing < UINT16_MAX &&
+		(player->spectator || player->flashing < K_GetKartFlashing(player)))
+		player->flashing--;
+
+	if (player->nocontrol && player->nocontrol < UINT16_MAX)
+	{
+		if (!(--player->nocontrol))
+			player->pflags &= ~PF_FAILEDSTART;
+	}
+
+	if (!(player->hyudorotimer
+		|| player->growshrinktimer > 0
+		|| (player->respawn)
+		|| (player->pflags & PF_NOCONTEST)
+		|| ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0 && player->karmadelay)))
+	{
+		if (player->flashing > 0 && player->flashing < K_GetKartFlashing(player)
+			&& (leveltime & 1))
+			player->mo->renderflags |= RF_DONTDRAW;
+		else
+			player->mo->renderflags &= ~RF_DONTDRAW;
+	}
+
+	K_KartPlayerThink(player, cmd);
+
+	if (player->carry == CR_SLIDING)
+		player->carry = CR_NONE;
 }
 
 //

@@ -13,6 +13,7 @@
 ///        Blockmap iterator functions, and some PIT_* functions to use for iteration
 
 #include "doomdef.h"
+#include "cl_predict.h"
 #include "doomstat.h"
 
 #include "k_kart.h"
@@ -1190,6 +1191,9 @@ void P_UnsetThingPosition(mobj_t *thing)
 	I_Assert(thing != NULL);
 	I_Assert(!P_MobjWasRemoved(thing));
 
+	if (P_IsPredicting())
+		return;
+
 	if (!(thing->flags & MF_NOSECTOR))
 	{
 		/* invisible things don't need to be in sector list
@@ -1305,40 +1309,43 @@ void P_SetThingPosition(mobj_t *thing)
 
 	ss = thing->subsector = R_PointInSubsector(thing->x, thing->y);
 
-	if (!(thing->flags & MF_NOSECTOR))
+	if (!P_IsPredicting())
 	{
-		// invisible things don't go into the sector links
+		if (!(thing->flags & MF_NOSECTOR))
+		{
+			// invisible things don't go into the sector links
 
-		// killough 8/11/98: simpler scheme using pointer-to-pointer prev
-		// pointers, allows head nodes to be treated like everything else
+			// killough 8/11/98: simpler scheme using pointer-to-pointer prev
+			// pointers, allows head nodes to be treated like everything else
 
-		mobj_t **link = &ss->sector->thinglist;
-		mobj_t *snext = *link;
-		if ((thing->snext = snext) != NULL)
-			snext->sprev = &thing->snext;
-		thing->sprev = link;
-		*link = thing;
+			mobj_t **link = &ss->sector->thinglist;
+			mobj_t *snext = *link;
+			if ((thing->snext = snext) != NULL)
+				snext->sprev = &thing->snext;
+			thing->sprev = link;
+			*link = thing;
 
-		// phares 3/16/98
-		//
-		// If sector_list isn't NULL, it has a collection of sector
-		// nodes that were just removed from this Thing.
+			// phares 3/16/98
+			//
+			// If sector_list isn't NULL, it has a collection of sector
+			// nodes that were just removed from this Thing.
 
-		// Collect the sectors the object will live in by looking at
-		// the existing sector_list and adding new nodes and deleting
-		// obsolete ones.
+			// Collect the sectors the object will live in by looking at
+			// the existing sector_list and adding new nodes and deleting
+			// obsolete ones.
 
-		// When a node is deleted, its sector links (the links starting
-		// at sector_t->touching_thinglist) are broken. When a node is
-		// added, new sector links are created.
+			// When a node is deleted, its sector links (the links starting
+			// at sector_t->touching_thinglist) are broken. When a node is
+			// added, new sector links are created.
 
-		P_CreateSecNodeList(thing,thing->x,thing->y);
-		thing->touching_sectorlist = sector_list; // Attach to Thing's mobj_t
-		sector_list = NULL; // clear for next time
+			P_CreateSecNodeList(thing,thing->x,thing->y);
+			thing->touching_sectorlist = sector_list; // Attach to Thing's mobj_t
+			sector_list = NULL; // clear for next time
+		}
+
+		// inert things don't need to be in blockmap
+		P_SetBlockmapEntry(thing, blocklinks);
 	}
-
-	// inert things don't need to be in blockmap
-	P_SetBlockmapEntry(thing, blocklinks);
 
 	// Allows you to 'step' on a new linedef exec when the previous
 	// sector's floor is the same height.

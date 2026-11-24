@@ -16,12 +16,22 @@
 #include "i_net.h"
 #include "g_game.h"
 #include "p_tick.h"
+#include "p_local.h"
+#include "p_mobj.h"
+#include "k_kart.h"
+#include "k_bot.h"
+#include "m_random.h"
+#include "r_main.h"
 #include "i_time.h"
 #include "console.h"
 #include "byteptr.h"
 
 #include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
+
+// Global read-only prediction guard
+dboolean cl_pred_active_flag = false;
 
 // =========================================================================
 // CVars
@@ -31,6 +41,7 @@ static CV_PossibleValue_t cl_movement_maxtics_cons_t[] = {{0, "MIN"}, {16, "MAX"
 static CV_PossibleValue_t cl_movement_smoothrate_cons_t[] = {{1, "MIN"}, {100, "MAX"}, {0, NULL}};
 static CV_PossibleValue_t cl_netrepeatinput_cons_t[] = {{0, "MIN"}, {CLPRED_MAX_REPEAT, "MAX"}, {0, NULL}};
 static CV_PossibleValue_t cl_movement_debug_cons_t[] = {{0, "MIN"}, {2, "MAX"}, {0, NULL}};
+static CV_PossibleValue_t cl_movement_selftest_cons_t[] = {{0, "MIN"}, {12, "MAX"}, {0, NULL}};
 
 consvar_t cv_cl_movement = CVAR_INIT("cl_movement", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_cl_movement_maxtics = CVAR_INIT("cl_movement_maxtics", "8", CV_SAVE, cl_movement_maxtics_cons_t, NULL);
@@ -39,6 +50,7 @@ consvar_t cv_cl_movement_smoothrate = CVAR_INIT("cl_movement_smoothrate", "35", 
 consvar_t cv_cl_netrepeatinput = CVAR_INIT("cl_netrepeatinput", "2", CV_SAVE, cl_netrepeatinput_cons_t, NULL);
 consvar_t cv_cl_movement_proto = CVAR_INIT("cl_movement_proto", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_cl_movement_debug = CVAR_INIT("cl_movement_debug", "0", 0, cl_movement_debug_cons_t, NULL);
+consvar_t cv_cl_movement_selftest = CVAR_INIT("cl_movement_selftest", "0", 0, cl_movement_selftest_cons_t, NULL);
 
 // =========================================================================
 // Sequence helpers (0 is reserved as invalid/unset)
@@ -464,6 +476,17 @@ typedef struct cl_pred_state_s
 	uint32_t queue_overflows;
 	uint32_t max_in_flight;
 	uint32_t server_underrun_flags;
+
+	// Step 3: Read-only shadow kart state
+	player_t shadow_player;
+	mobj_t shadow_mo;
+	dboolean shadow_valid;
+	uint32_t predicted_tics;
+	fixed_t last_delta_xy;
+	fixed_t last_delta_z;
+	angle_t last_delta_angle;
+	uint32_t shadow_replays;
+	uint32_t rng_violations;
 } cl_pred_state_t;
 
 static cl_pred_state_t cl_pred;
@@ -478,6 +501,11 @@ void CL_PredResetState(void)
 {
 	cl_pred.queue_len = 0;
 	cl_pred.last_leveltime = 0;
+	cl_pred.shadow_valid = false;
+	cl_pred.predicted_tics = 0;
+	cl_pred.last_delta_xy = 0;
+	cl_pred.last_delta_z = 0;
+	cl_pred.last_delta_angle = 0;
 }
 
 static void CL_PredSendCap(void)
@@ -657,6 +685,8 @@ uint32_t CL_PredRecordOutgoingCmd(const ticcmd_t *cmd)
 
 		if (cl_pred.queue_len > cl_pred.max_in_flight)
 			cl_pred.max_in_flight = cl_pred.queue_len;
+
+		CL_PredUpdateShadow();
 	}
 
 	return seq;
@@ -817,9 +847,11 @@ void CL_PredOnConfirmedTic(tic_t executed_tic, const ticcmd_t *confirmed_cmd)
 		}
 	}
 
+	CL_PredUpdateShadow();
+
 	if (cv_cl_movement_debug.value >= 2 && (executed_tic % TICRATE) == 0)
 	{
-		CONS_Printf("[CL_PRED] proto=%s tic=%u sent=%u conf=%u qlen=%u maxq=%u exact=%u fall=%u ackpkts=%u ovf=%u svunder=%u\n",
+		CONS_Printf("[CL_PRED] proto=%s tic=%u sent=%u conf=%u qlen=%u maxq=%u exact=%u fall=%u ackpkts=%u ovf=%u svunder=%u pred=%u dxy=%d dz=%d dang=%u replays=%u rngv=%u\n",
 			cl_pred.proto_active ? "B" : "A",
 			executed_tic,
 			cl_pred.last_sent_seq,
@@ -830,7 +862,351 @@ void CL_PredOnConfirmedTic(tic_t executed_tic, const ticcmd_t *confirmed_cmd)
 			cl_pred.fallback_ack_ticks,
 			cl_pred.ack_packets_recv,
 			cl_pred.queue_overflows,
-			cl_pred.server_underrun_flags);
+			cl_pred.server_underrun_flags,
+			cl_pred.predicted_tics,
+			cl_pred.last_delta_xy >> FRACBITS,
+			cl_pred.last_delta_z >> FRACBITS,
+			(uint32_t)(cl_pred.last_delta_angle >> ANGLETOFINESHIFT),
+			cl_pred.shadow_replays,
+			cl_pred.rng_violations);
+	}
+}
+
+// =========================================================================
+// Step 3: Read-only shadow kart physics replay & exactness self-test
+// =========================================================================
+
+static dboolean CL_PredIsPlayerEligible(const player_t *p)
+{
+	if (gamestate != GS_LEVEL || !p || !p->mo || P_MobjWasRemoved(p->mo))
+		return false;
+	if (p->playerstate != PST_LIVE || p->mo->health <= 0)
+		return false;
+	if (p->spectator || p->exiting || mapreset)
+		return false;
+	if (p->respawn != 0)
+		return false;
+	if (p->carry == CR_ZOOMTUBE || p->loop.radius != 0)
+		return false;
+	if (p->dashRingPullTics != 0 || p->dashRingPushTics != 0)
+		return false;
+	if (p->bot || K_PlayerUsesBotMovement(p))
+		return false;
+	if (!p->mo->subsector || !p->mo->subsector->sector)
+		return false;
+	return true;
+}
+
+static void CL_PredDetachShadowMobj(mobj_t *mo, player_t *owner)
+{
+	mo->snext = NULL;
+	mo->sprev = NULL;
+	mo->blocknode = NULL;
+	mo->touching_sectorlist = NULL;
+	mo->thinker.prev = NULL;
+	mo->thinker.next = NULL;
+	mo->thinker.references = 0;
+	mo->target = NULL;
+	mo->tracer = NULL;
+	mo->hnext = NULL;
+	mo->hprev = NULL;
+	mo->itnext = NULL;
+	mo->bubbleplow = NULL;
+	mo->player = owner;
+}
+
+static void CL_PredReplayOnConsolePlayer(
+	const player_t *base_player,
+	const mobj_t *base_mo,
+	tic_t start_leveltime,
+	const ticcmd_t *cmds,
+	uint32_t count,
+	player_t *out_player,
+	mobj_t *out_mo)
+{
+	player_t saved_player;
+	mobj_t work_mo;
+	tic_t saved_leveltime;
+	uint32_t saved_rng[PRNUMCLASS];
+	uint32_t k;
+	int32_t c;
+
+	I_Assert(!cl_pred_active_flag);
+	I_Assert(base_player != NULL && base_mo != NULL && out_player != NULL && out_mo != NULL);
+
+	saved_player = players[consoleplayer];
+	saved_leveltime = leveltime;
+	for (c = 0; c < PRNUMCLASS; c++)
+		saved_rng[c] = P_GetRandSeed((pr_class_t)c);
+
+	cl_pred_active_flag = true;
+	P_PredPushMapState();
+
+	// Run directly on players[consoleplayer] so any (player - players) index
+	// arithmetic inside kart helpers resolves to consoleplayer cleanly.
+	players[consoleplayer] = *base_player;
+	work_mo = *base_mo;
+	CL_PredDetachShadowMobj(&work_mo, &players[consoleplayer]);
+	players[consoleplayer].mo = &work_mo;
+
+	for (k = 0; k < count; k++)
+	{
+		ticcmd_t *pcmd = &players[consoleplayer].cmd;
+		leveltime = start_leveltime + k;
+
+		*pcmd = cmds[k];
+		pcmd->latency = min(((leveltime & TICCMD_LATENCYMASK) - pcmd->latency) & TICCMD_LATENCYMASK, MAXPREDICTTICS - 1);
+
+		P_PredPlayerThink(&players[consoleplayer]);
+		P_PredPlayerMobjThink(&work_mo);
+
+		// Mirror P_PlayerAfterThink physics tail
+		if (P_IsObjectOnGround(&work_mo))
+		{
+			players[consoleplayer].outrun = 0;
+			work_mo.pmomz = 0;
+		}
+		if (players[consoleplayer].onconveyor != 1 || !P_IsObjectOnGround(&work_mo))
+		{
+			players[consoleplayer].onconveyor = 0;
+		}
+
+		players[consoleplayer].oldcmd = *pcmd;
+	}
+
+	*out_player = players[consoleplayer];
+	*out_mo = work_mo;
+	out_player->mo = out_mo;
+	out_mo->player = out_player;
+
+	P_PredPopMapState();
+	cl_pred_active_flag = false;
+
+	// Restore authoritative player state and leveltime bit-for-bit
+	players[consoleplayer] = saved_player;
+	leveltime = saved_leveltime;
+
+	// Verify zero RNG side effects
+	for (c = 0; c < PRNUMCLASS; c++)
+	{
+		uint32_t cur = P_GetRandSeed((pr_class_t)c);
+		if (cur != saved_rng[c])
+		{
+			cl_pred.rng_violations++;
+			P_SetRandSeed((pr_class_t)c, saved_rng[c]);
+			CONS_Alert(CONS_WARNING, "[CL_PRED] RNG class %s mutated during prediction (%u -> %u)\n",
+				pr_class_name[c], saved_rng[c], cur);
+#ifdef PARANOIA
+			I_Error("[CL_PRED] RNG class %s mutated during prediction!", pr_class_name[c]);
+#endif
+		}
+	}
+}
+
+void CL_PredUpdateShadow(void)
+{
+	const player_t *p;
+	uint32_t maxtics, n, i;
+	ticcmd_t cmds[CLPRED_QUEUE_CAP];
+
+	if (!client || !netgame || demo.playback || splitscreen
+		|| !cv_cl_movement.value || cv_cl_movement_maxtics.value <= 0
+		|| !addedtogame || !playeringame[consoleplayer])
+	{
+		cl_pred.shadow_valid = false;
+		cl_pred.predicted_tics = 0;
+		return;
+	}
+
+	p = &players[consoleplayer];
+	if (!CL_PredIsPlayerEligible(p))
+	{
+		cl_pred.shadow_valid = false;
+		cl_pred.predicted_tics = 0;
+		return;
+	}
+
+	maxtics = (uint32_t)cv_cl_movement_maxtics.value;
+	n = min(cl_pred.queue_len, maxtics);
+	if (n > CLPRED_QUEUE_CAP)
+		n = CLPRED_QUEUE_CAP;
+
+	if (n == 0)
+	{
+		cl_pred.shadow_player = *p;
+		cl_pred.shadow_mo = *p->mo;
+		CL_PredDetachShadowMobj(&cl_pred.shadow_mo, &cl_pred.shadow_player);
+		cl_pred.shadow_player.mo = &cl_pred.shadow_mo;
+		cl_pred.shadow_valid = true;
+		cl_pred.predicted_tics = 0;
+		cl_pred.last_delta_xy = 0;
+		cl_pred.last_delta_z = 0;
+		cl_pred.last_delta_angle = 0;
+		return;
+	}
+
+	for (i = 0; i < n; i++)
+		cmds[i] = cl_pred.queue[i].cmd;
+
+	CL_PredReplayOnConsolePlayer(p, p->mo, leveltime, cmds, n,
+		&cl_pred.shadow_player, &cl_pred.shadow_mo);
+
+	cl_pred.shadow_valid = true;
+	cl_pred.predicted_tics = n;
+	cl_pred.shadow_replays++;
+	cl_pred.last_delta_xy = R_PointToDist2(cl_pred.shadow_mo.x, cl_pred.shadow_mo.y, p->mo->x, p->mo->y);
+	cl_pred.last_delta_z = abs(cl_pred.shadow_mo.z - p->mo->z);
+	cl_pred.last_delta_angle = (angle_t)abs((int32_t)(cl_pred.shadow_mo.angle - p->mo->angle));
+}
+
+// =========================================================================
+// Deterministic 0-ms exactness self-test (cl_movement_selftest > 0)
+// =========================================================================
+
+#define CLPRED_SELFTEST_RING 16
+
+typedef struct cl_pred_st_slot_s
+{
+	dboolean valid;
+	tic_t lt;
+	player_t player;
+	mobj_t mo;
+	ticcmd_t raw_cmd; // command executed at (lt - 1) to reach state at lt
+} cl_pred_st_slot_t;
+
+typedef struct cl_pred_st_state_s
+{
+	cl_pred_st_slot_t ring[CLPRED_SELFTEST_RING];
+	tic_t last_lt;
+	uint32_t samples;
+	uint32_t exact;
+	uint32_t mismatches;
+	fixed_t max_xy;
+	fixed_t max_z;
+	uint32_t max_ang;
+	fixed_t max_mom;
+	int32_t max_drift;
+	int32_t max_charge;
+} cl_pred_st_state_t;
+
+static cl_pred_st_state_t cl_pred_st;
+
+void CL_PredSelfTestOnTic(tic_t executed_tic, const ticcmd_t *raw_cmd)
+{
+	const player_t *p;
+	uint32_t horizon, k;
+	cl_pred_st_slot_t *cur_slot;
+
+	(void)executed_tic;
+
+	if (cv_cl_movement_selftest.value <= 0)
+		return;
+
+	if (gamestate != GS_LEVEL || !playeringame[consoleplayer] || !raw_cmd || leveltime == 0)
+	{
+		memset(&cl_pred_st, 0, sizeof(cl_pred_st));
+		return;
+	}
+
+	p = &players[consoleplayer];
+	if (leveltime <= cl_pred_st.last_lt || !CL_PredIsPlayerEligible(p))
+	{
+		memset(&cl_pred_st, 0, sizeof(cl_pred_st));
+		cl_pred_st.last_lt = leveltime;
+		return;
+	}
+
+	cl_pred_st.last_lt = leveltime;
+
+	cur_slot = &cl_pred_st.ring[leveltime % CLPRED_SELFTEST_RING];
+	cur_slot->valid = true;
+	cur_slot->lt = leveltime;
+	cur_slot->player = *p;
+	cur_slot->mo = *p->mo;
+	cur_slot->raw_cmd = *raw_cmd;
+
+	horizon = (uint32_t)cv_cl_movement_selftest.value;
+	if (horizon > 12)
+		horizon = 12;
+
+	if (leveltime > horizon)
+	{
+		tic_t start_lt = leveltime - horizon;
+		const cl_pred_st_slot_t *start_slot = &cl_pred_st.ring[start_lt % CLPRED_SELFTEST_RING];
+		dboolean chain_ok = (start_slot->valid && start_slot->lt == start_lt);
+		ticcmd_t cmds[12];
+
+		for (k = 0; chain_ok && k < horizon; k++)
+		{
+			tic_t step_lt = start_lt + 1 + k;
+			const cl_pred_st_slot_t *step_slot = &cl_pred_st.ring[step_lt % CLPRED_SELFTEST_RING];
+			if (!step_slot->valid || step_slot->lt != step_lt)
+				chain_ok = false;
+			else
+				cmds[k] = step_slot->raw_cmd;
+		}
+
+		if (chain_ok)
+		{
+			player_t pred_p;
+			mobj_t pred_mo;
+			fixed_t ex, ey, ez, emx, emy, emz, xy_err, mom_err;
+			uint32_t ang_err;
+			int32_t drift_err, chg_err;
+
+			CL_PredReplayOnConsolePlayer(&start_slot->player, &start_slot->mo,
+				start_lt, cmds, horizon, &pred_p, &pred_mo);
+
+			ex = abs(pred_mo.x - p->mo->x);
+			ey = abs(pred_mo.y - p->mo->y);
+			ez = abs(pred_mo.z - p->mo->z);
+			xy_err = max(ex, ey);
+			ang_err = (uint32_t)abs((int32_t)(pred_mo.angle - p->mo->angle));
+			emx = abs(pred_mo.momx - p->mo->momx);
+			emy = abs(pred_mo.momy - p->mo->momy);
+			emz = abs(pred_mo.momz - p->mo->momz);
+			mom_err = max(max(emx, emy), emz);
+			drift_err = abs((int32_t)pred_p.drift - (int32_t)p->drift);
+			chg_err = abs((int32_t)pred_p.driftcharge - (int32_t)p->driftcharge);
+
+			cl_pred_st.samples++;
+			if (xy_err > cl_pred_st.max_xy) cl_pred_st.max_xy = xy_err;
+			if (ez > cl_pred_st.max_z) cl_pred_st.max_z = ez;
+			if (ang_err > cl_pred_st.max_ang) cl_pred_st.max_ang = ang_err;
+			if (mom_err > cl_pred_st.max_mom) cl_pred_st.max_mom = mom_err;
+			if (drift_err > cl_pred_st.max_drift) cl_pred_st.max_drift = drift_err;
+			if (chg_err > cl_pred_st.max_charge) cl_pred_st.max_charge = chg_err;
+
+			if (xy_err == 0 && ez == 0 && ang_err == 0 && mom_err == 0 && drift_err == 0 && chg_err == 0)
+			{
+				cl_pred_st.exact++;
+			}
+			else
+			{
+				cl_pred_st.mismatches++;
+				if (cl_pred_st.mismatches <= 15)
+				{
+					CONS_Printf("[CL_PRED_SELFTEST] MISMATCH lt=%u H=%u dx=%d dy=%d dz=%d dang=%u dmx=%d dmy=%d dmz=%d ddrift=%d dchg=%d (spd=%d drift=%d chg=%d)\n",
+						leveltime, horizon,
+						pred_mo.x - p->mo->x, pred_mo.y - p->mo->y, pred_mo.z - p->mo->z,
+						ang_err,
+						pred_mo.momx - p->mo->momx, pred_mo.momy - p->mo->momy, pred_mo.momz - p->mo->momz,
+						(int32_t)pred_p.drift - (int32_t)p->drift,
+						(int32_t)pred_p.driftcharge - (int32_t)p->driftcharge,
+						p->speed >> FRACBITS, p->drift, p->driftcharge);
+				}
+			}
+		}
+	}
+
+	if ((leveltime % TICRATE) == 0)
+	{
+		CONS_Printf("[CL_PRED_SELFTEST] lt=%u H=%u samples=%u exact=%u mis=%u max_xy=%d max_z=%d max_ang=%u max_mom=%d max_drift=%d max_chg=%d rng_viol=%u\n",
+			leveltime, horizon,
+			cl_pred_st.samples, cl_pred_st.exact, cl_pred_st.mismatches,
+			cl_pred_st.max_xy, cl_pred_st.max_z, cl_pred_st.max_ang,
+			cl_pred_st.max_mom, cl_pred_st.max_drift, cl_pred_st.max_charge,
+			cl_pred.rng_violations);
 	}
 }
 
@@ -843,9 +1219,29 @@ dboolean CL_PredIsProtoActive(void)
 	return cl_pred.proto_active;
 }
 
+dboolean CL_PredHasShadow(void)
+{
+	return cl_pred.shadow_valid;
+}
+
+const player_t *CL_PredGetShadowPlayer(void)
+{
+	return cl_pred.shadow_valid ? &cl_pred.shadow_player : NULL;
+}
+
+const mobj_t *CL_PredGetShadowMobj(void)
+{
+	return cl_pred.shadow_valid ? &cl_pred.shadow_mo : NULL;
+}
+
 uint32_t CL_PredGetQueueLen(void)
 {
 	return cl_pred.queue_len;
+}
+
+uint32_t CL_PredGetPredictedTics(void)
+{
+	return cl_pred.predicted_tics;
 }
 
 const cl_pred_cmd_t *CL_PredGetQueueEntry(uint32_t idx)
@@ -863,6 +1259,21 @@ uint32_t CL_PredGetLastSentSeq(void)
 uint32_t CL_PredGetConfirmedSeq(void)
 {
 	return cl_pred.confirmed_seq;
+}
+
+fixed_t CL_PredGetLastDeltaXY(void)
+{
+	return cl_pred.last_delta_xy;
+}
+
+fixed_t CL_PredGetLastDeltaZ(void)
+{
+	return cl_pred.last_delta_z;
+}
+
+angle_t CL_PredGetLastDeltaAngle(void)
+{
+	return cl_pred.last_delta_angle;
 }
 
 static void Command_CLMovementStatus_f(void)
@@ -896,7 +1307,7 @@ static void Command_CLMovementStatus_f(void)
 	}
 	else
 	{
-		CONS_Printf("[CL_PRED] proto=%s cl_movement=%d maxtics=%d repeat=%d sent=%u conf=%u qlen=%u maxq=%u exact=%u fall=%u ackpkts=%u ovf=%u svunder=%u\n",
+		CONS_Printf("[CL_PRED] proto=%s cl_movement=%d maxtics=%d repeat=%d sent=%u conf=%u qlen=%u maxq=%u exact=%u fall=%u ackpkts=%u ovf=%u svunder=%u shadow=%d pred=%u dxy=%d dz=%d replays=%u rngv=%u\n",
 			cl_pred.proto_active ? "B" : "A",
 			cv_cl_movement.value,
 			cv_cl_movement_maxtics.value,
@@ -909,7 +1320,13 @@ static void Command_CLMovementStatus_f(void)
 			cl_pred.fallback_ack_ticks,
 			cl_pred.ack_packets_recv,
 			cl_pred.queue_overflows,
-			cl_pred.server_underrun_flags);
+			cl_pred.server_underrun_flags,
+			cl_pred.shadow_valid ? 1 : 0,
+			cl_pred.predicted_tics,
+			cl_pred.last_delta_xy >> FRACBITS,
+			cl_pred.last_delta_z >> FRACBITS,
+			cl_pred.shadow_replays,
+			cl_pred.rng_violations);
 	}
 }
 
@@ -927,6 +1344,7 @@ void CL_PredRegisterVars(void)
 	CV_RegisterVar(&cv_cl_netrepeatinput);
 	CV_RegisterVar(&cv_cl_movement_proto);
 	CV_RegisterVar(&cv_cl_movement_debug);
+	CV_RegisterVar(&cv_cl_movement_selftest);
 
 	COM_AddCommand("cl_movement_status", Command_CLMovementStatus_f);
 

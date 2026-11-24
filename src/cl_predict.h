@@ -24,6 +24,14 @@ extern "C" {
 
 #define CLPRED_QUEUE_CAP 32
 
+// Fast read-only prediction guard checked across physics / map / sound / Lua
+extern dboolean cl_pred_active_flag;
+
+static inline dboolean P_IsPredicting(void)
+{
+	return cl_pred_active_flag;
+}
+
 typedef struct cl_pred_cmd_s
 {
 	uint32_t seq;
@@ -39,6 +47,7 @@ extern consvar_t cv_cl_movement_smoothrate;
 extern consvar_t cv_cl_netrepeatinput;
 extern consvar_t cv_cl_movement_proto;
 extern consvar_t cv_cl_movement_debug;
+extern consvar_t cv_cl_movement_selftest;
 
 // Registration (called from D_ClientServerInit)
 void CL_PredRegisterVars(void);
@@ -67,12 +76,31 @@ void CL_PredBuildCmdPacket(dboolean mis, uint8_t client_tic, uint8_t resendfrom,
 	const consistancy_t *cons, size_t *out_packetsize);
 void CL_PredOnConfirmedTic(tic_t executed_tic, const ticcmd_t *confirmed_cmd);
 
-// Inspection helpers (used by Step 3 shadow replay & Step 4 HUD/debug)
+// ---- Step 3: Read-only shadow kart physics replay ----
+void CL_PredUpdateShadow(void);
+void CL_PredSelfTestOnTic(tic_t executed_tic, const ticcmd_t *raw_cmd);
+
+// Engine internal shadow-step entrypoints (called only while P_IsPredicting())
+struct sector_t;
+void P_PredPushMapState(void);
+void P_PredPopMapState(void);
+int32_t P_PredCollectTouchingSectors(mobj_t *thing, struct sector_t **out_sectors, int32_t max_sectors);
+void P_PredPlayerThink(player_t *player);
+void P_PredPlayerMobjThink(mobj_t *mobj);
+
+// Inspection helpers (used by Step 4 rendering / camera / HUD)
 dboolean CL_PredIsProtoActive(void);
+dboolean CL_PredHasShadow(void);
+const player_t *CL_PredGetShadowPlayer(void);
+const mobj_t *CL_PredGetShadowMobj(void);
 uint32_t CL_PredGetQueueLen(void);
+uint32_t CL_PredGetPredictedTics(void);
 const cl_pred_cmd_t *CL_PredGetQueueEntry(uint32_t idx);
 uint32_t CL_PredGetLastSentSeq(void);
 uint32_t CL_PredGetConfirmedSeq(void);
+fixed_t CL_PredGetLastDeltaXY(void);
+fixed_t CL_PredGetLastDeltaZ(void);
+angle_t CL_PredGetLastDeltaAngle(void);
 
 #ifdef __cplusplus
 } // extern "C"

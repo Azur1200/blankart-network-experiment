@@ -12,6 +12,7 @@
 /// \brief System-independent sound and music routines
 
 #include "doomdef.h"
+#include "cl_predict.h"
 #include "doomstat.h"
 #include "command.h"
 #include "g_game.h"
@@ -379,6 +380,9 @@ void S_StopSoundByID(void *origin, sfxenum_t sfx_id)
 {
 	int32_t cnum;
 
+	if (P_IsPredicting())
+		return;
+
 	// Sounds without origin can have multiple sources, they shouldn't
 	// be stopped by new sounds.
 	if (!origin)
@@ -525,7 +529,7 @@ void S_StartSoundAtVolumeEx(const void *origin_p, sfxenum_t sfx_id, int32_t volu
 	listener_t listener[MAXSPLITSCREENPLAYERS];
 	mobj_t *listenmobj[MAXSPLITSCREENPLAYERS];
 
-	if (S_SoundDisabled() || !sound_started)
+	if (P_IsPredicting() || S_SoundDisabled() || !sound_started)
 		return;
 
 	// Don't want a sound? Okay then...
@@ -733,7 +737,7 @@ void S_StartSoundAtVolumeEx(const void *origin_p, sfxenum_t sfx_id, int32_t volu
 
 void S_StartSound(const void *origin, sfxenum_t sfx_id)
 {
-	if (S_SoundDisabled())
+	if (P_IsPredicting() || S_SoundDisabled())
 		return;
 
 	// the volume is handled 8 bits
@@ -743,6 +747,9 @@ void S_StartSound(const void *origin, sfxenum_t sfx_id)
 void S_StopSound(void *origin)
 {
 	int32_t cnum;
+
+	if (P_IsPredicting())
+		return;
 
 	// Sounds without origin can have multiple sources, they shouldn't
 	// be stopped by new sounds.

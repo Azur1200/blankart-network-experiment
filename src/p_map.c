@@ -14,6 +14,7 @@
 ///	Shooting and aiming
 
 #include "doomdef.h"
+#include "cl_predict.h"
 #include "g_game.h"
 #include "m_bbox.h"
 #include "m_random.h"
@@ -1976,6 +1977,7 @@ static BlockItReturn_t PIT_CheckLine(line_t *ld)
 
 	// this line is out of the if so upper and lower textures can be hit by a splat
 
+	if (!P_IsPredicting())
 	{
 		uint8_t shouldCollide = LUA_HookMobjLineCollide(g_tm.thing, ld); // checks hook for thing's type
 		if (P_MobjWasRemoved(g_tm.thing))
@@ -2086,23 +2088,26 @@ static BlockItReturn_t PIT_CheckLine(line_t *ld)
 		g_tm.dropoffz = open.lowfloor;
 
 	// we've crossed the line
-	if (P_SpecialIsLinedefCrossType(ld))
+	if (!P_IsPredicting())
 	{
-		add_spechit(ld);
-	}
-	else if (P_IsLineTripWire(ld))
-	{
-		fixed_t textop, texbottom;
-
-		P_GetTripwireTopBottom(ld, g_tm.x, g_tm.y,
-				&textop, &texbottom);
-
-		/* The effect handling is done later but it won't
-			know the height values anymore. So don't even add
-			this line to the list unless this thing clips the
-			tripwire's midtexture. */
-		if (g_tm.thing->z <= textop && thingtop >= texbottom)
+		if (P_SpecialIsLinedefCrossType(ld))
+		{
 			add_spechit(ld);
+		}
+		else if (P_IsLineTripWire(ld))
+		{
+			fixed_t textop, texbottom;
+
+			P_GetTripwireTopBottom(ld, g_tm.x, g_tm.y,
+					&textop, &texbottom);
+
+			/* The effect handling is done later but it won't
+				know the height values anymore. So don't even add
+				this line to the list unless this thing clips the
+				tripwire's midtexture. */
+			if (g_tm.thing->z <= textop && thingtop >= texbottom)
+				add_spechit(ld);
+		}
 	}
 
 	return BMIT_CONTINUE;
@@ -2154,7 +2159,8 @@ dboolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *r
 	subsector_t *newsubsec;
 	dboolean blockval = true;
 
-	ps_checkposition_calls.value.i++;
+	if (!P_IsPredicting())
+		ps_checkposition_calls.value.i++;
 
 	I_Assert(thing != NULL);
 #ifdef PARANOIA
@@ -2424,7 +2430,7 @@ dboolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *r
 
 	// MF_NOCLIPTHING: used by camera to not be blocked by things
 	// Respawning things should also be intangible to other things
-	if (!(thing->flags & MF_NOCLIPTHING))
+	if (!P_IsPredicting() && !(thing->flags & MF_NOCLIPTHING))
 	{
 		for (bx = xl; bx <= xh; bx++)
 		{
@@ -2450,7 +2456,7 @@ dboolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *r
 	// even for checkposition/teleportmove calls), while still letting us pass K_KartBouncing's
 	// result back via P_TryMove, so you slide off of solid mobjs, rather than clipping inside or
 	// getting stuck or bouncing multiple times... you get the idea.
-	if (!P_MobjWasRemoved(g_tm.hitthing))
+	if (!P_IsPredicting() && !P_MobjWasRemoved(g_tm.hitthing))
 	{
 		mobj_t *mo1 = thing, *mo2 = g_tm.hitthing;
 		dboolean stomp = false;
@@ -3367,7 +3373,7 @@ dboolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, dboolean allowdropoff, T
 		{
 			K_UpdateMobjTerrain(thing, g_tm.floorpic);
 
-			if (g_tm.floorrover)
+			if (!P_IsPredicting() && g_tm.floorrover)
 			{
 				sector_t* floorsector = &sectors[g_tm.floorrover->secnum];
 
@@ -3399,7 +3405,7 @@ dboolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, dboolean allowdropoff, T
 		{
 			K_UpdateMobjTerrain(thing, g_tm.ceilingpic);
 
-			if (g_tm.ceilingrover)
+			if (!P_IsPredicting() && g_tm.ceilingrover)
 			{
 				sector_t* ceilingsector = &sectors[g_tm.ceilingrover->secnum];
 
@@ -3444,24 +3450,27 @@ dboolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y, dboolean allowdropoff, T
 
 	P_SetThingPosition(thing);
 
-	P_CheckSectorTransitionalEffects(thing, oldsector, startingonground);
-
-	// remove any duplicates that may be in spechitint
-	spechitint_removedups();
-
-	// handle any of the special lines that were crossed
-	if (!(thing->flags & (MF_NOCLIP)))
+	if (!P_IsPredicting())
 	{
-		line_t *ld = NULL;
-		int32_t side = 0, oldside = 0;
-		while (numspechitint--)
+		P_CheckSectorTransitionalEffects(thing, oldsector, startingonground);
+
+		// remove any duplicates that may be in spechitint
+		spechitint_removedups();
+
+		// handle any of the special lines that were crossed
+		if (!(thing->flags & (MF_NOCLIP)))
 		{
-			ld = &lines[spechitint[numspechitint]];
-			side = P_PointOnLineSide(thing->x, thing->y, ld);
-			oldside = P_PointOnLineSide(oldx, oldy, ld);
-			if (side != oldside)
+			line_t *ld = NULL;
+			int32_t side = 0, oldside = 0;
+			while (numspechitint--)
 			{
-				P_CrossSpecialLine(ld, oldside, thing);
+				ld = &lines[spechitint[numspechitint]];
+				side = P_PointOnLineSide(thing->x, thing->y, ld);
+				oldside = P_PointOnLineSide(oldx, oldy, ld);
+				if (side != oldside)
+				{
+					P_CrossSpecialLine(ld, oldside, thing);
+				}
 			}
 		}
 	}
@@ -4269,7 +4278,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 
 	// If Lua says we can't bump this wall, DON'T bump it
 	// ShouldBounceWall, like Neptune, assumes the scripter knows exactly what they're doing...
-	if (!LUA_HookShouldBounceWall(mo->player, result->line, slideline, tripwire))
+	if (!P_IsPredicting() && !LUA_HookShouldBounceWall(mo->player, result->line, slideline, tripwire))
 		return;
 
 	mmomx = mo->player->rmomx;
@@ -4299,7 +4308,8 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 		}
 
 		// Regardless of bumpspark, tell bots to stop drifting if they bonk a wall.
-		K_BotSetDriftState(mo->player, DRIFTSTATE_AUTO, TICRATE);
+		if (!P_IsPredicting())
+			K_BotSetDriftState(mo->player, DRIFTSTATE_AUTO, TICRATE);
 
 		if (!cv_kartbumpspring.value || (modeattacking != ATTACKING_NONE && G_CompatLevel(0x000A)))
 		{
@@ -4312,7 +4322,7 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	int32_t bump_penalty = 1;
 	dboolean dontpenalize = false;
 	// Let Lua do its thing or overwrite if it wants to.
-	if (LUA_HookPlayerBounceWall(mo->player, result->line, slideline, tripwire))
+	if (!P_IsPredicting() && LUA_HookPlayerBounceWall(mo->player, result->line, slideline, tripwire))
 	{
 		// If Lua says "no", this is an unconditional slide
 		// Yes, even for tripwires! (I'm sorry, Toaster...)
@@ -4323,7 +4333,8 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 	if (tripwire)
 	{
 		// TRIPWIRE CANNOT BE MADE NONBOUNCY
-		K_ApplyTripWire(mo->player, TRIPSTATE_BLOCKED);
+		if (!P_IsPredicting())
+			K_ApplyTripWire(mo->player, TRIPSTATE_BLOCKED);
 
 		// Running into a tripwire will cost you double!
 		bump_penalty = 2;
@@ -4347,7 +4358,8 @@ static void P_BouncePlayerMove(mobj_t *mo, TryMoveResult_t *result)
 			P_ClipAABBMoveToLine(result->line); // clip the moves
 		}
 
-		K_SpawnBumpEffect(mo);
+		if (!P_IsPredicting())
+			K_SpawnBumpEffect(mo);
 	}
 
 	/*if (mo->health <= 0)
@@ -5532,4 +5544,117 @@ P_VeryBottomOfFOF (ffloor_t *rover)
 		return (*rover->b_slope)->lowz;
 	else
 		return *rover->bottomheight;
+}
+
+// =========================================================================
+// Read-only client movement prediction map-state save/restore
+// =========================================================================
+
+static tm_t pred_saved_tm;
+static size_t pred_saved_numspechit;
+static size_t pred_saved_numspechitint;
+static mobj_t *pred_saved_slidemo;
+static fixed_t pred_saved_tmxmove;
+static fixed_t pred_saved_tmymove;
+
+void P_PredPushMapState(void)
+{
+	pred_saved_tm = g_tm;
+	pred_saved_numspechit = numspechit;
+	pred_saved_numspechitint = numspechitint;
+	pred_saved_slidemo = slidemo;
+	pred_saved_tmxmove = tmxmove;
+	pred_saved_tmymove = tmymove;
+
+	// Clear scratch map state without modifying any real mobj refcounts
+	memset(&g_tm, 0, sizeof(g_tm));
+	numspechit = 0;
+	numspechitint = 0;
+	slidemo = NULL;
+	tmxmove = 0;
+	tmymove = 0;
+}
+
+void P_PredPopMapState(void)
+{
+	g_tm = pred_saved_tm;
+	numspechit = pred_saved_numspechit;
+	numspechitint = pred_saved_numspechitint;
+	slidemo = pred_saved_slidemo;
+	tmxmove = pred_saved_tmxmove;
+	tmymove = pred_saved_tmymove;
+}
+
+static sector_t **pred_sec_buf = NULL;
+static int32_t pred_sec_count = 0;
+static int32_t pred_sec_max = 0;
+static fixed_t pred_sec_bbox[4];
+
+static void P_PredAddSectorUnique(sector_t *sec)
+{
+	int32_t i;
+	if (!sec || pred_sec_count >= pred_sec_max)
+		return;
+	for (i = 0; i < pred_sec_count; i++)
+	{
+		if (pred_sec_buf[i] == sec)
+			return;
+	}
+	pred_sec_buf[pred_sec_count++] = sec;
+}
+
+static BlockItReturn_t PIT_PredCollectSectors(line_t *ld)
+{
+	if (pred_sec_bbox[BOXRIGHT] <= ld->bbox[BOXLEFT] ||
+		pred_sec_bbox[BOXLEFT] >= ld->bbox[BOXRIGHT] ||
+		pred_sec_bbox[BOXTOP] <= ld->bbox[BOXBOTTOM] ||
+		pred_sec_bbox[BOXBOTTOM] >= ld->bbox[BOXTOP])
+		return BMIT_CONTINUE;
+
+	if (P_BoxOnLineSide(pred_sec_bbox, ld) != -1)
+		return BMIT_CONTINUE;
+
+	if (ld->polyobj)
+		return BMIT_CONTINUE;
+
+	P_PredAddSectorUnique(ld->frontsector);
+	if (ld->backsector)
+		P_PredAddSectorUnique(ld->backsector);
+
+	return BMIT_CONTINUE;
+}
+
+int32_t P_PredCollectTouchingSectors(mobj_t *thing, sector_t **out_sectors, int32_t max_sectors)
+{
+	int32_t xl, xh, yl, yh, bx, by;
+
+	if (!thing || !out_sectors || max_sectors <= 0)
+		return 0;
+
+	pred_sec_buf = out_sectors;
+	pred_sec_count = 0;
+	pred_sec_max = max_sectors;
+
+	pred_sec_bbox[BOXTOP] = thing->y + thing->radius;
+	pred_sec_bbox[BOXBOTTOM] = thing->y - thing->radius;
+	pred_sec_bbox[BOXRIGHT] = thing->x + thing->radius;
+	pred_sec_bbox[BOXLEFT] = thing->x - thing->radius;
+
+	validcount++;
+
+	xl = (unsigned)(pred_sec_bbox[BOXLEFT] - bmaporgx) >> MAPBLOCKSHIFT;
+	xh = (unsigned)(pred_sec_bbox[BOXRIGHT] - bmaporgx) >> MAPBLOCKSHIFT;
+	yl = (unsigned)(pred_sec_bbox[BOXBOTTOM] - bmaporgy) >> MAPBLOCKSHIFT;
+	yh = (unsigned)(pred_sec_bbox[BOXTOP] - bmaporgy) >> MAPBLOCKSHIFT;
+
+	BMBOUNDFIX(xl, xh, yl, yh);
+
+	for (bx = xl; bx <= xh; bx++)
+		for (by = yl; by <= yh; by++)
+			P_BlockLinesIterator(bx, by, PIT_PredCollectSectors);
+
+	if (thing->subsector && thing->subsector->sector)
+		P_PredAddSectorUnique(thing->subsector->sector);
+
+	return pred_sec_count;
 }

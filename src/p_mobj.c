@@ -18,6 +18,7 @@
 #include "dehacked.h"
 #include "deh_tables.h"
 #include "doomdef.h"
+#include "cl_predict.h"
 #include "doomstat.h"
 #include "doomtype.h"
 #include "g_game.h"
@@ -339,7 +340,7 @@ dboolean P_SetPlayerMobjState(mobj_t *mobj, statenum_t state)
 			}
 			else if (mobj->sprite2 != spr2)
 			{
-				if ((st->frame & FF_SPR2MIDSTART) && numframes && P_RandomChance(PR_RANDOMANIM, FRACUNIT/2))
+				if ((st->frame & FF_SPR2MIDSTART) && numframes && !P_IsPredicting() && P_RandomChance(PR_RANDOMANIM, FRACUNIT/2))
 					frame = numframes/2;
 				else
 					frame = 0;
@@ -379,7 +380,7 @@ dboolean P_SetPlayerMobjState(mobj_t *mobj, statenum_t state)
 		// Modified handling.
 		// Call action functions when the state is set
 
-		if (st->action)
+		if (st->action && !P_IsPredicting())
 		{
 			var1 = st->var1;
 			var2 = st->var2;
@@ -465,7 +466,7 @@ dboolean P_SetMobjState(mobj_t *mobj, statenum_t state)
 			}
 			else if (mobj->sprite2 != spr2)
 			{
-				if ((st->frame & FF_SPR2MIDSTART) && numframes && P_RandomChance(PR_RANDOMANIM, FRACUNIT/2))
+				if ((st->frame & FF_SPR2MIDSTART) && numframes && !P_IsPredicting() && P_RandomChance(PR_RANDOMANIM, FRACUNIT/2))
 					frame = numframes/2;
 				else
 					frame = 0;
@@ -503,7 +504,7 @@ dboolean P_SetMobjState(mobj_t *mobj, statenum_t state)
 		// Modified handling.
 		// Call action functions when the state is set
 
-		if (st->action)
+		if (st->action && !P_IsPredicting())
 		{
 			var1 = st->var1;
 			var2 = st->var2;
@@ -1684,15 +1685,18 @@ void P_XYMovement(mobj_t *mo)
 		// blocked move
 		moved = false;
 
-		if (LUA_HookMobjMoveBlocked(mo, result.mo, result.line))
+		if (!P_IsPredicting())
 		{
-			if (P_MobjWasRemoved(mo))
+			if (LUA_HookMobjMoveBlocked(mo, result.mo, result.line))
+			{
+				if (P_MobjWasRemoved(mo))
+					return;
+			}
+			else if (P_MobjWasRemoved(mo))
 				return;
-		}
-		else if (P_MobjWasRemoved(mo))
-			return;
 
-		P_PushSpecialLine(result.line, mo);
+			P_PushSpecialLine(result.line, mo);
+		}
 
 		//{ SRB2kart - Jawz
 		if (mo->type == MT_JAWZ || mo->type == MT_JAWZ_DUD)
@@ -1901,7 +1905,7 @@ void P_XYMovement(mobj_t *mo)
 	if (P_MobjWasRemoved(mo)) // MF_SPECIAL touched a player! O_o;;
 		return;
 
-	if (moved == true)
+	if (moved == true && !P_IsPredicting())
 	{
 		// TERRAIN footstep effects.
 		K_HandleFootstepParticles(mo);
@@ -2951,7 +2955,8 @@ void P_PlayerZMovement(mobj_t *mo)
 			mo->eflags |= MFE_JUSTHITFLOOR; // Spin Attack
 
 			clipmomz = P_PlayerHitFloor(mo->player, true);
-			P_PlayerPolyObjectZMovement(mo);
+			if (!P_IsPredicting())
+				P_PlayerPolyObjectZMovement(mo);
 
 			if (clipmomz)
 			{
@@ -3006,14 +3011,15 @@ void P_PlayerZMovement(mobj_t *mo)
 
 		if (P_MobjFlip(mo)*mo->momz > 0)
 		{
-			if (CheckForMarioBlocks)
+			if (CheckForMarioBlocks && !P_IsPredicting())
 				P_CheckMarioBlocks(mo);
 
 			mo->momz = 0;
 		}
 	}
 
-	P_CheckSectorTransitionalEffects(mo, mo->subsector->sector, wasonground);
+	if (!P_IsPredicting())
+		P_CheckSectorTransitionalEffects(mo, mo->subsector->sector, wasonground);
 }
 
 dboolean P_SceneryZMovement(mobj_t *mo)
@@ -3414,7 +3420,7 @@ void P_MobjCheckWater(mobj_t *mobj)
 		return;
 	}
 
-	if (mobj->flags & MF_APPLYTERRAIN)
+	if ((mobj->flags & MF_APPLYTERRAIN) && !P_IsPredicting())
 	{
 		K_SpawnWaterTrail(mobj);
 	}
@@ -3466,6 +3472,7 @@ void P_MobjCheckWater(mobj_t *mobj)
 		}
 
 		// Time to spawn the bubbles!
+		if (!P_IsPredicting())
 		{
 			int32_t i;
 			int32_t bubblecount;
@@ -3558,22 +3565,25 @@ void P_MobjCheckWater(mobj_t *mobj)
 			if (splashValid == true)
 			{
 				// Spawn a splash
-				mobj_t *splish;
-				mobjtype_t splishtype = (mobj->eflags & MFE_TOUCHLAVA) ? MT_LAVASPLISH : MT_SPLISH;
-
-				if (mobj->eflags & MFE_VERTICALFLIP)
+				if (!P_IsPredicting())
 				{
-					splish = P_SpawnMobj(mobj->x, mobj->y, waterZ - FixedMul(mobjinfo[splishtype].height, mobj->scale), splishtype);
-					splish->flags2 |= MF2_OBJECTFLIP;
-					splish->eflags |= MFE_VERTICALFLIP;
-				}
-				else
-				{
-					splish = P_SpawnMobj(mobj->x, mobj->y, waterZ, splishtype);
-				}
+					mobj_t *splish;
+					mobjtype_t splishtype = (mobj->eflags & MFE_TOUCHLAVA) ? MT_LAVASPLISH : MT_SPLISH;
 
-				splish->destscale = mobj->scale;
-				P_SetScale(splish, mobj->scale);
+					if (mobj->eflags & MFE_VERTICALFLIP)
+					{
+						splish = P_SpawnMobj(mobj->x, mobj->y, waterZ - FixedMul(mobjinfo[splishtype].height, mobj->scale), splishtype);
+						splish->flags2 |= MF2_OBJECTFLIP;
+						splish->eflags |= MFE_VERTICALFLIP;
+					}
+					else
+					{
+						splish = P_SpawnMobj(mobj->x, mobj->y, waterZ, splishtype);
+					}
+
+					splish->destscale = mobj->scale;
+					P_SetScale(splish, mobj->scale);
+				}
 
 				// skipping stone!
 				if (p && K_CheckWaterskipLockout(p)
@@ -3600,7 +3610,7 @@ void P_MobjCheckWater(mobj_t *mobj)
 		}
 		else if (P_MobjFlip(mobj) * mobj->momz > 0)
 		{
-			if (splashValid == true && !(mobj->eflags & MFE_UNDERWATER)) // underwater check to prevent splashes on opposite side
+			if (splashValid == true && !(mobj->eflags & MFE_UNDERWATER) && !P_IsPredicting()) // underwater check to prevent splashes on opposite side
 			{
 				// Spawn a splash
 				mobj_t *splish;
@@ -4042,6 +4052,71 @@ static void P_PlayerMobjThinker(mobj_t *mobj)
 
 animonly:
 	P_CyclePlayerMobjState(mobj);
+}
+
+static void P_MobjScaleThink(mobj_t *mobj);
+
+//
+// P_PredPlayerMobjThink
+//
+// Read-only client movement prediction step mirroring P_MobjThinker + P_PlayerMobjThinker
+// without world-mutating triggers, Lua hooks, pickups, or VFX spawns.
+//
+void P_PredPlayerMobjThink(mobj_t *mobj)
+{
+	I_Assert(P_IsPredicting());
+	I_Assert(mobj != NULL);
+	I_Assert(mobj->player != NULL);
+
+	mobj->mobjlifetime++;
+
+	if (mobj->flags & MF_NOTHINK)
+		return;
+
+	mobj->eflags &= ~(MFE_PUSHED|MFE_SPRUNG|MFE_JUSTBOUNCEDWALL|MFE_SLOPELAUNCHED|MFE_ALREADYHIT);
+	g_tm.floorthing = NULL;
+	g_tm.hitthing = NULL;
+
+	if (mobj->scale != mobj->destscale)
+	{
+		P_MobjScaleThink(mobj);
+	}
+
+	if (mobj->bubbleplowforget)
+	{
+		mobj->bubbleplowforget--;
+	}
+
+	P_MobjCheckWater(mobj);
+
+	P_ButteredSlope(mobj);
+
+	mobj->eflags &= ~MFE_JUSTSTEPPEDDOWN;
+
+	P_CheckGravity(mobj, false);
+
+	if (mobj->momx || mobj->momy)
+	{
+		P_XYMovement(mobj);
+	}
+	else
+	{
+		P_TryMove(mobj, mobj->x, mobj->y, true, NULL);
+	}
+
+	P_UpdatePitchRollFromSlope(mobj, mobj->standingslope);
+
+	if (!(mobj->eflags & MFE_ONGROUND) || mobj->momz
+		|| ((mobj->eflags & MFE_VERTICALFLIP) && mobj->z + mobj->height != mobj->ceilingz)
+		|| (!(mobj->eflags & MFE_VERTICALFLIP) && mobj->z != mobj->floorz)
+		|| P_IsObjectInGoop(mobj))
+	{
+		P_PlayerZMovement(mobj);
+	}
+	else
+	{
+		mobj->eflags &= ~MFE_JUSTHITFLOOR;
+	}
 }
 
 void P_CalculatePrecipFloor(precipmobj_t *mobj)
@@ -6339,12 +6414,12 @@ void P_SetScale2(mobj_t *mobj, fixed_t newscale, dboolean compat)
 	if (!mobj)
 		return;
 
-	if (mobj->precip || !(mobj->flags & MF_NOBLOCKMAP))
+	if (!P_IsPredicting() && (mobj->precip || !(mobj->flags & MF_NOBLOCKMAP)))
 		P_UnsetBlockmapEntry(mobj);
 
 	oldscale = mobj->scale; //keep for adjusting stuff below
 
-	if (LUA_HookMobjScaleChange(mobj, newscale, oldscale) || P_MobjWasRemoved(mobj))
+	if (!P_IsPredicting() && (LUA_HookMobjScaleChange(mobj, newscale, oldscale) || P_MobjWasRemoved(mobj)))
 		return;
 
 	mobj->scale = newscale;
@@ -6364,11 +6439,13 @@ void P_SetScale2(mobj_t *mobj, fixed_t newscale, dboolean compat)
 
 	if (player)
 	{
-		G_GhostAddScale((int32_t) (player - players), newscale);
+		if (!P_IsPredicting())
+			G_GhostAddScale((int32_t) (player - players), newscale);
 		player->viewheight = FixedMul(FixedDiv(player->viewheight, oldscale), newscale); // Nonono don't calculate viewheight elsewhere, this is the best place for it!
 	}
 
-	P_SetBlockmapEntry(mobj, mobj->precip ? precipblocklinks : blocklinks);
+	if (!P_IsPredicting())
+		P_SetBlockmapEntry(mobj, mobj->precip ? precipblocklinks : blocklinks);
 }
 
 void P_Attract(mobj_t *source, mobj_t *dest, dboolean nightsgrab) // Home in on your target
@@ -11617,6 +11694,12 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 	state_t *st;
 	mobj_t *mobj;
 
+#ifdef PARANOIA
+	if (P_IsPredicting())
+		CONS_Printf("[CL_PRED] Unexpected P_SpawnMobj(type=%d) while predicting!\n", (int)type);
+	I_Assert(!P_IsPredicting());
+#endif
+
 	if (type == MT_NULL)
 	{
 #if 0
@@ -12323,6 +12406,11 @@ size_t iquehead = 0, iquetail = 0;
 #endif
 void P_RemoveMobj(mobj_t *mobj)
 {
+#ifdef PARANOIA
+	if (P_IsPredicting())
+		CONS_Printf("[CL_PRED] Unexpected P_RemoveMobj(type=%d) while predicting!\n", mobj ? (int)mobj->type : -1);
+	I_Assert(!P_IsPredicting());
+#endif
 	I_Assert(mobj != NULL);
 	if (P_MobjWasRemoved(mobj))
 		return; // something already removing this mobj.

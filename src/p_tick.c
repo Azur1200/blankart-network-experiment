@@ -12,6 +12,7 @@
 /// \brief Archiving: SaveGame I/O, Thinker, Ticker
 
 #include "d_think.h"
+#include "cl_predict.h"
 #include "doomstat.h"
 #include "g_game.h"
 #include "g_input.h"
@@ -433,6 +434,12 @@ mobj_t *P_SetTarget2(mobj_t **mop, mobj_t *targ
 #endif
 )
 {
+	if (P_IsPredicting())
+	{
+		*mop = targ;
+		return targ;
+	}
+
 	if (*mop) // If there was a target already, decrease its refcount
 	{
 		(*mop)->thinker.references--;

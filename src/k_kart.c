@@ -28,6 +28,7 @@
 #include "k_pwrlv.h"
 #include "k_color.h"
 #include "doomdef.h"
+#include "cl_predict.h"
 #include "hu_stuff.h"
 #include "g_game.h"
 #include "m_fixed.h"
@@ -1274,76 +1275,114 @@ dboolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, dboolean bounce, dboolean 
 
 	\return	dboolean
 */
+static dboolean K_CheckOffroadInSector(mobj_t *mo, sector_t *s, fixed_t *out_offroad)
+{
+	sector_t *s2;
+	ffloor_t *rover;
+	fixed_t flr, cel;
+
+	if (!s)
+		return false;
+
+	flr = P_MobjFloorZ(mo, s, s, mo->x, mo->y, NULL, false, true);
+	cel = P_MobjCeilingZ(mo, s, s, mo->x, mo->y, NULL, true, true);
+
+	if ( ((s->flags & MSF_FLIPSPECIAL_FLOOR) && mo->z == flr)
+		|| ((mo->eflags & MFE_VERTICALFLIP && (s->flags & MSF_FLIPSPECIAL_CEILING) && (mo->z + mo->height) == cel)) )
+	{
+		if (mapnamespace == MNS_SRB2KART && s->offroad == 0)
+		{
+			int32_t i;
+			for (i = 2; i < 5; i++)
+				if (GETSECSPECIAL(s->special, 1) == i)
+				{
+					*out_offroad = (i-1)*FRACUNIT;
+					return true;
+				}
+		}
+
+		*out_offroad = s->offroad;
+		return true;
+	}
+
+	for (rover = s->ffloors; rover; rover = rover->next)
+	{
+		if (!(rover->fofflags & FOF_EXISTS))
+			continue;
+
+		s2 = &sectors[rover->secnum];
+
+		flr = P_GetFOFBottomZ(mo, s, rover, mo->x, mo->y, NULL);
+		cel = P_GetFOFTopZ(mo, s, rover, mo->x, mo->y, NULL);
+
+		if ( ((s2->flags & MSF_FLIPSPECIAL_FLOOR) && mo->z == cel)
+			|| ((s2->flags & MSF_FLIPSPECIAL_CEILING) && (mo->z + mo->height) == flr) )
+		{
+			if (mapnamespace == MNS_SRB2KART && s->offroad == 0)
+			{
+				int32_t i;
+				for (i = 2; i < 5; i++)
+					if (GETSECSPECIAL(s->special, 1) == i)
+					{
+						*out_offroad = (i-1)*FRACUNIT;
+						return true;
+					}
+			}
+
+			*out_offroad = s2->offroad;
+			return true;
+		}
+	}
+
+	return false;
+}
+
 static fixed_t K_CheckOffroadCollide(mobj_t *mo)
 {
 	// Check for sectors in touching_sectorlist
 	msecnode_t *node;	// touching_sectorlist iter
-	sector_t *s;		// main sector shortcut
-	sector_t *s2;		// FOF sector shortcut
-	ffloor_t *rover;	// FOF
-
-	fixed_t flr;
-	fixed_t cel;	// floor & ceiling for height checks to make sure we're touching the offroad sector.
+	fixed_t offroad = 0;
 
 	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
+
+	if (P_IsPredicting())
+	{
+		// Shadow mobj is detached from touching_sectorlist; query all sectors
+		// overlapping its bounding box without mutating world sector lists.
+		// Mirror P_CreateSecNodeList's prepend-new-sector priority:
+		// - Entering offroad (player->offroad == 0): a newly touched offroad sector wins.
+		// - Exiting offroad (player->offroad > 0): a newly touched non-offroad sector wins.
+		sector_t *secs[32];
+		int32_t count = P_PredCollectTouchingSectors(mo, secs, 32);
+		int32_t i;
+		fixed_t best_offroad = 0;
+		dboolean saw_clear = false;
+
+		for (i = 0; i < count; i++)
+		{
+			fixed_t sec_off = 0;
+			if (K_CheckOffroadInSector(mo, secs[i], &sec_off))
+			{
+				if (sec_off > best_offroad)
+					best_offroad = sec_off;
+				if (sec_off == 0)
+					saw_clear = true;
+			}
+		}
+
+		if (mo->player && mo->player->offroad > 0 && saw_clear)
+			return 0;
+		return best_offroad;
+	}
 
 	for (node = mo->touching_sectorlist; node; node = node->m_sectorlist_next)
 	{
 		if (!node->m_sector)
 			break;	// shouldn't happen.
 
-		s = node->m_sector;
-		// 1: Check for the main sector, make sure we're on the floor of that sector and see if we can apply offroad.
-		// Make arbitrary Z checks because we want to check for 1 sector in particular, we don't want to affect the player if the offroad sector is way below them and they're lineriding a normal sector above.
-
-		flr = P_MobjFloorZ(mo, s, s, mo->x, mo->y, NULL, false, true);
-		cel = P_MobjCeilingZ(mo, s, s, mo->x, mo->y, NULL, true, true);	// get Z coords of both floors and ceilings for this sector (this accounts for slopes properly.)
-		// NOTE: we don't use P_GetZAt with our x/y directly because the mobj won't have the same height because of its hitbox on the slope. Complex garbage but tldr it doesn't work.
-
-		if ( ((s->flags & MSF_FLIPSPECIAL_FLOOR) && mo->z == flr)	// floor check
-			|| ((mo->eflags & MFE_VERTICALFLIP && (s->flags & MSF_FLIPSPECIAL_CEILING) && (mo->z + mo->height) == cel)) )	// ceiling check.
-		{
-			if (mapnamespace == MNS_SRB2KART && s->offroad == 0) // some maps remap offroad live so lets account for that.
-			{
-				int32_t i;
-				for (i = 2; i < 5; i++)	// check for sector special
-
-					if (GETSECSPECIAL(s->special, 1) == i)
-						return (i-1)*FRACUNIT;	// return offroad type
-			}
-
-			return s->offroad;
-		}
-
-		// 2: If we're here, we haven't found anything. So let's try looking for FOFs in the sectors using the same logic.
-		for (rover = s->ffloors; rover; rover = rover->next)
-		{
-			if (!(rover->fofflags & FOF_EXISTS))	// This FOF doesn't exist anymore.
-				continue;
-
-			s2 = &sectors[rover->secnum];	// makes things easier for us
-
-			flr = P_GetFOFBottomZ(mo, s, rover, mo->x, mo->y, NULL);
-			cel = P_GetFOFTopZ(mo, s, rover, mo->x, mo->y, NULL);	// Z coords for fof top/bottom.
-
-			// we will do essentially the same checks as above instead of bothering with top/bottom height of the FOF.
-			// Reminder that an FOF's floor is its bottom, silly!
-			if ( ((s2->flags & MSF_FLIPSPECIAL_FLOOR) && mo->z == cel)	// "floor" check
-				|| ((s2->flags & MSF_FLIPSPECIAL_CEILING) && (mo->z + mo->height) == flr) )	// "ceiling" check.
-			{
-				if (mapnamespace == MNS_SRB2KART && s->offroad == 0) // some maps remap offroad live so lets account for that.
-				{
-					int32_t i;
-					for (i = 2; i < 5; i++)	// check for sector special
-
-						if (GETSECSPECIAL(s->special, 1) == i)
-							return (i-1)*FRACUNIT;	// return offroad type
-				}
-
-				return s2->offroad;
-			}
-		}
+		if (K_CheckOffroadInSector(mo, node->m_sector, &offroad))
+			return offroad;
 	}
 
 	return 0; // couldn't find any offroad
@@ -4679,7 +4718,7 @@ void K_Player_CrashThinker(player_t *player)
 					S_StartSoundAtVolume(player->mo, sfx_s3kae, 192);
 					player->crash_rot += player->crashtimer * CRASH_TUMBLE_ROTBOUNCEDELTA * player->crash_side;
 
-					if (player->crashtimer)
+					if (player->crashtimer && !P_IsPredicting())
 					{
 						K_SpawnBumpEffect(player->mo);
 					}
@@ -4688,7 +4727,8 @@ void K_Player_CrashThinker(player_t *player)
 				{
 					S_StartSoundAtVolume(player->mo, sfx_s3k6f, 192);
 				}
-				K_SpawnWipeoutTrail(player->mo, true);
+				if (!P_IsPredicting())
+					K_SpawnWipeoutTrail(player->mo, true);
 			}
 			else
 			{
@@ -4755,7 +4795,8 @@ void K_RemoveGrowShrink(player_t *player)
 	player->growshrinktimer = 0;
 	player->growcancel = -1;
 
-	P_RestoreMusic(player);
+	if (!P_IsPredicting())
+		P_RestoreMusic(player);
 }
 
 void K_SquishPlayer(player_t *player, mobj_t *inflictor, mobj_t *source)
@@ -6189,23 +6230,29 @@ void K_DoSneaker(player_t *player, int32_t type)
 	const fixed_t intendedboost = K_GetSneakerBoostSpeed();
 	const tic_t sneakerduration = (type == SNEAKERTYPE_WATERPANEL) ? waterpaneltime : sneakertime;
 
-	if (LUA_HookKartSneaker(player, type))
+	if (!P_IsPredicting() && LUA_HookKartSneaker(player, type))
 		return;
 
 	if (player->floorboost == 0 || player->floorboost == 3)
 	{
-		K_SneakerPanelStackSound(player, type);
-		K_SpawnDashDustRelease(player, false);
+		if (!P_IsPredicting())
+		{
+			K_SneakerPanelStackSound(player, type);
+			K_SpawnDashDustRelease(player, false);
+		}
 		if (intendedboost > player->speedboost)
 			player->karthud[khud_destboostcam] = FixedMul(FRACUNIT, FixedDiv((intendedboost - player->speedboost), intendedboost));
 
 	}
 
-	K_SneakerPanelEffect(player, type);
-
-	if (type != SNEAKERTYPE_PANEL && type != SNEAKERTYPE_WATERPANEL)
+	if (!P_IsPredicting())
 	{
-		K_PlayBoostTaunt(player->mo);
+		K_SneakerPanelEffect(player, type);
+
+		if (type != SNEAKERTYPE_PANEL && type != SNEAKERTYPE_WATERPANEL)
+		{
+			K_PlayBoostTaunt(player->mo);
+		}
 	}
 
 	player->sneakertimer = sneakerduration;
@@ -8003,7 +8050,8 @@ static void K_RaceStart(player_t *player)
 			}
 			else
 			{
-				K_SpawnDashDustRelease(player, false); // already handled for perfect boosts by K_DoSneaker
+				if (!P_IsPredicting())
+					K_SpawnDashDustRelease(player, false); // already handled for perfect boosts by K_DoSneaker
 				if ((!player->floorboost || player->floorboost == 3) && P_IsLocalPlayer(player))
 				{
 					if (player->boostcharge <= 40)
@@ -8354,7 +8402,8 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 	{
 		if ((player->airdropflags & PAF_AIRDROP_HEAVY))
 		{
-			P_PlayerRingBurst(player, CLAMP(player->rings, 0, 2));
+			if (!P_IsPredicting())
+				P_PlayerRingBurst(player, CLAMP(player->rings, 0, 2));
 
 			if (player->airdroptime > 1)
 			{
@@ -8422,21 +8471,23 @@ static void K_AirDrop(player_t *player, ticcmd_t *cmd)
 		player->mo->momx = FixedMul(player->mo->momx, FRACUNIT - FRACUNIT/300);
 		player->mo->momy = FixedMul(player->mo->momy, FRACUNIT - FRACUNIT/300);
 		player->mo->momz -= FixedMul((high ? 4 : 2)*gravity, mapobjectscale)*P_MobjFlip(player->mo);
-		K_SpawnFallLines(player, high);
+		if (!P_IsPredicting())
+			K_SpawnFallLines(player, high);
 
 		if (player->karthud[khud_heavydropcam] < TICRATE)
 			player->karthud[khud_heavydropcam]++;
 
-		if (!high)
+		if (!high && !P_IsPredicting())
 			K_SpawnAirdropTrail(player);
 		player->airdroptime++;
 	}
 	else if (player->airdropflags & PAF_AIRDROP_LIGHT)
 	{
 		player->mo->momz -= FixedMul(gravity, mapobjectscale)*P_MobjFlip(player->mo);
-		K_SpawnFallLines(player, false);
+		if (!P_IsPredicting())
+			K_SpawnFallLines(player, false);
 
-		if (leveltime & 1)
+		if ((leveltime & 1) && !P_IsPredicting())
 			K_SpawnAirdropTrail(player);
 		player->airdroptime++;
 	}
@@ -8536,7 +8587,8 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 
 	K_UpdateOffroad(player);
 	K_UpdateDashArea(player);
-	K_UpdateDraft(player);
+	if (!P_IsPredicting())
+		K_UpdateDraft(player);
 
 	if (player->offroad && K_ApplyOffroad(player) && !(cv_kartflame_offroadburn.value && player->flameoverheat))
 	{
@@ -8559,16 +8611,19 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->ranklog.timeoffroadtotal += Easing_InCubic(mowerfactor, 0, HIGHEST_OFFROADTIME_TO_ADD);
 	}
 
-	if (player->draftpower > 0)
+	if (!P_IsPredicting())
 	{
-		dboolean fulldraft = player->draftpower >= FRACUNIT;
-		// Draft lines
-		K_SpawnDraftSpeedLines(player, FixedMul(player->draftpower, mapobjectscale), fulldraft ? player->skincolor : SKINCOLOR_WHITE, !fulldraft);
+		if (player->draftpower > 0)
+		{
+			dboolean fulldraft = player->draftpower >= FRACUNIT;
+			// Draft lines
+			K_SpawnDraftSpeedLines(player, FixedMul(player->draftpower, mapobjectscale), fulldraft ? player->skincolor : SKINCOLOR_WHITE, !fulldraft);
+		}
+
+		K_UpdateEngineSounds(player); // Thanks, VAda!
+
+		Obj_DashRingPlayerThink(player);
 	}
-
-	K_UpdateEngineSounds(player); // Thanks, VAda!
-
-	Obj_DashRingPlayerThink(player);
 
 	// update boost angle if the damage doesn't lock our steering
 	if (!K_DamagePreventSidemove(player) && !player->wipeoutslow)
@@ -8585,52 +8640,58 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	{
 		if (player->dashpadcooldown) // Twinkle Circuit afterimages
 		{
-			mobj_t *ghost;
-			ghost = P_SpawnGhostMobj(player->mo);
-			ghost->fuse = player->dashpadcooldown+1;
-			ghost->momx = player->mo->momx / (player->dashpadcooldown+1);
-			ghost->momy = player->mo->momy / (player->dashpadcooldown+1);
-			ghost->momz = player->mo->momz / (player->dashpadcooldown+1);
+			if (!P_IsPredicting())
+			{
+				mobj_t *ghost;
+				ghost = P_SpawnGhostMobj(player->mo);
+				ghost->fuse = player->dashpadcooldown+1;
+				ghost->momx = player->mo->momx / (player->dashpadcooldown+1);
+				ghost->momy = player->mo->momy / (player->dashpadcooldown+1);
+				ghost->momz = player->mo->momz / (player->dashpadcooldown+1);
+			}
 			player->dashpadcooldown--;
 		}
 
-		if (player->speed > 0)
+		if (!P_IsPredicting())
 		{
-			// Speed lines
-			if (player->sneakertimer || player->ringboost
-				|| player->driftboost || player->startboost
-				|| player->recoverydash
-				|| player->walltransferboost
-				|| player->bubbleboost)
+			if (player->speed > 0)
 			{
-				K_SpawnNormalSpeedLines(player);
-			}
-
-			if (player->dashareapower)
-				K_SpawnDashAreaSpeedLines(player->mo);
-
-			// Could probably be moved somewhere else.
-			K_HandleFootstepParticles(player->mo);
-
-			if (P_IsObjectOnGround(player->mo))
-			{
-				if (player->tiregrease)
+				// Speed lines
+				if (player->sneakertimer || player->ringboost
+					|| player->driftboost || player->startboost
+					|| player->recoverydash
+					|| player->walltransferboost
+					|| player->bubbleboost)
 				{
-					K_TireGreaseEffect(player);
+					K_SpawnNormalSpeedLines(player);
 				}
 
-				// Draft dust
-				if (player->draftpower >= FRACUNIT)
+				if (player->dashareapower)
+					K_SpawnDashAreaSpeedLines(player->mo);
+
+				// Could probably be moved somewhere else.
+				K_HandleFootstepParticles(player->mo);
+
+				if (P_IsObjectOnGround(player->mo))
 				{
-					K_SpawnDraftDust(player->mo);
+					if (player->tiregrease)
+					{
+						K_TireGreaseEffect(player);
+					}
+
+					// Draft dust
+					if (player->draftpower >= FRACUNIT)
+					{
+						K_SpawnDraftDust(player->mo);
+					}
 				}
 			}
-		}
 
-		// Stacking Effect
-		if (stackingactive && player->numboosts > 1)
-		{
-			K_SpawnStackingEffect(player);
+			// Stacking Effect
+			if (stackingactive && player->numboosts > 1)
+			{
+				K_SpawnStackingEffect(player);
+			}
 		}
 	}
 
@@ -8739,7 +8800,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	else if (player->karmadelay > 0 && !P_PlayerInPain(player))
 	{
 		player->karmadelay--;
-		if (P_IsDisplayPlayer(player) && player->bumper <= 0 && player->karmadelay <= 0)
+		if (!P_IsPredicting() && P_IsDisplayPlayer(player) && player->bumper <= 0 && player->karmadelay <= 0)
 			comebackshowninfo = true; // client has already seen the message
 	}
 
@@ -8922,7 +8983,8 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->tripwireUnstuck > unstuckthreshold)
 	{
 		player->tripwireUnstuck = 0;
-		P_KillMobj(player->mo, NULL, NULL, DMG_INSTAKILL);
+		if (!P_IsPredicting())
+			P_KillMobj(player->mo, NULL, NULL, DMG_INSTAKILL);
 	}
 
 	if (player->tripwireUnstuck)
@@ -8932,8 +8994,11 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	{
 		player->bigwaypointgap--;
 		if (!player->bigwaypointgap)
-			P_KillMobj(player->mo, NULL, NULL, DMG_INSTAKILL);
-		else if (player->bigwaypointgap == AUTORESPAWN_THRESHOLD)
+		{
+			if (!P_IsPredicting())
+				P_KillMobj(player->mo, NULL, NULL, DMG_INSTAKILL);
+		}
+		else if (player->bigwaypointgap == AUTORESPAWN_THRESHOLD && !P_IsPredicting())
 		{
 			S_StartSound(player->mo, sfx_s26d);
 			if (player == &players[consoleplayer])
@@ -8981,13 +9046,16 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		uint8_t ringrate = 3 - min(2, player->superring / 20); // Used to consume fat stacks of cash faster.
 		if (player->nextringaward >= ringrate)
 		{
-			mobj_t *ring = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_RING);
-			ring->extravalue1 = 1; // Ring collect animation timer
-			ring->angle = player->mo->angle; // animation angle
-			P_SetTarget(&ring->target, player->mo); // toucher for thinker
+			if (!P_IsPredicting())
+			{
+				mobj_t *ring = P_SpawnMobj(player->mo->x, player->mo->y, player->mo->z, MT_RING);
+				ring->extravalue1 = 1; // Ring collect animation timer
+				ring->angle = player->mo->angle; // animation angle
+				P_SetTarget(&ring->target, player->mo); // toucher for thinker
+				if (player->superring == 1)
+					ring->cvmem = 1; // play caching when collected
+			}
 			player->pickuprings++;
-			if (player->superring == 1)
-				ring->cvmem = 1; // play caching when collected
 			player->nextringaward = 0;
 			player->superring--;
 		}
@@ -9011,7 +9079,8 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	if (player->bumpUnstuck > 30*5)
 	{
 		player->bumpUnstuck = 0;
-		P_KillMobj(player->mo, NULL, NULL, DMG_INSTAKILL);
+		if (!P_IsPredicting())
+			P_KillMobj(player->mo, NULL, NULL, DMG_INSTAKILL);
 	}
 	else if (player->bumpUnstuck && !player->squishedtimer)
 	{
@@ -9130,7 +9199,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		else
 		{
 			player->eggmanexplode--;
-			if (player->eggmanexplode <= 0)
+			if (player->eggmanexplode <= 0 && !P_IsPredicting())
 			{
 				mobj_t *eggsexplode;
 
@@ -9199,7 +9268,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		if (!S_SoundPlaying(player->mo, sfx_s3kd3l) && player->flamestore > 0)
 			S_StartSound(player->mo, sfx_s3kd3l);
 
-		if (player->flametimer == 0)
+		if (player->flametimer == 0 && !P_IsPredicting())
 			K_PopPlayerShield(player);
 	}
 	else
@@ -9207,7 +9276,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->flameoverheat = 0;
 		player->flameburnstop = 0;
 
-		if (player->flamestore)
+		if (player->flamestore && !P_IsPredicting())
 			K_FlameDashLeftoverSmoke(player->mo);
 	}
 
@@ -9232,26 +9301,29 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		}
 	}
 
-	// Respawn Checker
-	if (player->respawn)
-		K_RespawnChecker(player);
-
-	// Roulette Code
-	K_KartItemRoulette(player, cmd);
-
-	// Gain rings when roulette starts.
-	if (player->itemroulette > 0
-		&& player->previtemroulette == 0
-		&& player->roulettetype != KROULETTETYPE_EGGMAN)
+	if (!P_IsPredicting())
 	{
-		K_AwardScaledPlayerRings(player, ASR_ITEMBOX);
+		// Respawn Checker
+		if (player->respawn)
+			K_RespawnChecker(player);
+
+		// Roulette Code
+		K_KartItemRoulette(player, cmd);
+
+		// Gain rings when roulette starts.
+		if (player->itemroulette > 0
+			&& player->previtemroulette == 0
+			&& player->roulettetype != KROULETTETYPE_EGGMAN)
+		{
+			K_AwardScaledPlayerRings(player, ASR_ITEMBOX);
+		}
+
+		// set prev state for roulette gain effects
+		player->previtemroulette = player->itemroulette;
+
+		// Handle invincibility sfx
+		K_UpdateInvincibilitySounds(player); // Also thanks, VAda!
 	}
-
-	// set prev state for roulette gain effects
-	player->previtemroulette = player->itemroulette;
-
-	// Handle invincibility sfx
-	K_UpdateInvincibilitySounds(player); // Also thanks, VAda!
 
 	if (player->tripwireState != TRIPSTATE_NONE)
 	{
@@ -9263,7 +9335,8 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 		player->tripwireState = TRIPSTATE_NONE;
 	}
 
-	K_HandleDelayedHitByEm(player);
+	if (!P_IsPredicting())
+		K_HandleDelayedHitByEm(player);
 
 	// Squishing
 	// If a Grow player or a sector crushes you, get flattened instead of being killed.
@@ -9305,7 +9378,7 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	// Honk your horn. Beep beep!
 	const dboolean honking = ((cmd->buttons & BT_HORN) == BT_HORN);
 
-	if (honking)
+	if (honking && !P_IsPredicting())
 	{
 		K_HonkFollowerHorn(player);
 	}
@@ -9313,7 +9386,8 @@ void K_KartPlayerThink(player_t *player, ticcmd_t *cmd)
 	player->prevonground = P_IsObjectOnGround(player->mo);
 
 	// Update SPB timer...
-	K_UpdateSPBTimer();
+	if (!P_IsPredicting())
+		K_UpdateSPBTimer();
 	
 	if (player->karttilt)
 	{
@@ -11389,7 +11463,8 @@ static void K_KartDrift(player_t *player, dboolean onground)
 				S_StartSoundAtVolume(player->mo, sfx_s3k81, 160);
 
 			K_ApplyAirThrust(player, driftstage);
-			K_SpawnDriftEFX(player, driftstage, true);
+			if (!P_IsPredicting())
+				K_SpawnDriftEFX(player, driftstage, true);
 		}
 	}
 	else if (player->drift != -5 && player->drift != 5)
@@ -11442,7 +11517,8 @@ static void K_KartDrift(player_t *player, dboolean onground)
 
 			player->driftlevel = driftstage * 10; // * 10 to detect that this came from drift release
 
-			K_SpawnDriftEFX(player, driftstage, false);
+			if (!P_IsPredicting())
+				K_SpawnDriftEFX(player, driftstage, false);
 		}
 
 		// afterimage, when you release the drift
@@ -11549,7 +11625,7 @@ static void K_KartDrift(player_t *player, dboolean onground)
 	}
 
 	// Spawn Sparks regardless of size
-	if (!P_PlayerInPain(player) && (player->drift != 0 || player->airthrustdir != 0))
+	if (!P_IsPredicting() && !P_PlayerInPain(player) && (player->drift != 0 || player->airthrustdir != 0))
 	{
 		if (driftstage)
 			K_SpawnDriftSparks(player);
@@ -11591,7 +11667,8 @@ static void K_KartDrift(player_t *player, dboolean onground)
 	}
 	else if (K_Sliptiding(player))
 	{
-		K_SpawnAIZDust(player);
+		if (!P_IsPredicting())
+			K_SpawnAIZDust(player);
 
 		if (abs(player->aizdrifttilt) < ANGLE_22h)
 		{
@@ -11654,7 +11731,7 @@ static void K_KartDrift(player_t *player, dboolean onground)
 		|| !(buttons & BT_ACCELERATE))
 		&& P_IsObjectOnGround(player->mo))
 	{
-		if (!(player->pflags & PF_BRAKEDRIFT))
+		if (!(player->pflags & PF_BRAKEDRIFT) && !P_IsPredicting())
 			K_SpawnBrakeDriftSparks(player);
 		player->pflags |= PF_BRAKEDRIFT;
 	}
@@ -11701,17 +11778,20 @@ static void K_KartSlipdash(player_t *player, dboolean onground)
 		P_Thrust(player->mo, player->mo->angle, FixedMul(K_GetKartSpeed(player, false, false), 2*player->slipdashcharge/3));
 		K_DoBoost(player, (2*player->slipdashcharge/3)/2, 0, 0, false, false);
 
-		for (i = -1; i <= 1; i += 2)
+		if (!P_IsPredicting())
 		{
-			mobj_t *strat = P_SpawnMobjFromMobj(player->mo,
-				P_ReturnThrustX(NULL, player->mo->angle + ANGLE_67h*i, -20*player->mo->scale),
-				P_ReturnThrustY(NULL, player->mo->angle + ANGLE_67h*i, -20*player->mo->scale),
-				0, MT_AIZDRIFTSTRAT
-			);
-			strat->angle = player->mo->angle + ANGLE_67h*i;
-			P_SetScale(strat, FixedMul(player->slipdashcharge + FRACUNIT/4, mapobjectscale));
-			strat->destscale = strat->scale;
-			P_InstaThrust(strat, strat->angle, -8*mapobjectscale);
+			for (i = -1; i <= 1; i += 2)
+			{
+				mobj_t *strat = P_SpawnMobjFromMobj(player->mo,
+					P_ReturnThrustX(NULL, player->mo->angle + ANGLE_67h*i, -20*player->mo->scale),
+					P_ReturnThrustY(NULL, player->mo->angle + ANGLE_67h*i, -20*player->mo->scale),
+					0, MT_AIZDRIFTSTRAT
+				);
+				strat->angle = player->mo->angle + ANGLE_67h*i;
+				P_SetScale(strat, FixedMul(player->slipdashcharge + FRACUNIT/4, mapobjectscale));
+				strat->destscale = strat->scale;
+				P_InstaThrust(strat, strat->angle, -8*mapobjectscale);
+			}
 		}
 
 		if (driftbonus)
@@ -11727,7 +11807,7 @@ static void K_KartSlipdash(player_t *player, dboolean onground)
 	else
 		player->slipdashdir = 0;
 
-	if (player->slipdashcharge && leveltime & 1)
+	if (!P_IsPredicting() && player->slipdashcharge && leveltime & 1)
 	{
 		mobj_t *spark = P_SpawnMobjFromMobj(player->mo, 0, 0, -4*mapobjectscale, MT_DRIFTSPARK);
 		P_SetMobjState(spark, S_SLIPSPARK1);
@@ -11821,7 +11901,8 @@ static void K_RecoveryDash(player_t *player)
 				player->recoverydash = TICRATE;
 				player->flashing = 0;
 				S_StartSound(player->mo, sfx_s23c);
-				K_SpawnDashDustRelease(player, true);
+				if (!P_IsPredicting())
+					K_SpawnDashDustRelease(player, true);
 			}
 			player->recoverydashcharge = 0;
 			player->forcedtopspeed = 0;
@@ -11836,71 +11917,74 @@ static void K_RecoveryDash(player_t *player)
 			if (oldcharge < RECOVERYDASHCHARGETIME && player->recoverydashcharge >= RECOVERYDASHCHARGETIME)
 				S_StartSound(player->mo, sfx_s3ka2);
 
-			mobj_t *dust = K_SpawnWipeoutTrail(player->mo, !K_CanPanicRecoverySpin(player)
-			                                               && player->recoverydashcharge < RECOVERYDASHWIPETIME);
-
-			if (K_CanPanicRecoverySpin(player))
+			if (!P_IsPredicting())
 			{
-				dust->colorized = true;
-				dust->color = SKINCOLOR_KETCHUP;
-				if (!S_SoundPlaying(player->mo, sfx_s248))
-					S_StartSound(player->mo, sfx_s248);
-			}
+				mobj_t *dust = K_SpawnWipeoutTrail(player->mo, !K_CanPanicRecoverySpin(player)
+				                                               && player->recoverydashcharge < RECOVERYDASHWIPETIME);
 
-			if (player->recoverydashcharge < RECOVERYDASHCHARGETIME)
-			{
-				if (leveltime % 6 == 0)
+				if (K_CanPanicRecoverySpin(player))
 				{
-					S_StartSound(player->mo, sfx_s225);
+					dust->colorized = true;
+					dust->color = SKINCOLOR_KETCHUP;
+					if (!S_SoundPlaying(player->mo, sfx_s248))
+						S_StartSound(player->mo, sfx_s248);
 				}
-			}
 
-			if (leveltime % 4 == 0)
-			{
-				fixed_t newx;
-				fixed_t newy;
-				mobj_t *skid;
-				angle_t travelangle;
-				travelangle = player->mo->angle;
-				for (int32_t i = 0; i < 2; i++)
+				if (player->recoverydashcharge < RECOVERYDASHCHARGETIME)
 				{
-					// don't spawn vfx if this side isn't grounded visually
-					if (player->karttilt && ((player->karttilt < 0 && !(i & 1)) || (player->karttilt > 0 && (i & 1))))
+					if (leveltime % 6 == 0)
 					{
-						continue;
+						S_StartSound(player->mo, sfx_s225);
 					}
-					// P_SpawnMobjFromMobj will scale these to match the player's scale
-					newx = P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, 28*FRACUNIT);
-					newy = P_ReturnThrustY(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, 28*FRACUNIT);
-					skid = P_SpawnMobjFromMobj(player->mo, newx, newy, (10*FRACUNIT), MT_OVERLAY);
-					P_SetTarget(&skid->target, player->mo);
-					// not these tho
-					skid->sprxoff = FixedMul(newx, player->mo->scale);
-					skid->spryoff = FixedMul(newy, player->mo->scale);
-					skid->sprzoff = (10*player->mo->scale);
+				}
 
-					P_SetScale(skid, player->mo->scale);
-					skid->destscale = player->mo->destscale;
-					skid->scalespeed = player->mo->scalespeed;
-					skid->movefactor = FRACUNIT;
-					skid->angle = travelangle;
+				if (leveltime % 4 == 0)
+				{
+					fixed_t newx;
+					fixed_t newy;
+					mobj_t *skid;
+					angle_t travelangle;
+					travelangle = player->mo->angle;
+					for (int32_t i = 0; i < 2; i++)
+					{
+						// don't spawn vfx if this side isn't grounded visually
+						if (player->karttilt && ((player->karttilt < 0 && !(i & 1)) || (player->karttilt > 0 && (i & 1))))
+						{
+							continue;
+						}
+						// P_SpawnMobjFromMobj will scale these to match the player's scale
+						newx = P_ReturnThrustX(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, 28*FRACUNIT);
+						newy = P_ReturnThrustY(player->mo, travelangle + ((i&1) ? -1 : 1)*ANGLE_135, 28*FRACUNIT);
+						skid = P_SpawnMobjFromMobj(player->mo, newx, newy, (10*FRACUNIT), MT_OVERLAY);
+						P_SetTarget(&skid->target, player->mo);
+						// not these tho
+						skid->sprxoff = FixedMul(newx, player->mo->scale);
+						skid->spryoff = FixedMul(newy, player->mo->scale);
+						skid->sprzoff = (10*player->mo->scale);
 
-					P_SetMobjState(skid, S_RECSPIN_SKID);
-					K_MatchGenericExtraFlags(skid, player->mo);
-					if (player->recoverydashcharge >= RECOVERYDASHCHARGETIME)
-					{
-						skid->renderflags |= RF_TRANS20;
+						P_SetScale(skid, player->mo->scale);
+						skid->destscale = player->mo->destscale;
+						skid->scalespeed = player->mo->scalespeed;
+						skid->movefactor = FRACUNIT;
+						skid->angle = travelangle;
+
+						P_SetMobjState(skid, S_RECSPIN_SKID);
+						K_MatchGenericExtraFlags(skid, player->mo);
+						if (player->recoverydashcharge >= RECOVERYDASHCHARGETIME)
+						{
+							skid->renderflags |= RF_TRANS20;
+						}
+						else
+						{
+							skid->renderflags |= RF_TRANS40;
+						}
+						if (i) skid->renderflags |= RF_HORIZONTALFLIP;
 					}
-					else
-					{
-						skid->renderflags |= RF_TRANS40;
-					}
-					if (i) skid->renderflags |= RF_HORIZONTALFLIP;
 				}
 			}
 		}
 
-		if (player->recoverydashcharge >= RECOVERYDASHCHARGETIME)
+		if (!P_IsPredicting() && player->recoverydashcharge >= RECOVERYDASHCHARGETIME)
 		{
 			if (leveltime & 1)
 			{
@@ -13337,7 +13421,8 @@ static void K_AirFailsafe(player_t *player)
 		P_Thrust(player->mo, K_MomentumAngle(player->mo), thrustSpeed);
 
 		S_StartSound(player->mo, sfx_s23c);
-		K_SpawnNormalSpeedLines(player);
+		if (!P_IsPredicting())
+			K_SpawnNormalSpeedLines(player);
 
 		player->pflags &= ~PF_AIRFAILSAFE;
 	}
@@ -13726,7 +13811,7 @@ void K_MoveKartPlayer(player_t *player, dboolean onground)
 	dboolean HOLDING_ITEM = (player->itemflags & (IF_ITEMOUT|IF_EGGMANOUT));
 	dboolean NO_HYUDORO = (player->stealingtimer == 0 && player->stolentimer == 0);
 
-	if (!player->exiting)
+	if (!player->exiting && !P_IsPredicting())
 	{
 		if (player->oldposition < player->position) // But first, if you lost a place,
 		{
@@ -13769,7 +13854,7 @@ void K_MoveKartPlayer(player_t *player, dboolean onground)
 			player->bubblecool--;
 	}
 
-	if (player && player->mo && player->mo->health > 0 && !player->spectator && !P_PlayerInPain(player) && player->respawn == 0 && !(player->exiting || mapreset))
+	if (!P_IsPredicting() && player && player->mo && player->mo->health > 0 && !player->spectator && !P_PlayerInPain(player) && player->respawn == 0 && !(player->exiting || mapreset))
 	{
 		// First, the really specific, finicky items that function without the item being directly in your item slot.
 		{
@@ -13904,7 +13989,7 @@ void K_MoveKartPlayer(player_t *player, dboolean onground)
 	}
 
 	// No more!
-	if (player->itemamount == 0)
+	if (!P_IsPredicting() && player->itemamount == 0)
 	{
 		player->itemflags &= ~IF_ITEMOUT;
 		if (!(player->itemflags & IF_PASSIVESEEKING))
@@ -13920,7 +14005,7 @@ void K_MoveKartPlayer(player_t *player, dboolean onground)
 	{
 		player->altshrinktimeshit = 0;
 
-		if (player->arrowbullet && (!P_MobjWasRemoved(player->arrowbullet)))
+		if (!P_IsPredicting() && player->arrowbullet && (!P_MobjWasRemoved(player->arrowbullet)))
 		{
 			P_SetTarget(&player->arrowbullet->target, NULL);
 			P_RemoveMobj(player->arrowbullet);
@@ -13956,8 +14041,11 @@ void K_MoveKartPlayer(player_t *player, dboolean onground)
 
 	if ((gametypes[gametype]->rules & GTR_BUMPERS) && player->bumper <= 0) // dead in match? you da bomb
 	{
-		K_DropItems(player); //K_StripItems(player);
-		K_StripOther(player);
+		if (!P_IsPredicting())
+		{
+			K_DropItems(player); //K_StripItems(player);
+			K_StripOther(player);
+		}
 		player->mo->renderflags |= RF_GHOSTLY;
 		player->flashing = player->karmadelay;
 	}
@@ -14005,7 +14093,8 @@ void K_MoveKartPlayer(player_t *player, dboolean onground)
 
 	if (player->walltransfered && onground)
 	{
-		K_SpawnDashDustRelease(player, false);
+		if (!P_IsPredicting())
+			K_SpawnDashDustRelease(player, false);
 		S_StartSound(player->mo, sfx_s23c);
 		player->walltransferboost = 15;
 		player->walltransfered = false;
