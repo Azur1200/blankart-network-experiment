@@ -2168,9 +2168,11 @@ static void K_drawKartItem(void)
 				   info.hudScale);
 	}
 
-	// draw the item reserve
+	// draw the sub item
 	if (stplyr->subitemtype && stplyr->subitemamount > 0)
 	{
+		fixed_t subscale = tiny ? abs(info.hudScale>>1) : abs(info.hudScale);
+
 		localpatch = K_GetCachedItemPatch(stplyr->subitemtype, true, stplyr->subitemamount);
 
 		if (localpatch == NULL)
@@ -2185,22 +2187,20 @@ static void K_drawKartItem(void)
 			colmap = NULL;
 		}
 		
-		fx = (fx<<FRACBITS) + ((tiny ? 16 : 34) * (flipamount ? -info.hudScale : info.hudScale));
-		fy = (fy<<FRACBITS) + ((tiny ? -10 : -7) * info.hudScale);
-		if (!tiny)
-		{
-			dark = K_GetItemFlags(stplyr->subitemtype) & KIF_DARKBG;
-			localbg = K_getItemBoxPatch(true, dark);
-			
-			V_DrawFixedPatch(fx, fy, info.hudScale, boxpatchflags, localbg, colormap);
-		}
+		fx = (fx<<FRACBITS) + ((tiny ? (flipamount ? -6 : 29) : 34) * info.hudScale);
+		fy = (fy<<FRACBITS) + ((tiny ? 12 : -7) * subscale);
+
+		dark = K_GetItemFlags(stplyr->subitemtype) & KIF_DARKBG;
+		localbg = K_getItemBoxPatch(true, dark);
 		
-		V_DrawFixedPatch(fx, fy, info.hudScale, localpatchflags, localpatch, colmap);
+		V_DrawFixedPatch(fx, fy, subscale, boxpatchflags, localbg, colormap);
+		
+		V_DrawFixedPatch(fx, fy, subscale, localpatchflags, localpatch, colmap);
 
 		// numbers
 		if (stplyr->subitemamount >= K_GetItemNumberDisplayMin(stplyr->subitemtype, true))
 		{
-			V_DrawPingNumScaled(fx + (26*(flipamount ? -info.hudScale : info.hudScale)), fy + (26*info.hudScale), info.hudScale, V_ALLOWLOWERCASE|V_HUDTRANS|fflags, stplyr->subitemamount, colmap);
+			V_DrawPingNumScaled(fx + ((flipamount ? 22 : 32) * subscale), fy + (26*subscale), abs(info.hudScale), V_HUDTRANS|fflags, stplyr->subitemamount, NULL);
 		}
 	}
 }

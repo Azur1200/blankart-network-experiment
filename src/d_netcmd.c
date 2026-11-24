@@ -3347,6 +3347,7 @@ void D_Cheat(int32_t playernum, int32_t cheat, ...)
 		case CHEAT_GIVEITEM:
 			COPY(WRITEINT8, int);
 			COPY(WRITEUINT8, unsigned int);
+			COPY(WRITEUINT8, unsigned int);
 			break;
 
 		case CHEAT_SCORE:
@@ -7821,16 +7822,25 @@ static void Got_Cheat(uint8_t **cp, int32_t playernum)
 		case CHEAT_GIVEITEM: {
 			uint8_t item = READUINT8(*cp);
 			uint8_t amt = READUINT8(*cp);
+			uint8_t sub = READUINT8(*cp);
 
 			item = min(item, numkartitems - 1);
+			
+			if (sub != 0 && (player->itemtype || player->itemroulette))
+			{
+				player->subitemtype = item;
+				player->subitemamount = amt;
+			}
+			else
+			{
+				K_StripItems(player);
 
-			K_StripItems(player);
+				// Cancel roulette if rolling
+				player->itemroulette = 0;
 
-			// Cancel roulette if rolling
-			player->itemroulette = 0;
-
-			player->itemtype = item;
-			player->itemamount = amt;
+				player->itemtype = item;
+				player->itemamount = amt;
+			}
 
 			if (amt == 0)
 			{
@@ -8305,7 +8315,9 @@ static void Command_KartGiveItem_f(void)
 
 	int           ac;
 	const char *name;
+	const char *sub = NULL;
 	int32_t       item;
+	uint8_t trysub = 0;
 
 	int i;
 
@@ -8313,7 +8325,7 @@ static void Command_KartGiveItem_f(void)
 	if (ac < 2)
 	{
 		CONS_Printf(
-			"give <item> [amount]: Give yourself an item\n"
+			"give <item> [amount] [sub]: Give yourself an item\n"
 		);
 	}
 	else
@@ -8353,8 +8365,17 @@ static void Command_KartGiveItem_f(void)
 				amt = atoi(COM_Argv(2));
 			else
 				amt = (item != KITEM_NONE);/* default to one quantity, or zero, if KITEM_NONE */
+			
+			if (ac > 3)
+			{
+				sub = COM_Argv(3);
+				if (sub != NULL)
+				{
+					trysub = 1;
+				}
+			}
 
-			D_Cheat(localplayer, CHEAT_GIVEITEM, item, amt);
+			D_Cheat(localplayer, CHEAT_GIVEITEM, item, amt, trysub);
 		}
 		else
 		{
