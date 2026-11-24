@@ -3681,7 +3681,7 @@ void G_LoadDemoInfo(menudemo_t *pdemo, dboolean nameonly, const char *dateformat
 		break;
 
 	case HEADER_BADMAGIC:
-		CONS_Alert(CONS_ERROR, M_GetText("%s is not a SRB2Kart replay file.\n"), pdemo->filepath);
+		CONS_Alert(CONS_ERROR, M_GetText("%s is not a BlanKart or SRB2Kart replay file.\n"), pdemo->filepath);
 		if (!nameonly)
 			pdemo->type = MD_INVALID;
 		snprintf(pdemo->title, sizeof(pdemo->title), "INVALID REPLAY");
@@ -3974,7 +3974,7 @@ void G_DoPlayDemo(char *defdemoname)
 		break;
 
 	case HEADER_BADMAGIC:
-		snprintf(msg, 1024, M_GetText("%s is not a SRB2Kart replay file.\n"), pdemoname);
+		snprintf(msg, 1024, M_GetText("%s is not a BlanKart or SRB2Kart replay file.\n"), pdemoname);
 		return;
 
 	case HEADER_BADVERSION:

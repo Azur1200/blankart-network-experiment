@@ -4870,12 +4870,6 @@ static inline void K_drawKartMinimapIcon(fixed_t objx, fixed_t objy, int32_t hud
 		amypos += 2 * FRACUNIT;
 	}
 
-	// if (cv_minihead.value && (icon == kp_wantedreticle))
-	// {
-	// 	amxpos += 2 * FRACUNIT;
-	// 	amypos += 2 * FRACUNIT;
-	// }
-
 	V_DrawRotatedPatch(amxpos, amypos, ang, scale, scale, flags, icon, colormap);
 }
 

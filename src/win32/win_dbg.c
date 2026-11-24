@@ -372,10 +372,10 @@ LONG WINAPI RecordExceptionInfo(PEXCEPTION_POINTERS data/*, LPCSTR Message, LPST
 	SetFilePointer(fileHandle, 0, 0, FILE_END);
 
 	// Print out some blank lines to separate this error log from any previous ones.
-	FPrintf(fileHandle, "Email Sonic Team Junior so we can fix the bugs\r\n"); // Tails
+	FPrintf(fileHandle, "DM a Team BlanKart developer so we can fix the bugs\r\n"); // Tails
 	FPrintf(fileHandle, "Make sure you tell us what you were doing to cause the crash, and if possible, record a demo!\r\n"); // Tails
 	FPrintf(fileHandle, "\r\n\r\n\r\n\r\n");
-	FPrintf(fileHandle, "SRB2Kart %s -ERROR LOG-\r\n\r\n", VERSIONSTRING);
+	FPrintf(fileHandle, "BlanKart %s -ERROR LOG-\r\n\r\n", VERSIONSTRING);
 	FPrintf(fileHandle, "\r\n");
 	// VirtualQuery can be used to get the allocation base associated with a
 	// code address, which is the same as the ModuleHandle. This can be used

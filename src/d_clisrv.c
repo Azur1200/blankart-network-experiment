@@ -1854,7 +1854,7 @@ static dboolean CL_FinishedFileList(void)
 		M_StartMessage2("Too many addons", M_GetText(
 			"You have too many addons loaded\n"
 			"to add ones the server is using.\n"
-			"Please restart SRB2Kart before connecting.\n\n"
+			"Please restart BlanKart before connecting.\n\n"
 		), MB_NONE, MM_NOTHING, "Press any key", NULL);
 		return false;
 	}
@@ -1867,7 +1867,7 @@ static dboolean CL_FinishedFileList(void)
 			"You have the wrong addons loaded.\n\n"
 			"To play on this server, restart\n"
 			"the game and don't load any addons.\n"
-			"SRB2Kart will automatically add\n"
+			"BlanKart will automatically add\n"
 			"everything you need when you join.\n\n"
 		), MB_NONE, MM_NOTHING, "Press any key", NULL);
 		return false;
@@ -3852,7 +3852,7 @@ static void Joinable_OnChange(void)
 // called one time at init
 void D_ClientServerInit(void)
 {
-	DEBFILE(va("- - -== SRB2Kart v%d.%d "VERSIONSTRING" debugfile ==- - -\n",
+	DEBFILE(va("- - -== BlanKart v%d.%d "VERSIONSTRING" debugfile ==- - -\n",
 		VERSION, SUBVERSION));
 
 	COM_AddCommand("getplayernum", Command_GetPlayerNum);
@@ -4681,12 +4681,12 @@ static void HandleConnect(int8_t node)
 	else if (strncmp(netbuffer->u.clientcfg.application, SRB2APPLICATION,
 				sizeof netbuffer->u.clientcfg.application))
 	{
-		SV_SendRefuse(node, "Different SRB2Kart modifications\nare not compatible.");
+		SV_SendRefuse(node, "Different BlanKart modifications\nare not compatible.");
 	}
 	else if (netbuffer->u.clientcfg.version != VERSION
 		|| netbuffer->u.clientcfg.subversion != SUBVERSION)
 	{
-		SV_SendRefuse(node, va(M_GetText("Different SRB2Kart versions cannot\nplay a netgame!\n(server version %d.%d)"), VERSION, SUBVERSION));
+		SV_SendRefuse(node, va(M_GetText("Different BlanKart versions cannot\nplay a netgame!\n(server version %d.%d)"), VERSION, SUBVERSION));
 	}
 	else if (!cv_allownewplayer.value && node)
 	{

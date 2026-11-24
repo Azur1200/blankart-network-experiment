@@ -9477,7 +9477,7 @@ int32_t MR_ConnectMenuModChecks(int32_t choice)
 
 	if (modifiedgame)
 	{
-		M_StartMessage2("Notice", M_GetText("You have addons loaded.\nYou won't be able to join netgames!\n\nTo play online, restart the game\nand don't load any addons.\nSRB2Kart will automatically add\neverything you need when you join.\n"), MB_ROUTINE(M_ConnectMenu), MM_NOTHING, "Press any key", NULL);
+		M_StartMessage2("Notice", M_GetText("You have addons loaded.\nYou won't be able to join netgames!\n\nTo play online, restart the game\nand don't load any addons.\nBlanKart will automatically add\neverything you need when you join.\n"), MB_ROUTINE(M_ConnectMenu), MM_NOTHING, "Press any key", NULL);
 		return true;
 	}
 

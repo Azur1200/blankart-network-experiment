@@ -828,7 +828,7 @@ static void I_StartupConsole(void)
 
 	if (gotConsole)
 	{
-		SetConsoleTitleA("SRB2Kart Console");
+		SetConsoleTitleA("BlanKart Console");
 		consolevent = true;
 	}
 
