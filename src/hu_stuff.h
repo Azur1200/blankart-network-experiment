@@ -146,6 +146,8 @@ void HU_Drawer(void);
 char HU_dequeueChatChar(void);
 void HU_clearChatChars(void);
 void HU_drawPing(int32_t x, int32_t y, uint32_t ping, uint32_t mindelay, uint32_t pl, int32_t flags, dboolean icon);
+void HU_drawPingEx(int32_t x, int32_t y, uint32_t ping, uint32_t mindelay, uint32_t pl, int32_t flags, dboolean icon, dboolean allow_both);
+int32_t HU_GetLocalPingExtraHeight(void);
 void HU_drawOldPing(int32_t x, int32_t y, uint32_t ping, uint32_t mindelay, uint32_t pl, int32_t flags);
 void HU_drawMiniPing (int32_t x, int32_t y, uint32_t ping, uint32_t lag, int32_t flags);
 

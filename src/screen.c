@@ -718,10 +718,12 @@ void SCR_DisplayLocalPing(void)
 		int32_t dispy = (cv_ticrate.value == 1) ? 165 : ((cv_ticrate.value == 2 || cv_ticrate.value == 4) ? 172 : ((cv_ticrate.value == 3) ? 163 : 181)); // absolute buttpain
 		int32_t pingflags = V_LocalTransFlag()|V_SNAPTORIGHT|V_SNAPTOBOTTOM;
 
+		dispy -= HU_GetLocalPingExtraHeight();
+
 		if (cv_pingstyle.value)
-			HU_drawOldPing(308, dispy,  ping, mindelay, pl, pingflags);
+			HU_drawOldPing(308, dispy, ping, mindelay, pl, pingflags);
 		else
-			HU_drawPing(307, dispy, ping, mindelay, pl, pingflags, cv_pingicon.value);
+			HU_drawPingEx(307, dispy, ping, mindelay, pl, pingflags, cv_pingicon.value, true);
 	}
 }
 

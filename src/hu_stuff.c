@@ -2209,22 +2209,49 @@ Ping_gfx_colormap (uint32_t ping, uint32_t lag)
 }
 
 static uint32_t
-Ping_conversion (uint32_t lag)
+Ping_to_ms (uint32_t lag)
 {
-	if (cv_pingmeasurement.value)
-	{
-		lag = (int32_t)(lag * (1000.00f / TICRATE));
-	}
+	return (uint32_t)(lag * (1000.00f / TICRATE));
+}
 
-	return lag;
+static int32_t
+HU_PingRowStep (void)
+{
+	int32_t h0 = pingmeasure[0] ? pingmeasure[0]->height : 7;
+	int32_t h1 = pingmeasure[1] ? pingmeasure[1]->height : 7;
+	return max(h0, h1) + 1;
+}
+
+int32_t HU_GetLocalPingExtraHeight(void)
+{
+	if (cv_pingmeasurement.value != 2)
+		return 0;
+
+	if (cv_pingstyle.value)
+		return 7;
+
+	return HU_PingRowStep();
+}
+
+static void HU_drawPingLine(int32_t x, int32_t y, uint32_t ping, uint32_t lag, uint8_t *colormap, int32_t flags, int32_t measureid)
+{
+	if (measureid == 1)
+	{
+		V_DrawMappedPatch(x+11 - pingmeasure[1]->width, y, flags, pingmeasure[1], colormap);
+		V_DrawPingNum(x+11 - pingmeasure[1]->width, y, flags, Ping_to_ms(lag), Ping_gfx_colormap(ping, lag));
+	}
+	else
+	{
+		int32_t nx = V_DrawPingNum(x + 10, y, flags, lag, Ping_gfx_colormap(ping, lag));
+		V_DrawMappedPatch(nx+1 - pingmeasure[0]->width, y, flags, pingmeasure[0], colormap);
+	}
 }
 
 //
-// HU_drawPing
+// HU_drawPingEx
 //
-void HU_drawPing(int32_t x, int32_t y, uint32_t ping, uint32_t mindelay, uint32_t pl, int32_t flags, dboolean icon)
+void HU_drawPingEx(int32_t x, int32_t y, uint32_t ping, uint32_t mindelay, uint32_t pl, int32_t flags, dboolean icon, dboolean allow_both)
 {
-	int32_t measureid = cv_pingmeasurement.value ? 1 : 0;
 	int32_t gfxnum; // gfx to draw
 	uint32_t lag = max(ping, mindelay);
 	uint8_t *colormap = NULL;
@@ -2246,18 +2273,29 @@ void HU_drawPing(int32_t x, int32_t y, uint32_t ping, uint32_t mindelay, uint32_
 		colormap = R_GetTranslationColormap(TC_RAINBOW, PL_gfx_color(pl, true), GTC_CACHE);
 	}
 
-	if (measureid == 1)
-		V_DrawMappedPatch(x+11 - pingmeasure[measureid]->width, y+11, flags, pingmeasure[measureid], colormap);
-
 	if (icon)
 	{
 		V_DrawScaledPatch(x+2, y, flags, pinggfx[gfxnum]);
 	}
 
-	x = V_DrawPingNum(x + (measureid == 1 ? 11 - pingmeasure[measureid]->width : 10), y+11, flags, Ping_conversion(lag), Ping_gfx_colormap(ping, lag));
+	if (cv_pingmeasurement.value == 2 && allow_both)
+	{
+		HU_drawPingLine(x, y+11, ping, lag, colormap, flags, 0);
+		HU_drawPingLine(x, y+11 + HU_PingRowStep(), ping, lag, colormap, flags, 1);
+	}
+	else
+	{
+		int32_t measureid = (cv_pingmeasurement.value == 1) ? 1 : 0;
+		HU_drawPingLine(x, y+11, ping, lag, colormap, flags, measureid);
+	}
+}
 
-	if (measureid == 0)
-		V_DrawMappedPatch(x+1 - pingmeasure[measureid]->width, y+11, flags, pingmeasure[measureid], colormap);
+//
+// HU_drawPing
+//
+void HU_drawPing(int32_t x, int32_t y, uint32_t ping, uint32_t mindelay, uint32_t pl, int32_t flags, dboolean icon)
+{
+	HU_drawPingEx(x, y, ping, mindelay, pl, flags, icon, false);
 }
 
 //
@@ -2265,7 +2303,7 @@ void HU_drawPing(int32_t x, int32_t y, uint32_t ping, uint32_t mindelay, uint32_
 //
 void HU_drawOldPing(int32_t x, int32_t y, uint32_t ping, uint32_t mindelay, uint32_t pl, int32_t flags)
 {
-	int32_t measureid = cv_pingmeasurement.value ? 1 : 0;
+	int32_t measure = cv_pingmeasurement.value;
 	uint32_t lag = max(ping, mindelay);
 
 	//SRB2/Kart v1.0 style
@@ -2276,13 +2314,18 @@ void HU_drawOldPing(int32_t x, int32_t y, uint32_t ping, uint32_t mindelay, uint
 
 	if (vid.width >= 640)	// how sad, we're using a shit resolution.
 	{
-		if (measureid == 1)
+		if (measure == 2)
 		{
-			V_DrawRightAlignedSmallString(x+12, y+13, V_ALLOWLOWERCASE|flags, va("%dms", Ping_conversion(lag)));
+			V_DrawRightAlignedSmallString(x+12, y+13, flags, va("d%d", lag));
+			V_DrawRightAlignedSmallString(x+12, y+20, V_ALLOWLOWERCASE|flags, va("%dms", Ping_to_ms(lag)));
 		}
-		else if (measureid == 0)
+		else if (measure == 1)
 		{
-			V_DrawRightAlignedSmallString(x+12, y+13, flags, va("d%d", Ping_conversion(lag)));
+			V_DrawRightAlignedSmallString(x+12, y+13, V_ALLOWLOWERCASE|flags, va("%dms", Ping_to_ms(lag)));
+		}
+		else
+		{
+			V_DrawRightAlignedSmallString(x+12, y+13, flags, va("d%d", lag));
 		}
 	}
 

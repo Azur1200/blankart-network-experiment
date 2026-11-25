@@ -2360,6 +2360,32 @@ static void readmenuitems(MYFILE *f, menupaneldef_t *pd)
 	if (item != NULL && status != 0)
 		item->status = status;
 
+	// Expose Ping Measurement (Frames / Milliseconds / Both) in the Options -> HUD/Chat
+	// menu right beneath Ping Display Style without requiring a main.pk3 edit.
+	if (fastcmp(DEH_MenuPanelName(pd), "OP_CHAT")
+		&& M_CheckMenuItemDef(pd, "PINGMEASUREMENT") == NULL)
+	{
+		menuitem_t *style_item = M_CheckMenuItemDef(pd, "PINGSTYLE");
+		if (style_item != NULL)
+		{
+			size_t insert_idx = (size_t)(style_item - pd->items) + 1;
+			Z_Realloc(pd->items, sizeof(menuitem_t) * (pd->numitems + 1), PU_STATIC, &pd->items);
+			if (insert_idx < pd->numitems)
+			{
+				memmove(&pd->items[insert_idx + 1], &pd->items[insert_idx],
+					(pd->numitems - insert_idx) * sizeof(menuitem_t));
+			}
+			pd->numitems++;
+			item = &pd->items[insert_idx];
+			memset(item, 0, sizeof(*item));
+			DEH_Link("PINGMEASUREMENT", &item->info, &menunames);
+			item->text = Z_StrDup("Ping Measurement");
+			item->tooltip = Z_StrDup("Show ping in frames (D), milliseconds (ms), or both.");
+			item->cvar = &cv_pingmeasurement;
+			item->status = IT_INTERACT;
+		}
+	}
+
 	Z_Free(s);
 }
 #undef WARN
