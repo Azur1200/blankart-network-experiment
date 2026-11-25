@@ -2152,6 +2152,56 @@ static BlockItReturn_t PIT_CheckLine(line_t *ld)
 static const fixed_t hoopblockdist = 16*FRACUNIT + 8*FRACUNIT;
 static const fixed_t hoophalfheight = (56*FRACUNIT)/2;
 
+static BlockItReturn_t PIT_PredCheckSneakerPanel(mobj_t *thing)
+{
+	fixed_t blockdist;
+
+	if (!thing || P_MobjWasRemoved(thing) || thing == g_tm.thing)
+		return BMIT_CONTINUE;
+	if (thing->type != MT_SNEAKERPANEL || !g_tm.thing || P_MobjWasRemoved(g_tm.thing))
+		return BMIT_CONTINUE;
+	if ((thing->flags & MF_NOCLIPTHING) || !(thing->flags & (MF_SOLID|MF_SPECIAL|MF_PAIN|MF_SHOOTABLE)))
+		return BMIT_CONTINUE;
+
+	blockdist = thing->radius + g_tm.thing->radius;
+	if (abs(thing->x - g_tm.x) >= blockdist || abs(thing->y - g_tm.y) >= blockdist)
+		return BMIT_CONTINUE;
+
+	Obj_SneakerPanelCollide(thing, g_tm.thing);
+	return BMIT_CONTINUE;
+}
+
+void P_PredCheckSneakerPanelsAtPos(mobj_t *thing)
+{
+	int32_t xl, xh, yl, yh, bx, by;
+	fixed_t bbox[4];
+
+	I_Assert(P_IsPredicting());
+
+	if (!thing || P_MobjWasRemoved(thing) || (thing->flags & (MF_NOCLIP|MF_NOCLIPTHING)))
+		return;
+
+	g_tm.thing = thing;
+	g_tm.x = thing->x;
+	g_tm.y = thing->y;
+
+	bbox[BOXTOP] = thing->y + thing->radius;
+	bbox[BOXBOTTOM] = thing->y - thing->radius;
+	bbox[BOXRIGHT] = thing->x + thing->radius;
+	bbox[BOXLEFT] = thing->x - thing->radius;
+
+	xl = (unsigned)(bbox[BOXLEFT] - bmaporgx - MAXRADIUS) >> MAPBLOCKSHIFT;
+	xh = (unsigned)(bbox[BOXRIGHT] - bmaporgx + MAXRADIUS) >> MAPBLOCKSHIFT;
+	yl = (unsigned)(bbox[BOXBOTTOM] - bmaporgy - MAXRADIUS) >> MAPBLOCKSHIFT;
+	yh = (unsigned)(bbox[BOXTOP] - bmaporgy + MAXRADIUS) >> MAPBLOCKSHIFT;
+
+	BMBOUNDFIX(xl, xh, yl, yh);
+
+	for (bx = xl; bx <= xh; bx++)
+		for (by = yl; by <= yh; by++)
+			P_BlockThingsIterator(bx, by, PIT_PredCheckSneakerPanel);
+}
+
 dboolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *result)
 {
 	int32_t thingtop = thing->z + thing->height;
@@ -2445,6 +2495,16 @@ dboolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y, TryMoveResult_t *r
 				{
 					return false;
 				}
+			}
+		}
+	}
+	else if (P_IsPredicting() && !(thing->flags & MF_NOCLIPTHING))
+	{
+		for (bx = xl; bx <= xh; bx++)
+		{
+			for (by = yl; by <= yh; by++)
+			{
+				P_BlockThingsIterator(bx, by, PIT_PredCheckSneakerPanel);
 			}
 		}
 	}
@@ -5622,6 +5682,106 @@ static BlockItReturn_t PIT_PredCollectSectors(line_t *ld)
 		P_PredAddSectorUnique(ld->backsector);
 
 	return BMIT_CONTINUE;
+}
+
+static sector_t *pred_touch_secs[32];
+static int32_t pred_touch_count = 0;
+
+void P_PredInitTouchingSectorsFromMobj(const mobj_t *base_mo)
+{
+	const msecnode_t *node;
+
+	pred_touch_count = 0;
+	if (!base_mo)
+		return;
+
+	for (node = base_mo->touching_sectorlist; node && pred_touch_count < 32; node = node->m_sectorlist_next)
+	{
+		if (node->m_sector)
+			pred_touch_secs[pred_touch_count++] = node->m_sector;
+	}
+
+	if (pred_touch_count == 0 && base_mo->subsector && base_mo->subsector->sector)
+	{
+		pred_touch_secs[0] = base_mo->subsector->sector;
+		pred_touch_count = 1;
+	}
+}
+
+void P_PredInitTouchingSectorsFromList(sector_t *const *secs, int32_t count)
+{
+	int32_t i;
+
+	if (count < 0)
+		count = 0;
+	if (count > 32)
+		count = 32;
+
+	for (i = 0; i < count; i++)
+		pred_touch_secs[i] = secs[i];
+	pred_touch_count = count;
+}
+
+void P_PredUpdateTouchingSectors(mobj_t *thing)
+{
+	sector_t *cur[32];
+	sector_t *next[32];
+	int32_t cur_count, next_count = 0;
+	int32_t i, j;
+
+	if (!thing || !P_IsPredicting())
+		return;
+
+	cur_count = P_PredCollectTouchingSectors(thing, cur, 32);
+
+	// Prepend newly touched sectors (not previously in pred_touch_secs),
+	// mirroring P_CreateSecNodeList's LIFO prepend order.
+	for (i = 0; i < cur_count && next_count < 32; i++)
+	{
+		dboolean existed = false;
+		for (j = 0; j < pred_touch_count; j++)
+		{
+			if (pred_touch_secs[j] == cur[i])
+			{
+				existed = true;
+				break;
+			}
+		}
+		if (!existed)
+			next[next_count++] = cur[i];
+	}
+
+	// Keep previously touched sectors that are still touched, in their original order.
+	for (j = 0; j < pred_touch_count && next_count < 32; j++)
+	{
+		dboolean still_touching = false;
+		for (i = 0; i < cur_count; i++)
+		{
+			if (cur[i] == pred_touch_secs[j])
+			{
+				still_touching = true;
+				break;
+			}
+		}
+		if (still_touching)
+			next[next_count++] = pred_touch_secs[j];
+	}
+
+	for (i = 0; i < next_count; i++)
+		pred_touch_secs[i] = next[i];
+	pred_touch_count = next_count;
+}
+
+int32_t P_PredGetTouchingSectors(sector_t **out_sectors, int32_t max_sectors)
+{
+	int32_t n = pred_touch_count;
+	int32_t i;
+
+	if (n > max_sectors)
+		n = max_sectors;
+	for (i = 0; i < n; i++)
+		out_sectors[i] = pred_touch_secs[i];
+	return n;
 }
 
 int32_t P_PredCollectTouchingSectors(mobj_t *thing, sector_t **out_sectors, int32_t max_sectors)

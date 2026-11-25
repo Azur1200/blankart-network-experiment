@@ -192,6 +192,7 @@ void R_InterpolateView(fixed_t frac)
 	viewy = R_LerpFixed(prevview->y, newview->y, frac);
 	viewz = R_LerpFixed(prevview->z, newview->z, frac);
 
+	if (viewcontext == VIEWCONTEXT_PLAYER1)
 	{
 		fixed_t ox, oy, oz;
 		CL_PredGetSmoothViewOffset(i, &ox, &oy, &oz);
@@ -213,12 +214,28 @@ void R_InterpolateView(fixed_t frac)
 	R_SetupFreelook(newview->player, newview->sky);
 }
 
+void R_UpdateViewInterpolationSingle(uint8_t i)
+{
+	if (i >= MAXSPLITSCREENPLAYERS)
+		return;
+
+	pview_old[i] = pview_new[i];
+	skyview_old[i] = skyview_new[i];
+	if (oldview_invalid[i] > 0)
+		oldview_invalid[i]--;
+
+	last_view_update = I_GetTime();
+}
+
 void R_UpdateViewInterpolation(void)
 {
 	uint8_t i;
 
 	for (i = 0; i < MAXSPLITSCREENPLAYERS; i++)
 	{
+		if (i == 0 && CL_PredIsDrivingCamera0())
+			continue;
+
 		pview_old[i] = pview_new[i];
 		skyview_old[i] = skyview_new[i];
 		if (oldview_invalid[i] > 0) oldview_invalid[i]--;
@@ -335,6 +352,8 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 		out->spriteyscale = mobj->spriteyscale;
 		out->spritexoffset = mobj->spritexoffset;
 		out->spriteyoffset = mobj->spriteyoffset;
+		if (CL_PredShouldAttachMobj(mobj))
+			CL_PredTransformAttachedState(mobj, frac, out);
 		return;
 	}
 
@@ -389,6 +408,9 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 		out->slopepitch = mobj->slopepitch;
 		out->sloperoll = mobj->sloperoll;
 	}
+
+	if (CL_PredShouldAttachMobj(mobj))
+		CL_PredTransformAttachedState(mobj, frac, out);
 }
 
 void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjstate_t *out)

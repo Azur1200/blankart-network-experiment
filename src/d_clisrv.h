@@ -152,11 +152,9 @@ typedef enum
 	PT_RESPONSEALL,		// OK, here is my signature on that random bullshit
 	PT_RESULTSALL,		// Here's what everyone responded to PT_CHALLENGEALL with, if this is wrong or you don't receive it disconnect
 
-	// Client-side movement prediction (backward-compatible Option B extension)
-	PT_PREDCAP,         // Bidirectional capability handshake (ignored by vanilla peers)
+	// Client-side movement prediction (native protocol; per-tic ACKs travel inline in PT_SERVERTICS)
 	PT_CLIENTCMD_PRED,  // Sequenced client ticcmd + redundant history (cl_netrepeatinput)
 	PT_CLIENTMIS_PRED,  // Same as PT_CLIENTCMD_PRED with missed-tic resend request
-	PT_PREDACK,         // Server per-tic executed client input sequence acknowledgements
 
 	NUMPACKETTYPE
 } packettype_t;
@@ -461,24 +459,10 @@ struct say_pak
 	uint8_t source;
 } ATTRPACK;
 
-// Client-side movement prediction (Option B backward-compatible protocol)
-#define CLPRED_MAGIC          0x44455250u /* "PRED" in little-endian */
-#define CLPRED_PROTO_VERSION  1u
-#define CLPRED_CAP_REPEAT     0x01u
-#define CLPRED_CAP_EXACT_ACK  0x02u
+// Client-side movement prediction (native input ACK & repeat protocol)
 #define CLPRED_MAX_REPEAT     3u
 #define CLPRED_MAX_CMDS       (1u + CLPRED_MAX_REPEAT)
-#define CLPRED_MAX_ACK_TICS   32u
 #define CLPRED_ACKF_UNDERRUN  0x01u
-
-struct predcap_pak
-{
-	uint32_t magic;
-	uint8_t  version;
-	uint8_t  flags;
-	uint8_t  max_repeat;
-	uint8_t  reserved;
-} ATTRPACK;
 
 struct clientcmd_pred_pak
 {
@@ -489,15 +473,6 @@ struct clientcmd_pred_pak
 	uint8_t  count;
 	uint8_t  reserved;
 	ticcmd_t cmds[CLPRED_MAX_CMDS];
-} ATTRPACK;
-
-struct predack_pak
-{
-	uint32_t starttic;
-	uint8_t  numtics;
-	uint8_t  flags;
-	uint16_t reserved;
-	uint32_t ack_seq[CLPRED_MAX_ACK_TICS];
 } ATTRPACK;
 
 //
@@ -541,9 +516,7 @@ struct doomdata_t
 		reqmapqueue_pak reqmapqueue;			// 6 bytes. Formerly XD_REQMAPQUEUE
 		clientkey_pak clientkey;				// 32 bytes
 		serverchallenge_pak serverchallenge;	// 256 bytes
-		predcap_pak predcap;					// 8 bytes
 		clientcmd_pred_pak clientpredpak;		// ~200 bytes
-		predack_pak predack;					// 136 bytes
 		//challengeall_pak challengeall;			// 256 bytes
 		//responseall_pak responseall;			// 256 bytes
 		//resultsall_pak resultsall;				// 1024 bytes (2048 bytes in 32P)

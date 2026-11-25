@@ -43,6 +43,7 @@
 #include "../f_finale.h"
 #include "../r_things.h" // R_GetShadowZ
 #include "../d_main.h"
+#include "../cl_predict.h"
 #include "../p_slopes.h"
 #include "hw_md2.h"
 
@@ -777,6 +778,8 @@ void HWR_RenderPlayerView(void)
 
 	// Reset the shader state.
 	HWR_SetShaderState();
+	if (viewssnum == 0)
+		CL_PredPrepareAttachedFrame();
 
 	// note: sets viewangle, viewx, viewy, viewz
 	R_SetupFrame(viewssnum, skybox);

@@ -52,6 +52,7 @@
 
 #include "radio_finish.h"
 #include "radio_feed.h"
+#include "cl_predict.h"
 
 #include "k_hud_message.h"
 
@@ -3838,27 +3839,29 @@ static void K_drawKartSpeedometer(void)
 	fixed_t dial_divisor = DIALSPDDIV;
 #endif
 
+	const player_t *splyr = CL_PredGetHudPlayer(stplyr);
+
 	switch (cv_kartspeedometer.value)
 	{
 		case 1: // Kilometers
-			convSpeed[0] = FixedDiv(FixedMul(stplyr->speed, 142371), mapobjectscale); // 2.172409058
+			convSpeed[0] = FixedDiv(FixedMul(splyr->speed, 142371), mapobjectscale); // 2.172409058
 			convSpeed[1] = convSpeed[0] / FRACUNIT;
 			labeln = 0;
 			break;
 		case 2: // Miles
-			convSpeed[0] = FixedDiv(FixedMul(stplyr->speed, 88465), mapobjectscale); // 1.349868774
+			convSpeed[0] = FixedDiv(FixedMul(splyr->speed, 88465), mapobjectscale); // 1.349868774
 			convSpeed[1] = convSpeed[0] / FRACUNIT;
 			labeln = 1;
 			break;
 		case 3: // Fracunits
-			convSpeed[0] = FixedDiv(stplyr->speed, mapobjectscale); // 1.0. duh.
+			convSpeed[0] = FixedDiv(splyr->speed, mapobjectscale); // 1.0. duh.
 			convSpeed[1] = convSpeed[0] / FRACUNIT;
 			labeln = 2;
 			break;
 		case 4: // Sonic Drift 2 style percentage
-			if (stplyr->mo)
+			if (splyr->mo)
 			{
-				convSpeed[0] = (FixedDiv(stplyr->speed, FixedMul(K_GetKartSpeed(stplyr, false, false), K_PlayerBaseFriction(stplyr, ORIG_FRICTION)))*100);
+				convSpeed[0] = (FixedDiv(splyr->speed, FixedMul(K_GetKartSpeed(splyr, false, false), K_PlayerBaseFriction(splyr, ORIG_FRICTION)))*100);
 				convSpeed[1] = convSpeed[0] >> FRACBITS;
 			}
 			labeln = 3;
@@ -3933,7 +3936,7 @@ static void K_drawKartSpeedometer(void)
 	}
 	else if (cv_newspeedometer.value == 2)
 	{
-		fixed_t fuspeed =  FixedDiv(stplyr->speed, mapobjectscale)/FRACUNIT;
+		fixed_t fuspeed =  FixedDiv(splyr->speed, mapobjectscale)/FRACUNIT;
 		int32_t spdpatch = 0;
 		int8_t yoffset = K_RingsActive() ? 12 : 18;
 
@@ -7168,13 +7171,24 @@ void K_getAccelPromptDrawinfo(drawinfo_t *out)
 
 	if (!P_MobjWasRemoved(stplyr->mo))
 	{
+		fixed_t ox, oy, oz, cz;
 		mo = stplyr->mo;
 
 		vflip = ((mo->eflags & MFE_VERTICALFLIP) == MFE_VERTICALFLIP);
 
-		pos.x = R_InterpolateFixed(mo->old_x, mo->x) + mo->sprxoff;
-		pos.y = R_InterpolateFixed(mo->old_y, mo->y) + mo->spryoff;
-		pos.z = R_InterpolateFixed(mo->old_z, mo->z) + mo->sprzoff + (vflip ? mo->height : 0);
+		CL_PredGetRenderOffsets(mo, &ox, &oy, &oz, &cz);
+		if (CL_PredGetInterpolatedMobjPos(mo, R_GetTimeFrac(RTF_LEVEL), &pos.x, &pos.y, &pos.z))
+		{
+			pos.x += ox;
+			pos.y += oy;
+			pos.z += oz + (vflip ? mo->height : 0);
+		}
+		else
+		{
+			pos.x = R_InterpolateFixed(mo->old_x, mo->x) + mo->sprxoff;
+			pos.y = R_InterpolateFixed(mo->old_y, mo->y) + mo->spryoff;
+			pos.z = R_InterpolateFixed(mo->old_z, mo->z) + mo->sprzoff + (vflip ? mo->height : 0);
+		}
 
 		K_ObjectTracking(&res, &pos, false);
 	}
@@ -7709,13 +7723,25 @@ void K_DrawDriftGauge(void)
 	if (stplyr->playerstate != PST_LIVE)
 		return;
 
+	const player_t *dplyr = CL_PredGetHudPlayer(stplyr);
 	mobj_t *mo = stplyr->mo;
 	fixed_t gaugeofs = FixedMul(cv_driftgaugeoffset.value, ((cv_driftgaugeoffset.value > 0) ? mo->scale : mapobjectscale));
-	vector3_t pos = {
-		R_InterpolateFixed(mo->old_x, mo->x) + mo->sprxoff,
-		R_InterpolateFixed(mo->old_y, mo->y) + mo->spryoff,
-		R_InterpolateFixed(mo->old_z, mo->z) + mo->sprzoff + (mo->eflags & MFE_VERTICALFLIP ? mo->height - gaugeofs : gaugeofs),
-	};
+	fixed_t ox, oy, oz, cz;
+	vector3_t pos;
+
+	CL_PredGetRenderOffsets(mo, &ox, &oy, &oz, &cz);
+	if (CL_PredGetInterpolatedMobjPos(mo, R_GetTimeFrac(RTF_LEVEL), &pos.x, &pos.y, &pos.z))
+	{
+		pos.x += ox;
+		pos.y += oy;
+		pos.z += oz + (mo->eflags & MFE_VERTICALFLIP ? mo->height - gaugeofs : gaugeofs);
+	}
+	else
+	{
+		pos.x = R_InterpolateFixed(mo->old_x, mo->x) + mo->sprxoff;
+		pos.y = R_InterpolateFixed(mo->old_y, mo->y) + mo->spryoff;
+		pos.z = R_InterpolateFixed(mo->old_z, mo->z) + mo->sprzoff + (mo->eflags & MFE_VERTICALFLIP ? mo->height - gaugeofs : gaugeofs);
+	}
 	trackingResult_t res;
 	int32_t basex, basey, i = 0;
 	int32_t flags = V_SPLITSCREEN; // V_HUDTRANS does not like other transparent effects...
@@ -7739,15 +7765,15 @@ void K_DrawDriftGauge(void)
 	if (cv_driftgauge.value == DGAUGE_WIFI)
 		basex -= 10*FRACUNIT;
 
-	int32_t driftval = K_GetKartDriftSparkValue(stplyr);
-	int32_t driftcharge = min(driftval*4, stplyr->driftcharge);
+	int32_t driftval = K_GetKartDriftSparkValue(dplyr);
+	int32_t driftcharge = min(driftval*4, dplyr->driftcharge);
 	dboolean rainbow = driftcharge >= driftval*4;
-	const uint8_t level = K_GetKartDriftSparkStageForValue(stplyr, driftcharge) + 1;
+	const uint8_t level = K_GetKartDriftSparkStageForValue(dplyr, driftcharge) + 1;
 	const uint8_t backlevel = rainbow ? 4 : max(0, level - 1);
 	uint8_t *cmap = R_GetTranslationColormap(TC_RAINBOW, rainbow ? (int32_t)(1 + (leveltime % FIRSTSUPERCOLOR)) : driftskins[level], GTC_CACHE);
 
-	int32_t afterimage = stplyr->karthud[khud_afterimagetime];
-	if (!stplyr->drift && !stplyr->airthrustdir)
+	int32_t afterimage = dplyr->karthud[khud_afterimagetime];
+	if (!dplyr->drift && !dplyr->airthrustdir)
 	{
 		if (afterimage)
 			goto doafterimage;
@@ -7845,7 +7871,7 @@ void K_DrawDriftGauge(void)
 
 doafterimage:;
 	// right, also draw a cool number
-	int32_t charge = (afterimage ? stplyr->karthud[khud_afterimagevalue] : driftcharge)*100 / driftval;
+	int32_t charge = (afterimage ? dplyr->karthud[khud_afterimagevalue] : driftcharge)*100 / driftval;
 	if (afterimage)
 	{
 		flags |= V_TRANSLUCENT*2 - (V_10TRANS * afterimage);
@@ -7901,11 +7927,22 @@ void K_DrawFlamometer(void)
 		return;
 
 	mobj_t *mo = stplyr->mo;
-	vector3_t pos = {
-		R_InterpolateFixed(mo->old_x, mo->x) + mo->sprxoff,
-		R_InterpolateFixed(mo->old_y, mo->y) + mo->spryoff,
-		R_InterpolateFixed(mo->old_z, mo->z) + mo->sprzoff + (mo->eflags & MFE_VERTICALFLIP ? mo->height : 0),
-	};
+	fixed_t ox, oy, oz, cz;
+	vector3_t pos;
+
+	CL_PredGetRenderOffsets(mo, &ox, &oy, &oz, &cz);
+	if (CL_PredGetInterpolatedMobjPos(mo, R_GetTimeFrac(RTF_LEVEL), &pos.x, &pos.y, &pos.z))
+	{
+		pos.x += ox;
+		pos.y += oy;
+		pos.z += oz + (mo->eflags & MFE_VERTICALFLIP ? mo->height : 0);
+	}
+	else
+	{
+		pos.x = R_InterpolateFixed(mo->old_x, mo->x) + mo->sprxoff;
+		pos.y = R_InterpolateFixed(mo->old_y, mo->y) + mo->spryoff;
+		pos.z = R_InterpolateFixed(mo->old_z, mo->z) + mo->sprzoff + (mo->eflags & MFE_VERTICALFLIP ? mo->height : 0);
+	}
 	trackingResult_t res;
 	int32_t basex, basey, barextraflags = 0;
 	int32_t flags = V_SPLITSCREEN|V_HUDTRANS;

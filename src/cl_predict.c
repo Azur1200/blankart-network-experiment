@@ -8,7 +8,7 @@
 //-----------------------------------------------------------------------------
 /// \file  cl_predict.c
 /// \brief Local-kart client-side movement prediction (DarkPlaces-style)
-///        and backward-compatible Option B input ACK / repeat protocol.
+///        and native input ACK / redundant repeat protocol.
 
 #include "cl_predict.h"
 #include "doomstat.h"
@@ -27,6 +27,7 @@
 #include "v_video.h"
 #include "i_video.h"
 #include "i_time.h"
+#include "s_sound.h"
 #include "console.h"
 #include "byteptr.h"
 
@@ -57,7 +58,6 @@ consvar_t cv_cl_movement_maxtics = CVAR_INIT("cl_movement_maxtics", "8", CV_SAVE
 consvar_t cv_cl_movement_smooth = CVAR_INIT("cl_movement_smooth", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_cl_movement_smoothrate = CVAR_INIT("cl_movement_smoothrate", "35", CV_SAVE, cl_movement_smoothrate_cons_t, NULL);
 consvar_t cv_cl_netrepeatinput = CVAR_INIT("cl_netrepeatinput", "2", CV_SAVE, cl_netrepeatinput_cons_t, NULL);
-consvar_t cv_cl_movement_proto = CVAR_INIT("cl_movement_proto", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_cl_movement_debug = CVAR_INIT("cl_movement_debug", "0", 0, cl_movement_debug_cons_t, NULL);
 consvar_t cv_cl_movement_selftest = CVAR_INIT("cl_movement_selftest", "0", 0, cl_movement_selftest_cons_t, NULL);
 
@@ -97,13 +97,12 @@ static inline dboolean SeqAtLeast(uint32_t a, uint32_t b)
 }
 
 // =========================================================================
-// Server-side per-node Option B state
+// Server-side per-node native input queue & ACK state
 // =========================================================================
 
 #define CLPRED_SV_QUEUE_CAP      8
-#define CLPRED_SV_MAX_QUEUE      4
-#define CLPRED_SV_DRAIN_TICS     4
-#define CLPRED_ACK_REDUNDANCY    8
+#define CLPRED_SV_MAX_QUEUE      5
+#define CLPRED_SV_DRAIN_TICS     12
 
 typedef struct sv_pred_entry_s
 {
@@ -116,7 +115,6 @@ typedef struct sv_pred_node_s
 	dboolean enabled;
 	dboolean used_pred_cmd;
 	dboolean last_underrun;
-	uint8_t max_repeat;
 
 	uint32_t last_recv_seq;
 	uint32_t last_exec_seq;
@@ -161,47 +159,9 @@ dboolean SV_PredNodeUsesPredCmd(int32_t node)
 	return (node > 0 && node < MAXNETNODES && sv_pred[node].enabled && sv_pred[node].used_pred_cmd);
 }
 
-void SV_PredHandleCap(int8_t node)
-{
-	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
-	predcap_pak incoming;
-
-	if (client || node <= 0 || node >= MAXNETNODES || !nodeingame[node])
-		return;
-
-	if ((size_t)doomcom->datalength < BASEPACKETSIZE + sizeof(predcap_pak))
-		return;
-
-	incoming = netbuffer->u.predcap;
-	if (LSBF_LONG(incoming.magic) != CLPRED_MAGIC || incoming.version != CLPRED_PROTO_VERSION)
-		return;
-
-	if (!sv_pred[node].enabled)
-	{
-		SV_PredResetNode(node);
-		sv_pred[node].enabled = true;
-		sv_pred[node].max_repeat = min(incoming.max_repeat, (uint8_t)CLPRED_MAX_REPEAT);
-
-		CONS_Debug(DBG_NETPLAY, "[SV_PRED] Node %d negotiated Option B (v%u, max_repeat=%u)\n",
-			node, incoming.version, sv_pred[node].max_repeat);
-		if (cv_cl_movement_debug.value >= 1)
-			CONS_Printf("[SV_PRED] Node %d negotiated Option B (v%u, max_repeat=%u)\n",
-				node, incoming.version, sv_pred[node].max_repeat);
-	}
-
-	// Always reply with our capability packet (handles dropped reply retries cleanly)
-	netbuffer->packettype = PT_PREDCAP;
-	netbuffer->u.predcap.magic = LSBF_LONG(CLPRED_MAGIC);
-	netbuffer->u.predcap.version = CLPRED_PROTO_VERSION;
-	netbuffer->u.predcap.flags = CLPRED_CAP_REPEAT | CLPRED_CAP_EXACT_ACK;
-	netbuffer->u.predcap.max_repeat = CLPRED_MAX_REPEAT;
-	netbuffer->u.predcap.reserved = 0;
-
-	HSendPacket(node, false, 0, sizeof(predcap_pak));
-}
-
 void SV_PredOnVanillaCmd(int8_t node)
 {
+	// Used when a client falls back to PT_CLIENT2CMD..PT_CLIENT4CMD for splitscreen
 	if (node <= 0 || node >= MAXNETNODES || !sv_pred[node].enabled)
 		return;
 
@@ -264,11 +224,8 @@ void SV_PredReceiveCmds(int8_t node, uint32_t seq, uint8_t count, const ticcmd_t
 	pn = &sv_pred[node];
 	if (!pn->enabled)
 	{
-		// Client somehow sent PT_CLIENTCMD_PRED before/without PT_PREDCAP finishing;
-		// enable cleanly so inputs are never dropped.
 		SV_PredResetNode(node);
 		pn->enabled = true;
-		pn->max_repeat = CLPRED_MAX_REPEAT;
 	}
 
 	pn->used_pred_cmd = true;
@@ -315,15 +272,16 @@ void SV_PredPopPlayerCmd(int32_t node, tic_t tic, ticcmd_t *out_cmd)
 
 	if (pn->queue_len > 0)
 	{
-		// Hard latency ceiling of 2 tics, plus gentle self-drain if a persistent
-		// surplus of >= 2 tics remains after a drop or minor clock skew.
-		while (pn->queue_len > 2)
+		// Maintain a 1-tic post-pop jitter/loss cushion (queue_len == 2 before pop)
+		// so +-14ms jitter or single dropped packets recovered via cl_netrepeatinput
+		// cause zero underruns and zero reconciliations. Hard ceiling: 2 post-pop tics.
+		while (pn->queue_len > 3)
 		{
 			SV_PredQueueShiftOldest(pn);
 			pn->trimmed++;
 		}
 
-		if (pn->queue_len >= 2)
+		if (pn->queue_len >= 3)
 		{
 			pn->high_queue_tics++;
 			if (pn->high_queue_tics >= CLPRED_SV_DRAIN_TICS)
@@ -346,7 +304,7 @@ void SV_PredPopPlayerCmd(int32_t node, tic_t tic, ticcmd_t *out_cmd)
 	}
 	else
 	{
-		// True underrun: hold previous controls just like vanilla, mark not received
+		// True underrun: hold previous controls, mark not received
 		pn->high_queue_tics = 0;
 		out_cmd->flags &= ~TICCMD_RECEIVED;
 		pn->last_underrun = true;
@@ -366,84 +324,44 @@ void SV_PredPopPlayerCmd(int32_t node, tic_t tic, ticcmd_t *out_cmd)
 	}
 }
 
-void SV_PredSendAck(int32_t node, tic_t realfirsttic, tic_t lasttictosend)
+uint8_t *SV_PredWriteInlineAcks(int32_t node, tic_t realfirsttic, tic_t lasttictosend, uint8_t *bufpos)
 {
-	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
 	sv_pred_node_t *pn;
-	tic_t ack_start, t;
-	uint32_t numtics, k;
-	size_t packetsize;
+	tic_t t;
+	uint8_t flags;
 
-	if (node <= 0 || node >= MAXNETNODES || lasttictosend <= realfirsttic)
-		return;
+	if (node <= 0 || node >= MAXNETNODES || lasttictosend <= realfirsttic || !bufpos)
+		return bufpos;
 
 	pn = &sv_pred[node];
 	if (!pn->enabled || !pn->used_pred_cmd)
-		return;
+		return bufpos;
 
-	ack_start = realfirsttic;
+	flags = pn->last_underrun ? CLPRED_ACKF_UNDERRUN : 0;
+	WRITEUINT8(bufpos, flags);
 
-	// Include up to CLPRED_ACK_REDUNDANCY recent tics so a single dropped PT_PREDACK
-	// packet is seamlessly recovered on the very next tic.
-	if (lasttictosend - ack_start < CLPRED_ACK_REDUNDANCY)
+	for (t = realfirsttic; t < lasttictosend; t++)
 	{
-		tic_t min_start = (lasttictosend > CLPRED_ACK_REDUNDANCY)
-			? (lasttictosend - CLPRED_ACK_REDUNDANCY)
-			: 0;
-		while (ack_start > min_start)
-		{
-			tic_t prev = ack_start - 1;
-			uint32_t slot = prev % BACKUPTICS;
-			if (!pn->tic_ack_valid[slot] || pn->tic_ack_tic[slot] != prev)
-				break;
-			ack_start = prev;
-		}
-	}
-
-	if (lasttictosend - ack_start > CLPRED_MAX_ACK_TICS)
-		ack_start = lasttictosend - CLPRED_MAX_ACK_TICS;
-
-	numtics = (uint32_t)(lasttictosend - ack_start);
-	if (numtics == 0)
-		return;
-
-	netbuffer->packettype = PT_PREDACK;
-	netbuffer->u.predack.starttic = LSBF_LONG(ack_start);
-	netbuffer->u.predack.numtics = (uint8_t)numtics;
-	netbuffer->u.predack.flags = pn->last_underrun ? CLPRED_ACKF_UNDERRUN : 0;
-	netbuffer->u.predack.reserved = 0;
-
-	for (k = 0; k < numtics; k++)
-	{
-		uint32_t slot;
+		uint32_t slot = t % BACKUPTICS;
 		uint32_t seq;
-		t = ack_start + k;
-		slot = t % BACKUPTICS;
+
 		if (pn->tic_ack_valid[slot] && pn->tic_ack_tic[slot] == t)
 			seq = pn->tic_ack_seq[slot];
 		else
 			seq = pn->last_exec_seq;
-		netbuffer->u.predack.ack_seq[k] = LSBF_LONG(seq);
+
+		WRITEUINT32(bufpos, seq);
 	}
 
-	packetsize = offsetof(predack_pak, ack_seq) + numtics * sizeof(uint32_t);
-	HSendPacket(node, false, 0, packetsize);
+	return bufpos;
 }
 
 // =========================================================================
-// Client-side Option B + Option A state
+// Client-side prediction & native ACK state
 // =========================================================================
 
-#define CLPRED_CAP_MAX_ATTEMPTS 5
-#define CLPRED_CAP_RETRY_TICS   10
-
-typedef enum
-{
-	CLPRED_CAP_IDLE = 0,
-	CLPRED_CAP_PROBING,
-	CLPRED_CAP_ACTIVE,
-	CLPRED_CAP_UNSUPPORTED
-} cl_pred_cap_state_t;
+#define CLPRED_MAX_ATTACHED 64
+#define CLPRED_SNAP_THRESHOLD (256 * FRACUNIT)
 
 typedef struct cl_pred_tx_s
 {
@@ -451,14 +369,30 @@ typedef struct cl_pred_tx_s
 	ticcmd_t cmd;
 } cl_pred_tx_t;
 
+typedef struct cl_pred_pose_s
+{
+	dboolean valid;
+	fixed_t x, y, z;
+	fixed_t scale, radius, height;
+	fixed_t spritexscale, spriteyscale, spritexoffset, spriteyoffset;
+	fixed_t sprxoff, spryoff, sprzoff;
+	fixed_t crash_zoffset;
+	angle_t angle;
+	angle_t drawangle;
+	angle_t pitch, roll, slopepitch, sloperoll;
+	uint8_t sprite2;
+	uint32_t frame;
+	subsector_t *subsector;
+} cl_pred_pose_t;
+
+typedef struct cl_pred_attached_s
+{
+	mobj_t *mo;
+	sector_t *vis_sec;
+} cl_pred_attached_t;
+
 typedef struct cl_pred_state_s
 {
-	cl_pred_cap_state_t cap_state;
-	dboolean proto_active;
-	uint8_t server_max_repeat;
-	uint8_t cap_attempts;
-	tic_t cap_last_send_tic;
-
 	uint32_t next_seq;
 	uint32_t proto_start_seq;
 	uint32_t last_sent_seq;
@@ -481,12 +415,12 @@ typedef struct cl_pred_state_s
 	// Telemetry
 	uint32_t ack_packets_recv;
 	uint32_t exact_ack_ticks;
-	uint32_t fallback_ack_ticks;
+	uint32_t missing_ack_ticks;
 	uint32_t queue_overflows;
 	uint32_t max_in_flight;
 	uint32_t server_underrun_flags;
 
-	// Step 3: Read-only shadow kart state
+	// Read-only shadow kart state
 	player_t shadow_player;
 	mobj_t shadow_mo;
 	dboolean shadow_valid;
@@ -497,22 +431,9 @@ typedef struct cl_pred_state_s
 	uint32_t shadow_replays;
 	uint32_t rng_violations;
 
-	// Step 4: Visual pose, sub-tic lerp endpoints, smooth reconciliation & camera state
-	struct cl_pred_pose_s
-	{
-		dboolean valid;
-		fixed_t x, y, z;
-		fixed_t scale, radius, height;
-		fixed_t spritexscale, spriteyscale, spritexoffset, spriteyoffset;
-		fixed_t sprxoff, spryoff, sprzoff;
-		fixed_t crash_zoffset;
-		angle_t angle;
-		angle_t drawangle;
-		angle_t pitch, roll, slopepitch, sloperoll;
-		uint8_t sprite2;
-		uint32_t frame;
-		subsector_t *subsector;
-	} pose_old, pose_new;
+	// Visual pose, sub-tic lerp endpoints, smooth reconciliation
+	cl_pred_pose_t pose_old;
+	cl_pred_pose_t pose_new;
 	uint32_t last_head_seq;
 
 	fixed_t smooth_err_x;
@@ -525,11 +446,20 @@ typedef struct cl_pred_state_s
 	uint32_t smooth_snaps;
 	fixed_t max_reconcile_xy;
 
-	dboolean defer_cam0;
-	dboolean cam0_was_deferred;
+	// Instant drift spark tier audio cue state
+	uint8_t drift_sound_stage;
+	uint8_t drift_sound_suppress_stage;
+	tic_t drift_sound_suppress_until;
+
+	// Per-frame cache of attached VFX & held/orbiting items for cross-sector rendering
+	cl_pred_attached_t attached[CLPRED_MAX_ATTACHED];
+	uint32_t attached_count;
 } cl_pred_state_t;
 
 static cl_pred_state_t cl_pred;
+
+static dboolean CL_PredIsPlayerEligible(const player_t *p);
+static void CL_PredRefreshShadowPhysics(void);
 
 static void CL_PredResetVisualState(void)
 {
@@ -546,12 +476,17 @@ static void CL_PredResetVisualState(void)
 	cl_pred.smooth_err_z = 0;
 	cl_pred.smooth_err_angle = 0;
 	cl_pred.smooth_err_drawangle = 0;
+	cl_pred.drift_sound_stage = 0;
+	cl_pred.drift_sound_suppress_stage = 0;
+	cl_pred.drift_sound_suppress_until = 0;
+	cl_pred.attached_count = 0;
 }
 
 void CL_PredResetSession(void)
 {
 	memset(&cl_pred, 0, sizeof(cl_pred));
 	cl_pred.next_seq = 1;
+	cl_pred.proto_start_seq = 1;
 }
 
 void CL_PredResetState(void)
@@ -561,135 +496,31 @@ void CL_PredResetState(void)
 	CL_PredResetVisualState();
 }
 
-static void CL_PredSendCap(void)
+void CL_PredReadInlineAcks(tic_t starttic, uint32_t numtics, const uint8_t *data, size_t avail_bytes)
 {
-	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
+	uint8_t flags;
+	uint32_t k;
+	const uint8_t *p = data;
 
-	netbuffer->packettype = PT_PREDCAP;
-	netbuffer->u.predcap.magic = LSBF_LONG(CLPRED_MAGIC);
-	netbuffer->u.predcap.version = CLPRED_PROTO_VERSION;
-	netbuffer->u.predcap.flags = CLPRED_CAP_REPEAT | CLPRED_CAP_EXACT_ACK;
-	netbuffer->u.predcap.max_repeat = CLPRED_MAX_REPEAT;
-	netbuffer->u.predcap.reserved = 0;
-
-	HSendPacket(servernode, false, 0, sizeof(predcap_pak));
-}
-
-void CL_PredTickHandshake(void)
-{
-	tic_t now;
-
-	if (!client || !netgame || demo.playback)
+	if (!client || !data || numtics == 0)
 		return;
 
-	if (!cv_cl_movement_proto.value)
-	{
-		if (cl_pred.proto_active || cl_pred.cap_state != CLPRED_CAP_IDLE)
-		{
-			cl_pred.proto_active = false;
-			cl_pred.cap_state = CLPRED_CAP_IDLE;
-			cl_pred.proto_start_seq = cl_pred.next_seq;
-		}
-		return;
-	}
-
-	if (cl_pred.cap_state == CLPRED_CAP_ACTIVE || cl_pred.cap_state == CLPRED_CAP_UNSUPPORTED)
+	if (avail_bytes < 1 + (size_t)numtics * sizeof(uint32_t))
 		return;
 
-	now = I_GetTime();
-	if (cl_pred.cap_state == CLPRED_CAP_IDLE)
-	{
-		CL_PredSendCap();
-		cl_pred.cap_state = CLPRED_CAP_PROBING;
-		cl_pred.cap_attempts = 1;
-		cl_pred.cap_last_send_tic = now;
-	}
-	else if (cl_pred.cap_state == CLPRED_CAP_PROBING && now >= cl_pred.cap_last_send_tic + CLPRED_CAP_RETRY_TICS)
-	{
-		if (cl_pred.cap_attempts < CLPRED_CAP_MAX_ATTEMPTS)
-		{
-			CL_PredSendCap();
-			cl_pred.cap_attempts++;
-			cl_pred.cap_last_send_tic = now;
-		}
-		else
-		{
-			cl_pred.cap_state = CLPRED_CAP_UNSUPPORTED;
-			cl_pred.proto_active = false;
-			CONS_Debug(DBG_NETPLAY, "[CL_PRED] Server did not reply to PT_PREDCAP; using Option A vanilla fallback\n");
-			if (cv_cl_movement_debug.value >= 1)
-				CONS_Printf("[CL_PRED] Server did not reply to PT_PREDCAP; using Option A vanilla fallback\n");
-		}
-	}
-}
-
-void CL_PredHandleCap(int8_t node)
-{
-	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
-	predcap_pak incoming;
-
-	if (!client || node != servernode)
-		return;
-
-	if ((size_t)doomcom->datalength < BASEPACKETSIZE + sizeof(predcap_pak))
-		return;
-
-	if (!cv_cl_movement_proto.value)
-		return;
-
-	incoming = netbuffer->u.predcap;
-	if (LSBF_LONG(incoming.magic) != CLPRED_MAGIC || incoming.version != CLPRED_PROTO_VERSION)
-		return;
-
-	if (!cl_pred.proto_active)
-	{
-		cl_pred.proto_active = true;
-		cl_pred.cap_state = CLPRED_CAP_ACTIVE;
-		cl_pred.server_max_repeat = min(incoming.max_repeat, (uint8_t)CLPRED_MAX_REPEAT);
-		cl_pred.proto_start_seq = cl_pred.next_seq;
-
-		CONS_Debug(DBG_NETPLAY, "[CL_PRED] Negotiated Option B protocol (v%u, max_repeat=%u, start_seq=%u)\n",
-			incoming.version, cl_pred.server_max_repeat, cl_pred.proto_start_seq);
-		if (cv_cl_movement_debug.value >= 1)
-			CONS_Printf("[CL_PRED] Negotiated Option B protocol (v%u, max_repeat=%u, start_seq=%u)\n",
-				incoming.version, cl_pred.server_max_repeat, cl_pred.proto_start_seq);
-	}
-}
-
-void CL_PredHandleAck(int8_t node)
-{
-	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
-	tic_t starttic;
-	uint8_t numtics, k;
-	size_t needed;
-
-	if (!client || node != servernode)
-		return;
-
-	if ((size_t)doomcom->datalength < BASEPACKETSIZE + offsetof(predack_pak, ack_seq))
-		return;
-
-	numtics = netbuffer->u.predack.numtics;
-	if (numtics == 0 || numtics > CLPRED_MAX_ACK_TICS)
-		return;
-
-	needed = BASEPACKETSIZE + offsetof(predack_pak, ack_seq) + (size_t)numtics * sizeof(uint32_t);
-	if ((size_t)doomcom->datalength < needed)
-		return;
-
-	starttic = (tic_t)LSBF_LONG(netbuffer->u.predack.starttic);
+	flags = READUINT8(p);
 
 	for (k = 0; k < numtics; k++)
 	{
 		tic_t t = starttic + k;
 		uint32_t slot = t % BACKUPTICS;
 		cl_pred.tic_ack_tic[slot] = t;
-		cl_pred.tic_ack_seq[slot] = LSBF_LONG(netbuffer->u.predack.ack_seq[k]);
+		cl_pred.tic_ack_seq[slot] = READUINT32(p);
 		cl_pred.tic_ack_valid[slot] = true;
 	}
 
 	cl_pred.ack_packets_recv++;
-	if (netbuffer->u.predack.flags & CLPRED_ACKF_UNDERRUN)
+	if (flags & CLPRED_ACKF_UNDERRUN)
 		cl_pred.server_underrun_flags++;
 }
 
@@ -707,7 +538,10 @@ uint32_t CL_PredRecordOutgoingCmd(const ticcmd_t *cmd)
 		return 0;
 
 	if (cl_pred.next_seq == 0)
+	{
 		cl_pred.next_seq = 1;
+		cl_pred.proto_start_seq = 1;
+	}
 
 	seq = cl_pred.next_seq;
 	cl_pred.next_seq = SeqNext(cl_pred.next_seq);
@@ -721,7 +555,10 @@ uint32_t CL_PredRecordOutgoingCmd(const ticcmd_t *cmd)
 	if (cl_pred.tx_count < CLPRED_MAX_CMDS)
 		cl_pred.tx_count++;
 
-	// Push into prediction queue during active gameplay
+	// Push into prediction queue during active gameplay.
+	// Only refresh shadow physics here (NOT visual pose_old/pose_new or camera[0]),
+	// so mid-frame NetUpdate() calls (e.g. inside HWR_RenderPlayerView) never jitter rendering,
+	// while G_DoCameraTurn always reads the latest shadow state even across multi-tic catch-up.
 	if (gamestate == GS_LEVEL && addedtogame && playeringame[consoleplayer] && leveltime >= 1)
 	{
 		if (cl_pred.queue_len >= CLPRED_QUEUE_CAP)
@@ -739,7 +576,7 @@ uint32_t CL_PredRecordOutgoingCmd(const ticcmd_t *cmd)
 		if (cl_pred.queue_len > cl_pred.max_in_flight)
 			cl_pred.max_in_flight = cl_pred.queue_len;
 
-		CL_PredUpdateShadow();
+		CL_PredRefreshShadowPhysics();
 	}
 
 	return seq;
@@ -747,7 +584,7 @@ uint32_t CL_PredRecordOutgoingCmd(const ticcmd_t *cmd)
 
 dboolean CL_PredUseEnhancedCmd(void)
 {
-	return (cl_pred.proto_active && cv_cl_movement_proto.value && !splitscreen && cl_pred.tx_count > 0);
+	return (!splitscreen && cl_pred.tx_count > 0);
 }
 
 void CL_PredBuildCmdPacket(dboolean mis, uint8_t client_tic, uint8_t resendfrom,
@@ -760,29 +597,29 @@ void CL_PredBuildCmdPacket(dboolean mis, uint8_t client_tic, uint8_t resendfrom,
 	netbuffer->packettype = (mis ? PT_CLIENTMIS_PRED : PT_CLIENTCMD_PRED);
 	netbuffer->u.clientpredpak.client_tic = client_tic;
 	netbuffer->u.clientpredpak.resendfrom = resendfrom;
-	netbuffer->u.clientpredpak.consistancy = *cons;
+	if (cons)
+		netbuffer->u.clientpredpak.consistancy = *cons;
+	else
+		memset(&netbuffer->u.clientpredpak.consistancy, 0, sizeof(consistancy_t));
 
-	head_seq = cl_pred.tx_history[0].seq;
-	want_repeat = (uint8_t)min((int32_t)cv_cl_netrepeatinput.value, (int32_t)cl_pred.server_max_repeat);
-	if (want_repeat > CLPRED_MAX_REPEAT)
-		want_repeat = CLPRED_MAX_REPEAT;
+	want_repeat = (uint8_t)CLAMP(cv_cl_netrepeatinput.value, 0, (int32_t)CLPRED_MAX_REPEAT);
 	max_cmds = 1 + want_repeat;
 	if (max_cmds > cl_pred.tx_count)
 		max_cmds = cl_pred.tx_count;
+	if (max_cmds > CLPRED_MAX_CMDS)
+		max_cmds = CLPRED_MAX_CMDS;
 
+	head_seq = cl_pred.tx_history[0].seq;
 	count = 0;
+
 	for (k = 0; k < max_cmds; k++)
 	{
 		uint32_t expected_seq = SeqPrev(head_seq, k);
-		uint32_t entry_seq = cl_pred.tx_history[k].seq;
-
-		// Never repeat cmds sent before Option B activation or across sequence gaps
-		if (entry_seq != expected_seq)
+		if (cl_pred.tx_history[k].seq != expected_seq)
 			break;
-		if (k > 0 && cl_pred.proto_start_seq != 0 && !SeqAtLeast(entry_seq, cl_pred.proto_start_seq))
+		if (cl_pred.proto_start_seq != 0 && !SeqAtLeast(expected_seq, cl_pred.proto_start_seq))
 			break;
-
-		G_MoveTiccmd(&netbuffer->u.clientpredpak.cmds[count], &cl_pred.tx_history[k].cmd, 1);
+		G_MoveTiccmd(&netbuffer->u.clientpredpak.cmds[k], &cl_pred.tx_history[k].cmd, 1);
 		count++;
 	}
 
@@ -802,149 +639,25 @@ void CL_PredBuildCmdPacket(dboolean mis, uint8_t client_tic, uint8_t resendfrom,
 
 static void CL_PredPruneUpToSeq(uint32_t ack_seq)
 {
-	uint32_t keep = 0;
+	uint32_t keep_from = 0;
 
-	while (keep < cl_pred.queue_len && !SeqAfter(cl_pred.queue[keep].seq, ack_seq))
-		keep++;
-
-	if (keep > 0)
-	{
-		uint32_t rem = cl_pred.queue_len - keep;
-		if (rem > 0)
-			memmove(&cl_pred.queue[0], &cl_pred.queue[keep], rem * sizeof(cl_pred.queue[0]));
-		cl_pred.queue_len = rem;
-	}
-}
-
-static dboolean CL_PredCmdMatches(const ticcmd_t *a, const ticcmd_t *b)
-{
-	return (a->forwardmove == b->forwardmove
-		&& a->sidemove == b->sidemove
-		&& a->turning == b->turning
-		&& a->angle == b->angle
-		&& a->throwdir == b->throwdir
-		&& a->aiming == b->aiming
-		&& a->buttons == b->buttons
-		&& a->latency == b->latency
-		&& ((a->flags & ~TICCMD_RECEIVED) == (b->flags & ~TICCMD_RECEIVED)));
-}
-
-static void CL_PredFinishDeferredCamera0(void);
-
-void CL_PredOnConfirmedTic(tic_t executed_tic, const ticcmd_t *confirmed_cmd)
-{
-	uint32_t slot;
-
-	if (!client || !netgame || demo.playback)
-	{
-		CL_PredFinishDeferredCamera0();
+	if (ack_seq == 0 || cl_pred.queue_len == 0)
 		return;
-	}
 
-	if (gamestate != GS_LEVEL || !addedtogame || !playeringame[consoleplayer]
-		|| leveltime == 0 || leveltime < cl_pred.last_leveltime)
+	while (keep_from < cl_pred.queue_len && !SeqAfter(cl_pred.queue[keep_from].seq, ack_seq))
+		keep_from++;
+
+	if (keep_from > 0)
 	{
-		CL_PredResetState();
-		cl_pred.last_leveltime = (gamestate == GS_LEVEL) ? leveltime : 0;
-		CL_PredFinishDeferredCamera0();
-		return;
-	}
-
-	cl_pred.last_leveltime = leveltime;
-	slot = executed_tic % BACKUPTICS;
-
-	if (cl_pred.proto_active && cl_pred.tic_ack_valid[slot] && cl_pred.tic_ack_tic[slot] == executed_tic)
-	{
-		uint32_t ack_seq = cl_pred.tic_ack_seq[slot];
-		cl_pred.tic_ack_valid[slot] = false;
-
-		if (ack_seq != 0 && SeqAfter(ack_seq, cl_pred.confirmed_seq))
-		{
-			cl_pred.confirmed_seq = ack_seq;
-			CL_PredPruneUpToSeq(ack_seq);
-		}
-		else if (ack_seq != 0 && ack_seq == cl_pred.confirmed_seq)
-		{
-			// Server repeated last_exec_seq (underrun) — prune nothing, queue stays exact
-			CL_PredPruneUpToSeq(ack_seq);
-		}
-
-		cl_pred.exact_ack_ticks++;
-	}
-	else if (confirmed_cmd && (confirmed_cmd->flags & TICCMD_RECEIVED))
-	{
-		// Option A vanilla-server fallback (or rare missed PT_PREDACK before next redundant ack)
-		uint32_t idx;
-		dboolean matched = false;
-
-		for (idx = 0; idx < cl_pred.queue_len; idx++)
-		{
-			if (CL_PredCmdMatches(&cl_pred.queue[idx].cmd, confirmed_cmd))
-			{
-				uint32_t ack_seq = cl_pred.queue[idx].seq;
-				if (SeqAfter(ack_seq, cl_pred.confirmed_seq))
-					cl_pred.confirmed_seq = ack_seq;
-				CL_PredPruneUpToSeq(ack_seq);
-				cl_pred.fallback_ack_ticks++;
-				matched = true;
-				break;
-			}
-		}
-
-		// Safety guard against unbounded queue growth if Option A misses a match during a spike
-		if (!matched && cl_pred.queue_len > 20)
-		{
-			uint32_t drop = 0;
-			while (drop < cl_pred.queue_len && (cl_pred.queue_len - drop) > 16)
-				drop++;
-			if (drop > 0)
-			{
-				uint32_t rem = cl_pred.queue_len - drop;
-				memmove(&cl_pred.queue[0], &cl_pred.queue[drop], rem * sizeof(cl_pred.queue[0]));
-				cl_pred.queue_len = rem;
-			}
-		}
-	}
-
-	CL_PredUpdateShadow();
-	CL_PredFinishDeferredCamera0();
-
-	if (cv_cl_movement_debug.value >= 2 && (executed_tic % TICRATE) == 0)
-	{
-		fixed_t err_xy = R_PointToDist2(cl_pred.smooth_err_x, cl_pred.smooth_err_y, 0, 0);
-		fixed_t cam_s = (cl_pred.shadow_valid && camera[0].chase)
-			? R_PointToDist2(camera[0].x, camera[0].y, cl_pred.shadow_mo.x, cl_pred.shadow_mo.y) : 0;
-		fixed_t cam_c = (playeringame[consoleplayer] && players[consoleplayer].mo && camera[0].chase)
-			? R_PointToDist2(camera[0].x, camera[0].y, players[consoleplayer].mo->x, players[consoleplayer].mo->y) : 0;
-		CONS_Printf("[CL_PRED] proto=%s tic=%u sent=%u conf=%u qlen=%u maxq=%u exact=%u fall=%u ackpkts=%u ovf=%u svunder=%u pred=%u dxy=%d dz=%d dang=%u replays=%u rec=%u snap=%u errxy=%d maxrec=%d cams=%d camc=%d rngv=%u\n",
-			cl_pred.proto_active ? "B" : "A",
-			executed_tic,
-			cl_pred.last_sent_seq,
-			cl_pred.confirmed_seq,
-			cl_pred.queue_len,
-			cl_pred.max_in_flight,
-			cl_pred.exact_ack_ticks,
-			cl_pred.fallback_ack_ticks,
-			cl_pred.ack_packets_recv,
-			cl_pred.queue_overflows,
-			cl_pred.server_underrun_flags,
-			cl_pred.predicted_tics,
-			cl_pred.last_delta_xy >> FRACBITS,
-			cl_pred.last_delta_z >> FRACBITS,
-			(uint32_t)(cl_pred.last_delta_angle >> ANGLETOFINESHIFT),
-			cl_pred.shadow_replays,
-			cl_pred.smooth_reconciles,
-			cl_pred.smooth_snaps,
-			err_xy >> FRACBITS,
-			cl_pred.max_reconcile_xy >> FRACBITS,
-			cam_s >> FRACBITS,
-			cam_c >> FRACBITS,
-			cl_pred.rng_violations);
+		uint32_t remaining = cl_pred.queue_len - keep_from;
+		if (remaining > 0)
+			memmove(&cl_pred.queue[0], &cl_pred.queue[keep_from], remaining * sizeof(cl_pred.queue[0]));
+		cl_pred.queue_len = remaining;
 	}
 }
 
 // =========================================================================
-// Step 3: Read-only shadow kart physics replay & exactness self-test
+// Read-only shadow kart physics replay
 // =========================================================================
 
 static dboolean CL_PredIsPlayerEligible(const player_t *p)
@@ -989,6 +702,8 @@ static void CL_PredDetachShadowMobj(mobj_t *mo, player_t *owner)
 static void CL_PredReplayOnConsolePlayer(
 	const player_t *base_player,
 	const mobj_t *base_mo,
+	sector_t *const *init_secs,
+	int32_t init_sec_count,
 	tic_t start_leveltime,
 	const ticcmd_t *cmds,
 	uint32_t count,
@@ -1013,6 +728,11 @@ static void CL_PredReplayOnConsolePlayer(
 	cl_pred_active_flag = true;
 	P_PredPushMapState();
 
+	if (init_secs != NULL && init_sec_count > 0)
+		P_PredInitTouchingSectorsFromList(init_secs, init_sec_count);
+	else
+		P_PredInitTouchingSectorsFromMobj(base_mo);
+
 	// Run directly on players[consoleplayer] so any (player - players) index
 	// arithmetic inside kart helpers resolves to consoleplayer cleanly.
 	players[consoleplayer] = *base_player;
@@ -1031,7 +751,7 @@ static void CL_PredReplayOnConsolePlayer(
 		P_PredPlayerThink(&players[consoleplayer]);
 		P_PredPlayerMobjThink(&work_mo);
 
-		// Mirror P_PlayerAfterThink physics tail
+		// Mirror P_PlayerAfterThink physics tail (SECTORSPECIALSAFTERTHINK order)
 		if (P_IsObjectOnGround(&work_mo))
 		{
 			players[consoleplayer].outrun = 0;
@@ -1041,6 +761,9 @@ static void CL_PredReplayOnConsolePlayer(
 		{
 			players[consoleplayer].onconveyor = 0;
 		}
+
+		// Read-only static ground dash panel prediction (sector/FOF/polyobj/terrain/graze)
+		P_PredCheckDashPanels(&players[consoleplayer]);
 
 		players[consoleplayer].oldcmd = *pcmd;
 	}
@@ -1074,9 +797,7 @@ static void CL_PredReplayOnConsolePlayer(
 	}
 }
 
-#define CLPRED_SNAP_THRESHOLD (256 * FRACUNIT)
-
-static void CL_PredCapturePose(const player_t *p, const mobj_t *mo, struct cl_pred_pose_s *out)
+static void CL_PredCapturePose(const player_t *p, const mobj_t *mo, cl_pred_pose_t *out)
 {
 	out->valid = true;
 	out->x = mo->x;
@@ -1104,107 +825,12 @@ static void CL_PredCapturePose(const player_t *p, const mobj_t *mo, struct cl_pr
 	out->subsector = mo->subsector;
 }
 
-static void CL_PredCommitVisualPose(const player_t *confirmed_p, uint32_t head_seq)
-{
-	struct cl_pred_pose_s next_pose;
-	dboolean force_snap;
-
-	CL_PredCapturePose(&cl_pred.shadow_player, &cl_pred.shadow_mo, &next_pose);
-
-	force_snap = (!cl_pred.pose_new.valid
-		|| !cv_cl_movement_smooth.value
-		|| confirmed_p->mo->resetinterp
-		|| P_PlayerInPain(confirmed_p));
-
-	if (force_snap)
-	{
-		cl_pred.pose_old = next_pose;
-		cl_pred.pose_new = next_pose;
-		cl_pred.smooth_err_x = 0;
-		cl_pred.smooth_err_y = 0;
-		cl_pred.smooth_err_z = 0;
-		cl_pred.smooth_err_angle = 0;
-		cl_pred.smooth_err_drawangle = 0;
-		cl_pred.smooth_snaps++;
-	}
-	else if (head_seq != cl_pred.last_head_seq)
-	{
-		// Normal forward 1-tic advance along local input stream
-		cl_pred.pose_old = cl_pred.pose_new;
-		cl_pred.pose_new = next_pose;
-	}
-	else
-	{
-		// Same-horizon reconciliation after authoritative server tic confirmation
-		fixed_t dx = cl_pred.pose_new.x - next_pose.x;
-		fixed_t dy = cl_pred.pose_new.y - next_pose.y;
-		fixed_t dz = cl_pred.pose_new.z - next_pose.z;
-		int32_t dang = (int32_t)(cl_pred.pose_new.angle - next_pose.angle);
-		int32_t ddang = (int32_t)(cl_pred.pose_new.drawangle - next_pose.drawangle);
-
-		if (dx || dy || dz || dang || ddang)
-		{
-			fixed_t err_xy = R_PointToDist2(dx, dy, 0, 0);
-			if (err_xy > cl_pred.max_reconcile_xy)
-				cl_pred.max_reconcile_xy = err_xy;
-
-			if (err_xy > CLPRED_SNAP_THRESHOLD || abs(dz) > CLPRED_SNAP_THRESHOLD)
-			{
-				cl_pred.pose_old = next_pose;
-				cl_pred.pose_new = next_pose;
-				cl_pred.smooth_err_x = 0;
-				cl_pred.smooth_err_y = 0;
-				cl_pred.smooth_err_z = 0;
-				cl_pred.smooth_err_angle = 0;
-				cl_pred.smooth_err_drawangle = 0;
-				cl_pred.smooth_snaps++;
-				R_ResetViewInterpolation(1);
-			}
-			else
-			{
-				// Shift lerp endpoints and camera into reconciled reference frame,
-				// placing the delta into smooth_err for C0-continuous decay.
-				cl_pred.pose_old.x -= dx;
-				cl_pred.pose_old.y -= dy;
-				cl_pred.pose_old.z -= dz;
-				cl_pred.pose_old.angle -= (angle_t)dang;
-				cl_pred.pose_old.drawangle -= (angle_t)ddang;
-
-				if (displayplayers[0] == consoleplayer && camera[0].chase)
-				{
-					camera[0].x -= dx;
-					camera[0].y -= dy;
-					camera[0].z -= dz;
-					camera[0].old_x -= dx;
-					camera[0].old_y -= dy;
-					camera[0].old_z -= dz;
-					R_PredShiftViewInterpolation(0, -dx, -dy, -dz);
-				}
-
-				cl_pred.pose_new = next_pose;
-
-				cl_pred.smooth_err_x = CLAMP(cl_pred.smooth_err_x + dx, -CLPRED_SNAP_THRESHOLD, CLPRED_SNAP_THRESHOLD);
-				cl_pred.smooth_err_y = CLAMP(cl_pred.smooth_err_y + dy, -CLPRED_SNAP_THRESHOLD, CLPRED_SNAP_THRESHOLD);
-				cl_pred.smooth_err_z = CLAMP(cl_pred.smooth_err_z + dz, -CLPRED_SNAP_THRESHOLD, CLPRED_SNAP_THRESHOLD);
-				cl_pred.smooth_err_angle += dang;
-				cl_pred.smooth_err_drawangle += ddang;
-				cl_pred.smooth_reconciles++;
-			}
-		}
-		else
-		{
-			// Exact match: keep pose_old intact and refresh latest visual attributes
-			cl_pred.pose_new = next_pose;
-		}
-	}
-
-	cl_pred.last_head_seq = head_seq;
-}
-
-void CL_PredUpdateShadow(void)
+// Replays shadow_player / shadow_mo from confirmed state + current queue.
+// Does NOT mutate pose_old / pose_new or camera[0].
+static void CL_PredRefreshShadowPhysics(void)
 {
 	const player_t *p;
-	uint32_t maxtics, n, i, head_seq;
+	uint32_t maxtics, n, i;
 	ticcmd_t cmds[CLPRED_QUEUE_CAP];
 
 	if (!client || !netgame || demo.playback || splitscreen
@@ -1227,8 +853,6 @@ void CL_PredUpdateShadow(void)
 	if (n > CLPRED_QUEUE_CAP)
 		n = CLPRED_QUEUE_CAP;
 
-	head_seq = (n > 0) ? cl_pred.queue[n - 1].seq : cl_pred.confirmed_seq;
-
 	if (n == 0)
 	{
 		cl_pred.shadow_player = *p;
@@ -1240,14 +864,13 @@ void CL_PredUpdateShadow(void)
 		cl_pred.last_delta_xy = 0;
 		cl_pred.last_delta_z = 0;
 		cl_pred.last_delta_angle = 0;
-		CL_PredCommitVisualPose(p, head_seq);
 		return;
 	}
 
 	for (i = 0; i < n; i++)
 		cmds[i] = cl_pred.queue[i].cmd;
 
-	CL_PredReplayOnConsolePlayer(p, p->mo, leveltime, cmds, n,
+	CL_PredReplayOnConsolePlayer(p, p->mo, NULL, 0, leveltime, cmds, n,
 		&cl_pred.shadow_player, &cl_pred.shadow_mo);
 
 	cl_pred.shadow_valid = true;
@@ -1256,7 +879,377 @@ void CL_PredUpdateShadow(void)
 	cl_pred.last_delta_xy = R_PointToDist2(cl_pred.shadow_mo.x, cl_pred.shadow_mo.y, p->mo->x, p->mo->y);
 	cl_pred.last_delta_z = abs(cl_pred.shadow_mo.z - p->mo->z);
 	cl_pred.last_delta_angle = (angle_t)abs((int32_t)(cl_pred.shadow_mo.angle - p->mo->angle));
-	CL_PredCommitVisualPose(p, head_seq);
+}
+
+// Reconcile the currently rendered visual pose (at horizon cl_pred.last_head_seq)
+// against freshly confirmed authoritative state without advancing the visual tick.
+static void CL_PredReconcileAtCurrentHorizon(const player_t *p)
+{
+	uint32_t maxtics, recon_n = 0, i;
+	ticcmd_t cmds[CLPRED_QUEUE_CAP];
+	player_t recon_p;
+	mobj_t recon_mo;
+	cl_pred_pose_t recon_pose;
+	dboolean force_snap;
+
+	if (!cl_pred.pose_new.valid || !cv_cl_movement.value || cv_cl_movement_maxtics.value <= 0)
+		return;
+
+	maxtics = (uint32_t)cv_cl_movement_maxtics.value;
+	if (maxtics > CLPRED_QUEUE_CAP)
+		maxtics = CLPRED_QUEUE_CAP;
+
+	// Replay ONLY queued commands up to cl_pred.last_head_seq so we compare apples-to-apples
+	// at the exact same timeline point that pose_new represents (excluding any brand-new
+	// command queued by NetUpdate() earlier in this frame).
+	if (cl_pred.last_head_seq != 0)
+	{
+		for (i = 0; i < cl_pred.queue_len && recon_n < maxtics; i++)
+		{
+			if (SeqAfter(cl_pred.queue[i].seq, cl_pred.last_head_seq))
+				break;
+			cmds[recon_n++] = cl_pred.queue[i].cmd;
+		}
+	}
+
+	if (recon_n == 0)
+	{
+		recon_p = *p;
+		recon_mo = *p->mo;
+		CL_PredDetachShadowMobj(&recon_mo, &recon_p);
+		recon_p.mo = &recon_mo;
+	}
+	else
+	{
+		CL_PredReplayOnConsolePlayer(p, p->mo, NULL, 0, leveltime, cmds, recon_n, &recon_p, &recon_mo);
+	}
+
+	CL_PredCapturePose(&recon_p, &recon_mo, &recon_pose);
+
+	force_snap = (!cv_cl_movement_smooth.value
+		|| p->mo->resetinterp
+		|| P_PlayerInPain(p));
+
+	if (force_snap)
+	{
+		cl_pred.pose_old = recon_pose;
+		cl_pred.pose_new = recon_pose;
+		cl_pred.smooth_err_x = 0;
+		cl_pred.smooth_err_y = 0;
+		cl_pred.smooth_err_z = 0;
+		cl_pred.smooth_err_angle = 0;
+		cl_pred.smooth_err_drawangle = 0;
+		cl_pred.smooth_snaps++;
+		return;
+	}
+
+	{
+		fixed_t dx = cl_pred.pose_new.x - recon_pose.x;
+		fixed_t dy = cl_pred.pose_new.y - recon_pose.y;
+		fixed_t dz = cl_pred.pose_new.z - recon_pose.z;
+		int32_t dang = (int32_t)(cl_pred.pose_new.angle - recon_pose.angle);
+		int32_t ddang = (int32_t)(cl_pred.pose_new.drawangle - recon_pose.drawangle);
+
+		if (dx || dy || dz || dang || ddang)
+		{
+			fixed_t err_xy = R_PointToDist2(dx, dy, 0, 0);
+			if (err_xy > cl_pred.max_reconcile_xy)
+				cl_pred.max_reconcile_xy = err_xy;
+
+			if (err_xy > CLPRED_SNAP_THRESHOLD || abs(dz) > CLPRED_SNAP_THRESHOLD)
+			{
+				cl_pred.pose_old = recon_pose;
+				cl_pred.pose_new = recon_pose;
+				cl_pred.smooth_err_x = 0;
+				cl_pred.smooth_err_y = 0;
+				cl_pred.smooth_err_z = 0;
+				cl_pred.smooth_err_angle = 0;
+				cl_pred.smooth_err_drawangle = 0;
+				cl_pred.smooth_snaps++;
+				R_ResetViewInterpolation(1);
+			}
+			else
+			{
+				// Shift lerp endpoints and camera into reconciled reference frame,
+				// placing the exact opposite delta into smooth_err for C0-continuous decay.
+				cl_pred.pose_old.x -= dx;
+				cl_pred.pose_old.y -= dy;
+				cl_pred.pose_old.z -= dz;
+				cl_pred.pose_old.angle -= (angle_t)dang;
+				cl_pred.pose_old.drawangle -= (angle_t)ddang;
+
+				if (displayplayers[0] == consoleplayer && camera[0].chase)
+				{
+					camera[0].x -= dx;
+					camera[0].y -= dy;
+					camera[0].z -= dz;
+					camera[0].old_x -= dx;
+					camera[0].old_y -= dy;
+					camera[0].old_z -= dz;
+					R_PredShiftViewInterpolation(0, -dx, -dy, -dz);
+				}
+
+				cl_pred.pose_new = recon_pose;
+
+				cl_pred.smooth_err_x = CLAMP(cl_pred.smooth_err_x + dx, -CLPRED_SNAP_THRESHOLD, CLPRED_SNAP_THRESHOLD);
+				cl_pred.smooth_err_y = CLAMP(cl_pred.smooth_err_y + dy, -CLPRED_SNAP_THRESHOLD, CLPRED_SNAP_THRESHOLD);
+				cl_pred.smooth_err_z = CLAMP(cl_pred.smooth_err_z + dz, -CLPRED_SNAP_THRESHOLD, CLPRED_SNAP_THRESHOLD);
+				cl_pred.smooth_err_angle += dang;
+				cl_pred.smooth_err_drawangle += ddang;
+				cl_pred.smooth_reconciles++;
+			}
+		}
+		else
+		{
+			cl_pred.pose_new = recon_pose;
+		}
+	}
+}
+
+void CL_PredUpdateShadow(void)
+{
+	CL_PredRefreshShadowPhysics();
+}
+
+void CL_PredOnConfirmedTic(tic_t executed_tic, const ticcmd_t *confirmed_cmd)
+{
+	uint32_t slot;
+	const player_t *p;
+
+	(void)confirmed_cmd;
+
+	if (!client || !netgame || demo.playback)
+		return;
+
+	if (gamestate != GS_LEVEL || !addedtogame || !playeringame[consoleplayer]
+		|| leveltime == 0 || leveltime < cl_pred.last_leveltime)
+	{
+		CL_PredResetState();
+		cl_pred.last_leveltime = (gamestate == GS_LEVEL) ? leveltime : 0;
+		return;
+	}
+
+	cl_pred.last_leveltime = leveltime;
+	slot = executed_tic % BACKUPTICS;
+
+	if (!splitscreen && cl_pred.tic_ack_valid[slot] && cl_pred.tic_ack_tic[slot] == executed_tic)
+	{
+		uint32_t ack_seq = cl_pred.tic_ack_seq[slot];
+		cl_pred.tic_ack_valid[slot] = false;
+
+		if (ack_seq != 0 && SeqAfter(ack_seq, cl_pred.confirmed_seq))
+		{
+			cl_pred.confirmed_seq = ack_seq;
+			CL_PredPruneUpToSeq(ack_seq);
+		}
+		else if (ack_seq != 0 && ack_seq == cl_pred.confirmed_seq)
+		{
+			// Server repeated last_exec_seq (underrun) — prune nothing, queue stays exact
+			CL_PredPruneUpToSeq(ack_seq);
+		}
+
+		cl_pred.exact_ack_ticks++;
+	}
+	else if (!splitscreen && cl_pred.queue_len > 0 && cl_pred.exact_ack_ticks > 0)
+	{
+		cl_pred.missing_ack_ticks++;
+
+		// Safety guard against unbounded queue growth if inline ACKs were skipped
+		if (cl_pred.queue_len > 20)
+		{
+			uint32_t drop = cl_pred.queue_len - 16;
+			memmove(&cl_pred.queue[0], &cl_pred.queue[drop], 16 * sizeof(cl_pred.queue[0]));
+			cl_pred.queue_len = 16;
+		}
+	}
+
+	p = &players[consoleplayer];
+	if (cv_cl_movement.value && !splitscreen && CL_PredIsPlayerEligible(p))
+	{
+		CL_PredReconcileAtCurrentHorizon(p);
+		CL_PredRefreshShadowPhysics();
+	}
+	else
+	{
+		CL_PredResetVisualState();
+	}
+
+	if (cv_cl_movement_debug.value >= 2 && (executed_tic % TICRATE) == 0)
+	{
+		fixed_t err_xy = R_PointToDist2(cl_pred.smooth_err_x, cl_pred.smooth_err_y, 0, 0);
+		fixed_t cam_s = (cl_pred.shadow_valid && camera[0].chase)
+			? R_PointToDist2(camera[0].x, camera[0].y, cl_pred.shadow_mo.x, cl_pred.shadow_mo.y) : 0;
+		fixed_t cam_c = (playeringame[consoleplayer] && players[consoleplayer].mo && camera[0].chase)
+			? R_PointToDist2(camera[0].x, camera[0].y, players[consoleplayer].mo->x, players[consoleplayer].mo->y) : 0;
+		CONS_Printf("[CL_PRED] tic=%u sent=%u conf=%u qlen=%u maxq=%u exact=%u miss=%u ackpkts=%u ovf=%u svunder=%u pred=%u dxy=%d dz=%d dang=%u replays=%u rec=%u snap=%u errxy=%d maxrec=%d cams=%d camc=%d att=%u rngv=%u\n",
+			executed_tic, cl_pred.last_sent_seq, cl_pred.confirmed_seq,
+			cl_pred.queue_len, cl_pred.max_in_flight,
+			cl_pred.exact_ack_ticks, cl_pred.missing_ack_ticks,
+			cl_pred.ack_packets_recv, cl_pred.queue_overflows, cl_pred.server_underrun_flags,
+			cl_pred.predicted_tics,
+			cl_pred.last_delta_xy >> FRACBITS, cl_pred.last_delta_z >> FRACBITS,
+			(uint32_t)(((uint64_t)cl_pred.last_delta_angle * 360ULL) >> 32),
+			cl_pred.shadow_replays,
+			cl_pred.smooth_reconciles, cl_pred.smooth_snaps,
+			err_xy >> FRACBITS, cl_pred.max_reconcile_xy >> FRACBITS,
+			cam_s >> FRACBITS, cam_c >> FRACBITS,
+			cl_pred.attached_count,
+			cl_pred.rng_violations);
+	}
+}
+
+// Instant drift spark tier chime on predicted shadow kart (suppresses delayed confirmed duplicate)
+static void CL_PredUpdateDriftSound(void)
+{
+	const player_t *sp = &cl_pred.shadow_player;
+	uint8_t cur_stage;
+
+	if (!cl_pred.shadow_valid || !cv_cl_movement.value || dedicated || rendermode == render_none)
+	{
+		cl_pred.drift_sound_stage = 0;
+		return;
+	}
+
+	if ((sp->drift == 0 && sp->airthrustdir == 0) || P_PlayerInPain(sp))
+	{
+		cl_pred.drift_sound_stage = 0;
+		return;
+	}
+
+	if (leveltime > cl_pred.drift_sound_suppress_until)
+		cl_pred.drift_sound_suppress_stage = 0;
+
+	cur_stage = K_GetKartDriftSparkStageForValue(sp, sp->driftcharge);
+	if (cur_stage > cl_pred.drift_sound_stage)
+	{
+		if (playeringame[consoleplayer] && players[consoleplayer].mo && displayplayers[0] == consoleplayer)
+		{
+			S_StartSoundAtVolume(players[consoleplayer].mo, sfx_s3ka2, 192);
+		}
+		cl_pred.drift_sound_stage = cur_stage;
+		if (cur_stage > cl_pred.drift_sound_suppress_stage)
+			cl_pred.drift_sound_suppress_stage = cur_stage;
+		cl_pred.drift_sound_suppress_until = leveltime + (tic_t)max(cv_cl_movement_maxtics.value, 4) + 6;
+	}
+	else if (cur_stage < cl_pred.drift_sound_stage)
+	{
+		cl_pred.drift_sound_stage = cur_stage;
+	}
+}
+
+dboolean CL_PredConsumeSuppressedDriftSound(const player_t *player, uint8_t newstage)
+{
+	if (!player || !cv_cl_movement.value || !cl_pred.shadow_valid
+		|| !client || !netgame || demo.playback || splitscreen
+		|| !playeringame[consoleplayer] || player != &players[consoleplayer])
+	{
+		return false;
+	}
+
+	if (leveltime <= cl_pred.drift_sound_suppress_until && newstage <= cl_pred.drift_sound_suppress_stage)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+dboolean CL_PredIsDrivingCamera0(void)
+{
+	if (!client || !netgame || demo.playback || splitscreen
+		|| !cv_cl_movement.value || cv_cl_movement_maxtics.value <= 0
+		|| gamestate != GS_LEVEL || !addedtogame || !playeringame[consoleplayer]
+		|| displayplayers[0] != consoleplayer || leveltime < 1)
+	{
+		return false;
+	}
+
+	return CL_PredIsPlayerEligible(&players[consoleplayer]);
+}
+
+// Called ONCE per local 35 Hz frame right after TryRunTics() in D_SRB2Loop().
+// Advances BOTH Sonic's visual pose (pose_old -> pose_new) AND camera[0]
+// (pview_old[0] -> pview_new[0]) together in strict 1:1 lockstep with I_GetTimeFrac(),
+// eliminating jitter from 0-tic or 2-tic server packet bursts and mid-frame NetUpdate().
+void CL_PredOnLocalTic(tic_t realtics)
+{
+	const player_t *p;
+	uint32_t maxtics, n, head_seq;
+	cl_pred_pose_t next_pose;
+	dboolean force_snap;
+
+	(void)realtics;
+
+	if (!client || !netgame || demo.playback || splitscreen
+		|| !cv_cl_movement.value || cv_cl_movement_maxtics.value <= 0
+		|| gamestate != GS_LEVEL || !addedtogame || !playeringame[consoleplayer]
+		|| leveltime < 1)
+	{
+		CL_PredResetVisualState();
+		return;
+	}
+
+	p = &players[consoleplayer];
+	if (!CL_PredIsPlayerEligible(p))
+	{
+		CL_PredResetVisualState();
+		return;
+	}
+
+	CL_PredRefreshShadowPhysics();
+	if (!cl_pred.shadow_valid)
+		return;
+
+	maxtics = (uint32_t)cv_cl_movement_maxtics.value;
+	n = min(cl_pred.queue_len, maxtics);
+	if (n > CLPRED_QUEUE_CAP)
+		n = CLPRED_QUEUE_CAP;
+	head_seq = (n > 0) ? cl_pred.queue[n - 1].seq : cl_pred.confirmed_seq;
+
+	CL_PredCapturePose(&cl_pred.shadow_player, &cl_pred.shadow_mo, &next_pose);
+
+	force_snap = (!cl_pred.pose_new.valid
+		|| !cv_cl_movement_smooth.value
+		|| p->mo->resetinterp
+		|| P_PlayerInPain(p));
+
+	if (force_snap)
+	{
+		cl_pred.pose_old = next_pose;
+		cl_pred.pose_new = next_pose;
+		cl_pred.smooth_err_x = 0;
+		cl_pred.smooth_err_y = 0;
+		cl_pred.smooth_err_z = 0;
+		cl_pred.smooth_err_angle = 0;
+		cl_pred.smooth_err_drawangle = 0;
+		cl_pred.smooth_snaps++;
+	}
+	else
+	{
+		cl_pred.pose_old = cl_pred.pose_new;
+		cl_pred.pose_new = next_pose;
+	}
+
+	cl_pred.last_head_seq = head_seq;
+	CL_PredUpdateDriftSound();
+
+	if (CL_PredIsDrivingCamera0())
+	{
+		R_UpdateViewInterpolationSingle(0);
+
+		if (camera[0].chase)
+		{
+			CL_PredStepChaseCamera(&players[consoleplayer], &camera[0], false);
+		}
+
+		if (rendermode != render_none && players[consoleplayer].mo)
+		{
+			const dboolean skybox = (skyboxmo[0] && cv_skybox.value);
+			if (skyVisiblePerPlayer[0] && skybox)
+				R_SkyboxFrame(0);
+			R_SetupFrame(0, skybox);
+		}
+	}
 }
 
 // =========================================================================
@@ -1271,6 +1264,8 @@ typedef struct cl_pred_st_slot_s
 	tic_t lt;
 	player_t player;
 	mobj_t mo;
+	sector_t *secs[32];
+	int32_t sec_count;
 	ticcmd_t raw_cmd; // command executed at (lt - 1) to reach state at lt
 } cl_pred_st_slot_t;
 
@@ -1323,6 +1318,15 @@ void CL_PredSelfTestOnTic(tic_t executed_tic, const ticcmd_t *raw_cmd)
 	cur_slot->lt = leveltime;
 	cur_slot->player = *p;
 	cur_slot->mo = *p->mo;
+	cur_slot->sec_count = 0;
+	{
+		const msecnode_t *node;
+		for (node = p->mo->touching_sectorlist; node && cur_slot->sec_count < 32; node = node->m_sectorlist_next)
+		{
+			if (node->m_sector)
+				cur_slot->secs[cur_slot->sec_count++] = node->m_sector;
+		}
+	}
 	cur_slot->raw_cmd = *raw_cmd;
 
 	horizon = (uint32_t)cv_cl_movement_selftest.value;
@@ -1355,6 +1359,7 @@ void CL_PredSelfTestOnTic(tic_t executed_tic, const ticcmd_t *raw_cmd)
 			int32_t drift_err, chg_err;
 
 			CL_PredReplayOnConsolePlayer(&start_slot->player, &start_slot->mo,
+				start_slot->secs, start_slot->sec_count,
 				start_lt, cmds, horizon, &pred_p, &pred_mo);
 
 			ex = abs(pred_mo.x - p->mo->x);
@@ -1386,14 +1391,20 @@ void CL_PredSelfTestOnTic(tic_t executed_tic, const ticcmd_t *raw_cmd)
 				cl_pred_st.mismatches++;
 				if (cl_pred_st.mismatches <= 15)
 				{
-					CONS_Printf("[CL_PRED_SELFTEST] MISMATCH lt=%u H=%u dx=%d dy=%d dz=%d dang=%u dmx=%d dmy=%d dmz=%d ddrift=%d dchg=%d (spd=%d drift=%d chg=%d)\n",
+					CONS_Printf("[CL_PRED_SELFTEST] MISMATCH lt=%u H=%u dx=%d dy=%d dz=%d dang=%u dmx=%d dmy=%d dmz=%d ddrift=%d dchg=%d (spd=%d drift=%d chg=%d snk=%d/%d fb=%d/%d ns=%u/%u np=%u/%u sb=%d/%d off=%d/%d)\n",
 						leveltime, horizon,
 						pred_mo.x - p->mo->x, pred_mo.y - p->mo->y, pred_mo.z - p->mo->z,
 						ang_err,
 						pred_mo.momx - p->mo->momx, pred_mo.momy - p->mo->momy, pred_mo.momz - p->mo->momz,
 						(int32_t)pred_p.drift - (int32_t)p->drift,
 						(int32_t)pred_p.driftcharge - (int32_t)p->driftcharge,
-						p->speed >> FRACBITS, p->drift, p->driftcharge);
+						p->speed >> FRACBITS, p->drift, p->driftcharge,
+						pred_p.sneakertimer, p->sneakertimer,
+						pred_p.floorboost, p->floorboost,
+						pred_p.numsneakers, p->numsneakers,
+						pred_p.numpanels, p->numpanels,
+						pred_p.speedboost, p->speedboost,
+						pred_p.offroad, p->offroad);
 				}
 			}
 		}
@@ -1411,7 +1422,7 @@ void CL_PredSelfTestOnTic(tic_t executed_tic, const ticcmd_t *raw_cmd)
 }
 
 // =========================================================================
-// Step 4: Visual pose interpolation, smooth error decay, chase cam & HUD
+// Turn-rate, HUD player, visual pose interpolation, attached VFX/items & camera
 // =========================================================================
 
 static inline fixed_t CL_PredLerpFixed(fixed_t from, fixed_t to, fixed_t frac)
@@ -1422,6 +1433,32 @@ static inline fixed_t CL_PredLerpFixed(fixed_t from, fixed_t to, fixed_t frac)
 static inline angle_t CL_PredLerpAngle(angle_t from, angle_t to, fixed_t frac)
 {
 	return from + (angle_t)FixedMul(frac, (fixed_t)(to - from));
+}
+
+const player_t *CL_PredGetTurnPlayer(void)
+{
+	if (!cv_cl_movement.value || !cl_pred.shadow_valid || cl_pred.predicted_tics == 0
+		|| !client || !netgame || demo.playback || splitscreen
+		|| gamestate != GS_LEVEL || !addedtogame || !playeringame[consoleplayer]
+		|| P_IsPredicting())
+	{
+		return NULL;
+	}
+
+	return &cl_pred.shadow_player;
+}
+
+const player_t *CL_PredGetHudPlayer(const player_t *stplyr)
+{
+	if (stplyr && cv_cl_movement.value && cl_pred.shadow_valid
+		&& client && netgame && !demo.playback && !splitscreen
+		&& gamestate == GS_LEVEL && playeringame[consoleplayer]
+		&& stplyr == &players[consoleplayer])
+	{
+		return &cl_pred.shadow_player;
+	}
+
+	return stplyr;
 }
 
 void CL_PredUpdateVisualSmoothing(fixed_t deltatics_fixed)
@@ -1484,8 +1521,8 @@ dboolean CL_PredShouldRenderMobj(const mobj_t *mobj)
 
 void CL_PredInterpolateMobjState(fixed_t frac, interpmobjstate_t *out)
 {
-	const struct cl_pred_pose_s *a = cl_pred.pose_old.valid ? &cl_pred.pose_old : &cl_pred.pose_new;
-	const struct cl_pred_pose_s *b = &cl_pred.pose_new;
+	const cl_pred_pose_t *a = cl_pred.pose_old.valid ? &cl_pred.pose_old : &cl_pred.pose_new;
+	const cl_pred_pose_t *b = &cl_pred.pose_new;
 
 	if (frac >= FRACUNIT)
 	{
@@ -1553,6 +1590,33 @@ void CL_PredInterpolateMobjState(fixed_t frac, interpmobjstate_t *out)
 	}
 }
 
+dboolean CL_PredGetInterpolatedMobjPos(const mobj_t *mobj, fixed_t frac, fixed_t *out_x, fixed_t *out_y, fixed_t *out_z)
+{
+	const cl_pred_pose_t *a, *b;
+
+	if (!CL_PredShouldRenderMobj(mobj))
+		return false;
+
+	a = cl_pred.pose_old.valid ? &cl_pred.pose_old : &cl_pred.pose_new;
+	b = &cl_pred.pose_new;
+
+	if (frac >= FRACUNIT)
+	{
+		*out_x = b->x + cl_pred.smooth_err_x;
+		*out_y = b->y + cl_pred.smooth_err_y;
+		*out_z = b->z + cl_pred.smooth_err_z;
+		return true;
+	}
+
+	if (frac < 0)
+		frac = 0;
+
+	*out_x = CL_PredLerpFixed(a->x, b->x, frac) + cl_pred.smooth_err_x;
+	*out_y = CL_PredLerpFixed(a->y, b->y, frac) + cl_pred.smooth_err_y;
+	*out_z = CL_PredLerpFixed(a->z, b->z, frac) + cl_pred.smooth_err_z;
+	return true;
+}
+
 void CL_PredGetRenderOffsets(const mobj_t *mobj, fixed_t *sprxoff, fixed_t *spryoff, fixed_t *sprzoff, fixed_t *crash_zoffset)
 {
 	if (CL_PredShouldRenderMobj(mobj))
@@ -1597,6 +1661,205 @@ sector_t *CL_PredGetRenderSector(void)
 	ry = cl_pred.pose_new.y + cl_pred.smooth_err_y;
 	ss = R_PointInSubsector(rx, ry);
 	return ss ? ss->sector : NULL;
+}
+
+// =========================================================================
+// Local kart-attached VFX (sparks/dust/flames) & held/orbiting shield items
+// =========================================================================
+
+dboolean CL_PredShouldAttachMobj(const mobj_t *mobj)
+{
+	const mobj_t *pmo;
+	dboolean owned = false;
+
+	if (!cl_pred.shadow_valid || !cl_pred.pose_new.valid || !cv_cl_movement.value
+		|| !client || !netgame || demo.playback || splitscreen
+		|| gamestate != GS_LEVEL || !playeringame[consoleplayer] || P_IsPredicting())
+	{
+		return false;
+	}
+
+	pmo = players[consoleplayer].mo;
+	if (!pmo || P_MobjWasRemoved(pmo) || !mobj || P_MobjWasRemoved(mobj) || mobj == pmo)
+		return false;
+
+	switch (mobj->type)
+	{
+		case MT_DRIFTSPARK:
+		case MT_DRIFTDUST:
+		case MT_BOOSTFLAME:
+		case MT_BOOSTSTACK:
+		case MT_FASTLINE:
+		case MT_BANANA_SHIELD:
+		case MT_ORBINAUT_SHIELD:
+		case MT_JAWZ_SHIELD:
+		case MT_EGGMANITEM_SHIELD:
+		case MT_EGGMINE_SHIELD:
+		case MT_SSMINE_SHIELD:
+		case MT_SINK_SHIELD:
+		case MT_ROCKETSNEAKER:
+		case MT_FLAMESHIELD:
+		case MT_THUNDERSHIELD:
+		case MT_ATTRACTIONSHIELD:
+		case MT_BUBBLESHIELD:
+			break;
+		default:
+			return false;
+	}
+
+	if (mobj->target == pmo)
+	{
+		owned = true;
+	}
+	else if (mobj->type == MT_BOOSTFLAME && mobj->target && !P_MobjWasRemoved(mobj->target)
+		&& mobj->target->type == MT_ROCKETSNEAKER && mobj->target->target == pmo)
+	{
+		owned = true;
+	}
+
+	if (!owned)
+		return false;
+
+	// Don't swing distant stray dust/fastlines that already drifted far away from the kart
+	if (mobj->type == MT_DRIFTDUST || mobj->type == MT_FASTLINE)
+	{
+		fixed_t maxd = FixedMul(180 * FRACUNIT, pmo->scale);
+		if (R_PointToDist2(mobj->x, mobj->y, pmo->x, pmo->y) > maxd)
+			return false;
+	}
+
+	return true;
+}
+
+void CL_PredTransformAttachedState(const mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
+{
+	const mobj_t *pmo;
+	const cl_pred_pose_t *a, *b;
+	fixed_t conf_x, conf_y, conf_z;
+	fixed_t pred_x, pred_y, pred_z;
+	angle_t conf_ang, pred_ang, delta_ang;
+	fixed_t rx, ry, rz, cos_d, sin_d;
+
+	(void)mobj;
+
+	if (!cl_pred.shadow_valid || !cl_pred.pose_new.valid || !playeringame[consoleplayer])
+		return;
+
+	pmo = players[consoleplayer].mo;
+	if (!pmo || P_MobjWasRemoved(pmo))
+		return;
+
+	a = cl_pred.pose_old.valid ? &cl_pred.pose_old : &cl_pred.pose_new;
+	b = &cl_pred.pose_new;
+
+	if (frac >= FRACUNIT)
+	{
+		conf_x = pmo->x;
+		conf_y = pmo->y;
+		conf_z = pmo->z;
+		conf_ang = pmo->angle;
+
+		pred_x = b->x + cl_pred.smooth_err_x;
+		pred_y = b->y + cl_pred.smooth_err_y;
+		pred_z = b->z + cl_pred.smooth_err_z;
+		pred_ang = b->angle + (angle_t)cl_pred.smooth_err_angle;
+	}
+	else
+	{
+		if (frac < 0)
+			frac = 0;
+
+		conf_x = CL_PredLerpFixed(pmo->old_x, pmo->x, frac);
+		conf_y = CL_PredLerpFixed(pmo->old_y, pmo->y, frac);
+		conf_z = CL_PredLerpFixed(pmo->old_z, pmo->z, frac);
+		conf_ang = pmo->resetinterp ? pmo->angle : CL_PredLerpAngle(pmo->old_angle, pmo->angle, frac);
+
+		pred_x = CL_PredLerpFixed(a->x, b->x, frac) + cl_pred.smooth_err_x;
+		pred_y = CL_PredLerpFixed(a->y, b->y, frac) + cl_pred.smooth_err_y;
+		pred_z = CL_PredLerpFixed(a->z, b->z, frac) + cl_pred.smooth_err_z;
+		pred_ang = CL_PredLerpAngle(a->angle, b->angle, frac) + (angle_t)cl_pred.smooth_err_angle;
+	}
+
+	rx = out->x - conf_x;
+	ry = out->y - conf_y;
+	rz = out->z - conf_z;
+	delta_ang = pred_ang - conf_ang;
+
+	cos_d = FINECOSINE((delta_ang >> ANGLETOFINESHIFT) & FINEMASK);
+	sin_d = FINESINE((delta_ang >> ANGLETOFINESHIFT) & FINEMASK);
+
+	out->x = pred_x + FixedMul(rx, cos_d) - FixedMul(ry, sin_d);
+	out->y = pred_y + FixedMul(rx, sin_d) + FixedMul(ry, cos_d);
+	out->z = pred_z + rz;
+	out->angle += delta_ang;
+	out->subsector = R_PointInSubsector(out->x, out->y);
+}
+
+void CL_PredPrepareAttachedFrame(void)
+{
+	thinker_t *th;
+	fixed_t frac;
+
+	cl_pred.attached_count = 0;
+
+	if (!playeringame[consoleplayer] || !CL_PredShouldRenderMobj(players[consoleplayer].mo))
+		return;
+
+	frac = R_GetTimeFrac(RTF_LEVEL);
+
+	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+	{
+		mobj_t *mo;
+		interpmobjstate_t tmp;
+
+		if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
+
+		mo = (mobj_t *)th;
+		if (!CL_PredShouldAttachMobj(mo))
+			continue;
+
+		if (cl_pred.attached_count >= CLPRED_MAX_ATTACHED)
+			break;
+
+		tmp.x = (frac >= FRACUNIT) ? mo->x : CL_PredLerpFixed(mo->old_x, mo->x, frac);
+		tmp.y = (frac >= FRACUNIT) ? mo->y : CL_PredLerpFixed(mo->old_y, mo->y, frac);
+		tmp.z = (frac >= FRACUNIT) ? mo->z : CL_PredLerpFixed(mo->old_z, mo->z, frac);
+		tmp.angle = mo->angle;
+		tmp.subsector = mo->subsector;
+		CL_PredTransformAttachedState(mo, frac, &tmp);
+
+		cl_pred.attached[cl_pred.attached_count].mo = mo;
+		cl_pred.attached[cl_pred.attached_count].vis_sec = tmp.subsector ? tmp.subsector->sector : NULL;
+		cl_pred.attached_count++;
+	}
+}
+
+sector_t *CL_PredGetAttachedRenderSector(const mobj_t *mobj)
+{
+	uint32_t i;
+
+	for (i = 0; i < cl_pred.attached_count; i++)
+	{
+		if (cl_pred.attached[i].mo == mobj)
+			return cl_pred.attached[i].vis_sec;
+	}
+
+	return (mobj && mobj->subsector) ? mobj->subsector->sector : NULL;
+}
+
+uint32_t CL_PredGetAttachedCount(void)
+{
+	return cl_pred.attached_count;
+}
+
+mobj_t *CL_PredGetAttachedMobj(uint32_t idx, sector_t **out_sec)
+{
+	if (idx >= cl_pred.attached_count)
+		return NULL;
+	if (out_sec)
+		*out_sec = cl_pred.attached[idx].vis_sec;
+	return cl_pred.attached[idx].mo;
 }
 
 void CL_PredGetSmoothViewOffset(uint8_t viewnum, fixed_t *ox, fixed_t *oy, fixed_t *oz)
@@ -1647,23 +1910,6 @@ dboolean CL_PredGetFirstPersonView(uint8_t viewnum, fixed_t *out_x, fixed_t *out
 	return true;
 }
 
-void CL_PredSetDeferCamera0(dboolean defer)
-{
-	cl_pred.defer_cam0 = defer;
-	if (defer)
-		cl_pred.cam0_was_deferred = false;
-}
-
-dboolean CL_PredIsDeferringCamera0(void)
-{
-	return cl_pred.defer_cam0;
-}
-
-void CL_PredMarkCamera0Deferred(void)
-{
-	cl_pred.cam0_was_deferred = true;
-}
-
 dboolean CL_PredStepChaseCamera(player_t *player, camera_t *thiscam, dboolean resetcalled)
 {
 	player_t saved_player;
@@ -1693,30 +1939,6 @@ dboolean CL_PredStepChaseCamera(player_t *player, camera_t *thiscam, dboolean re
 	return ret;
 }
 
-static void CL_PredFinishDeferredCamera0(void)
-{
-	if (!cl_pred.cam0_was_deferred)
-		return;
-
-	cl_pred.cam0_was_deferred = false;
-
-	if (gamestate != GS_LEVEL || !playeringame[displayplayers[0]])
-		return;
-
-	if (camera[0].chase)
-	{
-		CL_PredStepChaseCamera(&players[displayplayers[0]], &camera[0], false);
-	}
-
-	if (rendermode != render_none && players[displayplayers[0]].mo)
-	{
-		const dboolean skybox = (skyboxmo[0] && cv_skybox.value);
-		if (skyVisiblePerPlayer[0] && skybox)
-			R_SkyboxFrame(0);
-		R_SetupFrame(0, skybox);
-	}
-}
-
 void CL_PredDrawDebugHUD(void)
 {
 	fixed_t err_xy;
@@ -1730,9 +1952,8 @@ void CL_PredDrawDebugHUD(void)
 	err_xy = R_PointToDist2(cl_pred.smooth_err_x, cl_pred.smooth_err_y, 0, 0);
 	deg = (int32_t)(((uint64_t)cl_pred.last_delta_angle * 360ULL) >> 32);
 
-	snprintf(line1, sizeof(line1), "PRED %s [%s]  tics:%u/%d  q:%u  rec:%u  snap:%u",
+	snprintf(line1, sizeof(line1), "PRED %s  tics:%u/%d  q:%u  rec:%u  snap:%u",
 		(cv_cl_movement.value && cl_pred.shadow_valid) ? "ON" : "OFF",
-		cl_pred.proto_active ? "B" : "A",
 		cl_pred.predicted_tics,
 		cv_cl_movement_maxtics.value,
 		cl_pred.queue_len,
@@ -1752,13 +1973,14 @@ void CL_PredDrawDebugHUD(void)
 	if (cv_cl_movement_debug.value >= 2)
 	{
 		char line3[128];
-		snprintf(line3, sizeof(line3), "seq:%u/%u  ex:%u  fl:%u  ovf:%u  und:%u",
+		snprintf(line3, sizeof(line3), "seq:%u/%u  ex:%u  miss:%u  ovf:%u  und:%u  att:%u",
 			cl_pred.last_sent_seq,
 			cl_pred.confirmed_seq,
 			cl_pred.exact_ack_ticks,
-			cl_pred.fallback_ack_ticks,
+			cl_pred.missing_ack_ticks,
 			cl_pred.queue_overflows,
-			cl_pred.server_underrun_flags);
+			cl_pred.server_underrun_flags,
+			cl_pred.attached_count);
 		V_DrawThinString(4, 24, V_SNAPTOTOP|V_SNAPTOLEFT|V_ALLOWLOWERCASE, line3);
 	}
 }
@@ -1769,7 +1991,7 @@ void CL_PredDrawDebugHUD(void)
 
 dboolean CL_PredIsProtoActive(void)
 {
-	return cl_pred.proto_active;
+	return (!splitscreen && client && netgame && !demo.playback);
 }
 
 dboolean CL_PredHasShadow(void)
@@ -1842,7 +2064,7 @@ static void Command_CLMovementStatus_f(void)
 				continue;
 			if (sv_pred[n].enabled)
 			{
-				CONS_Printf("  node %d: Option B (used=%d, exec_seq=%u, recv_seq=%u, qlen=%u, pkts=%u, queued=%u, recov=%u, under=%u, trim=%u)\n",
+				CONS_Printf("  node %d: native (used=%d, exec_seq=%u, recv_seq=%u, qlen=%u, pkts=%u, queued=%u, recov=%u, under=%u, trim=%u)\n",
 					n, sv_pred[n].used_pred_cmd ? 1 : 0,
 					sv_pred[n].last_exec_seq, sv_pred[n].last_recv_seq,
 					sv_pred[n].queue_len, sv_pred[n].packets_recv,
@@ -1852,55 +2074,49 @@ static void Command_CLMovementStatus_f(void)
 			}
 			else
 			{
-				CONS_Printf("  node %d: Vanilla (Option A)\n", n);
+				CONS_Printf("  node %d: splitscreen/inactive\n", n);
 			}
 		}
-		if (active == 0)
-			CONS_Printf("  (no Option B nodes connected)\n");
+		if (!active)
+			CONS_Printf("  (no native prediction clients connected)\n");
+	}
+	else if (client)
+	{
+		fixed_t err_xy = R_PointToDist2(cl_pred.smooth_err_x, cl_pred.smooth_err_y, 0, 0);
+		CONS_Printf("[CL_PRED] enabled=%d maxtics=%d repeat=%d\n",
+			cv_cl_movement.value, cv_cl_movement_maxtics.value, cv_cl_netrepeatinput.value);
+		CONS_Printf("[CL_PRED] seq: sent=%u conf=%u qlen=%u maxq=%u exact_acks=%u missing_acks=%u ack_pkts=%u ovf=%u sv_underrun=%u\n",
+			cl_pred.last_sent_seq, cl_pred.confirmed_seq,
+			cl_pred.queue_len, cl_pred.max_in_flight,
+			cl_pred.exact_ack_ticks, cl_pred.missing_ack_ticks,
+			cl_pred.ack_packets_recv, cl_pred.queue_overflows, cl_pred.server_underrun_flags);
+		CONS_Printf("[CL_PRED] shadow: valid=%d pred_tics=%u dxy=%d dz=%d dang=%u replays=%u rng_viol=%u att=%u\n",
+			cl_pred.shadow_valid ? 1 : 0, cl_pred.predicted_tics,
+			cl_pred.last_delta_xy >> FRACBITS, cl_pred.last_delta_z >> FRACBITS,
+			(uint32_t)(((uint64_t)cl_pred.last_delta_angle * 360ULL) >> 32),
+			cl_pred.shadow_replays, cl_pred.rng_violations, cl_pred.attached_count);
+		CONS_Printf("[CL_PRED] smooth: on=%d rate=%d rec=%u snap=%u errxy=%d maxrec=%d\n",
+			cv_cl_movement_smooth.value, cv_cl_movement_smoothrate.value,
+			cl_pred.smooth_reconciles, cl_pred.smooth_snaps,
+			err_xy >> FRACBITS, cl_pred.max_reconcile_xy >> FRACBITS);
 	}
 	else
 	{
-		CONS_Printf("[CL_PRED] proto=%s cl_movement=%d maxtics=%d repeat=%d sent=%u conf=%u qlen=%u maxq=%u exact=%u fall=%u ackpkts=%u ovf=%u svunder=%u shadow=%d pred=%u dxy=%d dz=%d replays=%u rngv=%u\n",
-			cl_pred.proto_active ? "B" : "A",
-			cv_cl_movement.value,
-			cv_cl_movement_maxtics.value,
-			cv_cl_netrepeatinput.value,
-			cl_pred.last_sent_seq,
-			cl_pred.confirmed_seq,
-			cl_pred.queue_len,
-			cl_pred.max_in_flight,
-			cl_pred.exact_ack_ticks,
-			cl_pred.fallback_ack_ticks,
-			cl_pred.ack_packets_recv,
-			cl_pred.queue_overflows,
-			cl_pred.server_underrun_flags,
-			cl_pred.shadow_valid ? 1 : 0,
-			cl_pred.predicted_tics,
-			cl_pred.last_delta_xy >> FRACBITS,
-			cl_pred.last_delta_z >> FRACBITS,
-			cl_pred.shadow_replays,
-			cl_pred.rng_violations);
+		CONS_Printf("[CL_PRED] offline (cl_movement=%d maxtics=%d repeat=%d)\n",
+			cv_cl_movement.value, cv_cl_movement_maxtics.value, cv_cl_netrepeatinput.value);
 	}
 }
 
 void CL_PredRegisterVars(void)
 {
-	static dboolean registered = false;
-	if (registered)
-		return;
-	registered = true;
-
 	CV_RegisterVar(&cv_cl_movement);
 	CV_RegisterVar(&cv_cl_movement_maxtics);
 	CV_RegisterVar(&cv_cl_movement_smooth);
 	CV_RegisterVar(&cv_cl_movement_smoothrate);
 	CV_RegisterVar(&cv_cl_netrepeatinput);
-	CV_RegisterVar(&cv_cl_movement_proto);
 	CV_RegisterVar(&cv_cl_movement_debug);
 	CV_RegisterVar(&cv_cl_movement_selftest);
-
 	COM_AddCommand("cl_movement_status", Command_CLMovementStatus_f);
-
-	SV_PredResetAll();
 	CL_PredResetSession();
+	SV_PredResetAll();
 }

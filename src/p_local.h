@@ -184,7 +184,7 @@ void P_ToggleDemoCamera(uint8_t viewnum);
 dboolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, dboolean resetcalled);
 void P_CalcChasePostImg(player_t *player, camera_t *thiscam);
 
-dboolean P_CanPlayerTurn(player_t *player, ticcmd_t *cmd);
+dboolean P_CanPlayerTurn(const player_t *player, ticcmd_t *cmd);
 
 dboolean P_PlayerInPain(const player_t *player);
 void P_ResetPlayer(player_t *player);

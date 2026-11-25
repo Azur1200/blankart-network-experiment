@@ -1104,7 +1104,9 @@ void D_SRB2Loop(void)
 				TryRunTics(realtics);
 			}
 
-			if (lastdraw || singletics || gametic > rendergametic)
+			CL_PredOnLocalTic(realtics);
+
+			if (lastdraw || singletics || gametic > rendergametic || CL_PredIsDrivingCamera0())
 			{
 				rendergametic = gametic;
 				rendertimeout = entertic + TICRATE/17;

@@ -68,6 +68,7 @@
 #include "acs/interface.h"
 #include "k_director.h"
 #include "g_party.h"
+#include "cl_predict.h"
 #include "f_dscredits.hpp"
 #include "strbuf.h"
 #include "k_vote.h"
@@ -1523,13 +1524,24 @@ angle_t localangle[MAXSPLITSCREENPLAYERS];
 static void G_DoCameraTurn(ticcmd_t *cmd, int32_t realtics, uint8_t ssplayer, player_t *player)
 {
 	uint8_t viewnum = G_PartyPosition(g_localplayers[ssplayer-1]);
+	const player_t *turn_player = player;
 
-	if (player->mo)
-		cmd->angle = K_GetKartTurnValue(player, cmd->angle);
+	if (ssplayer == 1 && player == &players[consoleplayer])
+	{
+		const player_t *shadow = CL_PredGetTurnPlayer();
+		if (shadow != NULL)
+		{
+			turn_player = shadow;
+			cmd->flags |= TICCMD_PREDTURN;
+		}
+	}
+
+	if (turn_player->mo)
+		cmd->angle = K_GetKartTurnValue(turn_player, cmd->angle);
 
 	cmd->angle *= realtics;
 
-	if (P_CanPlayerTurn(player, cmd))
+	if (P_CanPlayerTurn(turn_player, cmd))
 		localangle[viewnum] += (cmd->angle<<TICCMD_REDUCE);
 
 	cmd->angle = (int16_t)(localangle[viewnum] >> TICCMD_REDUCE);

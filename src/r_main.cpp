@@ -1648,6 +1648,8 @@ void R_RenderPlayerView(void)
 	PS_STOP_TIMING(ps_skyboxtime);
 
 	R_SetupFrame(viewssnum, skybox);
+	if (viewssnum == 0)
+		CL_PredPrepareAttachedFrame();
 	skyVisible = false;
 	framecount++;
 	validcount++;

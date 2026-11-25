@@ -2339,7 +2339,7 @@ static void P_3dMovement(player_t *player)
 	TracyCZoneEnd(__zone);
 }
 
-dboolean P_CanPlayerTurn(player_t *player, ticcmd_t *cmd)
+dboolean P_CanPlayerTurn(const player_t *player, ticcmd_t *cmd)
 {
 	if (player->spectator || objectplacing)
 	{
@@ -2430,8 +2430,17 @@ static void P_UpdatePlayerAngle(player_t *player)
 		// KART: Don't directly apply angleturn! It may have been either A) forged by a malicious client, or B) not be a smooth turn due to a player dropping frames.
 		// Instead, turn the player only up to the amount they're supposed to turn accounting for latency. Allow exactly 1 extra turn unit to try to keep old replays synced.
 		angle_diff = cmd->angle - (player->mo->angle>>16);
-		max_left_turn = player->lturn_max[(leveltime + MAXPREDICTTICS - cmd->latency) % MAXPREDICTTICS];
-		max_right_turn = player->rturn_max[(leveltime + MAXPREDICTTICS - cmd->latency) % MAXPREDICTTICS];
+		if (cmd->flags & TICCMD_PREDTURN)
+		{
+			// Custom client computed cmd->angle from its predicted local kart state for THIS tic.
+			max_left_turn = player->lturn_max[leveltime % MAXPREDICTTICS];
+			max_right_turn = player->rturn_max[leveltime % MAXPREDICTTICS];
+		}
+		else
+		{
+			max_left_turn = player->lturn_max[(leveltime + MAXPREDICTTICS - cmd->latency) % MAXPREDICTTICS];
+			max_right_turn = player->rturn_max[(leveltime + MAXPREDICTTICS - cmd->latency) % MAXPREDICTTICS];
+		}
 
 		//CONS_Printf("----------------\nangle diff: %d - turning options: %d to %d - ", angle_diff, max_left_turn, max_right_turn);
 

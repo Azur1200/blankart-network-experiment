@@ -5415,14 +5415,6 @@ static void PT_ClientCmd(int8_t node, int32_t netconsole)
 	SV_CheckClientConsistancy(node, netconsole, realstart, netbuffer->u.clientpak.consistancy);
 }
 
-static void PT_PredCap(int8_t node)
-{
-	if (server)
-		SV_PredHandleCap(node);
-	else
-		CL_PredHandleCap(node);
-}
-
 static void PT_ClientCmdPred(int8_t node, int32_t netconsole)
 {
 	doomdata_t *netbuffer = DOOMCOM_DATA(doomcom);
@@ -5478,11 +5470,6 @@ static void PT_ClientCmdPred(int8_t node, int32_t netconsole)
 
 	SV_PredReceiveCmds(node, seq, count, cmds);
 	SV_CheckClientConsistancy(node, netconsole, realstart, clientconsistancy);
-}
-
-static void PT_PredAck(int8_t node)
-{
-	CL_PredHandleAck(node);
 }
 
 static void PT_BasicKeepAlive(int8_t node, int32_t netconsole)
@@ -5801,6 +5788,17 @@ static void PT_ServerTics(int8_t node, int32_t netconsole)
 				if (i >= gametic) // Don't copy old net commands
 					memcpy(D_GetTextcmd(i, k), txtpak, txtsize);
 				txtpak += txtsize;
+			}
+		}
+
+		// Read optional inline prediction input ACKs appended at the tail of PT_SERVERTICS
+		if (realend == realstart + netbuffer->u.serverpak.numtics)
+		{
+			const uint8_t *endptr = (const uint8_t *)netbuffer + doomcom->datalength;
+			if (txtpak < endptr)
+			{
+				CL_PredReadInlineAcks(realstart, netbuffer->u.serverpak.numtics,
+					txtpak, (size_t)(endptr - txtpak));
 			}
 		}
 
@@ -6424,11 +6422,9 @@ static void HandlePacketFromPlayer(int8_t node)
 		case PT_WILLDIAGNOSERNG    : PT_WillDiagnoseRNG    (node, netconsole); break;
 		case PT_SENDINGLUAFILE     : PT_SendingLuaFile     (node            ); break;
 		case PT_SERVERCFG          :                                           break;
-		// CLIENT-SIDE PREDICTION (Option B backward-compatible)
-		case PT_PREDCAP            : PT_PredCap            (node            ); break;
+		// CLIENT-SIDE PREDICTION (native protocol)
 		case PT_CLIENTCMD_PRED     : PT_ClientCmdPred      (node, netconsole); break;
 		case PT_CLIENTMIS_PRED     : PT_ClientCmdPred      (node, netconsole); break;
-		case PT_PREDACK            : PT_PredAck            (node            ); break;
 		// CHALLENGE
 		//case PT_CHALLENGEALL       : PT_ChallengeAll       (node            ); break;
 		//case PT_RESPONSEALL        : PT_ResponseAll        (node            ); break;
@@ -6867,11 +6863,6 @@ static void CL_SendClientCmd(void)
 	size_t packetsize = 0;
 	dboolean mis = false;
 
-	if (client && netgame && !demo.playback && cl_mode == CL_CONNECTED && addedtogame)
-	{
-		CL_PredTickHandshake();
-	}
-
 	netbuffer->packettype = PT_CLIENTCMD;
 
 	if (cl_packetmissed)
@@ -7026,12 +7017,14 @@ static void SV_SendTics(void)
 		realfirsttic = max(realfirsttic, firstticstosend);
 
 		// compute the length of the packet and cut it if too large
-		packsize = BASESERVERTICSSIZE;
+		packsize = BASESERVERTICSSIZE + (SV_PredNodeUsesPredCmd(n) ? 1 : 0);
 
 		for (i = realfirsttic; i < lasttictosend; i++)
 		{
 			packsize += sizeof (ticcmd_t) * doomcom->numslots;
 			packsize += TotalTextCmdPerTic(i);
+			if (SV_PredNodeUsesPredCmd(n))
+				packsize += sizeof (uint32_t);
 
 			if (packsize > software_MAXPACKETLENGTH)
 			{
@@ -7059,12 +7052,6 @@ static void SV_SendTics(void)
 			}
 		}
 
-
-		// Send exact prediction input ACKs to Option B fork clients before PT_SERVERTICS
-		if (SV_PredNodeUsesPredCmd(n))
-		{
-			SV_PredSendAck(n, realfirsttic, lasttictosend);
-		}
 
 		// Send the tics
 		netbuffer->packettype = PT_SERVERTICS;
@@ -7096,6 +7083,12 @@ static void SV_SendTics(void)
 					WRITEMEM(bufpos, &textcmd[2], size);
 				}
 			}
+		}
+
+		// Piggyback per-tic executed client input ACKs atomically at the tail of PT_SERVERTICS
+		if (SV_PredNodeUsesPredCmd(n))
+		{
+			bufpos = SV_PredWriteInlineAcks(n, realfirsttic, lasttictosend, bufpos);
 		}
 		packsize = bufpos - (uint8_t *)&(netbuffer->u);
 

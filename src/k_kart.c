@@ -1348,32 +1348,21 @@ static fixed_t K_CheckOffroadCollide(mobj_t *mo)
 
 	if (P_IsPredicting())
 	{
-		// Shadow mobj is detached from touching_sectorlist; query all sectors
-		// overlapping its bounding box without mutating world sector lists.
-		// Mirror P_CreateSecNodeList's prepend-new-sector priority:
-		// - Entering offroad (player->offroad == 0): a newly touched offroad sector wins.
-		// - Exiting offroad (player->offroad > 0): a newly touched non-offroad sector wins.
+		// Shadow mobj is detached from touching_sectorlist; iterate our read-only
+		// stack copy kept in exact P_CreateSecNodeList prepend order.
 		sector_t *secs[32];
-		int32_t count = P_PredCollectTouchingSectors(mo, secs, 32);
+		int32_t count = P_PredGetTouchingSectors(secs, 32);
 		int32_t i;
-		fixed_t best_offroad = 0;
-		dboolean saw_clear = false;
 
 		for (i = 0; i < count; i++)
 		{
-			fixed_t sec_off = 0;
-			if (K_CheckOffroadInSector(mo, secs[i], &sec_off))
-			{
-				if (sec_off > best_offroad)
-					best_offroad = sec_off;
-				if (sec_off == 0)
-					saw_clear = true;
-			}
+			if (!secs[i])
+				break;
+			if (K_CheckOffroadInSector(mo, secs[i], &offroad))
+				return offroad;
 		}
 
-		if (mo->player && mo->player->offroad > 0 && saw_clear)
-			return 0;
-		return best_offroad;
+		return 0;
 	}
 
 	for (node = mo->touching_sectorlist; node; node = node->m_sectorlist_next)
@@ -1544,6 +1533,57 @@ grazespecials_t K_GetTouchingSectorTerrainFlags(mobj_t* mo,
 
 	I_Assert(mo != NULL);
 	I_Assert(!P_MobjWasRemoved(mo));
+
+	if (P_IsPredicting())
+	{
+		sector_t *pred_secs[32];
+		int32_t pred_count = P_PredGetTouchingSectors(pred_secs, 32);
+		int32_t pi;
+
+		for (pi = 0; pi < pred_count; pi++)
+		{
+			s = pred_secs[pi];
+			if (!s)
+				continue;
+
+			flr = P_MobjFloorZ(mo, s, s, mo->x, mo->y, NULL, false, true);
+			cel = P_MobjCeilingZ(mo, s, s, mo->x, mo->y, NULL, true, true);
+
+			if (((s->flags & MSF_FLIPSPECIAL_FLOOR) && mo->z == flr)
+			    || ((mo->eflags & MFE_VERTICALFLIP && (s->flags & MSF_FLIPSPECIAL_CEILING) &&
+				 (mo->z + mo->height) == cel)))
+			{
+				totalflag |= K_GetGrazeSpecialsForSector(
+				    s,
+				    ((mo->eflags & MFE_VERTICALFLIP) == MFE_VERTICALFLIP),
+				    terrainflagstohunt,
+				    specialflagstohunt);
+			}
+
+			for (rover = s->ffloors; rover; rover = rover->next)
+			{
+				if (!(rover->fofflags & FOF_EXISTS))
+					continue;
+
+				s2 = &sectors[rover->secnum];
+				flr = P_GetFOFBottomZ(mo, s, rover, mo->x, mo->y, NULL);
+				cel = P_GetFOFTopZ(mo, s, rover, mo->x, mo->y, NULL);
+
+				if (((s2->flags & MSF_FLIPSPECIAL_FLOOR) && mo->z == cel)
+				    || ((s2->flags & MSF_FLIPSPECIAL_CEILING) &&
+					(mo->z + mo->height) == flr))
+				{
+					totalflag |= K_GetGrazeSpecialsForSector(
+					    s2,
+					    ((mo->eflags & MFE_VERTICALFLIP) != MFE_VERTICALFLIP),
+					    terrainflagstohunt,
+					    specialflagstohunt);
+				}
+			}
+		}
+
+		return totalflag;
+	}
 
 	for (node = mo->touching_sectorlist; node; node = node->m_sectorlist_next)
 	{
@@ -11611,13 +11651,16 @@ static void K_KartDrift(player_t *player, dboolean onground)
 			player->pflags |= PF_GETSPARKS;
 
 		// Sound whenever you get a different tier of sparks
-		if (driftstage < K_GetKartDriftSparkStageForValue(player, player->driftcharge+driftadditive))
 		{
-			if (P_IsDisplayPlayer(player)) // UGHGHGH...
-				S_StartSoundAtVolume(player->mo, sfx_s3ka2, 192); // Ugh...
+			uint8_t newstage = K_GetKartDriftSparkStageForValue(player, player->driftcharge+driftadditive);
+			if (driftstage < newstage)
+			{
+				if (P_IsDisplayPlayer(player) && !CL_PredConsumeSuppressedDriftSound(player, newstage)) // UGHGHGH...
+					S_StartSoundAtVolume(player->mo, sfx_s3ka2, 192); // Ugh...
 
-			player->driftlevel = driftstage; // for rumble
-			player->driftsparkGrowTimer = DRIFTSPARKGROWTICS;
+				player->driftlevel = driftstage; // for rumble
+				player->driftsparkGrowTimer = DRIFTSPARKGROWTICS;
+			}
 		}
 
 		player->driftcharge += driftadditive;

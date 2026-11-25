@@ -1346,6 +1346,10 @@ void P_SetThingPosition(mobj_t *thing)
 		// inert things don't need to be in blockmap
 		P_SetBlockmapEntry(thing, blocklinks);
 	}
+	else
+	{
+		P_PredUpdateTouchingSectors(thing);
+	}
 
 	// Allows you to 'step' on a new linedef exec when the previous
 	// sector's floor is the same height.

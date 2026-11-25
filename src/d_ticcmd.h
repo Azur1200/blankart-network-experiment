@@ -60,6 +60,7 @@ typedef enum
 #define TICCMD_KEYSTROKE	(0x04) /* chat character input */
 #define TICCMD_USINGTILT	(0x08) /* player is using tilt control instead of the stick/buttons to turn */
 #define TICCMD_EXCESSTILT	(0x10) /* player is tilting gamepad farther than the max range */
+#define TICCMD_PREDTURN		(0x20) /* angle was computed from predicted local kart state (latency 0 turn clamp) */
 
 // 16 bytes long now!
 struct ticcmd_t

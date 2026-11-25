@@ -148,6 +148,8 @@ void R_InterpolateView(fixed_t frac);
 void R_InterpolateViewRollAngle(fixed_t frac);
 // Buffer the current new views into the old views. Call once after each real tic.
 void R_UpdateViewInterpolation(void);
+// Buffer a single view's new state into its old state (used by local-tic prediction camera stepping).
+void R_UpdateViewInterpolationSingle(uint8_t p);
 // Reset the view states (e.g. after level load) so R_InterpolateView doesn't interpolate invalid data
 void R_ResetViewInterpolation(uint8_t p);
 // Update old view for seamless relative teleport

@@ -3450,6 +3450,10 @@ void R_AddSprites(sector_t *sec, int32_t lightlevel)
 		{
 			continue;
 		}
+		if (CL_PredShouldAttachMobj(thing) && CL_PredGetAttachedRenderSector(thing) != sec)
+		{
+			continue;
+		}
 
 		// do not render in skybox
 		if (rendering_skybox && (thing->renderflags & RF_HIDEINSKYBOX))
@@ -3484,11 +3488,27 @@ void R_AddSprites(sector_t *sec, int32_t lightlevel)
 	if (playeringame[consoleplayer] && CL_PredShouldRenderMobj(players[consoleplayer].mo))
 	{
 		mobj_t *pred_mo = players[consoleplayer].mo;
+		uint32_t att_count, att_i;
+
 		if (CL_PredGetRenderSector() == sec && (!pred_mo->subsector || pred_mo->subsector->sector != sec))
 		{
 			if (!(rendering_skybox && (pred_mo->renderflags & RF_HIDEINSKYBOX)) && R_ThingVisible(pred_mo))
 			{
 				R_ProjectSprite(pred_mo);
+			}
+		}
+
+		att_count = CL_PredGetAttachedCount();
+		for (att_i = 0; att_i < att_count; att_i++)
+		{
+			sector_t *vis_sec = NULL;
+			mobj_t *att_mo = CL_PredGetAttachedMobj(att_i, &vis_sec);
+			if (att_mo && vis_sec == sec && (!att_mo->subsector || att_mo->subsector->sector != sec))
+			{
+				if (!(rendering_skybox && (att_mo->renderflags & RF_HIDEINSKYBOX)) && R_ThingVisible(att_mo))
+				{
+					R_ProjectSprite(att_mo);
+				}
 			}
 		}
 	}
@@ -4470,7 +4490,7 @@ dboolean R_ThingRendersOnTop (mobj_t *thing)
 
 dboolean R_ThingWithinDist (mobj_t *thing, fixed_t limit_dist)
 {
-	if (CL_PredShouldRenderMobj(thing))
+	if (CL_PredShouldRenderMobj(thing) || CL_PredShouldAttachMobj(thing))
 		return true;
 
 	const fixed_t dist = R_PointToDist(thing->x, thing->y);

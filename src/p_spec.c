@@ -51,6 +51,7 @@
 #include "acs/interface.h"
 #include "blan/b_soc.h"
 #include "k_waypoint.h"
+#include "cl_predict.h"
 
 // Not sure if this is necessary, but it was in w_wad.c, so I'm putting it here too -Shadow Hog
 #include <errno.h>
@@ -6006,6 +6007,167 @@ void P_PlayerInSpecialSector(player_t *player)
 	}
 
 	TracyCZoneEnd(__zone);
+}
+
+static void P_PredProcessSectorDashPanels(player_t *player, sector_t *sector, sector_t *roversector)
+{
+	dboolean isTouching;
+	panelcollide_t panelcoltype;
+
+	if (!sector || !P_SectorHasSpecial(sector))
+		return;
+
+	isTouching = (roversector != NULL) || P_IsMobjTouchingSectorPlane(player->mo, sector);
+	panelcoltype = K_GetPanelGrazeType();
+
+	if (panelcoltype == PANELCOL_CENTER || panelcoltype == PANELCOL_GRAZE)
+	{
+		if (sector->specialflags & SSF_SNEAKERPANEL)
+			P_ProcessBoostPanel(player, isTouching, SBPT_SNEAKER);
+		if (sector->specialflags & SSF_WATERPANEL)
+			P_ProcessBoostPanel(player, isTouching, SBPT_WATER);
+	}
+
+	if (!udmf && mapnamespace == MNS_SRB2KART)
+	{
+		if (GETSECSPECIAL(sector->special, 4) == 6
+			&& !(sector->specialflags & SSF_SNEAKERPANEL)
+			&& (roversector || isTouching))
+		{
+			P_ProcessBoostPanel(player, (roversector || isTouching), SBPT_SNEAKER);
+		}
+	}
+}
+
+static void P_PredCheck3DFloorDashPanels(player_t *player, sector_t *sector)
+{
+	ffloor_t *rover;
+
+	if (!sector)
+		return;
+
+	for (rover = sector->ffloors; rover; rover = rover->next)
+	{
+		if (!P_SectorHasSpecial(rover->master->frontsector))
+			continue;
+		if (!(rover->fofflags & FOF_EXISTS))
+			continue;
+		if (!P_IsMobjTouching3DFloor(player->mo, rover, sector))
+			continue;
+
+		if (sector == player->mo->subsector->sector
+			|| (rover->master->frontsector->flags & MSF_TRIGGERSPECIAL_TOUCH))
+		{
+			P_PredProcessSectorDashPanels(player, rover->master->frontsector, sector);
+		}
+	}
+}
+
+void P_PredCheckDashPanels(player_t *player)
+{
+	sector_t *originalsector;
+	sector_t *secs[32];
+	int32_t sec_count, i;
+	panelcollide_t panelcoltype;
+	polyobj_t *po;
+
+	I_Assert(P_IsPredicting());
+
+	if (!player || !player->mo || player->spectator || player->playerstate != PST_LIVE)
+		return;
+	if (!player->mo->subsector || !player->mo->subsector->sector)
+		return;
+
+	panelcoltype = K_GetPanelGrazeType();
+
+	// 0. Check static MT_SNEAKERPANEL objects at final post-move position
+	// (mirrors MT_SNEAKERPANEL's own P_TryMove(panel, panel->x, panel->y) thinker in P_RunThinkers)
+	P_PredCheckSneakerPanelsAtPos(player->mo);
+
+	// 1. Terrain-based sneaker / waterrun panels (mirrors K_ProcessTerrainEffect)
+	if (player->mo->terrain && K_AffectingTerrainActive()
+		&& (panelcoltype == PANELCOL_CENTER || panelcoltype == PANELCOL_GRAZE))
+	{
+		if (player->mo->terrain->flags & TRF_SNEAKERPANEL)
+			K_DoSneakerPanel(player, false);
+		if (player->mo->terrain->flags & TRF_WATERRUNPANEL)
+			K_DoSneakerPanel(player, true);
+	}
+
+	originalsector = player->mo->subsector->sector;
+
+	// 2. Originalsector 3D floors
+	P_PredCheck3DFloorDashPanels(player, originalsector);
+
+	// 3. Polyobjects in originalsector
+	for (po = player->mo->subsector->polyList; po; po = (polyobj_t *)(po->link.next))
+	{
+		sector_t *polysec;
+		dboolean touching, inside;
+
+		if (po->flags & POF_NOSPECIALS)
+			continue;
+
+		polysec = po->lines[0]->backsector;
+		if (!P_SectorHasSpecial(polysec))
+			continue;
+
+		touching = (polysec->flags & MSF_TRIGGERSPECIAL_TOUCH) && P_MobjTouchingPolyobj(po, player->mo);
+		inside = P_MobjInsidePolyobj(po, player->mo);
+		if (!(inside || touching))
+			continue;
+		if (!P_IsMobjTouchingPolyobj(player->mo, po, polysec))
+			continue;
+
+		P_PredProcessSectorDashPanels(player, polysec, originalsector);
+	}
+
+	// 4. Originalsector itself
+	P_PredProcessSectorDashPanels(player, originalsector, NULL);
+
+	// 5. Touching sectors (read-only ordered shadow sector list for MSF_TRIGGERSPECIAL_TOUCH & FOFs)
+	sec_count = P_PredGetTouchingSectors(secs, 32);
+	for (i = 0; i < sec_count; i++)
+	{
+		sector_t *loopsector = secs[i];
+		if (!loopsector || loopsector == originalsector)
+			continue;
+
+		P_PredCheck3DFloorDashPanels(player, loopsector);
+
+		if (!(loopsector->flags & MSF_TRIGGERSPECIAL_TOUCH))
+			continue;
+
+		P_PredProcessSectorDashPanels(player, loopsector, NULL);
+	}
+
+	// 6. Hitbox / Graze dash panels (mirrors K_UpdatePanelGraze for sneaker/water panels only)
+	if (player->panelgraze)
+		player->panelgraze--;
+
+	if (panelcoltype == PANELCOL_HITBOX || panelcoltype == PANELCOL_GRAZE)
+	{
+		grazespecials_t grazeflags = K_GetTouchingSectorTerrainFlags(
+			player->mo,
+			(TRF_SNEAKERPANEL | TRF_WATERRUNPANEL),
+			(SSF_WATERPANEL | SSF_SNEAKERPANEL));
+
+		if (grazeflags & GRS_WATERPANEL)
+		{
+			if (panelcoltype == PANELCOL_HITBOX)
+				K_DoSneakerPanel(player, true);
+			else
+				player->panelgraze = 8;
+		}
+
+		if (grazeflags & GRS_SNEAKERPANEL)
+		{
+			if (panelcoltype == PANELCOL_HITBOX)
+				K_DoSneakerPanel(player, false);
+			else
+				player->panelgraze = 8;
+		}
+	}
 }
 
 static void P_CheckMobj3DFloorTrigger(mobj_t *mo, sector_t *sec)

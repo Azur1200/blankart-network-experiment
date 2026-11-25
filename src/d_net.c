@@ -862,10 +862,8 @@ static const char *packettypename[NUMPACKETTYPE] =
 	"RESPONSEALL",
 	"RESULTSALL",
 
-	[PT_PREDCAP] = "PREDCAP",
 	[PT_CLIENTCMD_PRED] = "CLIENTCMD_PRED",
-	[PT_CLIENTMIS_PRED] = "CLIENTMIS_PRED",
-	[PT_PREDACK] = "PREDACK"
+	[PT_CLIENTMIS_PRED] = "CLIENTMIS_PRED"
 };
 
 static void DebugPrintpacket(const char *header)
@@ -929,12 +927,6 @@ static void DebugPrintpacket(const char *header)
 				(uint32_t)netbuffer->u.clientpredpak.resendfrom,
 				(uint32_t)LSBF_LONG(netbuffer->u.clientpredpak.seq),
 				(uint32_t)netbuffer->u.clientpredpak.count);
-			break;
-		case PT_PREDACK:
-			fprintf(debugfile, "    starttic %u numtics %u flags %u\n",
-				(uint32_t)LSBF_LONG(netbuffer->u.predack.starttic),
-				(uint32_t)netbuffer->u.predack.numtics,
-				(uint32_t)netbuffer->u.predack.flags);
 			break;
 		case PT_BASICKEEPALIVE:
 			fprintf(debugfile, "    keep alive\n");
