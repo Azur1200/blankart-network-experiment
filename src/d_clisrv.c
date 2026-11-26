@@ -3878,7 +3878,8 @@ void D_ClientServerInit(void)
 	COM_AddCommand("droprate", Command_Droprate);
 #endif
 	COM_AddCommand("numnodes", Command_Numnodes);
-	CL_PredRegisterVars();
+	CL_PredResetSession();
+	SV_PredResetAll();
 
 	RegisterNetXCmd(XD_KICK, Got_KickCmd);
 	RegisterNetXCmd(XD_ADDPLAYER, Got_AddPlayer);

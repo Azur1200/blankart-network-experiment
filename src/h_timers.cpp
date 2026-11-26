@@ -31,6 +31,7 @@
 #include "lua_hud.h"
 #include "r_main.h"
 #include "r_fps.h"
+#include "cl_predict.h"
 #include "s_sound.h"
 #include "m_cond.h"
 #include <unordered_map>
@@ -189,10 +190,21 @@ static trackingResult_t K_getTimersPositionForTrackingPlayer(void)
 	if (!doesPlayerHaveMo)
 		return result;
 
+	fixed_t px, py, pz;
+	fixed_t sx, sy, sz, cz;
+
+	if (!CL_PredGetInterpolatedMobjPos(stplyr->mo, R_GetTimeFrac(RTF_LEVEL), &px, &py, &pz))
+	{
+		px = R_InterpolateFixed(stplyr->mo->old_x, stplyr->mo->x);
+		py = R_InterpolateFixed(stplyr->mo->old_y, stplyr->mo->y);
+		pz = R_InterpolateFixed(stplyr->mo->old_z, stplyr->mo->z);
+	}
+	CL_PredGetRenderOffsets(stplyr->mo, &sx, &sy, &sz, &cz);
+
 	vector3_t v = {
-		R_InterpolateFixed(stplyr->mo->old_x, stplyr->mo->x) + stplyr->mo->sprxoff,
-		R_InterpolateFixed(stplyr->mo->old_y, stplyr->mo->y) + stplyr->mo->spryoff,
-		R_InterpolateFixed(stplyr->mo->old_z, stplyr->mo->z) + stplyr->mo->sprzoff + (stplyr->mo->height >> 1),
+		px + sx,
+		py + sy,
+		pz + sz + (stplyr->mo->height >> 1),
 	};
 
 	K_ObjectTracking(&result, &v, false);
@@ -310,12 +322,13 @@ void K_DisplayItemTimers(void)
 	// nooope
 	if (!LUA_HudEnabled(hud_itemtimers)) return;
 	if (stplyr->mo == NULL || P_MobjWasRemoved(stplyr->mo)) return;
+	const player_t *hudplyr = CL_PredGetHudPlayer(stplyr);
 	// I love and hate you C++
 	std::vector<itimer_t> timers =
 	{
 		{ // sneaker
 			"shoe",
-			stplyr->sneakertimer,
+			hudplyr->sneakertimer,
 			{qche("K_TISHOE")},
 			1,
 		},
@@ -353,13 +366,13 @@ void K_DisplayItemTimers(void)
 		},
 		{ // drift boost
 			"driftsparkboost",
-			stplyr->driftboost,
+			hudplyr->driftboost,
 			{qche("K_TISRK1"), qche("K_TISRK2")},
 			2,
 		},
 		{ // start boost
 			"startboost",
-			stplyr->startboost,
+			hudplyr->startboost,
 			{qche("K_TISTB")},
 			1,
 		},
@@ -427,7 +440,7 @@ void K_DisplayItemTimers(void)
 	timers.push_back(
 		{ // boosts
 			"boosts",
-			K_StackingActive() ? stplyr->numboosts : 0,
+			K_StackingActive() ? hudplyr->numboosts : 0,
 			{qche("K_TISRK1"), qche("K_TISRK2")},
 			2,
 			TIMER_GREEN|TIMER_COUNTER,

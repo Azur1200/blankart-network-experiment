@@ -1685,11 +1685,25 @@ dboolean CL_PredShouldAttachMobj(const mobj_t *mobj)
 
 	switch (mobj->type)
 	{
+		case MT_BATTLEBUMPER:
+			// Only attach active orbiting bumpers; popped bumpers (health <= 0) fly off freely
+			if (mobj->health <= 0)
+				return false;
+			break;
+		case MT_KARMAHITBOX:
 		case MT_DRIFTSPARK:
 		case MT_DRIFTDUST:
+		case MT_BRAKEDRIFT:
+		case MT_AIZDRIFTSTRAT:
 		case MT_BOOSTFLAME:
 		case MT_BOOSTSTACK:
 		case MT_FASTLINE:
+		case MT_INVULNFLASH:
+		case MT_OVERLAY:
+		case MT_INSTASHIELDA:
+		case MT_INSTASHIELDB:
+		case MT_GAINAX:
+		case MT_SMOLDERING:
 		case MT_BANANA_SHIELD:
 		case MT_ORBINAUT_SHIELD:
 		case MT_JAWZ_SHIELD:
@@ -1740,8 +1754,6 @@ void CL_PredTransformAttachedState(const mobj_t *mobj, fixed_t frac, interpmobjs
 	angle_t conf_ang, pred_ang, delta_ang;
 	fixed_t rx, ry, rz, cos_d, sin_d;
 
-	(void)mobj;
-
 	if (!cl_pred.shadow_valid || !cl_pred.pose_new.valid || !playeringame[consoleplayer])
 		return;
 
@@ -1783,6 +1795,17 @@ void CL_PredTransformAttachedState(const mobj_t *mobj, fixed_t frac, interpmobjs
 	rx = out->x - conf_x;
 	ry = out->y - conf_y;
 	rz = out->z - conf_z;
+
+	// World-space orbiters (like Battle Bumpers) translate cleanly with the kart without yaw-twisting
+	if (mobj && mobj->type == MT_BATTLEBUMPER)
+	{
+		out->x = pred_x + rx;
+		out->y = pred_y + ry;
+		out->z = pred_z + rz;
+		out->subsector = R_PointInSubsector(out->x, out->y);
+		return;
+	}
+
 	delta_ang = pred_ang - conf_ang;
 
 	cos_d = FINECOSINE((delta_ang >> ANGLETOFINESHIFT) & FINEMASK);

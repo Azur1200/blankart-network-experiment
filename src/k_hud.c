@@ -1511,10 +1511,21 @@ static trackingResult_t K_getRoulettePositionForTrackingPlayer(void)
 	if (!doesPlayerHaveMo)
 		return result;
 
+	fixed_t px, py, pz;
+	fixed_t sx, sy, sz, cz;
+
+	if (!CL_PredGetInterpolatedMobjPos(stplyr->mo, R_GetTimeFrac(RTF_LEVEL), &px, &py, &pz))
+	{
+		px = R_InterpolateFixed(stplyr->mo->old_x, stplyr->mo->x);
+		py = R_InterpolateFixed(stplyr->mo->old_y, stplyr->mo->y);
+		pz = R_InterpolateFixed(stplyr->mo->old_z, stplyr->mo->z);
+	}
+	CL_PredGetRenderOffsets(stplyr->mo, &sx, &sy, &sz, &cz);
+
 	vector3_t v = {
-		R_InterpolateFixed(stplyr->mo->old_x, stplyr->mo->x) + stplyr->mo->sprxoff,
-		R_InterpolateFixed(stplyr->mo->old_y, stplyr->mo->y) + stplyr->mo->spryoff,
-		R_InterpolateFixed(stplyr->mo->old_z, stplyr->mo->z) + stplyr->mo->sprzoff + (stplyr->mo->height >> 1),
+		px + sx,
+		py + sy,
+		pz + sz + (stplyr->mo->height >> 1),
 	};
 
 	vector3_t v2 = {
@@ -4355,9 +4366,12 @@ static void K_drawKartPlayerCheck(void)
 		v.y = R_InterpolateFixed(checkplayer->mo->old_y, checkplayer->mo->y);
 		v.z = R_InterpolateFixed(checkplayer->mo->old_z, checkplayer->mo->z);
 
-		pPos.x = R_InterpolateFixed(stplyr->mo->old_x, stplyr->mo->x);
-		pPos.y = R_InterpolateFixed(stplyr->mo->old_y, stplyr->mo->y);
-		pPos.z = R_InterpolateFixed(stplyr->mo->old_z, stplyr->mo->z);
+		if (!CL_PredGetInterpolatedMobjPos(stplyr->mo, R_GetTimeFrac(RTF_LEVEL), &pPos.x, &pPos.y, &pPos.z))
+		{
+			pPos.x = R_InterpolateFixed(stplyr->mo->old_x, stplyr->mo->x);
+			pPos.y = R_InterpolateFixed(stplyr->mo->old_y, stplyr->mo->y);
+			pPos.z = R_InterpolateFixed(stplyr->mo->old_z, stplyr->mo->z);
+		}
 
 		distance = R_PointToDist2(pPos.x, pPos.y, v.x, v.y);
 
@@ -5373,8 +5387,14 @@ static void K_drawKartMinimap(void)
 					splitflags &= ~V_HUDTRANS;
 					splitflags |= V_HUDTRANSHALF;
 				}
-				interpx = R_InterpolateFixed(mobj->old_x, mobj->x);
-				interpy = R_InterpolateFixed(mobj->old_y, mobj->y);
+				{
+					fixed_t interpz = 0;
+					if (!CL_PredGetInterpolatedMobjPos(mobj, R_GetTimeFrac(RTF_LEVEL), &interpx, &interpy, &interpz))
+					{
+						interpx = R_InterpolateFixed(mobj->old_x, mobj->x);
+						interpy = R_InterpolateFixed(mobj->old_y, mobj->y);
+					}
+				}
 
 				K_drawKartMinimapIcon(interpx, interpy, x, y, splitflags, rollangle, workingPic, colormap, &iconoffsets);
 

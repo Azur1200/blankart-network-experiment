@@ -1736,6 +1736,7 @@ void D_SRB2Main(void)
 
 	D_RegisterServerCommands();
 	D_RegisterClientCommands(); // be sure that this is called before D_CheckNetGame
+	CL_PredRegisterVars(); // register before M_FirstLoadConfig() so saved cl_movement* CVars load cleanly
 	R_RegisterEngineStuff();
 	S_RegisterSoundStuff();
 	CON_Register();

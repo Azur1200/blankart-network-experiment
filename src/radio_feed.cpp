@@ -22,6 +22,8 @@
 #include <memory>
 
 #include "radio_feed.hpp"
+#include "doomstat.h"
+#include "i_video.h"
 #include "i_time.h"
 #include "d_player.h"
 #include "doomtype.h"
@@ -639,15 +641,15 @@ static dboolean arePlayersValid(mobj_t *m1, mobj_t *m2) {
 }
 
 static dboolean isFeedUpdateAboutMainPlayer(player_t *p1, player_t* p2) {
-	return stplyr->spectator == false && ((p1 == stplyr) || (p2 == stplyr));
+	return stplyr != NULL && stplyr->spectator == false && ((p1 == stplyr) || (p2 == stplyr));
 }
 
 static dboolean isDisplayPlayerAttacker(player_t* p) {
-	return stplyr->spectator == false && ((p == stplyr));
+	return stplyr != NULL && stplyr->spectator == false && ((p == stplyr));
 }
 
 static dboolean canUseHudfeed(void) {
-	return cv_hudfeed_enabled.value;
+	return !dedicated && rendermode != render_none && cv_hudfeed_enabled.value;
 }
 
 static int32_t getPlayerChatColour(player_t *p) {
@@ -1170,7 +1172,7 @@ void RR_UpdateHudFeedConfig(void) {
 }
 
 static void dummyupdate(void) {
-	if (!netgame)
+	if (!netgame && stplyr != NULL)
 		RR_PushGlobalGradeEventToFeed(stplyr, RTIER_P);
 }
 

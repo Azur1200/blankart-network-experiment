@@ -29,6 +29,7 @@
 #include "p_mobj.h"
 #include "r_draw.h"
 #include "r_fps.h"
+#include "cl_predict.h"
 #include "r_main.h"
 #include "st_stuff.h"
 #include "v_video.h"
@@ -608,10 +609,20 @@ void K_drawTargetHUD(const vector3_t* origin, player_t* player)
 			continue;
 		}
 
+		fixed_t mx, my, mz;
+		fixed_t sx, sy, sz, cz;
+		if (!CL_PredGetInterpolatedMobjPos(mobj, R_GetTimeFrac(RTF_LEVEL), &mx, &my, &mz))
+		{
+			mx = R_InterpolateFixed(mobj->old_x, mobj->x);
+			my = R_InterpolateFixed(mobj->old_y, mobj->y);
+			mz = R_InterpolateFixed(mobj->old_z, mobj->z);
+		}
+		CL_PredGetRenderOffsets(mobj, &sx, &sy, &sz, &cz);
+
 		vector3_t pos = {
-			R_InterpolateFixed(mobj->old_x, mobj->x) + mobj->sprxoff,
-			R_InterpolateFixed(mobj->old_y, mobj->y) + mobj->spryoff,
-			R_InterpolateFixed(mobj->old_z, mobj->z) + mobj->sprzoff + (mobj->height >> 1),
+			mx + sx,
+			my + sy,
+			mz + sz + (mobj->height >> 1),
 		};
 
 		TargetTracking tr;
