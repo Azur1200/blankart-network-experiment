@@ -3446,11 +3446,19 @@ void R_AddSprites(sector_t *sec, int32_t lightlevel)
 	limit_dist = (fixed_t)(cv_drawdist.value) * mapobjectscale;
 	for (thing = sec->thinglist; thing; thing = thing->snext)
 	{
+		if (CL_PredShouldHideMobj(thing))
+		{
+			continue;
+		}
 		if (CL_PredShouldRenderMobj(thing) && CL_PredGetRenderSector() != sec)
 		{
 			continue;
 		}
 		if (CL_PredShouldAttachMobj(thing) && CL_PredGetAttachedRenderSector(thing) != sec)
+		{
+			continue;
+		}
+		if (CL_PredShouldExtrapItem(thing) && CL_PredGetExtrapItemRenderSector(thing) != sec)
 		{
 			continue;
 		}
@@ -3508,6 +3516,20 @@ void R_AddSprites(sector_t *sec, int32_t lightlevel)
 				if (!(rendering_skybox && (att_mo->renderflags & RF_HIDEINSKYBOX)) && R_ThingVisible(att_mo))
 				{
 					R_ProjectSprite(att_mo);
+				}
+			}
+		}
+
+		att_count = CL_PredGetExtrapItemCount();
+		for (att_i = 0; att_i < att_count; att_i++)
+		{
+			sector_t *vis_sec = NULL;
+			mobj_t *ex_mo = CL_PredGetExtrapItemMobj(att_i, &vis_sec);
+			if (ex_mo && vis_sec == sec && (!ex_mo->subsector || ex_mo->subsector->sector != sec))
+			{
+				if (!(rendering_skybox && (ex_mo->renderflags & RF_HIDEINSKYBOX)) && R_ThingVisible(ex_mo))
+				{
+					R_ProjectSprite(ex_mo);
 				}
 			}
 		}

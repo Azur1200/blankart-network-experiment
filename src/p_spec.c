@@ -2050,7 +2050,7 @@ static void K_HandleLapIncrement(player_t *player)
 				nextlapsound = (!LUA_HookPlayerNextLap(player, displayplayer, localplayer));
 			}
 
-			if (displayplayer)
+			if (displayplayer && !CL_PredConsumeSuppressedLapSound(player, player->laps))
 			{
 				if (player->laps == numlaps) // final lap
 				{
@@ -6166,6 +6166,128 @@ void P_PredCheckDashPanels(player_t *player)
 				K_DoSneakerPanel(player, false);
 			else
 				player->panelgraze = 8;
+		}
+	}
+}
+
+#define CLPRED_MAX_FINISH_LINES 8
+static const line_t *pred_finish_lines[CLPRED_MAX_FINISH_LINES];
+static uint32_t pred_finish_line_count = 0;
+
+void P_PredClearCrossedFinishLines(void)
+{
+	pred_finish_line_count = 0;
+}
+
+void P_PredRecordCrossedFinishLine(const line_t *ld)
+{
+	uint32_t i;
+
+	if (!ld || !P_IsPredicting() || pred_finish_line_count >= CLPRED_MAX_FINISH_LINES)
+		return;
+
+	for (i = 0; i < pred_finish_line_count; i++)
+	{
+		if (pred_finish_lines[i] == ld)
+			return;
+	}
+
+	pred_finish_lines[pred_finish_line_count++] = ld;
+}
+
+static dboolean P_PredPlayerTouchingFinishSector(const player_t *player)
+{
+	sector_t *secs[32];
+	int32_t count, i;
+
+	if (!player || !player->mo || !player->mo->subsector || !player->mo->subsector->sector)
+		return false;
+
+	if (player->mo->subsector->sector->specialflags & SSF_FINISHLINE)
+		return true;
+
+	count = P_PredGetTouchingSectors(secs, 32);
+	for (i = 0; i < count; i++)
+	{
+		if (secs[i] && (secs[i]->specialflags & SSF_FINISHLINE))
+			return true;
+	}
+
+	return false;
+}
+
+static void P_PredDoLapIncrement(player_t *player)
+{
+	if (K_IgnoreFinishLine(player))
+		return;
+	if (!((player->starpostnum >= K_CheckpointThreshold(true)) || (player->laps == 0)))
+		return;
+
+	player->starpostnum = 0;
+	player->laps++;
+	player->pflags |= PF_HITFINISHLINE;
+
+	if (player->laps > numlaps)
+	{
+		player->exiting = raceexittime + 1;
+		player->pflags |= PF_WASINRACE;
+	}
+}
+
+void P_PredCheckFinishLine(player_t *player, fixed_t prev_x, fixed_t prev_y)
+{
+	uint32_t i;
+
+	I_Assert(P_IsPredicting());
+
+	if (!player || !player->mo || player->spectator || player->playerstate != PST_LIVE)
+	{
+		pred_finish_line_count = 0;
+		return;
+	}
+
+	if (!(gametypes[gametype]->rules & GTR_CIRCUIT) || player->exiting != 0 || (player->pflags & PF_HITFINISHLINE))
+	{
+		pred_finish_line_count = 0;
+		return;
+	}
+
+	// 1. Modern linedef special 2001 finish line
+	for (i = 0; i < pred_finish_line_count; i++)
+	{
+		const line_t *ld = pred_finish_lines[i];
+		int32_t side, oldside;
+
+		if (!ld || ld->special != 2001)
+			continue;
+
+		side = P_PointOnLineSide(player->mo->x, player->mo->y, ld);
+		oldside = P_PointOnLineSide(prev_x, prev_y, ld);
+		if (side == oldside)
+			continue;
+
+		if ((ld->args[0] & TMCFF_SINGLEUSE) && player->laps > 0)
+			continue;
+
+		if ((ld->args[0] & TMCFF_NEEDSECTOR) && !P_PredPlayerTouchingFinishSector(player))
+			continue;
+
+		if (((ld->args[0] & TMCFF_FLIP) && (oldside == 0))
+			|| (!(ld->args[0] & TMCFF_FLIP) && (oldside == 1)))
+		{
+			P_PredDoLapIncrement(player);
+			break;
+		}
+	}
+
+	pred_finish_line_count = 0;
+
+	// 2. Legacy SSF_FINISHLINE sector finish line
+	if (player->exiting == 0 && !(player->pflags & PF_HITFINISHLINE) && K_UsingLegacyCheckpoints())
+	{
+		if (P_PredPlayerTouchingFinishSector(player))
+		{
+			P_PredDoLapIncrement(player);
 		}
 	}
 }

@@ -19,11 +19,15 @@
 #include "p_local.h"
 #include "p_mobj.h"
 #include "k_kart.h"
+#include "k_hud.h"
 #include "k_bot.h"
 #include "m_random.h"
 #include "r_main.h"
 #include "r_fps.h"
 #include "r_state.h"
+#include "r_things.h"
+#include "w_wad.h"
+#include "z_zone.h"
 #include "v_video.h"
 #include "i_video.h"
 #include "i_time.h"
@@ -60,6 +64,8 @@ consvar_t cv_cl_movement_smoothrate = CVAR_INIT("cl_movement_smoothrate", "35", 
 consvar_t cv_cl_netrepeatinput = CVAR_INIT("cl_netrepeatinput", "2", CV_SAVE, cl_netrepeatinput_cons_t, NULL);
 consvar_t cv_cl_movement_debug = CVAR_INIT("cl_movement_debug", "0", 0, cl_movement_debug_cons_t, NULL);
 consvar_t cv_cl_movement_selftest = CVAR_INIT("cl_movement_selftest", "0", 0, cl_movement_selftest_cons_t, NULL);
+consvar_t cv_cl_newcollision = CVAR_INIT("cl_newcollision", "On", CV_NETVAR, CV_OnOff, NULL);
+consvar_t cv_cl_movement_extrapitems = CVAR_INIT("cl_movement_extrapitems", "On", CV_SAVE, CV_OnOff, NULL);
 
 // =========================================================================
 // Sequence helpers (0 is reserved as invalid/unset)
@@ -451,15 +457,60 @@ typedef struct cl_pred_state_s
 	uint8_t drift_sound_suppress_stage;
 	tic_t drift_sound_suppress_until;
 
+	// Instant wall-bonk audio + 3D visual burst state (suppresses late confirmed MT_BUMP behind kart)
+	uint16_t prev_shadow_bumpunstuck;
+	tic_t wall_bump_suppress_until;
+	uint8_t bump_fx_tics;
+	fixed_t bump_fx_x;
+	fixed_t bump_fx_y;
+	fixed_t bump_fx_z;
+	fixed_t bump_fx_scale;
+
+	// Instant sneaker / dash-panel boost sound cue state
+	tic_t prev_shadow_sneakertimer;
+	tic_t sneaker_sound_suppress_until;
+
+	// Instant lap / finish-line sound cue state
+	uint8_t prev_shadow_laps;
+	uint8_t lap_sound_suppress_lap;
+	tic_t lap_sound_suppress_until;
+
+	// Extrapolated item impact cue state
+	dboolean shadow_item_hit;
+	dboolean prev_shadow_item_hit;
+	tic_t item_hit_suppress_until;
+
 	// Per-frame cache of attached VFX & held/orbiting items for cross-sector rendering
 	cl_pred_attached_t attached[CLPRED_MAX_ATTACHED];
 	uint32_t attached_count;
+
+	// Nearby moving offensive items extrapolated by RTT (cl_movement_extrapitems)
+#define CLPRED_MAX_EXTRAP_ITEMS 32
+#define CLPRED_EXTRAP_STEPS     12
+	struct
+	{
+		mobj_t *mo;
+		fixed_t old_x, old_y, old_z;
+		fixed_t new_x, new_y, new_z;
+		fixed_t step_x[CLPRED_EXTRAP_STEPS];
+		fixed_t step_y[CLPRED_EXTRAP_STEPS];
+		fixed_t step_z[CLPRED_EXTRAP_STEPS];
+		uint32_t step_count;
+		sector_t *vis_sec;
+	} extrap_items[CLPRED_MAX_EXTRAP_ITEMS];
+	uint32_t extrap_count;
+
+	// Nearby static hazards (Bananas / Mines) cached alongside extrap_items for O(1) shadow checks
+	mobj_t *near_hazards[CLPRED_MAX_EXTRAP_ITEMS];
+	uint32_t near_hazard_count;
 } cl_pred_state_t;
 
 static cl_pred_state_t cl_pred;
 
 static dboolean CL_PredIsPlayerEligible(const player_t *p);
 static void CL_PredRefreshShadowPhysics(void);
+static void CL_PredUpdateExtrapItems(void);
+static dboolean CL_PredCheckShadowItemImpact(player_t *player, uint32_t step_idx);
 
 static void CL_PredResetVisualState(void)
 {
@@ -479,7 +530,20 @@ static void CL_PredResetVisualState(void)
 	cl_pred.drift_sound_stage = 0;
 	cl_pred.drift_sound_suppress_stage = 0;
 	cl_pred.drift_sound_suppress_until = 0;
+	cl_pred.prev_shadow_bumpunstuck = 0;
+	cl_pred.wall_bump_suppress_until = 0;
+	cl_pred.bump_fx_tics = 0;
+	cl_pred.prev_shadow_sneakertimer = 0;
+	cl_pred.sneaker_sound_suppress_until = 0;
+	cl_pred.prev_shadow_laps = (playeringame[consoleplayer] ? players[consoleplayer].laps : 0);
+	cl_pred.lap_sound_suppress_lap = 0;
+	cl_pred.lap_sound_suppress_until = 0;
+	cl_pred.shadow_item_hit = false;
+	cl_pred.prev_shadow_item_hit = false;
+	cl_pred.item_hit_suppress_until = 0;
 	cl_pred.attached_count = 0;
+	cl_pred.extrap_count = 0;
+	cl_pred.near_hazard_count = 0;
 }
 
 void CL_PredResetSession(void)
@@ -707,8 +771,10 @@ static void CL_PredReplayOnConsolePlayer(
 	tic_t start_leveltime,
 	const ticcmd_t *cmds,
 	uint32_t count,
+	dboolean allow_dynamic_extrap,
 	player_t *out_player,
-	mobj_t *out_mo)
+	mobj_t *out_mo,
+	dboolean *out_hit_item)
 {
 	player_t saved_player;
 	mobj_t work_mo;
@@ -716,6 +782,7 @@ static void CL_PredReplayOnConsolePlayer(
 	uint32_t saved_rng[PRNUMCLASS];
 	uint32_t k;
 	int32_t c;
+	dboolean hit_item = false;
 
 	I_Assert(!cl_pred_active_flag);
 	I_Assert(base_player != NULL && base_mo != NULL && out_player != NULL && out_mo != NULL);
@@ -743,13 +810,22 @@ static void CL_PredReplayOnConsolePlayer(
 	for (k = 0; k < count; k++)
 	{
 		ticcmd_t *pcmd = &players[consoleplayer].cmd;
+		fixed_t prev_x = work_mo.x, prev_y = work_mo.y;
 		leveltime = start_leveltime + k;
 
 		*pcmd = cmds[k];
 		pcmd->latency = min(((leveltime & TICCMD_LATENCYMASK) - pcmd->latency) & TICCMD_LATENCYMASK, MAXPREDICTTICS - 1);
 
+		P_PredClearCrossedFinishLines();
 		P_PredPlayerThink(&players[consoleplayer]);
 		P_PredPlayerMobjThink(&work_mo);
+
+		if (allow_dynamic_extrap)
+		{
+			K_PredApplyNewKartCollision(&players[consoleplayer], k);
+			if (CL_PredCheckShadowItemImpact(&players[consoleplayer], k))
+				hit_item = true;
+		}
 
 		// Mirror P_PlayerAfterThink physics tail (SECTORSPECIALSAFTERTHINK order)
 		if (P_IsObjectOnGround(&work_mo))
@@ -762,8 +838,9 @@ static void CL_PredReplayOnConsolePlayer(
 			players[consoleplayer].onconveyor = 0;
 		}
 
-		// Read-only static ground dash panel prediction (sector/FOF/polyobj/terrain/graze)
+		// Read-only static ground dash panel & finish-line prediction
 		P_PredCheckDashPanels(&players[consoleplayer]);
+		P_PredCheckFinishLine(&players[consoleplayer], prev_x, prev_y);
 
 		players[consoleplayer].oldcmd = *pcmd;
 	}
@@ -772,6 +849,8 @@ static void CL_PredReplayOnConsolePlayer(
 	*out_mo = work_mo;
 	out_player->mo = out_mo;
 	out_mo->player = out_player;
+	if (out_hit_item)
+		*out_hit_item = hit_item;
 
 	P_PredPopMapState();
 	cl_pred_active_flag = false;
@@ -860,6 +939,7 @@ static void CL_PredRefreshShadowPhysics(void)
 		CL_PredDetachShadowMobj(&cl_pred.shadow_mo, &cl_pred.shadow_player);
 		cl_pred.shadow_player.mo = &cl_pred.shadow_mo;
 		cl_pred.shadow_valid = true;
+		cl_pred.shadow_item_hit = false;
 		cl_pred.predicted_tics = 0;
 		cl_pred.last_delta_xy = 0;
 		cl_pred.last_delta_z = 0;
@@ -870,8 +950,8 @@ static void CL_PredRefreshShadowPhysics(void)
 	for (i = 0; i < n; i++)
 		cmds[i] = cl_pred.queue[i].cmd;
 
-	CL_PredReplayOnConsolePlayer(p, p->mo, NULL, 0, leveltime, cmds, n,
-		&cl_pred.shadow_player, &cl_pred.shadow_mo);
+	CL_PredReplayOnConsolePlayer(p, p->mo, NULL, 0, leveltime, cmds, n, true,
+		&cl_pred.shadow_player, &cl_pred.shadow_mo, &cl_pred.shadow_item_hit);
 
 	cl_pred.shadow_valid = true;
 	cl_pred.predicted_tics = n;
@@ -921,7 +1001,7 @@ static void CL_PredReconcileAtCurrentHorizon(const player_t *p)
 	}
 	else
 	{
-		CL_PredReplayOnConsolePlayer(p, p->mo, NULL, 0, leveltime, cmds, recon_n, &recon_p, &recon_mo);
+		CL_PredReplayOnConsolePlayer(p, p->mo, NULL, 0, leveltime, cmds, recon_n, true, &recon_p, &recon_mo, NULL);
 	}
 
 	CL_PredCapturePose(&recon_p, &recon_mo, &recon_pose);
@@ -1081,7 +1161,7 @@ void CL_PredOnConfirmedTic(tic_t executed_tic, const ticcmd_t *confirmed_cmd)
 			? R_PointToDist2(camera[0].x, camera[0].y, cl_pred.shadow_mo.x, cl_pred.shadow_mo.y) : 0;
 		fixed_t cam_c = (playeringame[consoleplayer] && players[consoleplayer].mo && camera[0].chase)
 			? R_PointToDist2(camera[0].x, camera[0].y, players[consoleplayer].mo->x, players[consoleplayer].mo->y) : 0;
-		CONS_Printf("[CL_PRED] tic=%u sent=%u conf=%u qlen=%u maxq=%u exact=%u miss=%u ackpkts=%u ovf=%u svunder=%u pred=%u dxy=%d dz=%d dang=%u replays=%u rec=%u snap=%u errxy=%d maxrec=%d cams=%d camc=%d att=%u rngv=%u\n",
+		CONS_Printf("[CL_PRED] tic=%u sent=%u conf=%u qlen=%u maxq=%u exact=%u miss=%u ackpkts=%u ovf=%u svunder=%u pred=%u dxy=%d dz=%d dang=%u replays=%u rec=%u snap=%u errxy=%d maxrec=%d cams=%d camc=%d att=%u exi=%u rngv=%u\n",
 			executed_tic, cl_pred.last_sent_seq, cl_pred.confirmed_seq,
 			cl_pred.queue_len, cl_pred.max_in_flight,
 			cl_pred.exact_ack_ticks, cl_pred.missing_ack_ticks,
@@ -1094,6 +1174,7 @@ void CL_PredOnConfirmedTic(tic_t executed_tic, const ticcmd_t *confirmed_cmd)
 			err_xy >> FRACBITS, cl_pred.max_reconcile_xy >> FRACBITS,
 			cam_s >> FRACBITS, cam_c >> FRACBITS,
 			cl_pred.attached_count,
+			cl_pred.extrap_count,
 			cl_pred.rng_violations);
 	}
 }
@@ -1154,6 +1235,199 @@ dboolean CL_PredConsumeSuppressedDriftSound(const player_t *player, uint8_t news
 	return false;
 }
 
+// Instant wall-bonk audio + 3D-tracked starburst feedback on predicted wall bounce
+static void CL_PredUpdateWallBumpFeedback(void)
+{
+	const player_t *sp = &cl_pred.shadow_player;
+	const mobj_t *smo = &cl_pred.shadow_mo;
+	uint16_t cur_bu;
+
+	if (cl_pred.bump_fx_tics > 0)
+		cl_pred.bump_fx_tics--;
+
+	if (!cl_pred.shadow_valid || !cv_cl_movement.value || dedicated || rendermode == render_none)
+	{
+		cl_pred.prev_shadow_bumpunstuck = 0;
+		return;
+	}
+
+	cur_bu = sp->bumpUnstuck;
+	if (cur_bu > cl_pred.prev_shadow_bumpunstuck)
+	{
+		if (playeringame[consoleplayer] && players[consoleplayer].mo && displayplayers[0] == consoleplayer)
+		{
+			S_StartSound(players[consoleplayer].mo, sfx_s3k49);
+		}
+		cl_pred.wall_bump_suppress_until = leveltime + (tic_t)max(cv_cl_movement_maxtics.value, 4) + 6;
+		cl_pred.bump_fx_tics = 8;
+		cl_pred.bump_fx_x = smo->x + cl_pred.smooth_err_x;
+		cl_pred.bump_fx_y = smo->y + cl_pred.smooth_err_y;
+		cl_pred.bump_fx_z = smo->z + cl_pred.smooth_err_z + (smo->height >> 1);
+		cl_pred.bump_fx_scale = smo->scale;
+	}
+
+	cl_pred.prev_shadow_bumpunstuck = cur_bu;
+}
+
+dboolean CL_PredConsumeSuppressedWallBump(const mobj_t *mo)
+{
+	if (!mo || !cv_cl_movement.value || !cl_pred.shadow_valid
+		|| !client || !netgame || demo.playback || splitscreen
+		|| !playeringame[consoleplayer] || mo != players[consoleplayer].mo)
+	{
+		return false;
+	}
+
+	return (leveltime <= cl_pred.wall_bump_suppress_until);
+}
+
+dboolean CL_PredShouldHideMobj(const mobj_t *mobj)
+{
+	const mobj_t *pmo;
+
+	if (!mobj || mobj->type != MT_BUMP || !cv_cl_movement.value || !cl_pred.shadow_valid
+		|| !client || !netgame || demo.playback || splitscreen
+		|| gamestate != GS_LEVEL || !playeringame[consoleplayer])
+	{
+		return false;
+	}
+
+	if (leveltime > cl_pred.wall_bump_suppress_until)
+		return false;
+
+	pmo = players[consoleplayer].mo;
+	if (!pmo || P_MobjWasRemoved(pmo))
+		return false;
+
+	// Hide only our own delayed confirmed wall-bump starburst spawned behind us
+	return (R_PointToDist2(mobj->x, mobj->y, pmo->x, pmo->y) < FixedMul(160 * FRACUNIT, pmo->scale));
+}
+
+// Instant Sneaker / dash-panel boost sound cue (suppresses delayed confirmed duplicate)
+static void CL_PredUpdateSneakerFeedback(void)
+{
+	const player_t *sp = &cl_pred.shadow_player;
+	tic_t cur_snk;
+
+	if (!cl_pred.shadow_valid || !cv_cl_movement.value || dedicated || rendermode == render_none)
+	{
+		cl_pred.prev_shadow_sneakertimer = 0;
+		return;
+	}
+
+	cur_snk = sp->sneakertimer;
+	if (cur_snk > cl_pred.prev_shadow_sneakertimer + 2)
+	{
+		if (playeringame[consoleplayer] && players[consoleplayer].mo && displayplayers[0] == consoleplayer)
+		{
+			sfxenum_t sfx = sfx_cdfm01;
+			if (((sp->numsneakers + sp->numpanels) > 1) && K_StackingActive() && cv_kartstacking_sneakerstacksound.value)
+				sfx = sfx_cdfm40;
+
+			S_StopSoundByID(players[consoleplayer].mo, sfx_cdfm01);
+			S_StopSoundByID(players[consoleplayer].mo, sfx_cdfm40);
+			S_StartSound(players[consoleplayer].mo, sfx);
+		}
+		cl_pred.sneaker_sound_suppress_until = leveltime + (tic_t)max(cv_cl_movement_maxtics.value, 4) + 6;
+	}
+
+	cl_pred.prev_shadow_sneakertimer = cur_snk;
+}
+
+dboolean CL_PredConsumeSuppressedSneakerSound(const player_t *player)
+{
+	if (!player || !cv_cl_movement.value || !cl_pred.shadow_valid
+		|| !client || !netgame || demo.playback || splitscreen
+		|| !playeringame[consoleplayer] || player != &players[consoleplayer])
+	{
+		return false;
+	}
+
+	return (leveltime <= cl_pred.sneaker_sound_suppress_until);
+}
+
+// Instant lap / finish-line audio cue (suppresses delayed confirmed duplicate)
+static void CL_PredUpdateLapFeedback(void)
+{
+	const player_t *sp = &cl_pred.shadow_player;
+	uint8_t cur_laps;
+
+	if (!cl_pred.shadow_valid || !cv_cl_movement.value || dedicated || rendermode == render_none
+		|| !(gametypes[gametype]->rules & GTR_CIRCUIT))
+	{
+		cl_pred.prev_shadow_laps = playeringame[consoleplayer] ? players[consoleplayer].laps : 0;
+		return;
+	}
+
+	if (leveltime > cl_pred.lap_sound_suppress_until)
+		cl_pred.lap_sound_suppress_lap = 0;
+
+	cur_laps = sp->laps;
+	if (cur_laps > cl_pred.prev_shadow_laps && cl_pred.prev_shadow_laps > 0)
+	{
+		if (displayplayers[0] == consoleplayer)
+		{
+			if (cur_laps == numlaps)
+				S_StartSound(NULL, cv_usegenericlapsounds.value ? sfx_s3k68 : sfx_finlap);
+			else if (cur_laps < numlaps)
+				S_StartSound(NULL, cv_usegenericlapsounds.value ? sfx_s221 : sfx_nxtlap);
+			else
+				S_StartSound(NULL, cv_usegenericlapsounds.value ? sfx_s3k6a : sfx_rcefin);
+		}
+		if (cur_laps > cl_pred.lap_sound_suppress_lap)
+			cl_pred.lap_sound_suppress_lap = cur_laps;
+		cl_pred.lap_sound_suppress_until = leveltime + (tic_t)max(cv_cl_movement_maxtics.value, 4) + 8;
+	}
+
+	cl_pred.prev_shadow_laps = cur_laps;
+}
+
+dboolean CL_PredConsumeSuppressedLapSound(const player_t *player, uint8_t new_laps)
+{
+	if (!player || !cv_cl_movement.value || !cl_pred.shadow_valid
+		|| !client || !netgame || demo.playback || splitscreen
+		|| !playeringame[consoleplayer] || player != &players[consoleplayer])
+	{
+		return false;
+	}
+
+	return (leveltime <= cl_pred.lap_sound_suppress_until && new_laps <= cl_pred.lap_sound_suppress_lap);
+}
+
+// Instant extrapolated item-impact audio cue (suppresses delayed confirmed sfx_s3k7b)
+static void CL_PredUpdateItemHitFeedback(void)
+{
+	if (!cl_pred.shadow_valid || !cv_cl_movement.value || !cv_cl_movement_extrapitems.value
+		|| dedicated || rendermode == render_none)
+	{
+		cl_pred.prev_shadow_item_hit = false;
+		return;
+	}
+
+	if (cl_pred.shadow_item_hit && !cl_pred.prev_shadow_item_hit)
+	{
+		if (playeringame[consoleplayer] && players[consoleplayer].mo && displayplayers[0] == consoleplayer)
+		{
+			S_StartSound(players[consoleplayer].mo, sfx_s3k7b);
+		}
+		cl_pred.item_hit_suppress_until = leveltime + (tic_t)max(cv_cl_movement_maxtics.value, 4) + 6;
+	}
+
+	cl_pred.prev_shadow_item_hit = cl_pred.shadow_item_hit;
+}
+
+dboolean CL_PredConsumeSuppressedItemHitSound(const mobj_t *mo)
+{
+	if (!mo || !cv_cl_movement.value || !cv_cl_movement_extrapitems.value || !cl_pred.shadow_valid
+		|| !client || !netgame || demo.playback || splitscreen
+		|| !playeringame[consoleplayer] || mo != players[consoleplayer].mo)
+	{
+		return false;
+	}
+
+	return (leveltime <= cl_pred.item_hit_suppress_until);
+}
+
 dboolean CL_PredIsDrivingCamera0(void)
 {
 	if (!client || !netgame || demo.playback || splitscreen
@@ -1196,6 +1470,7 @@ void CL_PredOnLocalTic(tic_t realtics)
 		return;
 	}
 
+	CL_PredUpdateExtrapItems();
 	CL_PredRefreshShadowPhysics();
 	if (!cl_pred.shadow_valid)
 		return;
@@ -1232,6 +1507,10 @@ void CL_PredOnLocalTic(tic_t realtics)
 
 	cl_pred.last_head_seq = head_seq;
 	CL_PredUpdateDriftSound();
+	CL_PredUpdateWallBumpFeedback();
+	CL_PredUpdateSneakerFeedback();
+	CL_PredUpdateLapFeedback();
+	CL_PredUpdateItemHitFeedback();
 
 	if (CL_PredIsDrivingCamera0())
 	{
@@ -1360,7 +1639,7 @@ void CL_PredSelfTestOnTic(tic_t executed_tic, const ticcmd_t *raw_cmd)
 
 			CL_PredReplayOnConsolePlayer(&start_slot->player, &start_slot->mo,
 				start_slot->secs, start_slot->sec_count,
-				start_lt, cmds, horizon, &pred_p, &pred_mo);
+				start_lt, cmds, horizon, false, &pred_p, &pred_mo, NULL);
 
 			ex = abs(pred_mo.x - p->mo->x);
 			ey = abs(pred_mo.y - p->mo->y);
@@ -1885,6 +2164,448 @@ mobj_t *CL_PredGetAttachedMobj(uint32_t idx, sector_t **out_sec)
 	return cl_pred.attached[idx].mo;
 }
 
+// =========================================================================
+// Nearby moving offensive item extrapolation (cl_movement_extrapitems)
+// =========================================================================
+
+static dboolean CL_PredIsExtrapItemType(mobjtype_t type)
+{
+	switch (type)
+	{
+		case MT_ORBINAUT:
+		case MT_JAWZ:
+		case MT_JAWZ_DUD:
+		case MT_BALLHOG:
+			return true;
+		default:
+			return false;
+	}
+}
+
+static dboolean CL_PredIsStaticHazardType(mobjtype_t type)
+{
+	switch (type)
+	{
+		case MT_BANANA:
+		case MT_SSMINE:
+		case MT_LANDMINE:
+		case MT_EGGMINE:
+			return true;
+		default:
+			return false;
+	}
+}
+
+static void CL_PredUpdateExtrapItems(void)
+{
+	typedef struct prev_ex_s
+	{
+		mobj_t *mo;
+		fixed_t x, y, z;
+	} prev_ex_t;
+
+	prev_ex_t prev[CLPRED_MAX_EXTRAP_ITEMS];
+	uint32_t prev_count = 0;
+	const mobj_t *pmo;
+	uint32_t maxtics, n, i, s;
+	fixed_t range_moving, range_static;
+	thinker_t *th;
+	uint32_t saved_rng[PRNUMCLASS];
+	int32_t c;
+
+	for (i = 0; i < cl_pred.extrap_count; i++)
+	{
+		prev[prev_count].mo = cl_pred.extrap_items[i].mo;
+		prev[prev_count].x = cl_pred.extrap_items[i].new_x;
+		prev[prev_count].y = cl_pred.extrap_items[i].new_y;
+		prev[prev_count].z = cl_pred.extrap_items[i].new_z;
+		prev_count++;
+	}
+
+	cl_pred.extrap_count = 0;
+	cl_pred.near_hazard_count = 0;
+
+	if (!cv_cl_movement.value || !cv_cl_movement_extrapitems.value
+		|| !client || !netgame || demo.playback || splitscreen
+		|| gamestate != GS_LEVEL || !playeringame[consoleplayer])
+	{
+		return;
+	}
+
+	pmo = players[consoleplayer].mo;
+	if (!pmo || P_MobjWasRemoved(pmo))
+		return;
+
+	maxtics = (uint32_t)cv_cl_movement_maxtics.value;
+	n = min(cl_pred.queue_len, maxtics);
+	if (n > CLPRED_EXTRAP_STEPS)
+		n = CLPRED_EXTRAP_STEPS;
+	if (n == 0)
+		return;
+
+	range_moving = FixedMul(2048 * FRACUNIT, mapobjectscale > 0 ? mapobjectscale : FRACUNIT);
+	range_static = FixedMul(1024 * FRACUNIT, mapobjectscale > 0 ? mapobjectscale : FRACUNIT);
+
+	for (c = 0; c < PRNUMCLASS; c++)
+		saved_rng[c] = P_GetRandSeed((pr_class_t)c);
+
+	cl_pred_active_flag = true;
+	P_PredPushMapState();
+
+	for (th = thlist[THINK_MOBJ].next; th != &thlist[THINK_MOBJ]; th = th->next)
+	{
+		mobj_t *mo;
+
+		if (th->function == (actionf_p1)P_RemoveThinkerDelayed)
+			continue;
+
+		mo = (mobj_t *)th;
+		if (P_MobjWasRemoved(mo) || mo->health <= 0)
+			continue;
+
+		if (CL_PredIsStaticHazardType(mo->type))
+		{
+			if (cl_pred.near_hazard_count < CLPRED_MAX_EXTRAP_ITEMS
+				&& R_PointToDist2(mo->x, mo->y, pmo->x, pmo->y) <= range_static)
+			{
+				cl_pred.near_hazards[cl_pred.near_hazard_count++] = mo;
+			}
+			continue;
+		}
+
+		if (!CL_PredIsExtrapItemType(mo->type))
+			continue;
+		if (mo->momx == 0 && mo->momy == 0)
+			continue;
+		if (cl_pred.extrap_count >= CLPRED_MAX_EXTRAP_ITEMS)
+			continue;
+		if (R_PointToDist2(mo->x, mo->y, pmo->x, pmo->y) > range_moving)
+			continue;
+
+		// Read-only wall-bounce + floor-follow extrapolation of detached item copy
+		{
+			mobj_t tmp = *mo;
+			uint32_t idx = cl_pred.extrap_count;
+			dboolean found_prev = false;
+
+			CL_PredDetachShadowMobj(&tmp, NULL);
+
+			for (s = 0; s < n; s++)
+			{
+				TryMoveResult_t res;
+				memset(&res, 0, sizeof(res));
+
+				if (!P_TryMove(&tmp, tmp.x + tmp.momx, tmp.y + tmp.momy, true, &res))
+				{
+					if (res.line != NULL && (res.normal.x != 0 || res.normal.y != 0))
+					{
+						fixed_t dot = FixedMul(tmp.momx, res.normal.x) + FixedMul(tmp.momy, res.normal.y);
+						tmp.momx -= 2 * FixedMul(dot, res.normal.x);
+						tmp.momy -= 2 * FixedMul(dot, res.normal.y);
+						P_TryMove(&tmp, tmp.x + tmp.momx, tmp.y + tmp.momy, true, NULL);
+					}
+				}
+
+				if (!(tmp.flags & MF_NOGRAVITY))
+				{
+					if (tmp.eflags & MFE_VERTICALFLIP)
+					{
+						if (tmp.z + tmp.height < tmp.ceilingz)
+						{
+							tmp.momz += FixedMul((5 * gravity) / 2, tmp.scale);
+							tmp.z += tmp.momz;
+						}
+						if (tmp.z + tmp.height > tmp.ceilingz)
+						{
+							tmp.z = tmp.ceilingz - tmp.height;
+							tmp.momz = 0;
+						}
+					}
+					else
+					{
+						if (tmp.z > tmp.floorz)
+						{
+							tmp.momz -= FixedMul((5 * gravity) / 2, tmp.scale);
+							tmp.z += tmp.momz;
+						}
+						if (tmp.z < tmp.floorz)
+						{
+							tmp.z = tmp.floorz;
+							tmp.momz = 0;
+						}
+					}
+				}
+
+				cl_pred.extrap_items[idx].step_x[s] = tmp.x;
+				cl_pred.extrap_items[idx].step_y[s] = tmp.y;
+				cl_pred.extrap_items[idx].step_z[s] = tmp.z;
+			}
+
+			cl_pred.extrap_items[idx].mo = mo;
+			cl_pred.extrap_items[idx].step_count = n;
+			cl_pred.extrap_items[idx].new_x = tmp.x;
+			cl_pred.extrap_items[idx].new_y = tmp.y;
+			cl_pred.extrap_items[idx].new_z = tmp.z;
+			cl_pred.extrap_items[idx].vis_sec = tmp.subsector ? tmp.subsector->sector : NULL;
+
+			for (i = 0; i < prev_count; i++)
+			{
+				if (prev[i].mo == mo)
+				{
+					if (R_PointToDist2(prev[i].x, prev[i].y, tmp.x, tmp.y) <= FixedMul(256 * FRACUNIT, mapobjectscale > 0 ? mapobjectscale : FRACUNIT))
+					{
+						cl_pred.extrap_items[idx].old_x = prev[i].x;
+						cl_pred.extrap_items[idx].old_y = prev[i].y;
+						cl_pred.extrap_items[idx].old_z = prev[i].z;
+						found_prev = true;
+					}
+					break;
+				}
+			}
+
+			if (!found_prev)
+			{
+				if (n >= 2)
+				{
+					cl_pred.extrap_items[idx].old_x = cl_pred.extrap_items[idx].step_x[n - 2];
+					cl_pred.extrap_items[idx].old_y = cl_pred.extrap_items[idx].step_y[n - 2];
+					cl_pred.extrap_items[idx].old_z = cl_pred.extrap_items[idx].step_z[n - 2];
+				}
+				else
+				{
+					cl_pred.extrap_items[idx].old_x = mo->x;
+					cl_pred.extrap_items[idx].old_y = mo->y;
+					cl_pred.extrap_items[idx].old_z = mo->z;
+				}
+			}
+
+			cl_pred.extrap_count++;
+		}
+	}
+
+	P_PredPopMapState();
+	cl_pred_active_flag = false;
+
+	for (c = 0; c < PRNUMCLASS; c++)
+	{
+		uint32_t cur = P_GetRandSeed((pr_class_t)c);
+		if (cur != saved_rng[c])
+		{
+			cl_pred.rng_violations++;
+			P_SetRandSeed((pr_class_t)c, saved_rng[c]);
+		}
+	}
+}
+
+static dboolean CL_PredCheckShadowItemImpact(player_t *player, uint32_t step_idx)
+{
+	const mobj_t *pmo;
+	mobj_t *smo;
+	uint32_t i;
+	dboolean hit = false;
+
+	if (!cv_cl_movement_extrapitems.value || !player || !player->mo)
+		return false;
+	if (P_PlayerInPain(player) || player->flashing > 0 || player->hyudorotimer > 0
+		|| player->smonitortimer > 0 || player->invincibilitytimer > 0 || player->growshrinktimer > 0)
+	{
+		return false;
+	}
+
+	pmo = playeringame[consoleplayer] ? players[consoleplayer].mo : NULL;
+	smo = player->mo;
+
+	// 1. Check extrapolated moving items (Orbinaut / Jawz / Ballhog) at step_idx
+	for (i = 0; i < cl_pred.extrap_count; i++)
+	{
+		const mobj_t *imo = cl_pred.extrap_items[i].mo;
+		uint32_t s;
+		fixed_t ix, iy, iz, bd;
+
+		if (!imo || P_MobjWasRemoved(imo) || imo->health <= 0)
+			continue;
+		if (imo->target == pmo && imo->threshold > 0)
+			continue;
+		if (cl_pred.extrap_items[i].step_count == 0)
+			continue;
+
+		s = (step_idx < cl_pred.extrap_items[i].step_count) ? step_idx : (cl_pred.extrap_items[i].step_count - 1);
+		ix = cl_pred.extrap_items[i].step_x[s];
+		iy = cl_pred.extrap_items[i].step_y[s];
+		iz = cl_pred.extrap_items[i].step_z[s];
+
+		bd = smo->radius + imo->radius;
+		if (abs(smo->x - ix) >= bd || abs(smo->y - iy) >= bd)
+			continue;
+		if (smo->z > iz + imo->height || smo->z + smo->height < iz)
+			continue;
+
+		hit = true;
+		break;
+	}
+
+	// 2. Check nearby static hazards (Banana / Mines)
+	if (!hit)
+	{
+		for (i = 0; i < cl_pred.near_hazard_count; i++)
+		{
+			const mobj_t *hmo = cl_pred.near_hazards[i];
+			fixed_t bd;
+
+			if (!hmo || P_MobjWasRemoved(hmo) || hmo->health <= 0)
+				continue;
+			if (hmo->target == pmo && hmo->threshold > 0)
+				continue;
+
+			bd = smo->radius + hmo->radius;
+			if (abs(smo->x - hmo->x) >= bd || abs(smo->y - hmo->y) >= bd)
+				continue;
+			if (smo->z > hmo->z + hmo->height || smo->z + smo->height < hmo->z)
+				continue;
+
+			hit = true;
+			break;
+		}
+	}
+
+	if (hit)
+	{
+		// Soft impact brake on shadow kart: prevents driving 150u past the item before server confirms
+		// while keeping rare false-hit recovery gentle and non-jarring.
+		smo->momx = (smo->momx * 3) / 4;
+		smo->momy = (smo->momy * 3) / 4;
+		player->speed = R_PointToDist2(0, 0, smo->momx, smo->momy);
+	}
+
+	return hit;
+}
+
+dboolean CL_PredShouldExtrapItem(const mobj_t *mobj)
+{
+	uint32_t i;
+
+	if (!mobj || cl_pred.extrap_count == 0 || !cv_cl_movement.value || !cv_cl_movement_extrapitems.value
+		|| P_IsPredicting())
+	{
+		return false;
+	}
+
+	for (i = 0; i < cl_pred.extrap_count; i++)
+	{
+		if (cl_pred.extrap_items[i].mo == mobj)
+			return true;
+	}
+
+	return false;
+}
+
+dboolean CL_PredApplyExtrapItemState(const mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
+{
+	uint32_t i;
+
+	if (!mobj || !out || cl_pred.extrap_count == 0 || !cv_cl_movement.value || !cv_cl_movement_extrapitems.value)
+		return false;
+
+	for (i = 0; i < cl_pred.extrap_count; i++)
+	{
+		if (cl_pred.extrap_items[i].mo == mobj)
+		{
+			if (frac >= FRACUNIT)
+			{
+				out->x = cl_pred.extrap_items[i].new_x;
+				out->y = cl_pred.extrap_items[i].new_y;
+				out->z = cl_pred.extrap_items[i].new_z;
+			}
+			else
+			{
+				if (frac < 0)
+					frac = 0;
+				out->x = CL_PredLerpFixed(cl_pred.extrap_items[i].old_x, cl_pred.extrap_items[i].new_x, frac);
+				out->y = CL_PredLerpFixed(cl_pred.extrap_items[i].old_y, cl_pred.extrap_items[i].new_y, frac);
+				out->z = CL_PredLerpFixed(cl_pred.extrap_items[i].old_z, cl_pred.extrap_items[i].new_z, frac);
+			}
+			out->subsector = R_PointInSubsector(out->x, out->y);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+sector_t *CL_PredGetExtrapItemRenderSector(const mobj_t *mobj)
+{
+	uint32_t i;
+
+	for (i = 0; i < cl_pred.extrap_count; i++)
+	{
+		if (cl_pred.extrap_items[i].mo == mobj)
+			return cl_pred.extrap_items[i].vis_sec;
+	}
+
+	return (mobj && mobj->subsector) ? mobj->subsector->sector : NULL;
+}
+
+uint32_t CL_PredGetExtrapItemCount(void)
+{
+	return cl_pred.extrap_count;
+}
+
+mobj_t *CL_PredGetExtrapItemMobj(uint32_t idx, sector_t **out_sec)
+{
+	if (idx >= cl_pred.extrap_count)
+		return NULL;
+	if (out_sec)
+		*out_sec = cl_pred.extrap_items[idx].vis_sec;
+	return cl_pred.extrap_items[idx].mo;
+}
+
+void CL_PredDrawHUDFeedback(void)
+{
+	trackingResult_t res;
+	vector3_t pos;
+	const state_t *st;
+	spritedef_t *sprdef;
+	spriteframe_t *sprframe;
+	uint32_t frame_idx;
+	patch_t *patch;
+	fixed_t draw_scale;
+
+	if (cl_pred.bump_fx_tics == 0 || !cv_cl_movement.value || !cl_pred.shadow_valid
+		|| splitscreen || gamestate != GS_LEVEL || displayplayers[0] != consoleplayer)
+	{
+		return;
+	}
+
+	pos.x = cl_pred.bump_fx_x;
+	pos.y = cl_pred.bump_fx_y;
+	pos.z = cl_pred.bump_fx_z;
+	memset(&res, 0, sizeof(res));
+	K_ObjectTracking(&res, &pos, false);
+	if (!res.onScreen || res.scale <= 0)
+		return;
+
+	st = &states[mobjinfo[MT_BUMP].spawnstate];
+	if (st->sprite >= numsprites)
+		return;
+	sprdef = &sprites[st->sprite];
+	if (!sprdef->spriteframes || sprdef->numframes == 0)
+		return;
+
+	frame_idx = (uint32_t)((8 - cl_pred.bump_fx_tics) / 2);
+	if (frame_idx >= (uint32_t)sprdef->numframes)
+		frame_idx = (uint32_t)sprdef->numframes - 1;
+	sprframe = &sprdef->spriteframes[frame_idx];
+
+	patch = W_CachePatchNum(sprframe->lumppat[0], PU_CACHE);
+	if (!patch)
+		return;
+
+	draw_scale = FixedMul(res.scale, cl_pred.bump_fx_scale > 0 ? cl_pred.bump_fx_scale : FRACUNIT);
+	if (draw_scale > 3 * FRACUNIT)
+		draw_scale = 3 * FRACUNIT;
+	V_DrawFixedPatch(res.x, res.y, draw_scale, V_SPLITSCREEN, patch, NULL);
+}
+
 void CL_PredGetSmoothViewOffset(uint8_t viewnum, fixed_t *ox, fixed_t *oy, fixed_t *oz)
 {
 	if (viewnum == 0 && cl_pred.shadow_valid && cl_pred.pose_new.valid
@@ -2106,18 +2827,19 @@ static void Command_CLMovementStatus_f(void)
 	else if (client)
 	{
 		fixed_t err_xy = R_PointToDist2(cl_pred.smooth_err_x, cl_pred.smooth_err_y, 0, 0);
-		CONS_Printf("[CL_PRED] enabled=%d maxtics=%d repeat=%d\n",
-			cv_cl_movement.value, cv_cl_movement_maxtics.value, cv_cl_netrepeatinput.value);
+		CONS_Printf("[CL_PRED] enabled=%d maxtics=%d repeat=%d newcol=%d extrapitems=%d\n",
+			cv_cl_movement.value, cv_cl_movement_maxtics.value, cv_cl_netrepeatinput.value,
+			cv_cl_newcollision.value, cv_cl_movement_extrapitems.value);
 		CONS_Printf("[CL_PRED] seq: sent=%u conf=%u qlen=%u maxq=%u exact_acks=%u missing_acks=%u ack_pkts=%u ovf=%u sv_underrun=%u\n",
 			cl_pred.last_sent_seq, cl_pred.confirmed_seq,
 			cl_pred.queue_len, cl_pred.max_in_flight,
 			cl_pred.exact_ack_ticks, cl_pred.missing_ack_ticks,
 			cl_pred.ack_packets_recv, cl_pred.queue_overflows, cl_pred.server_underrun_flags);
-		CONS_Printf("[CL_PRED] shadow: valid=%d pred_tics=%u dxy=%d dz=%d dang=%u replays=%u rng_viol=%u att=%u\n",
+		CONS_Printf("[CL_PRED] shadow: valid=%d pred_tics=%u dxy=%d dz=%d dang=%u replays=%u rng_viol=%u att=%u exi=%u\n",
 			cl_pred.shadow_valid ? 1 : 0, cl_pred.predicted_tics,
 			cl_pred.last_delta_xy >> FRACBITS, cl_pred.last_delta_z >> FRACBITS,
 			(uint32_t)(((uint64_t)cl_pred.last_delta_angle * 360ULL) >> 32),
-			cl_pred.shadow_replays, cl_pred.rng_violations, cl_pred.attached_count);
+			cl_pred.shadow_replays, cl_pred.rng_violations, cl_pred.attached_count, cl_pred.extrap_count);
 		CONS_Printf("[CL_PRED] smooth: on=%d rate=%d rec=%u snap=%u errxy=%d maxrec=%d\n",
 			cv_cl_movement_smooth.value, cv_cl_movement_smoothrate.value,
 			cl_pred.smooth_reconciles, cl_pred.smooth_snaps,
@@ -2139,6 +2861,8 @@ void CL_PredRegisterVars(void)
 	CV_RegisterVar(&cv_cl_netrepeatinput);
 	CV_RegisterVar(&cv_cl_movement_debug);
 	CV_RegisterVar(&cv_cl_movement_selftest);
+	CV_RegisterVar(&cv_cl_newcollision);
+	CV_RegisterVar(&cv_cl_movement_extrapitems);
 	COM_AddCommand("cl_movement_status", Command_CLMovementStatus_f);
 	CL_PredResetSession();
 	SV_PredResetAll();

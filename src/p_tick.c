@@ -976,6 +976,9 @@ void P_Ticker(dboolean run)
 		PS_STOP_TIMING(ps_thinkertime);
 		thinkersCompleted = true;
 
+		// Continuous soft kart-to-kart overlap push (when cl_newcollision is On)
+		K_RunNewKartCollision();
+
 		// Run any "after all the other thinkers" stuff
 		for (i = 0; i < MAXPLAYERS; i++)
 			if (playeringame[i] && players[i].mo && !P_MobjWasRemoved(players[i].mo))

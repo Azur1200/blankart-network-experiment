@@ -1580,7 +1580,8 @@ static BlockItReturn_t PIT_CheckThing(mobj_t *thing)
 						P_DamageMobj(g_tm.thing, thing, thing, 1, DMG_WIPEOUT|DMG_STEAL);
 				}
 
-				P_SetTarget(&g_tm.hitthing, thing);
+				if (!cv_cl_newcollision.value)
+					P_SetTarget(&g_tm.hitthing, thing);
 			}
 
 			return BMIT_CONTINUE;
@@ -2108,6 +2109,10 @@ static BlockItReturn_t PIT_CheckLine(line_t *ld)
 			if (g_tm.thing->z <= textop && thingtop >= texbottom)
 				add_spechit(ld);
 		}
+	}
+	else if (ld->special == 2001)
+	{
+		P_PredRecordCrossedFinishLine(ld);
 	}
 
 	return BMIT_CONTINUE;

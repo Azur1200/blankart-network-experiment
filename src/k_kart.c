@@ -1269,6 +1269,228 @@ dboolean K_KartBouncing(mobj_t *mobj1, mobj_t *mobj2, dboolean bounce, dboolean 
 	return true;
 }
 
+// =========================================================================
+// Minecraft-style continuous soft kart-to-kart overlap push (cl_newcollision)
+// =========================================================================
+
+static dboolean K_CanNewKartCollide(const player_t *p)
+{
+	if (!p || !p->mo || P_MobjWasRemoved(p->mo))
+		return false;
+	if (p->spectator || p->playerstate != PST_LIVE || p->respawn != 0 || p->mo->health <= 0)
+		return false;
+	if (p->squishedtimer > 0 || p->hyudorotimer > 0 || p->flashing > 0)
+		return false;
+	if (p->flipovertimer > 0 || (p->crash_state && !p->crash_bumpme))
+		return false;
+	return true;
+}
+
+static dboolean K_CanNewKartCollidePair(const player_t *p1, const player_t *p2)
+{
+	if (p1 == p2 || !K_CanNewKartCollide(p1) || !K_CanNewKartCollide(p2))
+		return false;
+
+	// Dead karma bomb vs alive players in Battle Mode
+	if ((gametypes[gametype]->rules & GTR_BUMPERS) && ((p1->bumper > 0) != (p2->bumper > 0)))
+		return false;
+
+	return true;
+}
+
+static fixed_t K_GetNewCollisionWeight(const player_t *p)
+{
+	fixed_t w = max(1, (int32_t)p->kartweight) * FRACUNIT;
+	if (p->mo && mapobjectscale > 0 && p->mo->scale != mapobjectscale)
+		w = FixedMul(w, FixedDiv(p->mo->scale, mapobjectscale));
+	return max(FRACUNIT / 2, w);
+}
+
+static dboolean K_ComputeNewKartPush(
+	fixed_t x1, fixed_t y1, fixed_t z1, fixed_t r1, fixed_t h1, fixed_t s1, fixed_t w1, int32_t idx1,
+	fixed_t x2, fixed_t y2, fixed_t z2, fixed_t r2, fixed_t h2, fixed_t s2, fixed_t w2, int32_t idx2,
+	fixed_t *out_px1, fixed_t *out_py1, fixed_t *out_px2, fixed_t *out_py2)
+{
+	fixed_t blockdist, dx, dy, ox, oy, overlap, depth, dist;
+	fixed_t nx, ny, avg_scale, base_push, ratio1, ratio2, push1, push2;
+
+	if (z1 > z2 + h2 || z1 + h1 < z2)
+		return false;
+
+	blockdist = r1 + r2;
+	if (blockdist <= 0)
+		return false;
+
+	dx = x1 - x2;
+	dy = y1 - y2;
+	ox = blockdist - abs(dx);
+	oy = blockdist - abs(dy);
+
+	if (ox <= 0 || oy <= 0)
+		return false;
+
+	overlap = min(ox, oy);
+	depth = FixedDiv(overlap, blockdist);
+	if (depth < FRACUNIT / 16)
+		depth = FRACUNIT / 16;
+	else if (depth > FRACUNIT)
+		depth = FRACUNIT;
+
+	dist = R_PointToDist2(0, 0, dx, dy);
+	if (dist < FRACUNIT)
+	{
+		angle_t tie_ang = ANGLE_45 * ((uint32_t)(idx1 + idx2) & 7U);
+		if (idx1 > idx2)
+			tie_ang += ANGLE_180;
+		nx = FINECOSINE((tie_ang >> ANGLETOFINESHIFT) & FINEMASK);
+		ny = FINESINE((tie_ang >> ANGLETOFINESHIFT) & FINEMASK);
+	}
+	else
+	{
+		nx = FixedDiv(dx, dist);
+		ny = FixedDiv(dy, dist);
+	}
+
+	avg_scale = (s1 + s2) / 2;
+	if (avg_scale <= 0)
+		avg_scale = FRACUNIT;
+
+	// Smooth bounded separation velocity per tic (1.5..4.5 * scale)
+	base_push = FixedMul((FRACUNIT * 3) / 2 + FixedMul(FRACUNIT * 3, depth), avg_scale);
+
+	// Gently clamped weight ratio [0.60, 1.40] so weight matters without causing pinball launches
+	ratio1 = (w1 + w2 > 0) ? FixedDiv(2 * w2, w1 + w2) : FRACUNIT;
+	if (ratio1 < (6 * FRACUNIT) / 10)
+		ratio1 = (6 * FRACUNIT) / 10;
+	else if (ratio1 > (14 * FRACUNIT) / 10)
+		ratio1 = (14 * FRACUNIT) / 10;
+	ratio2 = (2 * FRACUNIT) - ratio1;
+
+	push1 = FixedMul(base_push, ratio1);
+	push2 = FixedMul(base_push, ratio2);
+
+	if (out_px1) *out_px1 = FixedMul(push1, nx);
+	if (out_py1) *out_py1 = FixedMul(push1, ny);
+	if (out_px2) *out_px2 = -FixedMul(push2, nx);
+	if (out_py2) *out_py2 = -FixedMul(push2, ny);
+	return true;
+}
+
+void K_RunNewKartCollision(void)
+{
+	typedef struct newcol_snap_s
+	{
+		dboolean valid;
+		fixed_t x, y, z, r, h, s, w;
+	} newcol_snap_t;
+
+	newcol_snap_t snap[MAXPLAYERS];
+	fixed_t dvx[MAXPLAYERS];
+	fixed_t dvy[MAXPLAYERS];
+	int32_t i, j;
+
+	if (!cv_cl_newcollision.value || P_IsPredicting())
+		return;
+	if (leveltime < starttime + antibumptime)
+		return;
+
+	memset(snap, 0, sizeof(snap));
+	memset(dvx, 0, sizeof(dvx));
+	memset(dvy, 0, sizeof(dvy));
+
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!playeringame[i] || !K_CanNewKartCollide(&players[i]))
+			continue;
+		snap[i].valid = true;
+		snap[i].x = players[i].mo->x;
+		snap[i].y = players[i].mo->y;
+		snap[i].z = players[i].mo->z;
+		snap[i].r = players[i].mo->radius;
+		snap[i].h = players[i].mo->height;
+		snap[i].s = players[i].mo->scale;
+		snap[i].w = K_GetNewCollisionWeight(&players[i]);
+	}
+
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!snap[i].valid)
+			continue;
+		for (j = i + 1; j < MAXPLAYERS; j++)
+		{
+			fixed_t px1, py1, px2, py2;
+			if (!snap[j].valid || !K_CanNewKartCollidePair(&players[i], &players[j]))
+				continue;
+
+			if (K_ComputeNewKartPush(
+				snap[i].x, snap[i].y, snap[i].z, snap[i].r, snap[i].h, snap[i].s, snap[i].w, i,
+				snap[j].x, snap[j].y, snap[j].z, snap[j].r, snap[j].h, snap[j].s, snap[j].w, j,
+				&px1, &py1, &px2, &py2))
+			{
+				dvx[i] += px1;
+				dvy[i] += py1;
+				dvx[j] += px2;
+				dvy[j] += py2;
+			}
+		}
+	}
+
+	for (i = 0; i < MAXPLAYERS; i++)
+	{
+		if (!snap[i].valid || (dvx[i] == 0 && dvy[i] == 0))
+			continue;
+		players[i].mo->momx += dvx[i];
+		players[i].mo->momy += dvy[i];
+	}
+}
+
+void K_PredApplyNewKartCollision(player_t *player, uint32_t pred_step)
+{
+	int32_t j;
+	int32_t my_idx;
+	fixed_t my_w, extrap_t;
+
+	if (!cv_cl_newcollision.value || !P_IsPredicting() || !K_CanNewKartCollide(player))
+		return;
+	if (leveltime < starttime + antibumptime)
+		return;
+
+	my_idx = (int32_t)(player - players);
+	my_w = K_GetNewCollisionWeight(player);
+	// Cap rival extrapolation horizon to 4 tics to prevent corner overshoot phantom pushes
+	extrap_t = (fixed_t)min(pred_step + 1, 4U);
+
+	for (j = 0; j < MAXPLAYERS; j++)
+	{
+		const player_t *other;
+		const mobj_t *omo;
+		fixed_t ox, oy, oz, ow, px1, py1;
+
+		if (j == my_idx || !playeringame[j])
+			continue;
+		other = &players[j];
+		if (!K_CanNewKartCollidePair(player, other))
+			continue;
+
+		omo = other->mo;
+		ox = omo->x + (omo->momx * extrap_t);
+		oy = omo->y + (omo->momy * extrap_t);
+		oz = omo->z + (omo->momz * extrap_t);
+		if (omo->z >= omo->floorz && oz < omo->floorz)
+			oz = omo->floorz;
+		ow = K_GetNewCollisionWeight(other);
+
+		if (K_ComputeNewKartPush(
+			player->mo->x, player->mo->y, player->mo->z, player->mo->radius, player->mo->height, player->mo->scale, my_w, my_idx,
+			ox, oy, oz, omo->radius, omo->height, omo->scale, ow, j,
+			&px1, &py1, NULL, NULL))
+		{
+			player->mo->momx += px1;
+			player->mo->momy += py1;
+		}
+	}
+}
+
 /**	\brief	Checks that the player is on an offroad subsector for realsies. Also accounts for line riding to prevent cheese.
 
 	\param	mo	player mobj object
@@ -2257,7 +2479,8 @@ void K_SpawnBumpEffect(mobj_t *mo)
 		fx->eflags &= ~MFE_VERTICALFLIP;
 	fx->scale = mo->scale;
 
-	S_StartSound(mo, sfx_s3k49);
+	if (!CL_PredConsumeSuppressedWallBump(mo))
+		S_StartSound(mo, sfx_s3k49);
 }
 
 static void K_HonkFollowerHorn(player_t *honkPlayer)
@@ -6223,6 +6446,9 @@ static void K_SneakerPanelStackSound(player_t *player, int32_t type)
 		// Use a less annoying sound when stacking sneakers.
 		sfx = smallsfx;
 	}
+
+	if (CL_PredConsumeSuppressedSneakerSound(player))
+		return;
 
 	S_StopSoundByID(player->mo, normalsfx);
 	S_StopSoundByID(player->mo, smallsfx);
@@ -14026,6 +14252,34 @@ void K_MoveKartPlayer(player_t *player, dboolean onground)
 					{
 						K_PlayerItemThink(player, onground);
 					}
+				}
+			}
+		}
+	}
+	else if (P_IsPredicting() && player && player->mo && player->mo->health > 0 && !player->spectator && !P_PlayerInPain(player) && player->respawn == 0 && !(player->exiting || mapreset))
+	{
+		// Read-only instant prediction for self-contained Sneaker / active Rocket Sneaker boosts
+		if (!(player->itemflags & IF_USERINGS) && player->itemusecooldown == 0
+			&& !player->eggmanexplode && player->growshrinktimer <= 0 && !K_SMonitorSlotHogging(player)
+			&& ATTACK_IS_DOWN && NO_HYUDORO && onground)
+		{
+			if (player->equippeditem == KITEM_ROCKETSNEAKER && player->rocketsneakertimer > 0)
+			{
+				K_DoSneaker(player, SNEAKERTYPE_ROCKETSNEAKER);
+				if (player->rocketsneakertimer <= 2*TICRATE)
+					player->rocketsneakertimer = 1;
+				else
+					player->rocketsneakertimer -= 2*TICRATE;
+			}
+			else if (player->equippeditem == KITEM_NONE && player->itemtype == KITEM_SNEAKER && player->itemamount > 0)
+			{
+				K_DoSneaker(player, SNEAKERTYPE_SNEAKER);
+				player->itemamount--;
+				if (player->itemamount <= 0)
+				{
+					player->itemamount = 0;
+					player->itemtype = KITEM_NONE;
+					player->itemflags &= ~IF_ITEMOUT;
 				}
 			}
 		}

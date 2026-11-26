@@ -1795,17 +1795,21 @@ static void K_drawKartItem(void)
 	}
 	else
 	{
+		const player_t *hudplyr = CL_PredGetHudPlayer(stplyr);
 		// S-Monitor nonsense necessitates we do this ahead of time
 		dboolean candrawitemstatus = true;
 		dboolean notincooldown = stplyr->itemusecooldown <= 0;
+		const int32_t disp_itemtype = hudplyr->itemtype;
+		const int32_t disp_itemamount = hudplyr->itemamount;
+		const int32_t disp_rocketsneakertimer = hudplyr->rocketsneakertimer;
 
-		if (stplyr->itemamount <= 0 && notincooldown)
+		if (disp_itemamount <= 0 && notincooldown)
 			candrawitemstatus = false;
 
-		if (stplyr->itemtype == 0 && notincooldown)
+		if (disp_itemtype == 0 && notincooldown)
 			candrawitemstatus = false;
 
-		if (stplyr->itemtype >= numkartitems && stplyr->itemtype != MAXKARTITEMS)
+		if (disp_itemtype >= numkartitems && disp_itemtype != MAXKARTITEMS)
 			candrawitemstatus = false;
 
 		// I'm doing this a little weird and drawing mostly in reverse order
@@ -1830,9 +1834,9 @@ static void K_drawKartItem(void)
 			else
 				localpatch = kp_nodraw;
 		}
-		else if (stplyr->rocketsneakertimer > 1)
+		else if (disp_rocketsneakertimer > 1)
 		{
-			itembar = FixedDiv(stplyr->rocketsneakertimer, itemtime*3);
+			itembar = FixedDiv(disp_rocketsneakertimer, itemtime*3);
 
 			if (leveltime & 1)
 				localpatch = K_GetCachedItemPatch(KITEM_ROCKETSNEAKER, tiny, 0);
@@ -1936,17 +1940,17 @@ static void K_drawKartItem(void)
 			if (!candrawitemstatus)
 				return;
 
-			if (stplyr->itemtype > 0 && stplyr->itemamount > 0)
-				localpatch = K_GetCachedItemPatch(stplyr->itemtype, tiny, stplyr->itemamount);
+			if (disp_itemtype > 0 && disp_itemamount > 0)
+				localpatch = K_GetCachedItemPatch(disp_itemtype, tiny, disp_itemamount);
 
 			if (localpatch == NULL)
 				localpatch = kp_nodraw; // diagnose underflows
-			else if (K_IsKartItemAlternate(stplyr->itemtype) && K_ShowAltItemIcon(stplyr->itemtype, tiny))
+			else if (K_IsKartItemAlternate(disp_itemtype) && K_ShowAltItemIcon(disp_itemtype, tiny))
 				isalt = true;
 
-			dark = K_GetItemFlags(stplyr->itemtype) & KIF_DARKBG;
+			dark = K_GetItemFlags(disp_itemtype) & KIF_DARKBG;
 
-			if ((stplyr->itemflags & IF_ITEMOUT) && !(leveltime & 1))
+			if ((hudplyr->itemflags & IF_ITEMOUT) && !(leveltime & 1))
 				localpatch = kp_nodraw;
 		}
 
@@ -2082,7 +2086,8 @@ static void K_drawKartItem(void)
 	V_DrawFixedPatch(fx << FRACBITS, fy << FRACBITS, info.hudScale, boxpatchflags, localbg, colormap);
 
 	// Then, the numbers:
-	if (stplyr->itemamount >= K_GetItemNumberDisplayMin(stplyr->itemtype, tiny) && !stplyr->itemroulette)
+	const player_t *hudplyr_num = CL_PredGetHudPlayer(stplyr);
+	if (hudplyr_num->itemamount >= K_GetItemNumberDisplayMin(hudplyr_num->itemtype, tiny) && !stplyr->itemroulette)
 	{
 		localbg = K_getItemMulPatch(tiny);
 		V_DrawFixedPatch((fx + (flipamount ? 48 : 0))<<FRACBITS, (fy<<FRACBITS), info.hudScale, V_HUDTRANS|fflags|(flipamount ? V_FLIP : 0), localbg, colormap); // flip this graphic for p2 and p4 in split and shift it.
@@ -2097,9 +2102,9 @@ static void K_drawKartItem(void)
 		if (tiny)
 		{
 			if (flipamount) // reminder that this is for 3/4p's right end of the screen.
-				V_DrawString(fx+2, fy+31, V_ALLOWLOWERCASE|V_HUDTRANS|fflags, va("x%d", stplyr->itemamount));
+				V_DrawString(fx+2, fy+31, V_ALLOWLOWERCASE|V_HUDTRANS|fflags, va("x%d", hudplyr_num->itemamount));
 			else
-				V_DrawString(fx+24, fy+31, V_ALLOWLOWERCASE|V_HUDTRANS|fflags, va("x%d", stplyr->itemamount));
+				V_DrawString(fx+24, fy+31, V_ALLOWLOWERCASE|V_HUDTRANS|fflags, va("x%d", hudplyr_num->itemamount));
 		}
 		else
 		{
@@ -2109,7 +2114,7 @@ static void K_drawKartItem(void)
 				itemAmountFlags = (stplyr->exiting) ? V_HUDTRANS : V_30TRANS;
 
 			V_DrawSciencePatch((fx << FRACBITS) + (28 * info.hudScale), (fy << FRACBITS) + (41 * info.hudScale), itemAmountFlags|fflags, kp_itemx, info.hudScale);
-			V_DrawScalingKartStringAtFixed((fx << FRACBITS) + (38 * info.hudScale), (fy << FRACBITS) + (36 * info.hudScale), info.hudScale, itemAmountFlags|fflags, va("%d", stplyr->itemamount));
+			V_DrawScalingKartStringAtFixed((fx << FRACBITS) + (38 * info.hudScale), (fy << FRACBITS) + (36 * info.hudScale), info.hudScale, itemAmountFlags|fflags, va("%d", hudplyr_num->itemamount));
 		}
 	}
 	else if (cv_fancyroulette.value && stplyr->itemroulette)// xitem-next styled animated roulette
@@ -3449,6 +3454,7 @@ static void K_drawKartLaps(void)
 
 	if (r_splitscreen > 1)
 	{
+		const player_t *hudplyr = CL_PredGetHudPlayer(stplyr);
 		// Laps
 		V_DrawScaledPatch(fx, fy, V_HUDTRANS|splitflags, kp_splitlapflag);
 		V_DrawScaledPatch(fx+22, fy, V_HUDTRANS|splitflags, frameslash);
@@ -3456,8 +3462,8 @@ static void K_drawKartLaps(void)
 		if (numlaps >= 10)
 		{
 			uint8_t ln[2];
-			ln[0] = ((stplyr->laps / 10) % 10);
-			ln[1] = (stplyr->laps % 10);
+			ln[0] = ((hudplyr->laps / 10) % 10);
+			ln[1] = (hudplyr->laps % 10);
 
 			V_DrawScaledPatch(fx+13, fy, V_HUDTRANS|splitflags, fontv[PINGNUM_FONT].font[ln[0]]);
 			V_DrawScaledPatch(fx+17, fy, V_HUDTRANS|splitflags, fontv[PINGNUM_FONT].font[ln[1]]);
@@ -3470,16 +3476,17 @@ static void K_drawKartLaps(void)
 		}
 		else
 		{
-			V_DrawScaledPatch(fx+13, fy, V_HUDTRANS|splitflags, kp_facenum[(stplyr->laps) % 10]);
+			V_DrawScaledPatch(fx+13, fy, V_HUDTRANS|splitflags, kp_facenum[(hudplyr->laps) % 10]);
 			V_DrawScaledPatch(fx+27, fy, V_HUDTRANS|splitflags, kp_facenum[(numlaps) % 10]);
 		}
 	}
 	else
 	{
+		const player_t *hudplyr = CL_PredGetHudPlayer(stplyr);
 		if (!K_UseColorHud())
 		{
 			if (K_BigLapSticker())
-				V_DrawScaledPatch(fx, fy, V_HUDTRANS|splitflags, ((stplyr->laps > 9) ? kp_lapstickerbig2[0] : kp_lapstickerbig[0]));
+				V_DrawScaledPatch(fx, fy, V_HUDTRANS|splitflags, ((hudplyr->laps > 9) ? kp_lapstickerbig2[0] : kp_lapstickerbig[0]));
 			else
 				V_DrawScaledPatch(fx, fy, V_HUDTRANS|splitflags, kp_lapsticker[0]);
 		}
@@ -3487,15 +3494,15 @@ static void K_drawKartLaps(void)
 		{
 			uint8_t *colormap = R_GetTranslationColormap(TC_DEFAULT, K_GetHudColor(), GTC_CACHE);
 			if (K_BigLapSticker())
-				V_DrawMappedPatch(fx, fy, V_HUDTRANS|splitflags, ((stplyr->laps > 9) ? kp_lapstickerbig2[1] : kp_lapstickerbig[1]), colormap);
+				V_DrawMappedPatch(fx, fy, V_HUDTRANS|splitflags, ((hudplyr->laps > 9) ? kp_lapstickerbig2[1] : kp_lapstickerbig[1]), colormap);
 			else
 				V_DrawMappedPatch(fx, fy, V_HUDTRANS|splitflags, kp_lapsticker[1], colormap);
 		}
 
-		if (stplyr->exiting)
+		if (hudplyr->exiting)
 			V_DrawKartString(fx+33, fy+3, V_HUDTRANS|V_SLIDEIN|splitflags, "FIN");
 		else
-			V_DrawKartString(fx+33, fy+3, V_HUDTRANS|splitflags, va("%d/%d", min(stplyr->laps, numlaps), numlaps));
+			V_DrawKartString(fx+33, fy+3, V_HUDTRANS|splitflags, va("%d/%d", min(hudplyr->laps, numlaps), numlaps));
 	}
 }
 
@@ -7315,6 +7322,7 @@ void K_drawKartHUD(void)
 
 	// Drift gauge should ideally be drawn behind other hud stuff, right?
 	// right?
+	CL_PredDrawHUDFeedback();
 	K_DrawDriftGauge();
 	// new flame shield bars (player-space)
 	K_DrawFlamometer();

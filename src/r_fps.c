@@ -354,6 +354,8 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 		out->spriteyoffset = mobj->spriteyoffset;
 		if (CL_PredShouldAttachMobj(mobj))
 			CL_PredTransformAttachedState(mobj, frac, out);
+		else if (CL_PredShouldExtrapItem(mobj))
+			CL_PredApplyExtrapItemState(mobj, frac, out);
 		return;
 	}
 
@@ -411,6 +413,8 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 
 	if (CL_PredShouldAttachMobj(mobj))
 		CL_PredTransformAttachedState(mobj, frac, out);
+	else if (CL_PredShouldExtrapItem(mobj))
+		CL_PredApplyExtrapItemState(mobj, frac, out);
 }
 
 void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjstate_t *out)

@@ -47,6 +47,8 @@ extern consvar_t cv_cl_movement_smoothrate;
 extern consvar_t cv_cl_netrepeatinput;
 extern consvar_t cv_cl_movement_debug;
 extern consvar_t cv_cl_movement_selftest;
+extern consvar_t cv_cl_newcollision;
+extern consvar_t cv_cl_movement_extrapitems;
 
 // Registration (called from D_ClientServerInit)
 void CL_PredRegisterVars(void);
@@ -80,6 +82,7 @@ void CL_PredSelfTestOnTic(tic_t executed_tic, const ticcmd_t *raw_cmd);
 // Engine internal shadow-step entrypoints (called only while P_IsPredicting())
 struct sector_t;
 struct subsector_t;
+struct line_t;
 struct interpmobjstate_t;
 struct camera_t;
 void P_PredPushMapState(void);
@@ -93,6 +96,13 @@ void P_PredPlayerThink(player_t *player);
 void P_PredPlayerMobjThink(mobj_t *mobj);
 void P_PredCheckDashPanels(player_t *player);
 void P_PredCheckSneakerPanelsAtPos(mobj_t *thing);
+void P_PredClearCrossedFinishLines(void);
+void P_PredRecordCrossedFinishLine(const struct line_t *ld);
+void P_PredCheckFinishLine(player_t *player, fixed_t prev_x, fixed_t prev_y);
+
+// ---- New Minecraft-style soft kart-to-kart overlap collision (cl_newcollision) ----
+void K_RunNewKartCollision(void);
+void K_PredApplyNewKartCollision(player_t *player, uint32_t pred_step);
 
 // ---- Turn-rate, visual pose, chase camera, attached VFX/items, HUD & sound ----
 const player_t *CL_PredGetTurnPlayer(void);
@@ -117,11 +127,24 @@ struct sector_t *CL_PredGetAttachedRenderSector(const mobj_t *mobj);
 uint32_t CL_PredGetAttachedCount(void);
 mobj_t *CL_PredGetAttachedMobj(uint32_t idx, struct sector_t **out_sec);
 
-// Drift spark tier sound cue suppression (plays early on shadow kart, suppresses delayed confirmed duplicate)
+// Nearby moving item extrapolation (cl_movement_extrapitems)
+dboolean CL_PredShouldExtrapItem(const mobj_t *mobj);
+dboolean CL_PredApplyExtrapItemState(const mobj_t *mobj, fixed_t frac, struct interpmobjstate_t *out);
+struct sector_t *CL_PredGetExtrapItemRenderSector(const mobj_t *mobj);
+uint32_t CL_PredGetExtrapItemCount(void);
+mobj_t *CL_PredGetExtrapItemMobj(uint32_t idx, struct sector_t **out_sec);
+
+// Early sound/VFX cue suppression (plays early on shadow kart, suppresses delayed confirmed duplicate)
 dboolean CL_PredConsumeSuppressedDriftSound(const player_t *player, uint8_t newstage);
+dboolean CL_PredConsumeSuppressedWallBump(const mobj_t *mo);
+dboolean CL_PredShouldHideMobj(const mobj_t *mobj);
+dboolean CL_PredConsumeSuppressedSneakerSound(const player_t *player);
+dboolean CL_PredConsumeSuppressedLapSound(const player_t *player, uint8_t new_laps);
+dboolean CL_PredConsumeSuppressedItemHitSound(const mobj_t *mo);
 
 dboolean CL_PredStepChaseCamera(player_t *player, struct camera_t *thiscam, dboolean resetcalled);
 
+void CL_PredDrawHUDFeedback(void);
 void CL_PredDrawDebugHUD(void);
 
 // Inspection helpers

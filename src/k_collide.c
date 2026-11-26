@@ -15,6 +15,7 @@
 #include "doomdef.h" // Sink snipe print
 #include "g_game.h" // Sink snipe print
 #include "k_hud_message.h"
+#include "cl_predict.h"
 
 angle_t K_GetCollideAngle(mobj_t *t1, mobj_t *t2)
 {
@@ -186,7 +187,8 @@ dboolean K_OrbinautJawzCollide(mobj_t *t1, mobj_t *t2)
 			// Player Damage
 			P_DamageMobj(t2, t1, t1->target, 1, orbidamage);
 			K_SetHitThing(t2, t1);
-			S_StartSound(t2, sfx_s3k7b);
+			if (!CL_PredConsumeSuppressedItemHitSound(t2))
+				S_StartSound(t2, sfx_s3k7b);
 			//damageitem = true; // delayed until K_KartBouncing, don't mess with the orbi's momentum
 		}
 	}
